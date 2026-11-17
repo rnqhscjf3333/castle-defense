@@ -114,6 +114,29 @@ try {
   const barTxt = await ev("document.getElementById('bossHpTxt').textContent"), barW = await ev("document.getElementById('bossFill').style.width");
   check('보스 체력 바가 실제 체력(절반)을 따라감', barTxt.includes(Math.ceil(bmax / 2).toLocaleString('en-US') + ' / ' + bmax.toLocaleString('en-US')) && barW === '50%', barTxt + ' / 폭 ' + barW);
 
+  // 3.7) 보스 위치 화살표: 화면 밖뿐 아니라 UI에 가려진 위치(위·아래·모서리)에서도 나온다
+  await ev("document.getElementById('btnPause').click()");
+  const place = async (px, py) => { await ev(`(()=>{const g=__game,b=g.S.enemies.find(e=>e.kind==='boss'); g.cam.x=1500; g.cam.y=1500; g.cam.zoom=1; const vw=innerWidth, vh=innerHeight; b.x=1500+(${px}-vw/2); b.y=1500+(${py}-vh/2);})()`); await sleep(350); return ev("JSON.stringify({a:__game.bossArrows, r:__game.uiRects()})").then(JSON.parse); };
+  const VW = await ev('innerWidth'), VH = await ev('innerHeight');
+  const insideUI = (x, y, rects) => rects.some(r => x > r.l && x < r.r && y > r.t && y < r.b);
+  let o = await place(500, 330);
+  check('보스가 UI에 안 가려진 화면 안이면 화살표 없음', o.a.length === 0, JSON.stringify(o.a));
+  o = await place(500, 22); const bb = o.r.find(r => r.sel === '#bossbar');
+  check('보스가 위쪽 보스 바 뒤에 있으면 화살표 표시 (바 아래에, UI에 안 가려짐)', o.a.length === 1 && o.a[0].why === 'ui:#bossbar' && o.a[0].y > bb.b && !insideUI(o.a[0].x, o.a[0].y, o.r), JSON.stringify(o.a[0]));
+  o = await place(500, VH - 30); const un = o.r.find(r => r.sel === '#units');
+  check('보스가 아래쪽 유닛 카드 뒤에 있으면 화살표 표시 (카드 위에, UI에 안 가려짐)', o.a.length === 1 && o.a[0].why === 'ui:#units' && o.a[0].y < un.t && !insideUI(o.a[0].x, o.a[0].y, o.r), JSON.stringify(o.a[0]));
+  o = await place(60, 40);
+  check('보스가 왼쪽 위 HUD 뒤에 있으면 화살표 표시', o.a.length === 1 && o.a[0].why === 'ui:#hud' && !insideUI(o.a[0].x, o.a[0].y, o.r), JSON.stringify(o.a[0]));
+  o = await place(VW - 40, 40);
+  check('보스가 오른쪽 위 미니맵 뒤에 있으면 화살표 표시', o.a.length === 1 && o.a[0].why === 'ui:#minimap' && !insideUI(o.a[0].x, o.a[0].y, o.r), JSON.stringify(o.a[0]));
+  const tl = o.r.find(r => r.sel === '#tools'); o = await place(VW - 30, tl.t + 20);
+  check('보스가 오른쪽 버튼 열 뒤에 있으면 화살표 표시', o.a.length === 1 && o.a[0].why === 'ui:#tools' && !insideUI(o.a[0].x, o.a[0].y, o.r), JSON.stringify(o.a[0]));
+  o = await place(-300, 350);
+  check('화면 밖(왼쪽)이면 기존처럼 화살표, 왼쪽을 가리킴', o.a.length === 1 && o.a[0].why === 'offscreen' && Math.abs(Math.abs(o.a[0].angle) - Math.PI) < 0.5 && !insideUI(o.a[0].x, o.a[0].y, o.r), JSON.stringify(o.a[0]));
+  o = await place(500, 200);
+  check('UI 바로 옆이지만 보이는 위치면 화살표 없음', o.a.length === 0, JSON.stringify(o.a));
+  await ev("document.getElementById('btnPause').click()");
+
   // 4) 한 판 끝까지(디버그 가속) — 종료 화면이 뜨는지
   await open('?bot=1&warp=2400&seed=5&zoom=0.6', 1500); // 봇이 30라운드 끝까지(승리 또는 패배) 미리 진행한 상태
   check('종료 화면 표시(빨리감기 중 종료)', (await ev('__game.S.over')) && !(await ev("document.getElementById('overlay').classList.contains('hidden')")), '라운드 ' + await ev('__game.S.round'));

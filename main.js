@@ -347,24 +347,45 @@
     // 화면 밖 위험 방향 표시
     drawEdgeWarnings(now);
   }
+  // 화면 위에서 UI가 차지하는 영역들(HUD, 미니맵, 버튼 열, 보스 바, 하단 유닛 카드)의 실제 크기
+  const bossArrows = [];
+  function uiRects() {
+    const out = [];
+    for (const sel of ['#hud', '#minimap', '#tools', '#bossbar', '#units']) {
+      const el = document.querySelector(sel); if (!el || el.hidden) continue;
+      const r = el.getBoundingClientRect(); if (r.width > 0 && r.height > 0) out.push({ sel, l: r.left, t: r.top, r: r.right, b: r.bottom });
+    }
+    return out;
+  }
   function drawEdgeWarnings(now) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const z = cam.zoom, m = 22, bins = new Map();
-    // 보스: 화면 밖이면 크고 눈에 띄는 화살표 + 이름/거리
-    for (const bs of S.enemies) {
-      if (bs.kind !== 'boss') continue;
-      const sx = (bs.x - cam.x) * z + vw / 2, sy = (bs.y - cam.y) * z + vh / 2;
-      if (sx >= 0 && sx <= vw && sy >= 0 && sy <= vh) continue;
-      const a = Math.atan2(sy - vh / 2, sx - vw / 2), dx = Math.cos(a), dy = Math.sin(a), mm = 44;
-      const t = Math.min((vw / 2 - mm) / Math.abs(dx || 1e-6), (vh / 2 - 112) / Math.abs(dy || 1e-6)); // 위쪽 보스 바, 아래쪽 유닛 카드를 피한다
-      const px = vw / 2 + dx * t, py = vh / 2 + dy * t, pulse = 1 + 0.18 * Math.sin(now * 0.012);
-      ctx.save(); ctx.translate(px, py); ctx.rotate(a); ctx.scale(pulse, pulse);
-      ctx.fillStyle = '#ff3b4a'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.lineJoin = 'round';
-      ctx.beginPath(); ctx.moveTo(24, 0); ctx.lineTo(-10, -17); ctx.lineTo(-3, 0); ctx.lineTo(-10, 17); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
-      const dist = Math.round(Math.hypot(bs.x - cam.x, bs.y - cam.y));
-      ctx.font = '700 13px Rubik, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.lineWidth = 4;
-      const lx = px - dx * 38, ly = py - dy * 38 + 4, label = bs.bossName + ' · ' + dist;
-      ctx.strokeText(label, lx, ly); ctx.fillText(label, lx, ly); ctx.textAlign = 'left';
+    // 보스: 화면 밖이거나 UI(보스 바·HUD·미니맵·버튼·하단 유닛 카드)에 가려져 있으면 크고 눈에 띄는 화살표 + 이름/거리
+    bossArrows.length = 0;
+    const bosses = S.enemies.filter(e => e.kind === 'boss');
+    if (bosses.length) {
+      const R = uiRects(), find = sel => R.find(r => r.sel === sel);
+      const mmap = find('#minimap'), bbar = find('#bossbar'), units = find('#units');
+      // 화살표를 놓을 수 있는 안전 영역: UI를 피한 가운데 구역
+      const sx0 = 12, sx1 = (mmap ? mmap.l : vw) - 12, sy0 = Math.max(bbar ? bbar.b : 0, 12) + 10, sy1 = (units ? units.t : vh) - 10;
+      const cx = (sx0 + sx1) / 2, cy = (sy0 + sy1) / 2, hw = Math.max(40, (sx1 - sx0) / 2 - 34), hh = Math.max(30, (sy1 - sy0) / 2 - 34);
+      for (const bs of bosses) {
+        const sx = (bs.x - cam.x) * z + vw / 2, sy = (bs.y - cam.y) * z + vh / 2, pad = 14;
+        const outside = sx < 0 || sx > vw || sy < 0 || sy > vh;
+        const covered = !outside && R.find(r => sx > r.l - pad && sx < r.r + pad && sy > r.t - pad && sy < r.b + pad);
+        if (!outside && !covered) continue; // 눈에 보이면 화살표 없음
+        const a = Math.atan2(sy - cy, sx - cx), dx = Math.cos(a), dy = Math.sin(a);
+        const t = Math.min(hw / Math.abs(dx || 1e-6), hh / Math.abs(dy || 1e-6));
+        const px = cx + dx * t, py = cy + dy * t, pulse = 1 + 0.18 * Math.sin(now * 0.012);
+        bossArrows.push({ x: px, y: py, angle: a, why: outside ? 'offscreen' : 'ui:' + covered.sel });
+        ctx.save(); ctx.translate(px, py); ctx.rotate(a); ctx.scale(pulse, pulse);
+        ctx.fillStyle = '#ff3b4a'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.lineJoin = 'round';
+        ctx.beginPath(); ctx.moveTo(24, 0); ctx.lineTo(-10, -17); ctx.lineTo(-3, 0); ctx.lineTo(-10, 17); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+        const dist = Math.round(Math.hypot(bs.x - cam.x, bs.y - cam.y));
+        ctx.font = '700 13px Rubik, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.lineWidth = 4;
+        const lx = px - dx * 38, ly = py - dy * 38 + 4, label = bs.bossName + ' · ' + dist;
+        ctx.strokeText(label, lx, ly); ctx.fillText(label, lx, ly); ctx.textAlign = 'left';
+      }
     }
     for (const e of S.enemies) {
       if (e.kind === 'boss') continue;
@@ -457,5 +478,5 @@
   centerOnCore();
   if (params.get('bot')) { $('overlay').classList.add('hidden'); newGame(); const warp = +params.get('warp') || 0; for (let i = 0; i < warp / STEP && !S.over; i++) { botAct(); C.tick(S, STEP); } C.drainEvents(S); if (S.over) showEnd(S.win); cam.zoom = +params.get('zoom') || 0.5; clampCam(); }
   requestAnimationFrame(frame);
-  window.__game = { get S() { return S; }, cam, CastleCore: C };
+  window.__game = { get S() { return S; }, cam, CastleCore: C, get bossArrows() { return bossArrows; }, uiRects };
 })();
