@@ -76,6 +76,11 @@
     dash(t, v, p) { noise(t, 0.4, 0.6, v, p, 400, 3000, 1.5); },
     win(t, v, p) { [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) => tone('triangle', f, f, t + i * 0.13, 0.3, 0.3, v, 0)); },
     lose(t, v, p) { [392, 330, 262, 196].forEach((f, i) => tone('sawtooth', f, f * 0.97, t + i * 0.25, 0.5, 0.25, v, 0)); },
+    crit(t, v, p) { tone('square', 1500, 2200, t, 0.08, 0.2, v, p); },
+    cast(t, v, p) { tone('sawtooth', 200, 600, t, 0.5, 0.35, v, p); tone('sine', 600, 300, t + 0.4, 0.5, 0.3, v, p); },
+    stun(t, v, p) { tone('square', 800, 200, t, 0.3, 0.4, v, p); noise(t, 0.2, 0.5, v, p, 2000, 300, 1); },
+    debuff(t, v, p) { tone('sawtooth', 300, 90, t, 0.45, 0.4, v, p); noise(t, 0.3, 0.3, v, p, 900, 200, 1); },
+    clear(t, v, p) { [523, 784, 1047].forEach((f, i) => tone('triangle', f, f, t + i * 0.09, 0.2, 0.22, v, 0)); },
     cine(t, v, p) { tone('sawtooth', 60, 45, t, 2.4, 0.5, v, 0); noise(t, 2.2, 0.3, v, 0, 200, 80, 0.7, 'lowpass'); },
   };
   // 위험 신호음: 두 음이 번갈아 울리는 사이렌 3회 (보스 등장)

@@ -138,6 +138,7 @@
   const fmtTime = t => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
   // 보스 체력 바 (화면 위 가운데): 이름, 체력 숫자, 현재 상태, 가진 패턴
   const PAT = { dash: '돌진', summon: '소환', artillery: '포격', shield: '방어막', rage: '분노' };
+  const DBK = { stun: ['기절', '#ffe14a'], poison: ['중독', '#7be04a'], weak: ['공격력 감소', '#ff6b6b'], wound: ['치유 감소', '#c77dff'] };
   function updateBossBar() {
     const b = S.enemies.find(e => e.kind === 'boss'), el = $('bossbar');
     if (!b) { if (!el.hidden) el.hidden = true; return; }
@@ -148,13 +149,14 @@
     setText('bossHpTxt', Math.ceil(b.hp).toLocaleString() + ' / ' + b.max.toLocaleString() + '  (' + Math.ceil(pct) + '%)');
     const shielded = b.shieldT > 0, rage = !!b.enraged;
     el.classList.toggle('shielded', shielded); el.classList.toggle('rage', rage && !shielded);
-    const st = shielded ? '방어막 — 받는 피해 ' + Math.round(b.shieldRed * 100) + '% 감소' : b.dashT > 0 ? '돌진 중!' : rage ? '분노 — 더 빠르고 강해졌다' : '패턴: ' + Object.keys(b.abil).map(k => PAT[k]).join(' · ');
+    const st = shielded ? '방어막 — 받는 피해 ' + Math.round(b.shieldRed * 100) + '% 감소' : b.dashT > 0 ? '돌진 중!' : rage ? '분노 — 더 빠르고 강해졌다' : '패턴: ' + Object.keys(b.abil).map(k => k === 'debuff' ? b.abil.debuff.map(d => DBK[d.kind][0]).join('·') : PAT[k]).join(' · ');
+    if (b.grow > 1.04) st += '  |  공격력 ×' + b.grow.toFixed(1) + (b.grow >= CFG.balance.bossGrowMax - 0.01 ? ' (최대)' : ' ↑');
     setText('bossState', st);
   }
   function updateHud() {
     const c = S.core;
     const bi = C.bossInfo(S, S.round), nb = C.bossInfo(S, S.round + 1), rt = $('roundTxt');
-    setText('roundTxt', '라운드 ' + Math.max(1, S.round) + ' / ' + C.MAX_ROUND + (bi ? ' · 보스' : nb ? ' · 다음 보스' : S.act === 2 ? ' · 2막' : ''));
+    setText('roundTxt', '라운드 ' + Math.max(1, S.round) + ' / ' + C.MAX_ROUND + (bi ? ' · 보스' : nb ? ' · 다음 보스' : S.act === 2 ? ' · 2막' : '') + (S.phase === 'round' ? ' · 남은 적 ' + (S.enemies.length + S.queue.length) : ''));
     rt.classList.toggle('boss', !!bi); rt.classList.toggle('nextboss', !bi && !!nb); rt.classList.toggle('act2', S.act === 2 && !bi && !nb);
     updateBossBar();
     setText('timeTxt', fmtTime(S.t));
@@ -261,6 +263,10 @@
       case 'bossSummon': A2.play('summon', ev.x, ev.y); break;
       case 'bossRage': A2.play('rage', ev.x, ev.y); break;
       case 'priceUp': A2.play('buy'); break;
+      case 'crit': A2.play('crit', ev.x, ev.y); break;
+      case 'bossCast': A2.play('cast', ev.x, ev.y); break;
+      case 'debuffHit': A2.play(ev.kind === 'stun' ? 'stun' : 'debuff', ev.x, ev.y); break;
+      case 'roundClear': A2.play('clear'); break;
       case 'act2': A2.play('cine'); break;
       case 'over': A2.play(ev.win ? 'win' : 'lose'); break;
     }
@@ -270,9 +276,14 @@
       playEv(ev);
       if (ev.type === 'banner') banner(ev.text, ev.boss);
       else if (ev.type === 'shot' || ev.type === 'melee') { /* 소리만 있는 이벤트 */ }
+      else if (ev.type === 'crit') addFx({ k: 'crit', x: ev.x, y: ev.y, t: 0, max: 0.4, c: '#ffd23f' });
+      else if (ev.type === 'bossCast') { addFx({ k: 'zone', x: ev.x, y: ev.y, r: ev.r, t: 0, max: ev.warn, c: DBK[ev.kind][1] }); toast('보스가 ' + DBK[ev.kind][0] + ' 광역기를 시전! 범위를 벗어나게 하세요'); }
+      else if (ev.type === 'debuffHit') addFx({ k: 'boom', x: ev.x, y: ev.y, r: ev.r, t: 0, max: 0.4, big: false, enemy: true, c: DBK[ev.kind][1] });
+      else if (ev.type === 'roundClear') banner('라운드 ' + ev.round + ' 클리어!');
+      else if (ev.type === 'bossWipe') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.9, c: '#ffffff', big: true }); toast('보스 처치! 남은 적이 모두 쓰러졌어요'); }
       else if (ev.type === 'kill') { addFx({ k: 'burst', x: ev.x, y: ev.y, t: 0, max: ev.boss ? 0.8 : 0.3, c: ev.boss ? '#c77dff' : '#ff8a5c', big: ev.boss }); }
       else if (ev.type === 'udead') addFx({ k: 'burst', x: ev.x, y: ev.y, t: 0, max: 0.4, c: '#8fb7ff' });
-      else if (ev.type === 'heal') addFx({ k: 'heal', x: ev.tx, y: ev.ty, t: 0, max: 0.5 });
+      else if (ev.type === 'heal') { addFx({ k: 'beam', x: ev.x, y: ev.y - 11, tx: ev.tx, ty: ev.ty - 7, t: 0, max: ev.aoe ? 0.3 : 0.45, c: ev.enemy ? '#ffb86b' : '#6bffa3', small: !!ev.aoe }); if (!ev.aoe) addFx({ k: 'heal', x: ev.tx, y: ev.ty, t: 0, max: 0.5 }); }
       else if (ev.type === 'spawn') addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.35, c: '#5aa9ff' });
       else if (ev.type === 'chain') { addFx({ k: 'line', x: ev.x, y: ev.y, tx: ev.tx, ty: ev.ty, t: 0, max: 0.25, c: ev.small ? '#b9f5c8' : '#9ad0ff', small: ev.small }); }
       else if (ev.type === 'boom') { addFx({ k: 'boom', x: ev.x, y: ev.y, r: ev.r, t: 0, max: ev.big ? 0.6 : 0.3, big: ev.big, enemy: ev.enemy }); }
@@ -318,6 +329,14 @@
       for (let k = -2; k <= 2; k++) { const ox = Math.cos(e._ang + Math.PI / 2) * k * 8, oy = Math.sin(e._ang + Math.PI / 2) * k * 8; ctx.beginPath(); ctx.moveTo(e.x + ox - Math.cos(e._ang) * 18, e.y + oy - Math.sin(e._ang) * 18); ctx.lineTo(e.x + ox - Math.cos(e._ang) * (60 + Math.abs(k) * 6), e.y + oy - Math.sin(e._ang) * (60 + Math.abs(k) * 6)); ctx.stroke(); }
     }
   }
+  // 상태이상 표시: 머리 위 아이콘 (기절=별, 중독=초록 방울, 공격력 감소=붉은 화살표, 치유 감소=보라 십자)
+  function statusMarks(e, now, z) {
+    const top = e.y + Figures.headTop(e); let x = e.x - ((+!!(e.stunT > 0) + +!!(e.poisonT > 0) + +!!(e.weakT > 0) + +!!(e.woundT > 0)) - 1) * 6, y = top - 8; const s = 1 / Math.max(0.7, z) * 1.05;
+    if (e.stunT > 0) { ctx.fillStyle = '#ffe14a'; for (let i = 0; i < 3; i++) { const a = now * 0.008 + i * 2.09; ctx.beginPath(); ctx.arc(e.x + Math.cos(a) * 9 * s, top - 4 + Math.sin(a) * 3 * s, 2.4 * s, 0, 7); ctx.fill(); } x += 0; }
+    if (e.poisonT > 0) { ctx.fillStyle = '#7be04a'; ctx.beginPath(); ctx.arc(x, y, 3.2 * s, 0, 7); ctx.fill(); ctx.fillRect(x - 0.8 * s, y - 7 * s, 1.6 * s, 3 * s); x += 12 * s; }
+    if (e.weakT > 0) { ctx.fillStyle = '#ff6b6b'; ctx.beginPath(); ctx.moveTo(x - 4 * s, y - 3 * s); ctx.lineTo(x + 4 * s, y - 3 * s); ctx.lineTo(x, y + 4 * s); ctx.fill(); x += 12 * s; }
+    if (e.woundT > 0) { ctx.fillStyle = '#c77dff'; ctx.fillRect(x - 1.5 * s, y - 4 * s, 3 * s, 8 * s); ctx.fillRect(x - 4 * s, y - 1.5 * s, 8 * s, 3 * s); }
+  }
   const drawList = [], byY = (p, q) => p.y - q.y, LITE_AT = 140;
   let liteMode = false, drawnCount = 0;
   function drawWorld(now) {
@@ -360,6 +379,7 @@
       if (lite && e.team === 'e' && e.kind !== 'boss') { Figures.drawLite(ctx, e); continue; }
       if (e.kind === 'boss') bossAura(e, now, z);
       Figures.draw(ctx, e, now);
+      if (e.team === 'u' && (e.stunT > 0 || e.poisonT > 0 || e.weakT > 0 || e.woundT > 0)) statusMarks(e, now, z);
       if (e.kind === 'boss' && e.shieldT > 0) { ctx.globalAlpha = 0.28 + 0.12 * Math.sin(now * 0.012); ctx.fillStyle = '#8fd8ff'; ctx.beginPath(); ctx.arc(e.x, e.y - 6, e.r * 1.7, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 0.9; ctx.strokeStyle = '#d8f2ff'; ctx.lineWidth = 2.5 / z; ctx.stroke(); ctx.globalAlpha = 1; }
       if (e.hp < e.max || e.kind === 'boss') hpBar(e);
     }
@@ -394,6 +414,18 @@
       if (f.k === 'burst') { ctx.globalAlpha = 1 - p; ctx.fillStyle = f.c; ctx.beginPath(); ctx.arc(f.x, f.y, (f.big ? 20 : 8) + p * (f.big ? 50 : 16), 0, Math.PI * 2); ctx.fill(); }
       else if (f.k === 'ring') { ctx.globalAlpha = 1 - p; ctx.strokeStyle = f.c; ctx.lineWidth = (f.big ? 4 : 2) / z; ctx.beginPath(); ctx.arc(f.x, f.y, 6 + p * (f.big ? 60 : 24), 0, Math.PI * 2); ctx.stroke(); }
       else if (f.k === 'line') { ctx.globalAlpha = 1 - p; ctx.strokeStyle = f.c; ctx.lineWidth = (f.small ? 1.5 : 3) / z; ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(f.tx, f.ty); ctx.stroke(); }
+      else if (f.k === 'beam') { // 사제 치유 광선: 누가 누구를 치유하는지 보이도록 굵은 빛줄기 + 끝점 광채
+        const a = 1 - p, w = (f.small ? 2.2 : 4) / z, pulse = 0.75 + 0.25 * Math.sin(now * 0.03);
+        ctx.lineCap = 'round'; ctx.globalAlpha = a * 0.35; ctx.strokeStyle = f.c; ctx.lineWidth = w * 3.2; ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(f.tx, f.ty); ctx.stroke();
+        ctx.globalAlpha = a * pulse; ctx.strokeStyle = '#eafff1'; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(f.tx, f.ty); ctx.stroke();
+        ctx.globalAlpha = a * 0.55; ctx.fillStyle = f.c; ctx.beginPath(); ctx.arc(f.tx, f.ty, (f.small ? 6 : 11) / z * (0.6 + 0.4 * p), 0, Math.PI * 2); ctx.fill(); ctx.lineCap = 'butt';
+      }
+      else if (f.k === 'zone') { // 보스 광역 상태이상 예고 범위
+        const pu = 0.5 + 0.5 * Math.sin(now * 0.02); ctx.globalAlpha = 0.16 + 0.14 * pu; ctx.fillStyle = f.c; ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 0.9; ctx.strokeStyle = f.c; ctx.lineWidth = 3 / z; ctx.setLineDash([10 / z, 7 / z]); ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+        ctx.globalAlpha = 0.5; ctx.lineWidth = 2 / z; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (1 - p), 0, Math.PI * 2); ctx.stroke();
+      }
+      else if (f.k === 'crit') { ctx.globalAlpha = 1 - p; ctx.strokeStyle = f.c; ctx.lineWidth = 2.5 / z; const rr = (6 + p * 16) / z * 1.2; ctx.beginPath(); for (let i = 0; i < 4; i++) { const an = i * Math.PI / 2 + Math.PI / 4; ctx.moveTo(f.x + Math.cos(an) * rr * 0.4, f.y - 10 + Math.sin(an) * rr * 0.4); ctx.lineTo(f.x + Math.cos(an) * rr, f.y - 10 + Math.sin(an) * rr); } ctx.stroke(); }
       else if (f.k === 'boom') { ctx.globalAlpha = (1 - p) * 0.5; ctx.fillStyle = f.enemy ? '#ff5a3a' : f.big ? '#ff9f43' : '#ffd166'; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (0.4 + 0.6 * p), 0, Math.PI * 2); ctx.fill(); }
       else if (f.k === 'heal') { ctx.globalAlpha = 1 - p; ctx.fillStyle = '#9dffb0'; const y = f.y - 12 - p * 16; ctx.fillRect(f.x - 1.5, y - 5, 3, 10); ctx.fillRect(f.x - 5, y - 1.5, 10, 3); }
       ctx.globalAlpha = 1;

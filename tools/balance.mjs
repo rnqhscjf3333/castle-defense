@@ -20,13 +20,14 @@ const DT = 1 / 30;
 // ───────────── 한 판 실행 (워커) ─────────────
 const BASE = JSON.parse(JSON.stringify(C.CFG));
 function deepAssign(dst, src) { for (const k in src) { if (src[k] && typeof src[k] === 'object' && !Array.isArray(src[k])) deepAssign(dst[k] ??= {}, src[k]); else dst[k] = src[k]; } }
+if (process.env.OVR) deepAssign(BASE, JSON.parse(process.env.OVR)); // 환경변수 OVR='{"balance":{...}}' 로 기준값을 한꺼번에 덮어쓴다 (조합 실험용)
 
 function runOne(task) {
   deepAssign(C.CFG, JSON.parse(JSON.stringify(BASE))); deepAssign(C.CFG, task.overrides || {}); // 기준값을 매번 복사해서 쓴다 (배열 덮어쓰기가 기준값을 오염시키지 않게)
   const P = task.policy, S = C.createGame(task.seed), rnd = C.mulberry32(task.seed * 7919 + 13);
   const ratio = P.ratio || { sword: 3, archer: 2, priest: 1 }; // 검사 비중이 높은 구성이 가장 좋았다 (시뮬레이션)
   let step = 0;
-  const maxSteps = Math.ceil((C.PREP_TIME + C.MAX_ROUND * C.ROUND_TIME + 120) / DT);
+  const maxSteps = Math.ceil((C.PREP_TIME + C.MAX_ROUND * 120 + 120) / DT);
   let act2At = -1;
   while (!S.over && step < maxSteps) {
     if (S.cinematic) { C.endCinematic(S); act2At = S.round; if (P.stopAct2) break; continue; } // 2막 연출은 바로 넘긴다 (30라운드 보스를 처치한 것)

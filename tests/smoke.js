@@ -78,7 +78,7 @@ let bad = 0;
 for (let seed = 1; seed <= 200; seed++) {
   const g = C.createGame(seed); g.round = 5; g.cards.rerolls = 0;
   // 라운드 6 시작을 직접 유도
-  g.phase = 'round'; g.roundT = 40; g.queue = []; C.tick(g, DT);
+  g.phase = 'round'; g.roundT = C.ROUND_TIME; g.queue = []; C.tick(g, DT);
   if (g.round !== 6 || !g.cards.offer) { bad += 1000; continue; }
   if (!g.cards.offer.some(c => c.rar !== 'common')) bad++;
   if (g.cards.rerolls !== 1) bad += 1000;
@@ -151,7 +151,7 @@ for (const r of [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]) {
   check('보스 전 라운드(4라운드 시작)에 다음 라운드 보스 예고 알림', C.drainEvents(g).some(e => e.type === 'notice' && e.text.includes(C.bossInfo(g, 5).name))); }
 
 // 11) 새 적의 행동
-function arena(round, kinds, bossId) { const g = C.createGame(500 + round); g.captureEvents = true; g.round = round; g.phase = 'round'; g.roundT = 0; g.queue = []; g.spawnPts = 4; if (bossId) { const idx = C.CFG.bossPool.findIndex(b => b.id === bossId), slot = round / 5 - 1, cur = g.bossOrder.indexOf(idx); if (cur >= 0) [g.bossOrder[slot], g.bossOrder[cur]] = [g.bossOrder[cur], g.bossOrder[slot]]; /* 이 라운드의 보스를 지정 */ } for (const [k, x, y] of kinds) C.spawnEnemy(g, k, x, y); return g; }
+function arena(round, kinds, bossId) { const g = C.createGame(500 + round); g.hold = true; g.captureEvents = true; g.round = round; g.phase = 'round'; g.roundT = 0; g.queue = []; g.spawnPts = 4; if (bossId) { const idx = C.CFG.bossPool.findIndex(b => b.id === bossId), slot = round / 5 - 1, cur = g.bossOrder.indexOf(idx); if (cur >= 0) [g.bossOrder[slot], g.bossOrder[cur]] = [g.bossOrder[cur], g.bossOrder[slot]]; /* 이 라운드의 보스를 지정 */ } for (const [k, x, y] of kinds) C.spawnEnemy(g, k, x, y); return g; }
 { // 사수: 성채에서 멀리 떨어져 포물선 화살로 성채를 맞힌다
   const g = arena(5, [['archer', 1500, 1500 - 450]]); let arrow = null, hmax = 0, hp0 = g.core.hp, minD = 1e9; g.core.atk = 0; const ar0 = g.enemies[0];
   for (let i = 0; i < 30 * 40; i++) { C.tick(g, DT); minD = Math.min(minD, Math.hypot(ar0.x - 1500, ar0.y - 1500)); for (const s of g.shots) if (s.color === 'ea') { arrow = s; hmax = Math.max(hmax, s.h); } }
@@ -260,8 +260,8 @@ function killBoss(g) { const b = g.enemies.find(e => e.kind === 'boss'); b.hp = 
   const g = arena(30, [['boss', 1500, 1500 - 900]]); g.round = 30; g.queue = []; g.core.atk = 0; g.core.hp = g.core.max = 1e9; const b = g.enemies[0]; b.speed = 0; b.abil = {};
   for (let i = 0; i < 30 * 130; i++) C.tick(g, DT);
   check('30라운드 보스가 살아 있으면 130초가 지나도 라운드가 그대로 (게이트)', g.round === 30 && g.act === 1 && !b.dead, 'round=' + g.round);
-  b.x = 1500; b.y = 1500 - 200; g.core.atk = 1e6; b.hp = 1; for (let i = 0; i < 90 && !g.cinematic; i++) C.tick(g, DT); C.endCinematic(g); if (g.jobs.offer) C.pickJob(g, 0);
-  for (let i = 0; i < 30 * 2; i++) C.tick(g, DT);
+  b.x = 1500; b.y = 1500 - 200; g.core.atk = 1e6; b.hp = 1; for (let i = 0; i < 90 && !g.cinematic; i++) C.tick(g, DT); C.endCinematic(g); if (g.jobs.offer) C.pickJob(g, 0); g.hold = false;
+  for (let i = 0; i < 30 * 5; i++) C.tick(g, DT);
   check('보스를 처치하고 연출이 끝나면 곧바로 31라운드(2막)가 시작됨', g.round === 31 && g.act === 2, 'round=' + g.round); }
 { // 50라운드 마왕 처치 → 승리 (전직 없음)
   const g = arena(50, [['boss', 1500, 1500 - 220]]); g.act = 2; g.round = 50; g.queue = []; const b = g.enemies[0]; b.hp = 1; g.core.atk = 1e6; for (let i = 0; i < 90; i++) C.tick(g, DT);
@@ -306,7 +306,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
 
 // 19) 적 스탯 배율 (체력 enemyHp·공격력 enemyDmg, 이동 속도는 그대로)
 { const g = arena(1, []); const e = C.spawnEnemy(g, 'grunt', 1500, 800), base = C.CFG.enemies.grunt;
-  check('적 체력 = 기본 × 라운드 배율 × enemyHp', e.max === Math.round(base.hp * C.hpMul(1) * C.CFG.balance.enemyHp), `${base.hp}→${e.max}`);
+  check('적 체력 = 기본 × 라운드 배율 × enemyHp', e.max === Math.round(base.hp * C.hpMul(1) * C.CFG.balance.enemyHp * C.CFG.balance.meleeHp), `${base.hp}→${e.max}`);
   check('적 공격력이 절반', Math.abs(e.dmg - base.dmg * C.dmgMul(1) * 0.5) < 1e-9, `${base.dmg}→${e.dmg}`);
   check('이동 속도는 그대로', Math.abs(e.speed - base.speed) < 1e-9, String(e.speed));
   const bb = (() => { const g2 = arena(5, []); return C.spawnEnemy(g2, 'boss', 1500, 800); })();
@@ -366,8 +366,8 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   check('광전사 포격: 이른 라운드는 약하게, 늦은 라운드는 강하게 (피해·발수)', early.abil.artillery.dmg < late.abil.artillery.dmg && early.abil.artillery.count <= late.abil.artillery.count, `R5 ${early.abil.artillery.dmg}×${early.abil.artillery.count} / R25 ${late.abil.artillery.dmg}×${late.abil.artillery.count}`);
   const sm5 = arena(5, [['boss', 1500, 800]], 'summoner').enemies[0], sm25 = arena(25, [['boss', 1500, 800]], 'summoner').enemies[0];
   check('소환사 졸개 수도 라운드에 따라 늘어남', sm5.abil.summon.n < sm25.abil.summon.n, `${sm5.abil.summon.n} → ${sm25.abil.summon.n}`);
-  const fin = arena(30, [['boss', 1500, 800]]).enemies[0]; check('암흑 기사단장(30라운드)은 패턴 4종 고정 수치', Object.keys(fin.abil).length === 4 && fin.abil.artillery.dmg === C.CFG.act1Boss.abil.artillery.dmg);
-  const fin50 = arena(50, [['boss', 1500, 800]]).enemies[0]; check('마왕(50라운드)은 패턴 5종 고정 수치, 더 큼', Object.keys(fin50.abil).length === 5 && fin50.abil.artillery.count === 2 && fin50.r > 33 && fin50.bossName === '마왕'); }
+  const fin = arena(30, [['boss', 1500, 800]]).enemies[0]; check('암흑 기사단장(30라운드)은 패턴 5종(상태이상 포함) 고정 수치', Object.keys(fin.abil).length === 5 && fin.abil.artillery.dmg === C.CFG.act1Boss.abil.artillery.dmg);
+  const fin50 = arena(50, [['boss', 1500, 800]]).enemies[0]; check('마왕(50라운드)은 패턴 6종(상태이상 4가지) 고정 수치, 더 큼', Object.keys(fin50.abil).length === 6 && fin50.abil.artillery.count === 2 && fin50.r > 33 && fin50.bossName === '마왕'); }
 
 // 23) 졸개 소환: 성채 가까이 왔을 때만, 보스 앞(성채 방향)에 나온다
 { const g = arena(10, [['boss', 1500, 1500 - 1000]], 'summoner'); g.core.atk = 0; g.core.hp = g.core.max = 1e9; const b = g.enemies[0]; b.speed = 0; let early = 0;
@@ -405,5 +405,48 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   for (const e of [a, b, c, far]) { e.speed = 0; e.dmg = 0; e.hp = e.max = 1e6; } g.core.atk = 100;
   for (let i = 0; i < 30 * 3; i++) C.tick(g, DT);
   check('폭발탄+연쇄: 목표 주변 적이 같이 피해를 받고, 멀리 있는 적은 받지 않음', b.hp < b.max && c.hp < c.max && far.hp === far.max, `주변 ${Math.round(b.max - b.hp)}/${Math.round(c.max - c.hp)}, 먼 적 ${Math.round(far.max - far.hp)}`); }
+
+// 29) 보스를 처치하면 남은 졸개가 모두 쓰러진다
+{ const g = arena(10, [['boss', 1500, 1500 - 300], ['grunt', 1500 + 100, 1500 - 300], ['shield', 1500 - 100, 1500 - 300], ['brute', 1500, 1500 - 350]], 'summoner'); g.hold = false; g.queue = ['grunt', 'grunt']; g.core.hp = g.core.max = 1e9; g.core.atk = 0;
+  const b = g.enemies[0], k0 = g.kills; b.hp = 1; C.damage(g, b, 5);
+  check('보스 처치 시 남은 졸개 전원 사망 + 대기 중이던 적도 취소', g.enemies.every(e => e.dead) && g.queue.length === 0, `생존 ${g.enemies.filter(e => !e.dead).length}, 대기 ${g.queue.length}`);
+  check('졸개가 쓸려 죽어도 골드·처치 수는 보스 몫만', g.kills === k0 + 1);
+  }
+// 30) 보스는 시간이 지날수록 기본 공격이 강해진다
+{ const g = arena(20, [['boss', 1500, 1500 - 900]], 'charger'); g.core.hp = g.core.max = 1e9; g.core.atk = 0; const b = g.enemies[0]; b.speed = 0; b.abil = {}; let g0 = 0;
+  for (let i = 0; i < 30 * 8; i++) C.tick(g, DT); g0 = b.dmgMul;
+  for (let i = 0; i < 30 * 20; i++) C.tick(g, DT); const g1 = b.dmgMul;
+  for (let i = 0; i < 30 * 200; i++) C.tick(g, DT);
+  check('보스: 등장 직후(8초)는 ×1, 28초에는 더 강함, 상한 이후 고정', g0 <= 1.001 && g1 > 1.4 && Math.abs(b.dmgMul - C.CFG.balance.bossGrowMax) < 1e-6, `${g0.toFixed(2)} → ${g1.toFixed(2)} → ${b.dmgMul.toFixed(2)}`); }
+// 31) 궁수: 연사는 사라지고 치명타·사거리 카드
+{ check('연사 카드가 없고 치명타·사거리 카드가 있음', !C.CARD_DEFS.some(d => d.id === 'u_multi') && C.CARD_DEFS.some(d => d.id === 'u_crit') && C.CARD_DEFS.some(d => d.id === 'u_range'));
+  const g = arena(3, []); g.gold = 1e6; g.buyCd.archer = 0; const ar = C.buy(g, 'archer').unit; const r0 = ar.range;
+  applyById(g, 'u_range'); applyById(g, 'u_range'); C.tick(g, DT);
+  check('사거리 카드 2장: 궁수 사거리 +24%', Math.abs(ar.range / r0 - (1 + 2 * C.CFG.cardVals.archerRange)) < 0.01, `${r0}→${ar.range}`);
+  const sw = C.buy(g, 'sword').unit; check('검사 사거리는 그대로', sw.range === C.CFG.units.sword.range);
+  const mk = n => { const gg = arena(3, []); gg.gold = 1e6; gg.buyCd.archer = 0; const a = C.buy(gg, 'archer').unit; a.x = 1500 + 200; a.y = 1500; a.atk = 10; for (let i = 0; i < n; i++) applyById(gg, 'u_crit'); const e = C.spawnEnemy(gg, 'brute', 1500 + 330, 1500); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; gg.core.atk = 0; let crits = 0, hits = 0; const dmgs = [];
+    for (let i = 0; i < 30 * 120; i++) { const h0 = e.hp; C.tick(gg, DT); for (const ev of C.drainEvents(gg)) if (ev.type === 'crit') crits++; if (e.hp < h0) { hits++; dmgs.push(h0 - e.hp); } } return { crits, hits, max: Math.max(...dmgs), min: Math.min(...dmgs) }; };
+  const c0 = mk(0), c3 = mk(3);
+  check('치명타 0장이면 치명타 없음', c0.crits === 0, JSON.stringify(c0));
+  check('치명타 3장(+30%): 약 30%가 치명타이고 피해가 2배', c3.hits > 50 && c3.crits / c3.hits > 0.2 && c3.crits / c3.hits < 0.42 && c3.max > c3.min * 1.8, `치명타 ${c3.crits}/${c3.hits}, 피해 ${c3.min.toFixed(1)}~${c3.max.toFixed(1)}`); }
+// 32) 치유 상한: 사제를 아무리 많이 둬도 한 유닛이 초당 회복하는 양은 한계가 있다
+{ const run = nPriest => { const g = arena(3, []); g.gold = 1e7; for (let i = 0; i < nPriest; i++) { g.buyCd.priest = 0; C.buy(g, 'priest'); } g.buyCd.sword = 0; const sw = C.buy(g, 'sword').unit; sw.x = 1500 + 150; sw.y = 1500; sw.max = 10000; let healed = 0;
+    for (let i = 0; i < 30 * 10; i++) { sw.hp = 5000; C.tick(g, DT); sw.x = 1500 + 150; sw.y = 1500; healed += Math.max(0, sw.hp - 5000); } return healed / 10; };
+  const h2 = run(2), h12 = run(12), cap = 10000 * C.CFG.balance.healCap;
+  check('사제 12명이어도 초당 회복량이 상한(' + cap + ') 이하', h12 <= cap * 1.15, `2명 ${h2.toFixed(0)}/초, 12명 ${h12.toFixed(0)}/초`); }
+// 33) 보스 광역 상태이상: 예고 → 범위 안 아군에게 걸림, 효과 확인
+{ const mk = kind => { const g = arena(10, [['boss', 1500, 1500 - 300]], 'summoner'); const b = g.enemies[0]; b.abil = { debuff: [{ kind, cd: 6, r: 200 }] }; b.t = {}; b.speed = 0; b.dmg = 0; g.core.atk = 0; g.core.hp = g.core.max = 1e9; g.gold = 1e6;
+    g.buyCd.sword = 0; const a = C.buy(g, 'sword').unit; g.buyCd.sword = 0; const a2 = C.buy(g, 'sword').unit; a.x = 1500 - 40; a.y = 1500 - 200; a2.x = 1500 + 900; a2.y = 1500 + 900; a2.hx = a2.x; a2.hy = a2.y; return { g, b, a, a2 }; };
+  for (const kind of ['stun', 'poison', 'weak', 'wound']) {
+    const { g, a, a2 } = mk(kind); let cast = null, hit = null, flag = false; a.hx = a.x; a.hy = a.y;
+    for (let i = 0; i < 30 * 12 && !hit; i++) { C.tick(g, DT); for (const ev of C.drainEvents(g)) { if (ev.type === 'bossCast') cast = ev; if (ev.type === 'debuffHit') hit = ev; } const f = kind === 'stun' ? a.stunT : kind === 'poison' ? a.poisonT : kind === 'weak' ? a.weakT : a.woundT; if (f > 0) flag = true; }
+    check(`보스 ${kind}: 예고 이벤트 → 터짐, 범위 안 유닛에게만 걸림`, !!cast && !!hit && flag && !(a2.stunT > 0 || a2.poisonT > 0 || a2.weakT > 0 || a2.woundT > 0), cast && hit ? `예고 ${cast.warn}s, 맞은 유닛 ${hit.hit}` : '시전 없음'); }
+  { const { g, a } = mk('stun'); a.stunT = 2; const x0 = a.x; for (let i = 0; i < 30; i++) C.tick(g, DT); check('기절한 유닛은 움직이지 못함', Math.abs(a.x - x0) < 0.01 && a.stunT < 1.1); }
+  { const { g, a } = mk('poison'); a.poisonT = 5; a.max = 1000; a.hp = 1000; for (let i = 0; i < 30 * 3; i++) C.tick(g, DT); const lost = 1000 - a.hp; check('중독: 초당 최대 체력 비율만큼 감소 (죽지는 않음)', Math.abs(lost - 3 * 1000 * C.CFG.debuff.poison.pct) < 12 && a.hp >= 1, `3초 ${lost.toFixed(1)} 감소`);
+    a.poisonT = 500; a.hp = 5; for (let i = 0; i < 30 * 5; i++) C.tick(g, DT); check('중독으로는 죽지 않고 체력 1에서 멈춤', !a.dead && a.hp >= 1 - 1e-9); }
+  { const { g, a } = mk('weak'); a.x = 1500 + 100; a.y = 1500; a.hx = a.x; a.hy = a.y; const e = C.spawnEnemy(g, 'brute', a.x + 25, a.y); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; const measure = () => { let d = 0; for (let i = 0; i < 30 * 6; i++) { const h = e.hp; C.tick(g, DT); d += h - e.hp; } return d; };
+    const normal = measure(); a.weakT = 99; const weak = measure(); check('공격력 감소: 주는 피해가 약해짐', weak < normal * 0.9 && weak > normal * 0.6, `${normal.toFixed(0)} → ${weak.toFixed(0)}`); }
+  { const { g, a } = mk('wound'); const run = wt => { a.max = 10000; a.woundT = wt; g.buyCd.priest = 0; g.gold = 1e6; const pr = C.buy(g, 'priest').unit; pr.x = a.x + 30; pr.y = a.y; let h = 0; for (let i = 0; i < 30 * 8; i++) { a.hp = 5000; C.tick(g, DT); h += Math.max(0, a.hp - 5000); a.woundT = wt; a.x = 1500 - 40; a.y = 1500 - 200; } pr.dead = true; g.units = g.units.filter(u => u !== pr); return h; };
+    const n = run(0), w = run(99); check('치유 감소: 받는 치유가 줄어듦', w < n * 0.6 && n > 0, `${n.toFixed(0)} → ${w.toFixed(0)}`); } }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);
