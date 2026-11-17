@@ -138,7 +138,7 @@ check('라운드가 갈수록 종류가 늘어남 (사수·폭파병·주술사�
 for (const r of [5, 10, 15, 20, 25, 30]) {
   const g = C.createGame(r); g.captureEvents = true; g.round = r - 1; g.phase = 'round'; g.roundT = C.ROUND_TIME; g.queue = []; C.tick(g, DT);
   if (g.cards.offer) C.pickCard(g, 0);
-  const info = C.bossInfo(r);
+  const info = C.bossInfo(g, r);
   const ev = C.drainEvents(g);
   check(`R${r} 보스 라운드: 첫 적이 보스이고 이름 표시(${info.name})`, g.queue[0] === 'boss' && ev.some(e => e.type === 'banner' && e.boss && e.text.includes(info.name)));
   // 스폰 후 보스가 존재하는지
@@ -147,10 +147,10 @@ for (const r of [5, 10, 15, 20, 25, 30]) {
   check(`R${r} 보스 체력(절반 적용)/패턴`, b && b.max === Math.round(info.hp * C.CFG.balance.enemyHp) && Object.keys(b.abil).length >= 1, b && (b.bossName + ' hp=' + b.max + ' 패턴=' + Object.keys(b.abil).join(',')));
 }
 { const g = C.createGame(77); g.captureEvents = true; g.round = 3; g.phase = 'round'; g.queue = []; g.roundT = C.ROUND_TIME; /* 4라운드가 시작될 때 다음(5라운드) 보스를 예고 */ C.tick(g, DT); if (g.cards.offer) C.pickCard(g, 0);
-  check('보스 전 라운드(4라운드 시작)에 다음 라운드 보스 예고 알림', C.drainEvents(g).some(e => e.type === 'notice' && e.text.includes(C.bossInfo(5).name))); }
+  check('보스 전 라운드(4라운드 시작)에 다음 라운드 보스 예고 알림', C.drainEvents(g).some(e => e.type === 'notice' && e.text.includes(C.bossInfo(g, 5).name))); }
 
 // 11) 새 적의 행동
-function arena(round, kinds) { const g = C.createGame(500 + round); g.captureEvents = true; g.round = round; g.phase = 'round'; g.roundT = 0; g.queue = []; g.spawnPts = 4; for (const [k, x, y] of kinds) C.spawnEnemy(g, k, x, y); return g; }
+function arena(round, kinds, bossId) { const g = C.createGame(500 + round); g.captureEvents = true; g.round = round; g.phase = 'round'; g.roundT = 0; g.queue = []; g.spawnPts = 4; if (bossId) { const idx = C.CFG.bossPool.findIndex(b => b.id === bossId), slot = round / 5 - 1, cur = g.bossOrder.indexOf(idx); if (cur >= 0) [g.bossOrder[slot], g.bossOrder[cur]] = [g.bossOrder[cur], g.bossOrder[slot]]; /* 이 라운드의 보스를 지정 */ } for (const [k, x, y] of kinds) C.spawnEnemy(g, k, x, y); return g; }
 { // 사수: 성채에서 멀리 떨어져 포물선 화살로 성채를 맞힌다
   const g = arena(5, [['archer', 1500, 1500 - 450]]); let arrow = null, hmax = 0, hp0 = g.core.hp, minD = 1e9; g.core.atk = 0; const ar0 = g.enemies[0];
   for (let i = 0; i < 30 * 40; i++) { C.tick(g, DT); minD = Math.min(minD, Math.hypot(ar0.x - 1500, ar0.y - 1500)); for (const s of g.shots) if (s.color === 'ea') { arrow = s; hmax = Math.max(hmax, s.h); } }
@@ -167,28 +167,28 @@ function arena(round, kinds) { const g = C.createGame(500 + round); g.captureEve
   check('주술사가 다친 적을 치유', healed, Math.round(br.hp / br.max * 100) + '%'); }
 
 // 12) 보스 패턴
-{ const g = arena(5, [['boss', 1500, 1500 - 900]]); const b = g.enemies[0]; let dashed = false; const x0 = b.y;
+{ const g = arena(5, [['boss', 1500, 1500 - 900]], 'charger'); const b = g.enemies[0]; let dashed = false; const x0 = b.y;
   for (let i = 0; i < 30 * 12; i++) { C.tick(g, DT); if (b.dashT > 0) dashed = true; }
   check('R5 돌격왕: 돌진 패턴 발동', dashed); }
-{ const g = arena(10, [['boss', 1500, 1500 - 900]]); let n0 = g.enemies.length, maxN = n0;
+{ const g = arena(10, [['boss', 1500, 1500 - 900]], 'summoner'); let n0 = g.enemies.length, maxN = n0;
   for (let i = 0; i < 30 * 14; i++) { C.tick(g, DT); maxN = Math.max(maxN, g.enemies.length); }
   check('R10 소환사: 졸개 소환', maxN > n0, n0 + '→' + maxN); }
-{ const g = arena(15, [['boss', 1500, 1500 - 700]]); let shell = null;
+{ const g = arena(15, [['boss', 1500, 1500 - 700]], 'bombardier'); let shell = null;
   g.gold = 1000; C.buy(g, 'sword');
   for (let i = 0; i < 30 * 14; i++) { C.tick(g, DT); for (const s of g.shots) if (s.aoe) shell = s; }
   check('R15 포격대장: 범위 포격(착탄 지점 미리 지정)', shell !== null, shell && 'aoe=' + shell.aoe); }
-{ const g = arena(20, [['boss', 1500, 1500 - 900]]); const b = g.enemies[0]; let sh = false;
+{ const g = arena(20, [['boss', 1500, 1500 - 900]], 'warden'); const b = g.enemies[0]; let sh = false;
   for (let i = 0; i < 30 * 12; i++) { C.tick(g, DT); if (b.shieldT > 0) sh = true; }
   check('R20 철벽 장군: 방어막 발동', sh); }
-{ const g = arena(25, [['boss', 1500, 1500 - 900]]); const b = g.enemies[0]; b.hp = b.max * 0.4; let rage = false;
+{ const g = arena(25, [['boss', 1500, 1500 - 900]], 'berserker'); const b = g.enemies[0]; b.hp = b.max * 0.4; let rage = false;
   for (let i = 0; i < 30; i++) { C.tick(g, DT); if (b.enraged) rage = true; }
   check('R25 광전사: 체력 50% 이하에서 분노(속도/공격 증가)', rage && b.speedMul > 1.3, 'speedMul=' + b.speedMul.toFixed(2)); }
 { // 방어막은 받는 피해를 줄인다
-  const g = arena(20, [['boss', 1500 + 200, 1500]]); const b = g.enemies[0]; b.shieldT = 10; b.shieldRed = 0.8; b.speed = 0; const hp0 = b.hp;
+  const g = arena(20, [['boss', 1500 + 200, 1500]], 'warden'); const b = g.enemies[0]; b.shieldT = 10; b.shieldRed = 0.8; b.speed = 0; const hp0 = b.hp;
   C.tick(g, DT); // 성채가 사거리 안의 보스를 쏜다
   for (let i = 0; i < 30 * 3; i++) C.tick(g, DT);
   const withShield = hp0 - b.hp;
-  const g2 = arena(20, [['boss', 1500 + 200, 1500]]); const b2 = g2.enemies[0]; b2.speed = 0; b2.abil = {};  for (let i = 0; i < 30 * 3 + 1; i++) C.tick(g2, DT);
+  const g2 = arena(20, [['boss', 1500 + 200, 1500]], 'warden'); const b2 = g2.enemies[0]; b2.speed = 0; b2.abil = {};  for (let i = 0; i < 30 * 3 + 1; i++) C.tick(g2, DT);
   const noShield = b2.max - b2.hp;
   check('방어막 동안 보스가 받는 피해가 크게 줄어듦', noShield > 0 && withShield < noShield * 0.5, `${withShield.toFixed(0)} vs ${noShield.toFixed(0)}`); }
 
@@ -201,10 +201,9 @@ function arena(round, kinds) { const g = C.createGame(500 + round); g.captureEve
 
 // 14) 특수 소환도 유닛 가격을 올린다
 { const g = C.createGame(31); g.gold = 1e6; const before = C.unitCostOf(g, 'sword'), bc = g.buyCount;
-  applyById(g, 's_golem');
-  check('골렘 소환 → 모든 유닛 가격 상승 (priceSteps 3)', g.buyCount === bc + 3 && C.unitCostOf(g, 'sword') > before && C.unitCostOf(g, 'archer') > C.CFG.units.archer.cost, `${before}→${C.unitCostOf(g, 'sword')}`);
-  const bc2 = g.buyCount; applyById(g, 's_hero'); applyById(g, 's_turret');
-  check('용사(+2)·포탑(+1) 소환도 가격 상승', g.buyCount === bc2 + 3, 'buyCount ' + bc2 + '→' + g.buyCount);
+  applyById(g, 's_golem'); applyById(g, 's_hero'); applyById(g, 's_turret');
+  check('골렘·용사·포탑 등 특수 유닛은 소환해도 가격을 올리지 않음', g.buyCount === bc && C.unitCostOf(g, 'sword') === before && ['golem', 'hero', 'turret'].every(t => C.CFG.units[t].priceSteps === 0), `${before}→${C.unitCostOf(g, 'sword')}`);
+  g.buyCd.sword = 0; C.buy(g, 'sword'); check('직접 뽑는 유닛은 여전히 가격을 올림', C.unitCostOf(g, 'sword') > before);
   check('카드 설명에 인구 표기 없음', C.CARD_DEFS.every(d => !String(d.desc ? d.desc(1) : '').includes('인구'))); }
 
 // 15) 전직: 보스를 처치하면 직업 선택, 선택하면 해당 직업이 강해진다
@@ -219,14 +218,14 @@ function killBoss(g) { const b = g.enemies.find(e => e.kind === 'boss'); b.hp = 
   if (knightIdx < 0) { g.jobs.offer.list[0] = C.jobOptions(g).find(o => o.id === 'knight'); }
   const sw = g.units.find(u => u.type === 'sword'), hp0 = sw.max;
   C.pickJob(g, g.jobs.offer.list.findIndex(o => o.id === 'knight'));
-  check('전직(기사): 체력 +60%, 직업 표시', Math.abs(sw.max - Math.round(hp0 * 1.6)) <= 1 && sw.job === 'knight' && sw.jobTier === 1, `${hp0}→${sw.max}`);
+  check('전직(기사): 체력 증가(CFG 수치), 직업 표시', Math.abs(sw.max - Math.round(hp0 * (1 + C.CFG.jobs.sword.t1[0].mods.hp))) <= 1 && sw.job === 'knight' && sw.jobTier === 1, `${hp0}→${sw.max}`);
   check('전직 선택 후 시간 재개', (() => { const t = g.t; C.tick(g, DT); return g.t > t; })());
   check('새로 뽑는 유닛도 전직 효과를 받음', (() => { g.buyCd.sword = 0; const n = C.buy(g, 'sword').unit; return n.max === sw.max && n.job === 'knight'; })());
   // 2단계: 기사 → 성기사 (같은 직업의 같은 갈래만 나옴)
   const opts2 = C.jobOptions(g).filter(o => o.type === 'sword');
   check('2단계 선택지는 선택한 갈래의 상위 직업만', opts2.length === 1 && opts2[0].id === 'paladin' && opts2[0].tier === 2, opts2.map(o => o.name).join());
   g.jobs.offer = { boss: 't', list: opts2 }; C.pickJob(g, 0);
-  check('성기사: 체력 추가 증가 + 받는 피해 감소 + 재생 보정 합산', g.jobMods.sword.hp > 1.09 && g.jobMods.sword.def > 0.34 && g.jobMods.sword.regen === 0.02, JSON.stringify(g.jobMods.sword));
+  check('성기사: 체력 추가 증가 + 받는 피해 감소 + 재생 보정 합산', g.jobMods.sword.hp > 1.2 && g.jobMods.sword.def > 0.34 && g.jobMods.sword.regen === 0.02, JSON.stringify(g.jobMods.sword));
   sw.hp = sw.max * 0.5; const h0 = sw.hp; g.enemies.length = 0; g.queue = []; for (let i = 0; i < 60; i++) C.tick(g, DT);
   check('성기사 재생: 체력이 서서히 차오름', sw.hp > h0, Math.round(h0) + '→' + Math.round(sw.hp));
   check('최종 전직 이후 그 직업은 더 이상 제안되지 않음', C.jobOptions(g).every(o => o.type !== 'sword'));
@@ -306,16 +305,41 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   const tu = g.units.find(u => u.type === 'turret'); C.spawnEnemy(g, 'brute', tu.x + 150, tu.y); let sh = null; for (let i = 0; i < 30 * 4 && !sh; i++) { C.tick(g, DT); sh = g.shots.find(s => s.color === 't'); }
   const d = sh && Math.hypot(sh.sx - tu.x, sh.sy - tu.y);
   check('포탑 탄은 포신 끝(약 20px, 높이 9.5)에서 출발', sh && Math.abs(d - 20) < 1.5 && sh.h0 === 9.5, 'd=' + (d && d.toFixed(1))); }
-{ const g = arena(15, [['boss', 1500, 1500 - 600]]); g.gold = 1e6; g.buyCd.sword = 0; C.buy(g, 'sword'); let sh = null; const b = g.enemies[0];
+{ const g = arena(15, [['boss', 1500, 1500 - 600]], 'bombardier'); g.gold = 1e6; g.buyCd.sword = 0; C.buy(g, 'sword'); let sh = null; const b = g.enemies[0];
   for (let i = 0; i < 30 * 14 && !sh; i++) { C.tick(g, DT); sh = g.shots.find(s => s.aoe); }
   const d = sh && Math.hypot(sh.sx - b.x, sh.sy - b.y);
   check('포격대장 포탄은 어깨 대포 끝(약 85px, 높이 34)에서 출발', sh && Math.abs(d - 85) < 1.5 && sh.h0 === 34, 'd=' + (d && d.toFixed(1))); }
-{ const g = arena(25, [['boss', 1500, 1500 - 600]]); g.gold = 1e6; g.buyCd.sword = 0; C.buy(g, 'sword'); let sh = null; const b = g.enemies[0]; b.t.dash = 99;
+{ const g = arena(25, [['boss', 1500, 1500 - 600]], 'berserker'); g.gold = 1e6; g.buyCd.sword = 0; C.buy(g, 'sword'); let sh = null; const b = g.enemies[0]; b.t.dash = 99;
   for (let i = 0; i < 30 * 14 && !sh; i++) { C.tick(g, DT); sh = g.shots.find(s => s.aoe); }
   check('대포 없는 보스(광전사)는 머리 위(높이 62)에서 던지듯 발사', sh && sh.h0 === 62 && Math.hypot(sh.sx - b.x, sh.sy - b.y) < 3 /* 같은 틱에 보스가 조금 움직이므로 오차 허용 */); }
 { // 포물선: 시작 높이 h0 → 정점 → 목표 지면 (h=0)에 도착
   const g = arena(3, [['grunt', 1500 + 220, 1500]]); let seen = [], tgt = null;
   for (let i = 0; i < 30 * 3; i++) { C.tick(g, DT); const s = g.shots.find(x => x.color === 'c'); if (s) { tgt = s; seen.push(s.h); } else if (seen.length) break; }
   check('포탄 높이가 포구에서 시작해 솟았다가 0으로 떨어짐', seen.length > 3 && Math.max(...seen) > 8 && seen[seen.length - 1] < Math.max(...seen) * 0.6, `max=${Math.max(...seen).toFixed(1)}, 마지막=${seen[seen.length - 1].toFixed(1)}`); }
+
+// 21) 보스 무작위 순서: 일반 보스 5종이 한 번씩, 순서는 게임마다 무작위, 30라운드는 마왕 고정
+{ const orders = new Set(), names = new Set(); let allPerm = true, finalOk = true, det = true;
+  for (let seed = 1; seed <= 200; seed++) {
+    const g = C.createGame(seed), seq = [5, 10, 15, 20, 25].map(r => C.bossInfo(g, r).id);
+    if (new Set(seq).size !== 5) allPerm = false; seq.forEach(x => names.add(x)); orders.add(seq.join());
+    if (C.bossInfo(g, 30).id !== 'overlord') finalOk = false;
+    const g2 = C.createGame(seed); if ([5, 10, 15, 20, 25].map(r => C.bossInfo(g2, r).id).join() !== seq.join()) det = false;
+    if (C.bossInfo(g, 7) !== null) allPerm = false;
+  }
+  check('5·10·15·20·25라운드에 일반 보스 5종이 한 번씩 (중복 없음)', allPerm && names.size === 5);
+  check('보스 순서가 게임마다 다름 (200판에서 서로 다른 순서 다수)', orders.size > 40, orders.size + '가지');
+  check('30라운드 보스는 항상 마왕', finalOk);
+  check('같은 시드는 같은 보스 순서 (결정론)', det);
+  // 모든 보스 위치 분포가 고른지: 5라운드에 5종이 대체로 비슷한 빈도
+  const cnt = {}; for (let seed = 1; seed <= 1000; seed++) { const id = C.bossInfo(C.createGame(seed), 5).id; cnt[id] = (cnt[id] || 0) + 1; }
+  check('5라운드 보스가 5종 모두 고르게 나옴 (각 15%~25%)', Object.values(cnt).length === 5 && Object.values(cnt).every(v => v > 150 && v < 250), JSON.stringify(cnt)); }
+// 22) 보스 체력은 보스가 누구든 같은 라운드면 같고, 패턴 강도는 라운드에 맞춰 조정
+{ const hps = new Set(); for (const id of C.CFG.bossPool.map(b => b.id)) { const g = arena(10, [['boss', 1500, 800]], id); hps.add(g.enemies[0].max); }
+  check('같은 라운드(10)면 어떤 보스든 체력이 같음 (라운드별 체력표)', hps.size === 1 && [...hps][0] === Math.round(C.CFG.bossHp[10] * C.CFG.balance.enemyHp * C.CFG.balance.bossHp), [...hps].join());
+  const early = arena(5, [['boss', 1500, 800]], 'berserker').enemies[0], late = arena(25, [['boss', 1500, 800]], 'berserker').enemies[0];
+  check('광전사 포격: 이른 라운드는 약하게, 늦은 라운드는 강하게 (피해·발수)', early.abil.artillery.dmg < late.abil.artillery.dmg && early.abil.artillery.count <= late.abil.artillery.count, `R5 ${early.abil.artillery.dmg}×${early.abil.artillery.count} / R25 ${late.abil.artillery.dmg}×${late.abil.artillery.count}`);
+  const sm5 = arena(5, [['boss', 1500, 800]], 'summoner').enemies[0], sm25 = arena(25, [['boss', 1500, 800]], 'summoner').enemies[0];
+  check('소환사 졸개 수도 라운드에 따라 늘어남', sm5.abil.summon.n < sm25.abil.summon.n, `${sm5.abil.summon.n} → ${sm25.abil.summon.n}`);
+  const fin = arena(30, [['boss', 1500, 800]]).enemies[0]; check('최종 보스(마왕)는 패턴 4종 고정 수치', Object.keys(fin.abil).length === 4 && fin.abil.artillery.dmg === C.CFG.finalBoss.abil.artillery.dmg); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

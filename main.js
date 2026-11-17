@@ -139,7 +139,7 @@
   }
   function updateHud() {
     const c = S.core;
-    const bi = C.bossInfo(S.round), nb = C.bossInfo(S.round + 1), rt = $('roundTxt');
+    const bi = C.bossInfo(S, S.round), nb = C.bossInfo(S, S.round + 1), rt = $('roundTxt');
     setText('roundTxt', '라운드 ' + Math.max(1, S.round) + ' / ' + C.MAX_ROUND + (bi ? ' · 보스' : nb ? ' · 다음 보스' : ''));
     rt.classList.toggle('boss', !!bi); rt.classList.toggle('nextboss', !bi && !!nb);
     updateBossBar();

@@ -2,6 +2,7 @@
 //   node tools/balance.mjs baseline [N]           정책별 클리어율/도달 라운드
 //   node tools/balance.mjs cards [N] [정책]        카드별 기여도 (그 카드를 우선 선택했을 때 평균 도달 라운드 변화)
 //   node tools/balance.mjs sweep <키> <값,값,…> [N]  수치 스윕 (balance.*, growth, startGold, leash, bias, 또는 점 표기: enemies.boss.dmg, bosses.5.hp …)
+//   node tools/balance.mjs hist [N]                정책별 종료 라운드 분포
 //   node tools/balance.mjs smart [N]               저장된 가중치(tools/weights.json)로 smart 정책 평가
 // 같은 시드를 모든 조건에 공통으로 써서 비교 잡음을 줄인다. 결과 지표: 도달 라운드(클리어=31).
 import { Worker, isMainThread, parentPort } from 'node:worker_threads';
@@ -27,7 +28,10 @@ function runOne(task) {
   let step = 0;
   const maxSteps = Math.ceil((C.PREP_TIME + C.MAX_ROUND * C.ROUND_TIME + 120) / DT);
   while (!S.over && step < maxSteps) {
-    if (S.jobs.offer) { C.pickJob(S, Math.floor(rnd() * S.jobs.offer.list.length)); continue; } // 보스 처치 후 전직 (무작위 선택)
+    if (S.jobs.offer) { // 보스 처치 후 전직: jobPrefer가 제시되면 그것을, 아니면 무작위
+      const lst = S.jobs.offer.list, pref = P.jobPrefer ? lst.findIndex(o => o.id === P.jobPrefer) : -1;
+      C.pickJob(S, pref >= 0 ? pref : Math.floor(rnd() * lst.length)); continue;
+    }
     if (S.cards.offer) {
       const offer = S.cards.offer, w = offer.map(c => weightOf(P, c));
       if (P.reroll && S.cards.rerolls > 0 && Math.max(...w) < P.reroll) { C.reroll(S); continue; }
@@ -43,7 +47,7 @@ function runOne(task) {
     }
     C.tick(S, DT); step++;
   }
-  return { round: S.round, win: S.win, kills: S.kills, t: S.t, taken: S.cards.taken };
+  return { round: S.round, win: S.win, kills: S.kills, t: S.t, taken: S.cards.taken, coreDmgBy: S.coreDmgBy };
 }
 function weightOf(P, c) {
   const W = P.weights || {};
@@ -127,6 +131,29 @@ async function main() {
       const ov = {}; if (key.includes('.')) { let o = ov; const ks = key.split('.'); for (let i = 0; i < ks.length - 1; i++) o = o[ks[i]] = {}; o[ks.at(-1)] = v; } else if (['startGold', 'leash'].includes(key)) ov[key] = v; else if (key === 'growth') ov.economy = { costGrowth: v }; else if (key === 'bias') ov.ai = { bias: v }; else ov.balance = { [key]: v };
       console.log((key + '=' + v).padEnd(18), fmt(summarize(await runPolicy(policy, n, ov))));
     }
+  } else if (cmd === 'hist') { // 정책별 사망(종료) 라운드 분포 + 승리 수
+    const n = +a1 || 100, W = loadWeights();
+    for (const [label, policy] of [['무작위 카드', {}], ['smart 카드', { weights: W, reroll: 1.2 }]]) {
+      const rs = await runPolicy(policy, n), h = {}; for (const r of rs) { const k = r.win ? '승' : r.round; h[k] = (h[k] || 0) + 1; }
+      const keys = Object.keys(h).sort((x, y) => (x === '승' ? 99 : +x) - (y === '승' ? 99 : +y));
+      console.log(label.padEnd(12), fmt(summarize(rs)));
+      console.log('  종료 라운드 분포:', keys.map(k => `${k}:${h[k]}`).join('  '));
+    }
+  } else if (cmd === 'jobs') { // 전직별 기여도: 그 직업이 제시되면 항상 고를 때의 클리어율/평균 라운드 변화
+    const n = +a1 || 60, W = loadWeights(), base = { weights: W, reroll: 1.2 };
+    const b = summarize(await runPolicy(base, n)); console.log('기준(전직 무작위)', fmt(b));
+    const ids = []; for (const t of C.UNIT_TYPES) { const j = C.CFG.jobs[t]; for (const d of j.t1) ids.push([t, d.id, d.name]); for (const k in j.t2) for (const d of j.t2[k]) ids.push([t, d.id, d.name]); }
+    const out = [];
+    for (const [t, id, name] of ids) { const s2 = summarize(await runPolicy({ ...base, jobPrefer: id }, n)); out.push({ t, id, name, d: s2.mean - b.mean, clear: s2.clear }); }
+    out.sort((x, y) => y.d - x.d);
+    console.log('\n전직별 (평균 라운드 변화 / 클리어율). 잡음은 ±1 안팎');
+    for (const o of out) console.log(C.CFG.units[o.t].name.padEnd(4), o.name.padEnd(8), (o.d >= 0 ? '+' : '') + o.d.toFixed(1).padStart(5), '| 클리어', (o.clear * 100).toFixed(0).padStart(3) + '%');
+  } else if (cmd === 'coredmg') { // 성채가 어떤 공격에 얼마나 맞는지 (판당 평균)
+    const n = +a1 || 60, W = loadWeights(), rs = await runPolicy({ weights: W, reroll: 1.2 }, n), tot = {};
+    for (const r of rs) for (const k in r.coreDmgBy) tot[k] = (tot[k] || 0) + r.coreDmgBy[k];
+    const all = Object.values(tot).reduce((x, y) => x + y, 0);
+    console.log('smart', fmt(summarize(rs)));
+    for (const [k, v] of Object.entries(tot).sort((x, y) => y[1] - x[1])) console.log(' ', k.padEnd(14), (v / n).toFixed(0).padStart(6), '판당 피해', (v / all * 100).toFixed(0).padStart(3) + '%');
   } else if (cmd === 'smart') {
     const n = +a1 || 60, W = loadWeights();
     console.log('smart', fmt(summarize(await runPolicy({ weights: W, reroll: 1.2 }, n))));
