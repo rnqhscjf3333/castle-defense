@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>성채방어</title>
+<meta name="theme-color" content="#10141c">
+<style>
+:root {
+  --bg: #10141c; --panel: rgba(22, 28, 40, .92); --line: #2b3548; --ink: #e8edf5; --muted: #8e9bb3;
+  --accent: #5aa9ff; --gold: #ffd166; --danger: #ff6b6b; --ok: #6bdc8b;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+  font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; overflow: hidden; overscroll-behavior: none; }
+canvas#cv { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; backdrop-filter: blur(6px); }
+button { font: inherit; color: inherit; cursor: pointer; }
+
+#hud { position: fixed; top: max(8px, env(safe-area-inset-top)); left: 8px; padding: 8px 12px; min-width: 190px; pointer-events: none; }
+#hud .row { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; line-height: 1.6; }
+#hud b { font-variant-numeric: tabular-nums; }
+#hpbar { height: 8px; border-radius: 4px; background: #2a3244; overflow: hidden; margin: 4px 0 2px; }
+#hpfill { height: 100%; width: 100%; background: var(--ok); transition: width .15s; }
+#gold { color: var(--gold); }
+
+#minimap { position: fixed; top: max(8px, env(safe-area-inset-top)); right: 8px; width: 132px; height: 132px; border-radius: 12px;
+  border: 1px solid var(--line); background: rgba(16, 20, 28, .88); touch-action: none; }
+#tools { position: fixed; top: calc(max(8px, env(safe-area-inset-top)) + 140px); right: 8px; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+.tbtn { padding: 8px 10px; font-size: 13px; min-height: 36px; border-radius: 10px; }
+
+#banner { position: fixed; top: 22%; left: 0; right: 0; text-align: center; font-size: 28px; font-weight: 700; letter-spacing: .02em;
+  color: #fff; text-shadow: 0 2px 12px rgba(0,0,0,.7); opacity: 0; pointer-events: none; transition: opacity .35s; }
+#banner.show { opacity: 1; }
+#toast { position: fixed; left: 50%; bottom: 150px; transform: translateX(-50%); padding: 6px 12px; border-radius: 8px; font-size: 13px;
+  background: rgba(0,0,0,.75); opacity: 0; transition: opacity .25s; pointer-events: none; white-space: nowrap; }
+#toast.show { opacity: 1; }
+
+#dock { position: fixed; left: 0; right: 0; bottom: 0; padding: 8px 8px max(8px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 6px; align-items: center; pointer-events: none; }
+#modes, #units { display: flex; gap: 6px; pointer-events: auto; max-width: 100%; }
+#modes .mbtn { padding: 7px 10px; font-size: 13px; min-height: 34px; border-radius: 9px; }
+.mbtn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #07101d; font-weight: 700; }
+#units .ucard { position: relative; width: 104px; padding: 8px 8px 6px; border-radius: 12px; text-align: left; overflow: hidden; }
+.ucard .nm { font-weight: 700; font-size: 15px; }
+.ucard .ds { font-size: 11px; color: var(--muted); line-height: 1.35; min-height: 29px; }
+.ucard .cost { color: var(--gold); font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 700; }
+.ucard .cdfill { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: rgba(255,255,255,.16); pointer-events: none; }
+.ucard.off { opacity: .45; }
+.ucard .tm { position: absolute; top: 6px; right: 6px; font-size: 11px; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line); background: rgba(0,0,0,.35); pointer-events: auto; }
+.ucard .key { position: absolute; bottom: 6px; right: 8px; font-size: 10px; color: var(--muted); }
+
+.btn { background: #1c2434; border: 1px solid var(--line); }
+.btn:hover { border-color: var(--accent); }
+.btn:active { transform: translateY(1px); }
+
+#overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(8, 11, 17, .78); padding: 16px; }
+#overlay.hidden { display: none; }
+#card { max-width: 460px; width: 100%; padding: 22px 22px 18px; text-align: center; }
+#card h1 { margin: 0 0 4px; font-size: 34px; letter-spacing: .04em; }
+#card p { margin: 6px 0; color: var(--muted); font-size: 14px; line-height: 1.55; }
+#card .help { text-align: left; font-size: 13px; margin: 12px 0; padding: 10px 12px; background: rgba(255,255,255,.04); border-radius: 10px; color: var(--ink); }
+#card .help li { margin: 3px 0; }
+#card .stat { display: flex; justify-content: center; gap: 18px; margin: 10px 0; font-size: 14px; }
+#card .stat b { display: block; font-size: 22px; }
+#go { margin-top: 10px; padding: 12px 28px; font-size: 17px; font-weight: 700; background: var(--accent); color: #07101d; border: 0; border-radius: 12px; }
+/* 업그레이드 선택 */
+#picker { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(8, 11, 17, .7); padding: 12px; z-index: 5; }
+#picker.hidden { display: none; }
+#pickBox { width: 100%; max-width: 700px; padding: 16px 14px 12px; text-align: center; }
+#pickTitle { margin: 0 0 2px; font-size: 20px; }
+#pickSub { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
+#pickCards { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.pcard { position: relative; width: 200px; min-height: 170px; padding: 12px 12px 10px; text-align: left; border-radius: 14px; background: #19202e;
+  border: 2px solid var(--line); display: flex; flex-direction: column; gap: 6px; transition: transform .12s, border-color .12s; }
+.pcard:hover { transform: translateY(-3px); }
+.pcard .tags { display: flex; justify-content: space-between; font-size: 11px; }
+.pcard .cat { padding: 2px 7px; border-radius: 6px; background: rgba(255,255,255,.08); }
+.pcard .rar { font-weight: 700; }
+.pcard .pn { font-size: 17px; font-weight: 700; line-height: 1.25; }
+.pcard .pd { font-size: 13px; color: #c3cde0; line-height: 1.5; flex: 1; }
+.pcard .pk { position: absolute; right: 10px; bottom: 8px; font-size: 11px; color: var(--muted); }
+.pcard.rar-common { border-color: #3a4660; } .pcard.rar-common .rar { color: #9fb0cc; }
+.pcard.rar-rare { border-color: #5aa9ff; box-shadow: 0 0 14px rgba(90,169,255,.25); } .pcard.rar-rare .rar { color: #7cc0ff; }
+.pcard.rar-epic { border-color: #ffd166; box-shadow: 0 0 18px rgba(255,209,102,.35); } .pcard.rar-epic .rar { color: #ffd166; }
+.pcard.cat-unit .cat { color: #6bdc8b; } .pcard.cat-core .cat { color: #ffb86b; } .pcard.cat-summon .cat { color: #c77dff; }
+#pickFoot { margin-top: 12px; display: flex; gap: 12px; align-items: center; justify-content: center; font-size: 12px; color: var(--muted); }
+#btnReroll { padding: 8px 14px; border-radius: 10px; }
+#btnReroll:disabled { opacity: .4; cursor: default; }
+#upl { position: fixed; left: 8px; top: calc(max(8px, env(safe-area-inset-top)) + 128px); padding: 8px 10px; font-size: 12px; max-width: 220px; max-height: 40vh; overflow: auto; line-height: 1.6; }
+#upl[hidden] { display: none; }
+#upl .it { display: flex; justify-content: space-between; gap: 10px; }
+#upl .rare { color: #7cc0ff; } #upl .epic { color: #ffd166; }
+@media (max-width: 520px) { .pcard { width: 100%; min-height: 0; flex-direction: column; } #pickCards { flex-direction: column; } }
+@media (max-width: 520px) { #units .ucard { width: 96px; } #minimap { width: 108px; height: 108px; } #tools { top: calc(max(8px, env(safe-area-inset-top)) + 116px); } }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+
+<div id="hud" class="panel">
+  <div class="row"><span id="roundTxt">준비</span><b id="timeTxt">0:00</b></div>
+  <div id="hpbar"><div id="hpfill"></div></div>
+  <div class="row"><span>성채 <b id="hpTxt">1000</b></span><span>골드 <b id="gold">200</b></span></div>
+  <div class="row"><span>인구 <b id="popTxt">0/12</b></span><span>처치 <b id="killTxt">0</b></span></div>
+</div>
+
+<canvas id="minimap" width="264" height="264"></canvas>
+<div id="tools">
+  <button class="btn panel tbtn" id="btnCenter" title="성채로 돌아가기 (H)">성채로</button>
+  <button class="btn panel tbtn" id="btnUp" title="내 업그레이드 (U)">강화 목록</button>
+  <button class="btn panel tbtn" id="btnFlag" title="깃발 해제" hidden>깃발 해제</button>
+  <button class="btn panel tbtn" id="btnSpeed" title="배속">1×</button>
+  <button class="btn panel tbtn" id="btnPause" title="일시정지 (Space)">일시정지</button>
+</div>
+
+<div id="banner"></div>
+<div id="toast"></div>
+
+<div id="dock">
+  <div id="modes">
+    <button class="btn mbtn" data-mode="free" aria-pressed="true">자유</button>
+    <button class="btn mbtn" data-mode="rally" aria-pressed="false">집결</button>
+    <button class="btn mbtn" data-mode="hold" aria-pressed="false">전선 유지</button>
+    <button class="btn mbtn" data-mode="retreat" aria-pressed="false">후퇴</button>
+    <button class="btn mbtn" id="btnPop" title="골드로 인구 상한 확장 (P)">인구 확장</button>
+    <button class="btn mbtn" id="btnNext" style="border-color:#7a5a1f">다음 라운드</button>
+  </div>
+  <div id="units"></div>
+</div>
+
+<div id="upl" class="panel" hidden></div>
+
+<div id="picker" class="hidden">
+  <div id="pickBox" class="panel">
+    <h2 id="pickTitle"></h2>
+    <p id="pickSub"></p>
+    <div id="pickCards"></div>
+    <div id="pickFoot"><button class="btn" id="btnReroll">다시 뽑기</button><span>1·2·3 선택 · R 다시 뽑기 · 고르는 동안 시간이 멈춰요</span></div>
+  </div>
+</div>
+
+<div id="overlay">
+  <div id="card" class="panel">
+    <h1 id="ovTitle">성채방어</h1>
+    <div id="ovBody">
+      <p>사방에서 몰려오는 적으로부터 중앙 성채를 지키세요.<br>30라운드를 버티면 승리합니다.</p>
+      <ul class="help">
+        <li><b>화면 이동</b>: 빈 곳을 드래그 · 휠/핀치로 확대·축소</li>
+        <li><b>유닛 생산</b>: 아래 카드를 누르거나 키보드 1·2·3</li>
+        <li><b>모드</b>: 자유 / 집결 / 전선 유지 / 후퇴 (유닛별로도 바꿀 수 있어요)</li>
+        <li><b>깃발</b>: 지도를 길게 누르거나 우클릭 → '전선 유지' 모드가 그 지점을 지켜요</li>
+        <li><b>미니맵</b>을 눌러 바로 이동</li>
+      </ul>
+    </div>
+    <button id="go">시작</button>
+  </div>
+</div>
+
+<script src="core.js"></script>
+<script src="main.js"></script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>ui-test</title>
+<body style="margin:0"><pre id="out">running…</pre>
+<div id="host"></div>
+<script>
+// 실행: Chrome --headless=new --allow-file-access-from-files --virtual-time-budget=12000 --dump-dom file://.../tests/ui-test.html
+// 입력 이벤트(드래그/휠/핀치/우클릭/버튼) 위주의 빠른 점검. 렌더링 프레임이 필요한 검증은 tests/e2e.mjs.
+const out = [];
+const log = (pass, name, extra) => out.push((pass ? 'PASS ' : 'FAIL ') + name + (extra !== undefined ? ' ' + extra : ''));
+const show = () => { document.getElementById('out').textContent = out.join('\n'); };
+function load(src, cb) {
+  const host = document.getElementById('host'); host.innerHTML = '';
+  const f = document.createElement('iframe'); f.style.cssText = 'width:1000px;height:700px;border:0;display:block';
+  f.addEventListener('load', () => setTimeout(() => cb(f.contentWindow), 1200)); f.src = src; host.appendChild(f);
+  window.__errs = []; f.addEventListener('load', () => f.contentWindow.addEventListener('error', e => window.__errs.push(e.message)));
+}
+const wait = (ms, fn) => setTimeout(fn, ms);
+
+// ───── 1) 화면 이동/조작 ─────
+load('../index.html?bot=1&seed=7&zoom=1', w => {
+  try {
+    const d = w.document, g = w.__game, cv = d.getElementById('cv'), PE = w.PointerEvent;
+    const ev = (type, x, y, id = 1) => cv.dispatchEvent(new PE(type, { pointerId: id, clientX: x, clientY: y, bubbles: true, isPrimary: true, button: 0 }));
+    const x0 = g.cam.x, y0 = g.cam.y;
+    ev('pointerdown', 500, 350); ev('pointermove', 560, 330); ev('pointermove', 620, 300); ev('pointerup', 620, 300);
+    log(Math.abs(g.cam.x - x0) > 20 && g.cam.x < x0, '드래그 이동', 'x ' + Math.round(x0) + '→' + Math.round(g.cam.x) + ', y ' + Math.round(y0) + '→' + Math.round(g.cam.y));
+    const z0 = g.cam.zoom; cv.dispatchEvent(new w.WheelEvent('wheel', { deltaY: -300, clientX: 500, clientY: 350, bubbles: true, cancelable: true }));
+    log(g.cam.zoom > z0, '휠 확대', z0.toFixed(2) + '→' + g.cam.zoom.toFixed(2));
+    cv.dispatchEvent(new w.MouseEvent('contextmenu', { clientX: 300, clientY: 300, bubbles: true, cancelable: true }));
+    log(!!g.S.flag && !d.getElementById('btnFlag').hidden, '우클릭 깃발', JSON.stringify(g.S.flag && { x: Math.round(g.S.flag.x), y: Math.round(g.S.flag.y) }));
+    d.getElementById('btnFlag').click(); log(g.S.flag === null, '깃발 해제');
+    d.querySelector('[data-mode="hold"]').click(); log(g.S.modes.all === 'hold', '전체 모드 변경');
+    d.querySelectorAll('.ucard .tm')[1].click(); log(g.S.modes.archer === 'free', '유닛별 모드(궁수)', String(g.S.modes.archer));
+    d.querySelector('[data-mode="rally"]').click(); log(g.S.modes.archer === null && g.S.modes.all === 'rally', '전체 모드가 유닛별 설정을 초기화');
+    d.getElementById('btnCenter').click(); log(Math.abs(g.cam.x - 1500) < 1 && Math.abs(g.cam.y - 1500) < 1, '성채로 이동');
+    const mini = d.getElementById('minimap'), r = mini.getBoundingClientRect();
+    mini.dispatchEvent(new PE('pointerdown', { pointerId: 2, clientX: r.left + r.width * 0.2, clientY: r.top + r.height * 0.2, bubbles: true }));
+    log(g.cam.x < 1200 && g.cam.y < 1200, '미니맵 이동', Math.round(g.cam.x) + ',' + Math.round(g.cam.y));
+    g.cam.zoom = 0.8; const zz = g.cam.zoom;
+    ev('pointerdown', 450, 350, 11); ev('pointerdown', 550, 350, 12); ev('pointermove', 400, 350, 11); ev('pointermove', 600, 350, 12);
+    log(g.cam.zoom > zz, '핀치 확대', zz.toFixed(2) + '→' + g.cam.zoom.toFixed(2)); ev('pointerup', 400, 350, 11); ev('pointerup', 600, 350, 12);
+    const popBefore = g.CastleCore.popUsed(g.S);
+    g.S.gold = 500; g.S.buyCd.sword = 0; d.querySelectorAll('.ucard')[0].click();
+    log(g.CastleCore.popUsed(g.S) === popBefore + 1 || popBefore >= g.S.popCap, '유닛 구매', popBefore + '→' + g.CastleCore.popUsed(g.S));
+    d.getElementById('btnPause').click(); log(d.getElementById('btnPause').textContent === '계속', '일시정지 표시');
+    d.getElementById('btnPause').click(); d.getElementById('btnSpeed').click(); log(d.getElementById('btnSpeed').textContent === '2×', '배속 2×');
+    log(!window.__errs.length, '콘솔 오류 없음(조작)', window.__errs.join(' | '));
+  } catch (e) { log(false, '예외(조작)', e.message); }
+  show();
+
+  // 카드 선택창/시간 흐름은 가상 시간 모드에서 프레임이 멈추므로 tests/e2e.mjs(실제 시간)에서 검증한다.
+});
+</script>
+</body>
