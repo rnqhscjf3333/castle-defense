@@ -101,7 +101,7 @@ try {
   check('캔버스에 풀밭색이 칠해짐 (예전 격자 배경 아님)', await ev("(()=>{const c=document.getElementById('cv'); const x=c.getContext('2d'); const d=x.getImageData(Math.round(c.width*0.1), Math.round(c.height*0.5), 1, 1).data; return d[1] > d[0] && d[1] > d[2] && d[1] > 60;})()"));
 
   // 3.5) 보스 라운드 표시: 라운드 표시, 보스 체력 바, 화면 밖 보스는 미니맵/화살표 대상
-  await open('?bot=1&warp=165&seed=3&zoom=1', 1200); // 5라운드(160초) 시작 직후
+  await open('?bot=1&warp=100&round=5&seed=3&zoom=1', 1200); // 5라운드 시작 직후
   check('보스 라운드 표시 (라운드 문구에 보스, 빨간색)', (await ev("document.getElementById('roundTxt').textContent")).includes('보스') && await ev("document.getElementById('roundTxt').classList.contains('boss')"), await ev("document.getElementById('roundTxt').textContent"));
   check('보스 체력 바가 화면 맨 위에 작고 얇게 표시됨 (높이 ≤ 64px)', await ev("(()=>{const b=document.getElementById('bossbar'); if(b.hidden) return false; const r=b.getBoundingClientRect(); return r.width>=220 && r.top<=8 && r.height<=64 && document.getElementById('bossName').textContent===__game.CastleCore.bossInfo(__game.S,5).name && document.getElementById('bossHpTxt').textContent.includes('/');})()"), await ev("document.getElementById('bossName').textContent + ' ' + document.getElementById('bossHpTxt').textContent"));
   // 보스가 가까워서 화면 안일 수 있으니 카메라를 멀리 옮겨 '화면 밖 보스' 상황을 만들고, 그려도 오류가 없는지 확인한다

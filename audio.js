@@ -85,13 +85,17 @@
   };
   // 위험 신호음: 두 음이 번갈아 울리는 사이렌 3회 (보스 등장)
   function alarm() {
-    if (!ctx) return; const t = ctx.currentTime + 0.02;
-    for (let k = 0; k < 6; k++) {
-      const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'square'; const f = k % 2 ? 620 : 880; o.frequency.setValueAtTime(f, t + k * 0.3);
-      g.gain.setValueAtTime(0.0001, t + k * 0.3); g.gain.exponentialRampToValueAtTime(0.5, t + k * 0.3 + 0.02); g.gain.setValueAtTime(0.5, t + k * 0.3 + 0.22); g.gain.exponentialRampToValueAtTime(0.0001, t + k * 0.3 + 0.28);
-      o.connect(g); g.connect(sfxBus); o.start(t + k * 0.3); o.stop(t + k * 0.3 + 0.3);
+    if (!ctx) return; const t = ctx.currentTime + 0.02, N = 3, P = 1.0; // 웽~웽~ 3회: 음이 부드럽게 오르내린다
+    const o = ctx.createOscillator(), o2 = ctx.createOscillator(), g = ctx.createGain(), lp = ctx.createBiquadFilter();
+    o.type = 'triangle'; o2.type = 'sine'; lp.type = 'lowpass'; lp.frequency.value = 1100;
+    for (let k = 0; k < N; k++) {
+      const s = t + k * P;
+      o.frequency.setValueAtTime(420, s); o.frequency.linearRampToValueAtTime(760, s + P * 0.5); o.frequency.linearRampToValueAtTime(420, s + P);
+      o2.frequency.setValueAtTime(210, s); o2.frequency.linearRampToValueAtTime(380, s + P * 0.5); o2.frequency.linearRampToValueAtTime(210, s + P);
     }
-    tone('sine', 55, 40, t, 1.8, 0.8, 1, 0);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.16, t + 0.25); g.gain.setValueAtTime(0.16, t + N * P - 0.3); g.gain.linearRampToValueAtTime(0.0001, t + N * P);
+    o.connect(lp); o2.connect(lp); lp.connect(g); g.connect(sfxBus);
+    o.start(t); o2.start(t); o.stop(t + N * P + 0.05); o2.stop(t + N * P + 0.05);
   }
 
   // x,y가 있으면 위치 기반(확대·거리 반영), 없으면 UI 소리(확대 무관)

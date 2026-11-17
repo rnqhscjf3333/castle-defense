@@ -149,7 +149,7 @@
     setText('bossHpTxt', Math.ceil(b.hp).toLocaleString() + ' / ' + b.max.toLocaleString() + '  (' + Math.ceil(pct) + '%)');
     const shielded = b.shieldT > 0, rage = !!b.enraged;
     el.classList.toggle('shielded', shielded); el.classList.toggle('rage', rage && !shielded);
-    const st = shielded ? '방어막 — 받는 피해 ' + Math.round(b.shieldRed * 100) + '% 감소' : b.dashT > 0 ? '돌진 중!' : rage ? '분노 — 더 빠르고 강해졌다' : '패턴: ' + Object.keys(b.abil).map(k => k === 'debuff' ? b.abil.debuff.map(d => DBK[d.kind][0]).join('·') : PAT[k]).join(' · ');
+    let st = shielded ? '방어막 — 받는 피해 ' + Math.round(b.shieldRed * 100) + '% 감소' : b.dashT > 0 ? '돌진 중!' : rage ? '분노 — 더 빠르고 강해졌다' : '패턴: ' + Object.keys(b.abil).map(k => k === 'debuff' ? b.abil.debuff.map(d => DBK[d.kind][0]).join('·') : PAT[k]).join(' · ');
     if (b.grow > 1.04) st += '  |  공격력 ×' + b.grow.toFixed(1) + (b.grow >= CFG.balance.bossGrowMax - 0.01 ? ' (최대)' : ' ↑');
     setText('bossState', st);
   }
@@ -661,7 +661,7 @@
   resize();
   S = C.createGame(1); // 시작 화면 뒤에 보일 빈 맵
   centerOnCore();
-  if (params.get('bot')) { $('overlay').classList.add('hidden'); newGame(); const warp = +params.get('warp') || 0; for (let i = 0; i < warp / STEP && !S.over; i++) { botAct(); C.tick(S, STEP); } C.drainEvents(S); if (S.over) showEnd(S.win); cam.zoom = +params.get('zoom') || 0.5; clampCam(); }
+  if (params.get('bot')) { $('overlay').classList.add('hidden'); newGame(); const warp = +params.get('warp') || 0; for (let i = 0; i < warp / STEP && !S.over; i++) { botAct(); C.tick(S, STEP); } if (+params.get('round')) { C.jumpToRound(S, +params.get('round')); C.tick(S, STEP); } C.drainEvents(S); if (S.over) showEnd(S.win); cam.zoom = +params.get('zoom') || 0.5; clampCam(); }
   requestAnimationFrame(frame);
   window.__game = { get S() { return S; }, cam, CastleCore: C, get bossArrows() { return bossArrows; }, get enemyArrows() { return enemyArrows; }, perf, get liteMode() { return liteMode; }, get drawnCount() { return drawnCount; }, get renderScale() { return renderScale; }, get fxPoolSize() { return fxPool.length; }, uiRects, skipCinematic: () => $('cineSkip').click() };
 })();

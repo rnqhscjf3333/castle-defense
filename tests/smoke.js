@@ -448,5 +448,9 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
     const normal = measure(); a.weakT = 99; const weak = measure(); check('공격력 감소: 주는 피해가 약해짐', weak < normal * 0.9 && weak > normal * 0.6, `${normal.toFixed(0)} → ${weak.toFixed(0)}`); }
   { const { g, a } = mk('wound'); const run = wt => { a.max = 10000; a.woundT = wt; g.buyCd.priest = 0; g.gold = 1e6; const pr = C.buy(g, 'priest').unit; pr.x = a.x + 30; pr.y = a.y; let h = 0; for (let i = 0; i < 30 * 8; i++) { a.hp = 5000; C.tick(g, DT); h += Math.max(0, a.hp - 5000); a.woundT = wt; a.x = 1500 - 40; a.y = 1500 - 200; } pr.dead = true; g.units = g.units.filter(u => u !== pr); return h; };
     const n = run(0), w = run(99); check('치유 감소: 받는 치유가 줄어듦', w < n * 0.6 && n > 0, `${n.toFixed(0)} → ${w.toFixed(0)}`); } }
+// 34) 적을 모두 처치(보스 포함)하면 라운드가 즉시 끝나고 다음 라운드 시작
+{ const g = arena(3, [['grunt', 1500, 1000]]); g.hold = false; g.core.hp = g.core.max = 1e9; for (let i = 0; i < 60; i++) C.tick(g, DT); check('적이 남아 있으면 다음 라운드로 안 넘어감', g.round === 3);
+  for (const e of g.enemies) e.dead = true; for (let i = 0; i < 5; i++) C.tick(g, DT); check('적을 모두 처치하면 즉시 다음 라운드', g.round === 4, 'round ' + g.round);
+  const h = arena(10, [['boss', 1500, 1000]], 'summoner'); h.hold = false; h.core.hp = h.core.max = 1e9; for (let i = 0; i < 40; i++) C.tick(h, DT); const b = h.enemies.find(e => e.kind === 'boss'); C.damage(h, b, 1e12); if (h.jobs.offer) C.pickJob(h, 0); for (let i = 0; i < 40; i++) C.tick(h, DT); check('보스를 처치하면 즉시 다음 라운드', h.round === 11, 'round ' + h.round); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

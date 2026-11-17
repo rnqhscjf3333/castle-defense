@@ -945,6 +945,7 @@
       }
       const gate = S.round === ACT1_END && S.act === 1; // 30라운드는 보스를 처치해야(2막 연출) 다음 라운드로 넘어간다
       if (S.roundT >= ROUND_TIME && S.round < MAX_ROUND && !gate && !S.hold) startRound(S); // 라운드는 시간제: 적이 남아도 다음 라운드가 시작되어 쌓인다
+      else if (!gate && !S.hold && S.round < MAX_ROUND && S.roundT >= 1 && !S.queue.length && !S.enemies.some(e => !e.dead)) startRound(S); // 적을 모두 처치하면(보스 처치 포함) 즉시 다음 라운드
       if (S.cards.offer) return; // 방금 새 라운드가 열리며 카드창이 떴다
     }
 
