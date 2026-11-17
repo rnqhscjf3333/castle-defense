@@ -83,7 +83,7 @@
   // ───────────── UI ─────────────
   let toastT = null, bannerT = null;
   function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 1800); }
-  function banner(t) { const el = $('banner'); el.textContent = t; el.classList.add('show'); clearTimeout(bannerT); bannerT = setTimeout(() => el.classList.remove('show'), 1900); }
+  function banner(t, boss) { const el = $('banner'); el.textContent = t; el.classList.toggle('boss', !!boss); el.classList.add('show'); clearTimeout(bannerT); bannerT = setTimeout(() => el.classList.remove('show'), boss ? 3200 : 1900); }
   const DESC = { sword: '체력 높은 전위', archer: '멀리서 공격', priest: '아군을 치유' };
   const KEYS = ['1', '2', '3'];
 
@@ -122,13 +122,31 @@
   const last = {};
   function setText(id, v) { if (last[id] !== v) { last[id] = v; $(id).textContent = v; } }
   const fmtTime = t => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
+  // 보스 체력 바 (화면 위 가운데): 이름, 체력 숫자, 현재 상태, 가진 패턴
+  const PAT = { dash: '돌진', summon: '소환', artillery: '포격', shield: '방어막', rage: '분노' };
+  function updateBossBar() {
+    const b = S.enemies.find(e => e.kind === 'boss'), el = $('bossbar');
+    if (!b) { if (!el.hidden) el.hidden = true; return; }
+    if (el.hidden) el.hidden = false;
+    const pct = Math.max(0, b.hp / b.max * 100);
+    $('bossFill').style.width = pct + '%';
+    setText('bossName', b.bossName);
+    setText('bossHpTxt', Math.ceil(b.hp).toLocaleString() + ' / ' + b.max.toLocaleString() + '  (' + Math.ceil(pct) + '%)');
+    const shielded = b.shieldT > 0, rage = !!b.enraged;
+    el.classList.toggle('shielded', shielded); el.classList.toggle('rage', rage && !shielded);
+    const st = shielded ? '방어막 — 받는 피해 ' + Math.round(b.shieldRed * 100) + '% 감소' : b.dashT > 0 ? '돌진 중!' : rage ? '분노 — 더 빠르고 강해졌다' : '패턴: ' + Object.keys(b.abil).map(k => PAT[k]).join(' · ');
+    setText('bossState', st);
+  }
   function updateHud() {
     const c = S.core;
-    setText('roundTxt', S.phase === 'prep' ? '준비 ' + Math.ceil(S.prepT) + '초' : '라운드 ' + S.round + ' / ' + C.MAX_ROUND);
+    const bi = C.bossInfo(S.round), nb = C.bossInfo(S.round + 1), rt = $('roundTxt');
+    setText('roundTxt', '라운드 ' + Math.max(1, S.round) + ' / ' + C.MAX_ROUND + (bi ? ' · 보스' : nb ? ' · 다음 보스' : ''));
+    rt.classList.toggle('boss', !!bi); rt.classList.toggle('nextboss', !bi && !!nb);
+    updateBossBar();
     setText('timeTxt', fmtTime(S.t));
     setText('hpTxt', String(Math.ceil(c.hp)));
     setText('gold', String(Math.floor(S.gold)));
-    setText('unitTxt', String(S.units.filter(u => u.type !== 'turret' && u.type !== 'wolf').length));
+    setText('unitTxt', String(S.units.filter(u => u.type !== 'turret').length));
     setText('killTxt', String(S.kills));
     const pct = Math.max(0, c.hp / c.max * 100);
     const f = $('hpfill'); f.style.width = pct + '%'; f.style.background = pct > 50 ? 'var(--ok)' : pct > 25 ? 'var(--gold)' : 'var(--danger)';
@@ -192,15 +210,20 @@
   // ───────────── 이벤트 → 화면 효과 ─────────────
   function handleEvents() {
     for (const ev of C.drainEvents(S)) {
-      if (ev.type === 'banner') banner(ev.text);
+      if (ev.type === 'banner') banner(ev.text, ev.boss);
       else if (ev.type === 'kill') { if (fx.length < 300) fx.push({ k: 'burst', x: ev.x, y: ev.y, t: 0, max: ev.boss ? 0.8 : 0.3, c: ev.boss ? '#c77dff' : '#ff8a5c', big: ev.boss }); }
       else if (ev.type === 'udead') fx.push({ k: 'burst', x: ev.x, y: ev.y, t: 0, max: 0.4, c: '#8fb7ff' });
       else if (ev.type === 'heal') fx.push({ k: 'heal', x: ev.tx, y: ev.ty, t: 0, max: 0.5 });
       else if (ev.type === 'spawn') fx.push({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.35, c: '#5aa9ff' });
       else if (ev.type === 'chain') { if (fx.length < 300) fx.push({ k: 'line', x: ev.x, y: ev.y, tx: ev.tx, ty: ev.ty, t: 0, max: 0.25, c: ev.small ? '#b9f5c8' : '#9ad0ff', small: ev.small }); }
-      else if (ev.type === 'boom') { if (fx.length < 300) fx.push({ k: 'boom', x: ev.x, y: ev.y, r: ev.r, t: 0, max: ev.big ? 0.6 : 0.3, big: ev.big }); }
+      else if (ev.type === 'boom') { if (fx.length < 300) fx.push({ k: 'boom', x: ev.x, y: ev.y, r: ev.r, t: 0, max: ev.big ? 0.6 : 0.3, big: ev.big, enemy: ev.enemy }); }
       else if (ev.type === 'revive') { fx.push({ k: 'heal', x: ev.x, y: ev.y, t: 0, max: 0.8 }); toast('아군이 부활했어요'); }
       else if (ev.type === 'picked') { toast(ev.name + ' 획득'); renderUpgrades(); }
+      else if (ev.type === 'notice') toast(ev.text);
+      else if (ev.type === 'bossDash') fx.push({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.5, c: '#ffb21a' });
+      else if (ev.type === 'bossShield') { fx.push({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.6, c: '#8fd8ff' }); toast('보스가 방어막을 둘렀어요'); }
+      else if (ev.type === 'bossSummon') { fx.push({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.6, c: '#ff6b6b' }); toast('보스가 졸개를 불렀어요'); }
+      else if (ev.type === 'bossRage') { fx.push({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#ff3b1a' }); banner(ev.name + ' 분노!'); }
       else if (ev.type === 'over') showEnd(ev.win);
     }
   }
@@ -209,7 +232,7 @@
   const COL = {
     bg: '#0f131b', grid: 'rgba(120,140,180,.07)', border: '#3a4660', ring: 'rgba(255,107,107,.18)',
     sword: '#5aa9ff', archer: '#6bdc8b', priest: '#ffe08a', grunt: '#ff6b6b', shield: '#c0504d', boss: '#c77dff',
-    golem: '#8aa0c8', hero: '#ffd166', turret: '#ffb86b', wolf: '#cfd6e4',
+    golem: '#8aa0c8', hero: '#ffd166', turret: '#ffb86b',
   };
   function poly(x, y, r, n, rot) {
     ctx.beginPath();
@@ -221,6 +244,14 @@
     const w = Math.max(20, e.r * 2.4), x = e.x - w / 2, y = e.y + Figures.headTop(e) - 8;
     ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(x, y, w, 4);
     ctx.fillStyle = e.team === 'u' ? '#6bdc8b' : '#ff7a7a'; ctx.fillRect(x, y, w * Math.max(0, e.hp / e.max), 4);
+  }
+  // 보스 발밑 효과: 분노 = 붉은 기운, 돌진 = 속도선
+  function bossAura(e, now, z) {
+    if (e.enraged) { ctx.globalAlpha = 0.25 + 0.1 * Math.sin(now * 0.015); ctx.fillStyle = '#ff2a1a'; ctx.beginPath(); ctx.ellipse(e.x, e.y + 8, e.r * 1.5, e.r * 0.7, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
+    if (e.dashT > 0 && e._ang !== undefined) {
+      ctx.strokeStyle = 'rgba(255,200,120,.7)'; ctx.lineWidth = 3 / z; ctx.lineCap = 'round';
+      for (let k = -2; k <= 2; k++) { const ox = Math.cos(e._ang + Math.PI / 2) * k * 8, oy = Math.sin(e._ang + Math.PI / 2) * k * 8; ctx.beginPath(); ctx.moveTo(e.x + ox - Math.cos(e._ang) * 18, e.y + oy - Math.sin(e._ang) * 18); ctx.lineTo(e.x + ox - Math.cos(e._ang) * (60 + Math.abs(k) * 6), e.y + oy - Math.sin(e._ang) * (60 + Math.abs(k) * 6)); ctx.stroke(); }
+    }
   }
   function drawWorld(now) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -259,28 +290,68 @@
     const all = S.units.concat(S.enemies);
     all.sort((p, q) => p.y - q.y);
     for (const e of all) {
+      if (e.kind === 'boss') bossAura(e, now, z);
       Figures.draw(ctx, e, now);
+      if (e.kind === 'boss' && e.shieldT > 0) { ctx.globalAlpha = 0.28 + 0.12 * Math.sin(now * 0.012); ctx.fillStyle = '#8fd8ff'; ctx.beginPath(); ctx.arc(e.x, e.y - 6, e.r * 1.7, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 0.9; ctx.strokeStyle = '#d8f2ff'; ctx.lineWidth = 2.5 / z; ctx.stroke(); ctx.globalAlpha = 1; }
       if (e.hp < e.max || e.kind === 'boss') hpBar(e);
     }
-    // 투사체
-    for (const s of S.shots) { ctx.fillStyle = s.color === 'c' ? '#ffd166' : '#b9f5c8'; ctx.beginPath(); ctx.arc(s.x, s.y, s.color === 'c' ? 4 : 3, 0, Math.PI * 2); ctx.fill(); }
+    // 투사체: 지면 그림자 + 높이만큼 위로 뜬 몸체 (포물선). 화살은 날아가는 방향으로 기울어진다.
+    for (const sh of S.shots) {
+      if (sh.aoe) { // 보스 포격: 떨어질 지점을 미리 경고
+        const pp = Math.min(1, sh.p), tx = sh.t.x, ty = sh.t.y;
+        ctx.globalAlpha = 0.12 + 0.18 * pp; ctx.fillStyle = '#ff3b3b'; ctx.beginPath(); ctx.arc(tx, ty, sh.aoe, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 0.5 + 0.4 * Math.sin(now * 0.02); ctx.strokeStyle = '#ff5a5a'; ctx.lineWidth = 2.5 / z; ctx.setLineDash([8 / z, 6 / z]); ctx.beginPath(); ctx.arc(tx, ty, sh.aoe, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+        ctx.globalAlpha = 0.7; ctx.beginPath(); ctx.arc(tx, ty, sh.aoe * (1 - pp), 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
+      }
+      ctx.globalAlpha = 0.25; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(sh.x, sh.y, 4, 2, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+      const px = sh.x, py = sh.y - sh.h, ang = Math.atan2(sh.vy - sh.vh, sh.vx);
+      if (sh.color === 'c') { // 성채 포탄
+        ctx.fillStyle = '#2b3446'; ctx.strokeStyle = '#9fb4d6'; ctx.lineWidth = 1 / z; ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.beginPath(); ctx.arc(px - 1.5, py - 1.5, 1.6, 0, Math.PI * 2); ctx.fill();
+      } else if (sh.color === 'es') { // 보스 포탄
+        ctx.globalAlpha = 0.45; ctx.fillStyle = '#ff9f43'; ctx.beginPath(); ctx.arc(px, py, 13, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+        ctx.fillStyle = '#3a2418'; ctx.strokeStyle = '#ff7a2a'; ctx.lineWidth = 1.5 / z; ctx.beginPath(); ctx.arc(px, py, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      } else { // 화살 / 포탑 볼트
+        const len = sh.color === 't' ? 9 : 14, col = sh.color === 'ea' ? '#c0503a' : sh.color === 't' ? '#ffb86b' : '#e8e0cc';
+        const hx = px + Math.cos(ang) * len * 0.5, hy = py + Math.sin(ang) * len * 0.5, tx2 = px - Math.cos(ang) * len * 0.5, ty2 = py - Math.sin(ang) * len * 0.5;
+        ctx.strokeStyle = col; ctx.lineWidth = 1.8; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(tx2, ty2); ctx.lineTo(hx, hy); ctx.stroke();
+        ctx.fillStyle = sh.color === 'ea' ? '#5a1f18' : '#cfd6e4'; ctx.beginPath(); ctx.moveTo(hx + Math.cos(ang) * 4, hy + Math.sin(ang) * 4); ctx.lineTo(hx + Math.cos(ang + 2.5) * 3, hy + Math.sin(ang + 2.5) * 3); ctx.lineTo(hx + Math.cos(ang - 2.5) * 3, hy + Math.sin(ang - 2.5) * 3); ctx.closePath(); ctx.fill();
+      }
+    }
     // 화면 효과
     for (let i = fx.length - 1; i >= 0; i--) {
       const f = fx[i], p = f.t / f.max;
       if (f.k === 'burst') { ctx.globalAlpha = 1 - p; ctx.fillStyle = f.c; ctx.beginPath(); ctx.arc(f.x, f.y, (f.big ? 20 : 8) + p * (f.big ? 50 : 16), 0, Math.PI * 2); ctx.fill(); }
       else if (f.k === 'ring') { ctx.globalAlpha = 1 - p; ctx.strokeStyle = f.c; ctx.lineWidth = 2 / z; ctx.beginPath(); ctx.arc(f.x, f.y, 6 + p * 24, 0, Math.PI * 2); ctx.stroke(); }
       else if (f.k === 'line') { ctx.globalAlpha = 1 - p; ctx.strokeStyle = f.c; ctx.lineWidth = (f.small ? 1.5 : 3) / z; ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(f.tx, f.ty); ctx.stroke(); }
-      else if (f.k === 'boom') { ctx.globalAlpha = (1 - p) * 0.5; ctx.fillStyle = f.big ? '#ff9f43' : '#ffd166'; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (0.4 + 0.6 * p), 0, Math.PI * 2); ctx.fill(); }
+      else if (f.k === 'boom') { ctx.globalAlpha = (1 - p) * 0.5; ctx.fillStyle = f.enemy ? '#ff5a3a' : f.big ? '#ff9f43' : '#ffd166'; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (0.4 + 0.6 * p), 0, Math.PI * 2); ctx.fill(); }
       else if (f.k === 'heal') { ctx.globalAlpha = 1 - p; ctx.fillStyle = '#9dffb0'; const y = f.y - 12 - p * 16; ctx.fillRect(f.x - 1.5, y - 5, 3, 10); ctx.fillRect(f.x - 5, y - 1.5, 10, 3); }
       ctx.globalAlpha = 1;
     }
     // 화면 밖 위험 방향 표시
-    drawEdgeWarnings();
+    drawEdgeWarnings(now);
   }
-  function drawEdgeWarnings() {
+  function drawEdgeWarnings(now) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const z = cam.zoom, m = 22, bins = new Map();
+    // 보스: 화면 밖이면 크고 눈에 띄는 화살표 + 이름/거리
+    for (const bs of S.enemies) {
+      if (bs.kind !== 'boss') continue;
+      const sx = (bs.x - cam.x) * z + vw / 2, sy = (bs.y - cam.y) * z + vh / 2;
+      if (sx >= 0 && sx <= vw && sy >= 0 && sy <= vh) continue;
+      const a = Math.atan2(sy - vh / 2, sx - vw / 2), dx = Math.cos(a), dy = Math.sin(a), mm = 44;
+      const t = Math.min((vw / 2 - mm) / Math.abs(dx || 1e-6), (vh / 2 - 112) / Math.abs(dy || 1e-6)); // 위쪽 보스 바, 아래쪽 유닛 카드를 피한다
+      const px = vw / 2 + dx * t, py = vh / 2 + dy * t, pulse = 1 + 0.18 * Math.sin(now * 0.012);
+      ctx.save(); ctx.translate(px, py); ctx.rotate(a); ctx.scale(pulse, pulse);
+      ctx.fillStyle = '#ff3b4a'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.lineJoin = 'round';
+      ctx.beginPath(); ctx.moveTo(24, 0); ctx.lineTo(-10, -17); ctx.lineTo(-3, 0); ctx.lineTo(-10, 17); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+      const dist = Math.round(Math.hypot(bs.x - cam.x, bs.y - cam.y));
+      ctx.font = '700 13px Rubik, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.lineWidth = 4;
+      const lx = px - dx * 38, ly = py - dy * 38 + 4, label = bs.bossName + ' · ' + dist;
+      ctx.strokeText(label, lx, ly); ctx.fillText(label, lx, ly); ctx.textAlign = 'left';
+    }
     for (const e of S.enemies) {
+      if (e.kind === 'boss') continue;
       const sx = (e.x - cam.x) * z + vw / 2, sy = (e.y - cam.y) * z + vh / 2;
       if (sx >= 0 && sx <= vw && sy >= 0 && sy <= vh) continue;
       const a = Math.atan2(sy - vh / 2, sx - vw / 2), k = Math.round(a / 0.35);
@@ -297,7 +368,13 @@
     mctx.setTransform(1, 0, 0, 1, 0, 0);
     mctx.fillStyle = '#0d1118'; mctx.fillRect(0, 0, 264, 264);
     mctx.strokeStyle = 'rgba(255,107,107,.25)'; mctx.beginPath(); mctx.arc(CX * MS, CY * MS, C.SPAWN_RING * MS, 0, Math.PI * 2); mctx.stroke();
-    mctx.fillStyle = '#ff6b6b'; for (const e of S.enemies) { const s = e.kind === 'boss' ? 6 : 3; mctx.fillRect(e.x * MS - s / 2, e.y * MS - s / 2, s, s); }
+    mctx.fillStyle = '#ff6b6b'; for (const e of S.enemies) { if (e.kind === 'boss') continue; mctx.fillRect(e.x * MS - 1.5, e.y * MS - 1.5, 3, 3); }
+    for (const e of S.enemies) { // 보스: 맥박처럼 커지는 고리 + 큰 점
+      if (e.kind !== 'boss') continue;
+      const pr = 6 + 3 * (0.5 + 0.5 * Math.sin(performance.now() * 0.008));
+      mctx.strokeStyle = '#ff3b4a'; mctx.lineWidth = 2; mctx.beginPath(); mctx.arc(e.x * MS, e.y * MS, pr, 0, Math.PI * 2); mctx.stroke();
+      mctx.fillStyle = '#ff3b4a'; mctx.fillRect(e.x * MS - 3.5, e.y * MS - 3.5, 7, 7);
+    }
     mctx.fillStyle = '#5aa9ff'; for (const u of S.units) mctx.fillRect(u.x * MS - 1.5, u.y * MS - 1.5, 3, 3);
     mctx.fillStyle = '#ffd166'; mctx.fillRect(CX * MS - 4, CY * MS - 4, 8, 8);
     mctx.strokeStyle = '#fff'; mctx.lineWidth = 1.5;

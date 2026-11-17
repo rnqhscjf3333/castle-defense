@@ -105,9 +105,6 @@ applyById(S, 'a_atk'); check('군기 오라', Math.abs(S.aura.atk - V.auraAtk) <
 applyById(S, 'a_rad'); check('오라 강화: 모든 오라 효과 증폭', Math.abs(S.aura.atk - V.auraAtk * (1 + V.auraBoost)) < 1e-9, S.aura.atk.toFixed(4));
 applyById(S, 's_golem'); check('골렘 소환', S.units.some(u => u.type === 'golem'));
 applyById(S, 's_turret'); applyById(S, 's_turret'); check('포탑 2개', S.units.filter(u => u.type === 'turret').length === 2);
-applyById(S, 's_wolves'); check('늑대 소환', S.units.filter(u => u.type === 'wolf').length === V.wolves, V.wolves + '마리');
-for (let i = 0; i < (C.CFG.units.wolf.life + 2) * 30; i++) { if (S.cards.offer) C.pickCard(S, 0); C.tick(S, DT); } // 카드창이 열리면 시간이 멈추므로 선택하며 진행
-check('늑대는 수명이 지나면 사라짐', S.units.filter(u => u.type === 'wolf').length === 0, C.CFG.units.wolf.life + '초');
 
 // 8) 자동 라운드 + 1라운드는 성채 혼자 버티며 골드를 번다
 S = C.createGame(4);
@@ -118,6 +115,84 @@ let t1 = 0; while (S.round < 2 && t1 < 3000) { C.tick(S, DT); t1++; }
 check('라운드는 시간이 지나면 자동으로 넘어감', S.round === 2, 't=' + S.t.toFixed(1));
 check('1라운드: 유닛 없이 성채가 버티고 처치 골드를 얻음', S.core.hp > 0 && S.kills > 0 && S.gold > 0, `처치 ${S.kills}, 골드 ${Math.round(S.gold)}, 성채 ${Math.round(S.core.hp)}`);
 check('자동 라운드 진행 중 callEarly 같은 수동 호출 API 없음', C.callEarly === undefined && C.expandPop === undefined);
+
+
+// 9) 적 다양화: 종류별 등장 라운드
+const seenBefore = {}; let early = false;
+for (let seed = 1; seed <= 40; seed++) {
+  for (let r = 1; r <= 30; r++) {
+    const g = C.createGame(seed); g.round = r - 1; g.phase = 'round'; g.roundT = 0; g.cards.offer = null;
+    // startRound를 직접 부르는 대신 라운드 타이머로 유도
+    g.roundT = C.ROUND_TIME; g.queue = []; C.tick(g, DT); if (g.cards.offer) C.pickCard(g, 0);
+    for (const k of g.queue) { const from = (C.CFG.spawn[k] || { from: 1 }).from; if (k !== 'boss' && g.round < from) early = true; seenBefore[k] = (seenBefore[k] || 0) + 1; }
+  }
+}
+check('각 적은 등장 라운드 이전에는 나오지 않음', early === false);
+check('라운드가 갈수록 종류가 늘어남 (사수·폭파병·주술사·거한 모두 등장)', ['grunt', 'shield', 'archer', 'bomber', 'shaman', 'brute', 'boss'].every(k => seenBefore[k] > 0), JSON.stringify(seenBefore));
+
+// 10) 보스: 보스 라운드에는 시작과 동시에 확실히 나온다 + 예고
+for (const r of [5, 10, 15, 20, 25, 30]) {
+  const g = C.createGame(r); g.captureEvents = true; g.round = r - 1; g.phase = 'round'; g.roundT = C.ROUND_TIME; g.queue = []; C.tick(g, DT);
+  if (g.cards.offer) C.pickCard(g, 0);
+  const info = C.bossInfo(r);
+  const ev = C.drainEvents(g);
+  check(`R${r} 보스 라운드: 첫 적이 보스이고 이름 표시(${info.name})`, g.queue[0] === 'boss' && ev.some(e => e.type === 'banner' && e.boss && e.text.includes(info.name)));
+  // 스폰 후 보스가 존재하는지
+  g.queue = ['boss']; g.spawnT = 0; g.round = r; if (g.cards.offer) C.pickCard(g, 0); C.tick(g, DT);
+  const b = g.enemies.find(e => e.kind === 'boss');
+  check(`R${r} 보스 체력/패턴`, b && b.max === info.hp && Object.keys(b.abil).length >= 1, b && (b.bossName + ' hp=' + b.max + ' 패턴=' + Object.keys(b.abil).join(',')));
+}
+{ const g = C.createGame(77); g.captureEvents = true; g.round = 3; g.phase = 'round'; g.queue = []; g.roundT = C.ROUND_TIME; /* 4라운드가 시작될 때 다음(5라운드) 보스를 예고 */ C.tick(g, DT); if (g.cards.offer) C.pickCard(g, 0);
+  check('보스 전 라운드(4라운드 시작)에 다음 라운드 보스 예고 알림', C.drainEvents(g).some(e => e.type === 'notice' && e.text.includes(C.bossInfo(5).name))); }
+
+// 11) 새 적의 행동
+function arena(round, kinds) { const g = C.createGame(500 + round); g.captureEvents = true; g.round = round; g.phase = 'round'; g.roundT = 0; g.queue = []; g.spawnPts = 4; for (const [k, x, y] of kinds) C.spawnEnemy(g, k, x, y); return g; }
+{ // 사수: 성채에서 멀리 떨어져 포물선 화살로 성채를 맞힌다
+  const g = arena(5, [['archer', 1500, 1500 - 450]]); let arrow = null, hmax = 0, hp0 = g.core.hp, minD = 1e9; g.core.atk = 0; const ar0 = g.enemies[0];
+  for (let i = 0; i < 30 * 40; i++) { C.tick(g, DT); minD = Math.min(minD, Math.hypot(ar0.x - 1500, ar0.y - 1500)); for (const s of g.shots) if (s.color === 'ea') { arrow = s; hmax = Math.max(hmax, s.h); } }
+  check('사수는 멀리서 쏴서 성채를 맞힘 (근접 안 함)', arrow !== null && g.core.hp < hp0, `성채 ${Math.round(hp0)}→${Math.round(g.core.hp)}`);
+  check('사수는 사거리 끝에서 멈춤 (근접하지 않음)', minD > 150, '최소 거리 ' + Math.round(minD));
+  check('화살은 포물선 (높이가 솟았다 내려옴)', hmax > 10, 'h최대=' + hmax.toFixed(1)); }
+{ // 폭파병: 닿으면 터져 범위 피해, 자신은 사라지고 처치 수는 올라가지 않음
+  const g = arena(8, [['bomber', 1500, 1500 - 120]]); g.core.atk = 0; const hp0 = g.core.hp, k0 = g.kills; let boomed = false; // 성채가 먼저 처치하지 못하게 공격력 0
+  for (let i = 0; i < 30 * 10; i++) { C.tick(g, DT); if (C.drainEvents(g).some(e => e.type === 'boom' && e.enemy)) boomed = true; }
+  check('폭파병 자폭: 성채 피해 + 폭발 + 처치/골드 없음', boomed && g.core.hp < hp0 && g.enemies.length === 0 && g.kills === k0 && g.gold === 0, `성채 ${Math.round(hp0)}→${Math.round(g.core.hp)}`); }
+{ // 주술사: 다친 적을 치유
+  const g = arena(10, [['shaman', 1500, 1500 - 700], ['brute', 1500 + 40, 1500 - 700]]); const br = g.enemies.find(e => e.kind === 'brute'); br.hp = br.max * 0.3; let healed = false;
+  for (let i = 0; i < 30 * 6; i++) { C.tick(g, DT); if (br.hp > br.max * 0.35) healed = true; }
+  check('주술사가 다친 적을 치유', healed, Math.round(br.hp / br.max * 100) + '%'); }
+
+// 12) 보스 패턴
+{ const g = arena(5, [['boss', 1500, 1500 - 900]]); const b = g.enemies[0]; let dashed = false; const x0 = b.y;
+  for (let i = 0; i < 30 * 12; i++) { C.tick(g, DT); if (b.dashT > 0) dashed = true; }
+  check('R5 돌격왕: 돌진 패턴 발동', dashed); }
+{ const g = arena(10, [['boss', 1500, 1500 - 900]]); let n0 = g.enemies.length, maxN = n0;
+  for (let i = 0; i < 30 * 14; i++) { C.tick(g, DT); maxN = Math.max(maxN, g.enemies.length); }
+  check('R10 소환사: 졸개 소환', maxN > n0, n0 + '→' + maxN); }
+{ const g = arena(15, [['boss', 1500, 1500 - 700]]); let shell = null;
+  g.gold = 1000; C.buy(g, 'sword');
+  for (let i = 0; i < 30 * 14; i++) { C.tick(g, DT); for (const s of g.shots) if (s.aoe) shell = s; }
+  check('R15 포격대장: 범위 포격(착탄 지점 미리 지정)', shell !== null, shell && 'aoe=' + shell.aoe); }
+{ const g = arena(20, [['boss', 1500, 1500 - 900]]); const b = g.enemies[0]; let sh = false;
+  for (let i = 0; i < 30 * 12; i++) { C.tick(g, DT); if (b.shieldT > 0) sh = true; }
+  check('R20 철벽 장군: 방어막 발동', sh); }
+{ const g = arena(25, [['boss', 1500, 1500 - 900]]); const b = g.enemies[0]; b.hp = b.max * 0.4; let rage = false;
+  for (let i = 0; i < 30; i++) { C.tick(g, DT); if (b.enraged) rage = true; }
+  check('R25 광전사: 체력 50% 이하에서 분노(속도/공격 증가)', rage && b.speedMul > 1.3, 'speedMul=' + b.speedMul.toFixed(2)); }
+{ // 방어막은 받는 피해를 줄인다
+  const g = arena(20, [['boss', 1500 + 200, 1500]]); const b = g.enemies[0]; b.shieldT = 10; b.shieldRed = 0.8; b.speed = 0; const hp0 = b.hp;
+  C.tick(g, DT); // 성채가 사거리 안의 보스를 쏜다
+  for (let i = 0; i < 30 * 3; i++) C.tick(g, DT);
+  const withShield = hp0 - b.hp;
+  const g2 = arena(20, [['boss', 1500 + 200, 1500]]); const b2 = g2.enemies[0]; b2.speed = 0; b2.abil = {};  for (let i = 0; i < 30 * 3 + 1; i++) C.tick(g2, DT);
+  const noShield = b2.max - b2.hp;
+  check('방어막 동안 보스가 받는 피해가 크게 줄어듦', noShield > 0 && withShield < noShield * 0.5, `${withShield.toFixed(0)} vs ${noShield.toFixed(0)}`); }
+
+// 13) 포물선 투사체 (아군 화살/성채 포탄)
+{ const g = arena(1, [['grunt', 1500 + 200, 1500]]); g.gold = 1000; C.buy(g, 'archer'); const ar = g.units[0]; ar.x = 1500 - 40; ar.y = 1500; ar.hx = ar.x; ar.hy = ar.y;
+  let hmax = 0, tFly = 0, seen = false; const hs = [];
+  for (let i = 0; i < 30 * 6 && !seen; i++) { C.tick(g, DT); for (const s of g.shots) { hs.push(s.h); hmax = Math.max(hmax, s.h); tFly += 1; seen = true; } }
+  check('아군 화살/성채 포탄도 포물선', hmax > 8 && hs.length >= 1, 'h최대=' + hmax.toFixed(1)); }
 
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

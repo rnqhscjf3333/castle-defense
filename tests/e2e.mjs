@@ -81,6 +81,16 @@ try {
   await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 500, y: 350, deltaX: 0, deltaY: -240 }); await sleep(100);
   check('마우스 휠 확대', (await ev('__game.cam.zoom')) > 1.1, String(await ev('__game.cam.zoom')));
 
+  // 3.5) 보스 라운드 표시: 라운드 표시, 보스 체력 바, 화면 밖 보스는 미니맵/화살표 대상
+  await open('?bot=1&warp=165&seed=3&zoom=1', 1200); // 5라운드(160초) 시작 직후
+  check('보스 라운드 표시 (라운드 문구에 보스, 빨간색)', (await ev("document.getElementById('roundTxt').textContent")).includes('보스') && await ev("document.getElementById('roundTxt').classList.contains('boss')"), await ev("document.getElementById('roundTxt').textContent"));
+  check('보스 체력 바가 위에 크게 표시됨', await ev("(()=>{const b=document.getElementById('bossbar'); if(b.hidden) return false; const r=b.getBoundingClientRect(); return r.width>=300 && r.top<20 && document.getElementById('bossName').textContent==='돌격왕' && document.getElementById('bossHpTxt').textContent.includes('/');})()"), await ev("document.getElementById('bossName').textContent + ' ' + document.getElementById('bossHpTxt').textContent"));
+  check('보스가 화면 밖이어도 위치 표시 가능 (보스 존재 + 카메라 밖)', await ev("(()=>{const b=__game.S.enemies.find(e=>e.kind==='boss'); const c=__game.cam; return !!b && (Math.abs(b.x-c.x)>500 || Math.abs(b.y-c.y)>350);})()"));
+  check('보스 정보 제공 (5라운드 보스 = 돌격왕)', await ev("(()=>{const r=__game.CastleCore.bossInfo(5); return !!r && r.name==='돌격왕';})()"));
+  await ev("(()=>{const b=__game.S.enemies.find(e=>e.kind==='boss'); b.hp = 300;})()"); await sleep(400);
+  const barTxt = await ev("document.getElementById('bossHpTxt').textContent"), barW = await ev("document.getElementById('bossFill').style.width");
+  check('보스 체력 바가 실제 체력(300/600)을 따라감', barTxt.includes('300 / 600') && barW === '50%', barTxt + ' / 폭 ' + barW);
+
   // 4) 한 판 끝까지(디버그 가속) — 종료 화면이 뜨는지
   await open('?bot=1&warp=2400&seed=5&zoom=0.6', 1500); // 봇이 30라운드 끝까지(승리 또는 패배) 미리 진행한 상태
   check('종료 화면 표시(빨리감기 중 종료)', (await ev('__game.S.over')) && !(await ev("document.getElementById('overlay').classList.contains('hidden')")), '라운드 ' + await ev('__game.S.round'));

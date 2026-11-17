@@ -32,6 +32,23 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #banner { position: fixed; top: 22%; left: 0; right: 0; text-align: center; font-size: 28px; font-weight: 700; letter-spacing: .02em;
   color: #fff; text-shadow: 0 2px 12px rgba(0,0,0,.7); opacity: 0; pointer-events: none; transition: opacity .35s; }
 #banner.show { opacity: 1; }
+#banner.boss { color: #ff5a5a; font-size: 34px; letter-spacing: .04em; text-shadow: 0 0 18px rgba(255,60,60,.7), 0 2px 12px rgba(0,0,0,.8); animation: bossPulse .6s ease-in-out 3; }
+@keyframes bossPulse { 50% { transform: scale(1.08); } }
+#roundTxt.boss { color: #ff6b6b; font-weight: 700; }
+#roundTxt.nextboss { color: #ffb86b; }
+/* 보스 체력 바 */
+#bossbar { position: fixed; top: max(8px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); width: min(520px, calc(100vw - 440px)); min-width: 300px;
+  padding: 8px 14px 9px; border: 2px solid #8a2a3a; background: rgba(28, 12, 20, .92); border-radius: 12px; pointer-events: none; box-shadow: 0 0 24px rgba(255,60,80,.25); }
+#bossbar[hidden] { display: none; }
+#bossbar .bb-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+#bossName { font-size: 19px; font-weight: 800; color: #ffb0b0; letter-spacing: .02em; }
+#bossHpTxt { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
+#bossbar .bb-track { position: relative; height: 22px; margin: 5px 0 4px; border-radius: 11px; background: #2a1620; overflow: hidden; border: 1px solid #5a2535; }
+#bossFill { height: 100%; width: 100%; background: linear-gradient(90deg, #c0392b, #ff5a5a); transition: width .15s; }
+#bossbar.shielded #bossFill { background: linear-gradient(90deg, #3a8fd0, #8fd8ff); }
+#bossbar.rage #bossFill { background: linear-gradient(90deg, #ff3b1a, #ffb21a); }
+#bossState { font-size: 12px; color: #d8b8c0; min-height: 16px; }
+#bossbar.shielded #bossState { color: #8fd8ff; font-weight: 700; } #bossbar.rage #bossState { color: #ffb21a; font-weight: 700; }
 #toast { position: fixed; left: 50%; bottom: 150px; transform: translateX(-50%); padding: 6px 12px; border-radius: 8px; font-size: 13px;
   background: rgba(0,0,0,.75); opacity: 0; transition: opacity .25s; pointer-events: none; white-space: nowrap; }
 #toast.show { opacity: 1; }
@@ -89,6 +106,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #upl[hidden] { display: none; }
 #upl .it { display: flex; justify-content: space-between; gap: 10px; }
 #upl .rare { color: #7cc0ff; } #upl .epic { color: #ffd166; }
+@media (max-width: 720px) { #bossbar { top: 112px; left: 8px; transform: none; width: calc(100vw - 140px); min-width: 0; padding: 6px 10px 7px; } #bossName { font-size: 16px; } #bossHpTxt { font-size: 14px; } #bossbar .bb-track { height: 18px; } }
 @media (max-width: 520px) { .pcard { width: 100%; min-height: 0; flex-direction: column; } #pickCards { flex-direction: column; } }
 @media (max-width: 520px) { #units .ucard { width: 96px; } #minimap { width: 108px; height: 108px; } #tools { top: calc(max(8px, env(safe-area-inset-top)) + 116px); } }
 </style>
@@ -112,6 +130,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
 </div>
 
 <div id="banner"></div>
+<div id="bossbar" hidden>
+  <div class="bb-top"><span id="bossName"></span><span id="bossHpTxt"></span></div>
+  <div class="bb-track"><div id="bossFill"></div></div>
+  <div id="bossState"></div>
+</div>
 <div id="toast"></div>
 
 <div id="dock">
