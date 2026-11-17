@@ -11,6 +11,7 @@
   let running = false, paused = false, speed = 1;
   let cam = { x: CX, y: CY, zoom: 1 };
   let vw = 0, vh = 0, dpr = 1;
+  const A2 = window.Audio2;
   const fx = [];             // 화면 효과 (게임 규칙과 무관)
   const fxPool = [];         // 쓰고 난 효과 객체를 재사용 (GC 부담을 줄인다)
   function addFx(o) {
@@ -109,9 +110,12 @@
   function doBuy(t) {
     if (!S || !running || paused) return;
     const r = C.buy(S, t);
+    if (!r.ok) A2.play('deny');
     if (!r.ok) toast({ gold: '골드가 부족해요', cooldown: '잠시 후 다시 생산할 수 있어요' }[r.reason] || '생산할 수 없어요');
   }
   $('btnCenter').addEventListener('click', centerOnCore);
+  const soundLabel = () => { $('btnSound').textContent = A2.state.muted ? '소리 끔' : '소리 켬'; };
+  $('btnSound').addEventListener('click', () => { A2.init(); A2.toggleMute(); soundLabel(); }); soundLabel();
   $('btnPause').addEventListener('click', () => { paused = !paused; $('btnPause').textContent = paused ? '계속' : '일시정지'; });
   $('btnSpeed').addEventListener('click', () => { speed = speed === 1 ? 2 : speed === 2 ? 3 : 1; $('btnSpeed').textContent = speed + '×'; });
   window.addEventListener('keydown', e => {
@@ -126,6 +130,7 @@
     else if (e.key === 'u' || e.key === 'U') $('btnUp').click();
     else if (e.key === ' ') { e.preventDefault(); $('btnPause').click(); }
     else if (e.key === 'h' || e.key === 'H') centerOnCore();
+    else if (e.key === 'm' || e.key === 'M') { A2.init(); A2.toggleMute(); soundLabel(); }
   });
 
   const last = {};
@@ -236,9 +241,35 @@
   $('btnUp').addEventListener('click', () => { const el = $('upl'); el.hidden = !el.hidden; if (!el.hidden) renderUpgrades(); });
 
   // ───────────── 이벤트 → 화면 효과 ─────────────
+  // 이벤트 → 효과음 (위치가 있는 소리는 확대·거리에 따라 크기가 달라진다)
+  const SHOT_SND = { a: 'shotA', ea: 'shotEA', c: 'shotC', t: 'shotT', b: 'shotB', es: 'shotES' };
+  function playEv(ev) {
+    switch (ev.type) {
+      case 'shot': A2.play(SHOT_SND[ev.c] || 'shotA', ev.x, ev.y); break;
+      case 'melee': A2.play('sword', ev.x, ev.y); break;
+      case 'kill': A2.play(ev.boss ? 'bigBoom' : 'kill', ev.x, ev.y); break;
+      case 'udead': A2.play('udead', ev.x, ev.y); break;
+      case 'heal': A2.play('heal', ev.tx, ev.ty); break;
+      case 'spawn': A2.play('spawn', ev.x, ev.y); break;
+      case 'chain': A2.play('chain', ev.x, ev.y); break;
+      case 'boom': A2.play(ev.big ? 'bigBoom' : 'boom', ev.x, ev.y); break;
+      case 'picked': A2.play('card'); break;
+      case 'promote': A2.play('job'); break;
+      case 'bossSpawn': A2.alarm(); break;
+      case 'bossDash': A2.play('dash', ev.x, ev.y); break;
+      case 'bossShield': A2.play('shield', ev.x, ev.y); break;
+      case 'bossSummon': A2.play('summon', ev.x, ev.y); break;
+      case 'bossRage': A2.play('rage', ev.x, ev.y); break;
+      case 'priceUp': A2.play('buy'); break;
+      case 'act2': A2.play('cine'); break;
+      case 'over': A2.play(ev.win ? 'win' : 'lose'); break;
+    }
+  }
   function handleEvents() {
     for (const ev of C.drainEvents(S)) {
+      playEv(ev);
       if (ev.type === 'banner') banner(ev.text, ev.boss);
+      else if (ev.type === 'shot' || ev.type === 'melee') { /* 소리만 있는 이벤트 */ }
       else if (ev.type === 'kill') { addFx({ k: 'burst', x: ev.x, y: ev.y, t: 0, max: ev.boss ? 0.8 : 0.3, c: ev.boss ? '#c77dff' : '#ff8a5c', big: ev.boss }); }
       else if (ev.type === 'udead') addFx({ k: 'burst', x: ev.x, y: ev.y, t: 0, max: 0.4, c: '#8fb7ff' });
       else if (ev.type === 'heal') addFx({ k: 'heal', x: ev.tx, y: ev.ty, t: 0, max: 0.5 });
@@ -533,6 +564,10 @@
     else if (fastT > 10000 && renderScale < 1) { renderScale = Math.min(1, +(renderScale + 0.2).toFixed(2)); fastT = 0; resize(); }
   }
   const ema = (k, v) => { perf[k] += (v - perf[k]) * 0.1; };
+  function updateMood() {
+    const boss = S.enemies.some(e => e.kind === 'boss');
+    A2.setMood(S.act === 2 ? (boss ? 'dark2' : 'dark') : (boss ? 'boss' : 'calm'));
+  }
   function frame(now) {
     const f0 = performance.now();
     adaptResolution(now - prev);
@@ -550,7 +585,7 @@
       if (S.cinematic && !cine) startCine(S.cinematic.name);
       if (cine) stepCine(now);
       else if (Scenery.act !== S.act) Scenery.setAct(S.act, true); // 불러오기/재시작/점프 시 막에 맞는 배경으로
-      const h0 = performance.now(); handleEvents(); syncPicker(); updateHud(); const h1 = performance.now(); drawWorld(now); const h2 = performance.now(); drawMini(); const h3 = performance.now();
+      const h0 = performance.now(); A2.setView({ x: cam.x, y: cam.y, zoom: cam.zoom, vw, vh }); updateMood(); handleEvents(); syncPicker(); updateHud(); const h1 = performance.now(); drawWorld(now); const h2 = performance.now(); drawMini(); const h3 = performance.now();
       ema('hud', h1 - h0); ema('draw', h2 - h1); ema('mini', h3 - h2);
     }
     ema('frame', performance.now() - f0);
