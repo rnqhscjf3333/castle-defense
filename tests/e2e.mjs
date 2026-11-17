@@ -109,9 +109,10 @@ try {
   check('보스가 화면 밖일 때(화살표 표시 경로)도 오류 없이 그려짐', await ev("(()=>{const b=__game.S.enemies.find(e=>e.kind==='boss'); const c=__game.cam; return !!b && (Math.abs(b.x-c.x)>500 || Math.abs(b.y-c.y)>350);})()") && (await ev("window.__errs ? window.__errs.length : 0")) === 0);
   await ev("(()=>{__game.cam.x = 1500; __game.cam.y = 1500;})()");
   check('보스 정보 제공 (5라운드 보스 = 돌격왕)', await ev("(()=>{const r=__game.CastleCore.bossInfo(5); return !!r && r.name==='돌격왕';})()"));
-  await ev("(()=>{const b=__game.S.enemies.find(e=>e.kind==='boss'); b.hp = 300;})()"); await sleep(400);
+  const bmax = await ev("__game.S.enemies.find(e=>e.kind==='boss').max");
+  await ev("(()=>{const b=__game.S.enemies.find(e=>e.kind==='boss'); b.hp = b.max / 2;})()"); await sleep(400);
   const barTxt = await ev("document.getElementById('bossHpTxt').textContent"), barW = await ev("document.getElementById('bossFill').style.width");
-  check('보스 체력 바가 실제 체력(300/600)을 따라감', barTxt.includes('300 / 600') && barW === '50%', barTxt + ' / 폭 ' + barW);
+  check('보스 체력 바가 실제 체력(절반)을 따라감', barTxt.includes(Math.ceil(bmax / 2).toLocaleString('en-US') + ' / ' + bmax.toLocaleString('en-US')) && barW === '50%', barTxt + ' / 폭 ' + barW);
 
   // 4) 한 판 끝까지(디버그 가속) — 종료 화면이 뜨는지
   await open('?bot=1&warp=2400&seed=5&zoom=0.6', 1500); // 봇이 30라운드 끝까지(승리 또는 패배) 미리 진행한 상태

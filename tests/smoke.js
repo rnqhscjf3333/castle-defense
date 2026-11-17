@@ -41,7 +41,10 @@ for (const [label, pol] of [['항상 첫 번째 카드', 'first'], ['무작위 �
 
 // 3) 구매 규칙
 let S = C.createGame(1);
-check('골드 0원으로 시작', S.gold === 0 && C.CFG.startGold === 0);
+check('시작 골드로 유닛 3기를 뽑을 수 있음 (검사·궁수·사제 어떤 순서든)', (() => { const perms = [['sword', 'archer', 'priest'], ['sword', 'priest', 'archer'], ['archer', 'sword', 'priest'], ['archer', 'priest', 'sword'], ['priest', 'sword', 'archer'], ['priest', 'archer', 'sword'], ['sword', 'sword', 'sword'], ['archer', 'archer', 'archer']];
+  return perms.every(p => { const g = C.createGame(1); return p.every(t => { g.buyCd[t] = 0; return C.buy(g, t).ok; }); }); })(), '시작 골드 ' + C.CFG.startGold);
+check('시작 골드가 유닛 3기 값에서 크게 넘치지 않음', C.CFG.startGold < 260, String(C.CFG.startGold));
+S.gold = 0;
 check('골드가 없으면 아무도 못 뽑음', ['sword', 'archer', 'priest'].every(t => { const r = C.buy(S, t); return !r.ok && r.reason === 'gold'; }));
 S.gold = 1000;
 const base = { sword: C.unitCostOf(S, 'sword'), archer: C.unitCostOf(S, 'archer'), priest: C.unitCostOf(S, 'priest') };
@@ -114,7 +117,7 @@ C.tick(S, DT);
 check('첫 틱에 라운드 1 자동 시작', S.round === 1 && S.phase === 'round');
 let t1 = 0; while (S.round < 2 && t1 < 3000) { C.tick(S, DT); t1++; }
 check('라운드는 시간이 지나면 자동으로 넘어감', S.round === 2, 't=' + S.t.toFixed(1));
-check('1라운드: 유닛 없이 성채가 버티고 처치 골드를 얻음', S.core.hp > 0 && S.kills > 0 && S.gold > 0, `처치 ${S.kills}, 골드 ${Math.round(S.gold)}, 성채 ${Math.round(S.core.hp)}`);
+check('1라운드: 유닛 없이도 성채가 버티고 처치 골드를 얻음', S.core.hp > 0 && S.kills > 0 && S.gold > C.CFG.startGold, `처치 ${S.kills}, 골드 ${Math.round(S.gold)}, 성채 ${Math.round(S.core.hp)}`);
 check('자동 라운드 진행 중 callEarly 같은 수동 호출 API 없음', C.callEarly === undefined && C.expandPop === undefined);
 
 
@@ -141,7 +144,7 @@ for (const r of [5, 10, 15, 20, 25, 30]) {
   // 스폰 후 보스가 존재하는지
   g.queue = ['boss']; g.spawnT = 0; g.round = r; if (g.cards.offer) C.pickCard(g, 0); C.tick(g, DT);
   const b = g.enemies.find(e => e.kind === 'boss');
-  check(`R${r} 보스 체력/패턴`, b && b.max === info.hp && Object.keys(b.abil).length >= 1, b && (b.bossName + ' hp=' + b.max + ' 패턴=' + Object.keys(b.abil).join(',')));
+  check(`R${r} 보스 체력(절반 적용)/패턴`, b && b.max === Math.round(info.hp * C.CFG.balance.enemyHp) && Object.keys(b.abil).length >= 1, b && (b.bossName + ' hp=' + b.max + ' 패턴=' + Object.keys(b.abil).join(',')));
 }
 { const g = C.createGame(77); g.captureEvents = true; g.round = 3; g.phase = 'round'; g.queue = []; g.roundT = C.ROUND_TIME; /* 4라운드가 시작될 때 다음(5라운드) 보스를 예고 */ C.tick(g, DT); if (g.cards.offer) C.pickCard(g, 0);
   check('보스 전 라운드(4라운드 시작)에 다음 라운드 보스 예고 알림', C.drainEvents(g).some(e => e.type === 'notice' && e.text.includes(C.bossInfo(5).name))); }
@@ -157,7 +160,7 @@ function arena(round, kinds) { const g = C.createGame(500 + round); g.captureEve
 { // 폭파병: 닿으면 터져 범위 피해, 자신은 사라지고 처치 수는 올라가지 않음
   const g = arena(8, [['bomber', 1500, 1500 - 120]]); g.core.atk = 0; const hp0 = g.core.hp, k0 = g.kills; let boomed = false; // 성채가 먼저 처치하지 못하게 공격력 0
   for (let i = 0; i < 30 * 10; i++) { C.tick(g, DT); if (C.drainEvents(g).some(e => e.type === 'boom' && e.enemy)) boomed = true; }
-  check('폭파병 자폭: 성채 피해 + 폭발 + 처치/골드 없음', boomed && g.core.hp < hp0 && g.enemies.length === 0 && g.kills === k0 && g.gold === 0, `성채 ${Math.round(hp0)}→${Math.round(g.core.hp)}`); }
+  check('폭파병 자폭: 성채 피해 + 폭발 + 처치/골드 없음', boomed && g.core.hp < hp0 && g.enemies.length === 0 && g.kills === k0 && g.gold === C.CFG.startGold, `성채 ${Math.round(hp0)}→${Math.round(g.core.hp)}`); }
 { // 주술사: 다친 적을 치유
   const g = arena(10, [['shaman', 1500, 1500 - 700], ['brute', 1500 + 40, 1500 - 700]]); const br = g.enemies.find(e => e.kind === 'brute'); br.hp = br.max * 0.3; let healed = false;
   for (let i = 0; i < 30 * 6; i++) { C.tick(g, DT); if (br.hp > br.max * 0.35) healed = true; }
@@ -276,5 +279,43 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
 { const g = arena(3, [['grunt', 1500 + 200, 1500]]); let aimed = false, swung = false;
   for (let i = 0; i < 30 * 4; i++) { C.tick(g, DT); if (g.core.swing > 0) swung = true; if (swung && Math.abs(g.core.aim - 0) < 0.3) aimed = true; }
   check('성채가 적 방향으로 대포를 조준하고 발사 상태(swing)가 됨', swung && aimed, 'aim=' + g.core.aim.toFixed(2)); }
+
+// 19) 적 스탯 절반 (체력·공격력, 이동 속도는 그대로)
+{ const g = arena(1, []); const e = C.spawnEnemy(g, 'grunt', 1500, 800), base = C.CFG.enemies.grunt;
+  check('적 체력이 절반', e.max === Math.round(base.hp * C.hpMul(1) * 0.5) && C.CFG.balance.enemyHp === 0.5, `${base.hp}→${e.max}`);
+  check('적 공격력이 절반', Math.abs(e.dmg - base.dmg * C.dmgMul(1) * 0.5) < 1e-9, `${base.dmg}→${e.dmg}`);
+  check('이동 속도는 그대로', Math.abs(e.speed - base.speed) < 1e-9, String(e.speed));
+  const bb = (() => { const g2 = arena(5, []); return C.spawnEnemy(g2, 'boss', 1500, 800); })();
+  check('보스 체력도 절반 (돌격왕 600→300)', bb.max === 300, String(bb.max)); }
+
+// 20) 발사 위치: 몸 중심이 아니라 포구/활 위치에서 출발하고, 높이가 지면 목표로 떨어진다
+{ const g = arena(3, [['grunt', 1500 + 220, 1500]]); g.core.atk = 20; let first = null;
+  for (let i = 0; i < 30 * 3 && !first; i++) { C.tick(g, DT); first = g.shots.find(s => s.color === 'c'); }
+  const d0 = first && Math.hypot(first.sx - 1500, first.sy - 1500);
+  check('성채 포탄은 성채 중심이 아니라 대포 포구(약 32px)에서 출발', first && Math.abs(d0 - 32) < 1.5, 'd=' + (d0 && d0.toFixed(1)));
+  check('포구 방향으로 나감 (적이 오른쪽이면 포구도 오른쪽)', first && first.sx > 1500 + 25 && Math.abs(first.sy - 1500) < 3, first && `(${first.sx.toFixed(0)},${first.sy.toFixed(0)})`); }
+{ const g = arena(3, []); g.gold = 1e6; g.buyCd.archer = 0; const ar = C.buy(g, 'archer').unit; ar.x = 1500 - 60; ar.y = 1500 + 200; ar.hx = ar.x; ar.hy = ar.y; g.core.atk = 0;
+  C.spawnEnemy(g, 'grunt', 1500 - 60 + 150, 1500 + 200); let sh = null; for (let i = 0; i < 30 * 4 && !sh; i++) { C.tick(g, DT); sh = g.shots.find(s => s.color === 'a'); }
+  const d = sh && Math.hypot(sh.sx - ar.x, sh.sy - ar.y);
+  check('화살은 궁수의 활 위치(약 10px 앞, 높이 2.5)에서 출발', sh && Math.abs(d - 10) < 1.5 && sh.h0 === 2.5, 'd=' + (d && d.toFixed(1))); }
+{ const g = arena(5, [['archer', 1500, 1500 - 420]]); g.core.atk = 0; const ea = g.enemies[0]; let sh = null;
+  for (let i = 0; i < 30 * 40 && !sh; i++) { C.tick(g, DT); sh = g.shots.find(s => s.color === 'ea'); }
+  const d = sh && Math.hypot(sh.sx - ea.x, sh.sy - ea.y);
+  check('적 사수의 화살도 활 위치에서 출발', sh && Math.abs(d - 10) < 1.5, 'd=' + (d && d.toFixed(1))); }
+{ const g = arena(3, []); g.cards.offer = [{ key: 's_turret', id: 's_turret', cat: 'summon', rar: 'rare', type: null, name: 't', desc: '', lv: 1 }]; C.pickCard(g, 0); g.core.atk = 0;
+  const tu = g.units.find(u => u.type === 'turret'); C.spawnEnemy(g, 'brute', tu.x + 150, tu.y); let sh = null; for (let i = 0; i < 30 * 4 && !sh; i++) { C.tick(g, DT); sh = g.shots.find(s => s.color === 't'); }
+  const d = sh && Math.hypot(sh.sx - tu.x, sh.sy - tu.y);
+  check('포탑 탄은 포신 끝(약 20px, 높이 9.5)에서 출발', sh && Math.abs(d - 20) < 1.5 && sh.h0 === 9.5, 'd=' + (d && d.toFixed(1))); }
+{ const g = arena(15, [['boss', 1500, 1500 - 600]]); g.gold = 1e6; g.buyCd.sword = 0; C.buy(g, 'sword'); let sh = null; const b = g.enemies[0];
+  for (let i = 0; i < 30 * 14 && !sh; i++) { C.tick(g, DT); sh = g.shots.find(s => s.aoe); }
+  const d = sh && Math.hypot(sh.sx - b.x, sh.sy - b.y);
+  check('포격대장 포탄은 어깨 대포 끝(약 85px, 높이 34)에서 출발', sh && Math.abs(d - 85) < 1.5 && sh.h0 === 34, 'd=' + (d && d.toFixed(1))); }
+{ const g = arena(25, [['boss', 1500, 1500 - 600]]); g.gold = 1e6; g.buyCd.sword = 0; C.buy(g, 'sword'); let sh = null; const b = g.enemies[0]; b.t.dash = 99;
+  for (let i = 0; i < 30 * 14 && !sh; i++) { C.tick(g, DT); sh = g.shots.find(s => s.aoe); }
+  check('대포 없는 보스(광전사)는 머리 위(높이 62)에서 던지듯 발사', sh && sh.h0 === 62 && Math.hypot(sh.sx - b.x, sh.sy - b.y) < 3 /* 같은 틱에 보스가 조금 움직이므로 오차 허용 */); }
+{ // 포물선: 시작 높이 h0 → 정점 → 목표 지면 (h=0)에 도착
+  const g = arena(3, [['grunt', 1500 + 220, 1500]]); let seen = [], tgt = null;
+  for (let i = 0; i < 30 * 3; i++) { C.tick(g, DT); const s = g.shots.find(x => x.color === 'c'); if (s) { tgt = s; seen.push(s.h); } else if (seen.length) break; }
+  check('포탄 높이가 포구에서 시작해 솟았다가 0으로 떨어짐', seen.length > 3 && Math.max(...seen) > 8 && seen[seen.length - 1] < Math.max(...seen) * 0.6, `max=${Math.max(...seen).toFixed(1)}, 마지막=${seen[seen.length - 1].toFixed(1)}`); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

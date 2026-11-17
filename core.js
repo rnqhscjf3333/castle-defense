@@ -20,7 +20,7 @@
 
   const CFG = {
     world: { w: W, h: H, cx: CX, cy: CY },
-    startGold: 0,   // 첫 라운드는 성채 혼자 버티며 처치 골드로 첫 유닛을 뽑는다
+    startGold: 210, // 검사·궁수·사제를 한 명씩(어떤 순서로든, 가격 상승 포함 최대 204) 뽑을 수 있는 금액
     leash: 240,           // 유닛이 성채로부터 추격할 수 있는 최대 거리
     ai: {
       bias: 0.08,         // 평소(적이 멀 때) 대기 자리가 적 방향으로 쏠리는 정도 (0 = 사방에 고르게, 1 = 전부 적 방향)
@@ -100,6 +100,7 @@
       hpSlope: 0.055, hpSlopeLate: 0.16, lateFrom: 20, // 체력 배율: 선형, lateFrom(대혼란) 이후 기울기 증가
       dmgShare: 0.5,                                  // 공격력은 체력 증가분의 이 비율만 반영
       lateSpeed: 1.1,                                 // 대혼란 이후 적 이동 속도 배율
+      enemyHp: 0.5, enemyDmg: 0.5,                    // 모든 적(보스 포함)의 체력/공격력 배율 (임시: 밸런스를 맞추기 전까지 절반)
     },
     economy: { costGrowth: 1.06 }, // (임시값: 1.05는 너무 쉽고 1.08은 어려웠음 — 밸런스는 나중에 재조정) // 유닛을 하나 뽑을 때마다 모든 유닛의 비용이 이 배율만큼 오른다 (인구 제한은 없다)
     healAfterRound: 0.30, // 새 라운드 시작 시 생존 유닛 회복 비율
@@ -504,9 +505,9 @@
       y = clamp(CY + Math.sin(ang) * SPAWN_RING + (S.rng() - 0.5) * 80, 20, H - 20);
     }
     const bd = kind === 'boss' ? (CFG.bosses[r] || CFG.bosses[30]) : null;
-    const hp = bd ? bd.hp : Math.round(cfg.hp * hpMul(r));
+    const hp = Math.max(1, Math.round((bd ? bd.hp : cfg.hp * hpMul(r)) * CFG.balance.enemyHp));
     const e = {
-      id: S.nextId++, kind, team: 'e', x, y, hp, max: hp, dmg: cfg.dmg * dmgMul(r), rate: cfg.rate, range: cfg.range,
+      id: S.nextId++, kind, team: 'e', x, y, hp, max: hp, dmg: cfg.dmg * dmgMul(r) * CFG.balance.enemyDmg, rate: cfg.rate, range: cfg.range,
       speed: cfg.speed * enemySpeedMul(r), r: cfg.r, gold: cfg.gold, aggro: cfg.aggro,
       cd: 0, age: 0, flash: 0, swing: 0, dead: false,
       ranged: !!cfg.ranged, blast: cfg.blast || 0, healRange: cfg.healRange || 0, healPct: cfg.healPct || 0, healRate: cfg.healRate || 0, keep: cfg.keep || 0,
@@ -549,12 +550,23 @@
     }
     else emit(S, { type: 'udead', x: tgt.x, y: tgt.y });
   }
+  // 발사 위치: 몸 중심이 아니라 그림의 포구/활 위치 (조준 방향으로 len만큼 나간 지점, 높이 h0에서 출발)
+  const MUZZLE = {
+    c: { len: 32, h0: 0 },   // 성채 대포 포구
+    a: { len: 10, h0: 2.5 }, // 아군 궁수의 활
+    ea: { len: 10, h0: 2.5 },// 적 사수의 활
+    t: { len: 20, h0: 9.5 }, // 포탑 포신
+    es: { len: 85, h0: 34 }, // 보스(포격대장) 어깨 대포
+    throw: { len: 0, h0: 62 },// 대포가 없는 보스: 머리 위로 던지듯 발사
+  };
   // 투사체: 지면 위치(x,y)는 목표를 향해 직선으로 가고, 높이(h)가 포물선을 그린다. 도착하면 피해.
   function fire(S, from, tgt, dmg, spd, color, extra) {
-    const dx = tgt.x - from.x, dy = tgt.y - from.y, d = Math.hypot(dx, dy), cf = CFG.shots;
+    const m = (color === 'es' && !(from.look && from.look.weapon === 'cannon')) ? MUZZLE.throw : (MUZZLE[color] || { len: 0, h0: 0 });
+    const ang = Math.atan2(tgt.y - from.y, tgt.x - from.x), sx = from.x + Math.cos(ang) * m.len, sy = from.y + Math.sin(ang) * m.len;
+    const dx = tgt.x - sx, dy = tgt.y - sy, d = Math.hypot(dx, dy), cf = CFG.shots;
     const T = extra && extra.T ? extra.T : Math.max(cf.minT, d / spd);
     const H = clamp(cf.arc * d + cf.arcMin, cf.arcMin, cf.arcMax);
-    S.shots.push(Object.assign({ x: from.x, y: from.y, sx: from.x, sy: from.y, p: 0, T, H, h: 0, vx: 0, vy: 0, vh: 0, t: tgt, dmg, color }, extra || null));
+    S.shots.push(Object.assign({ x: sx, y: sy, sx, sy, p: 0, T, H, h: m.h0, h0: m.h0, vx: 0, vy: 0, vh: 0, t: tgt, dmg, color }, extra || null));
   }
   // 도착한 투사체 처리
   function resolveShot(S, s) {
@@ -717,7 +729,7 @@
         for (let i = 0; i < A.artillery.count; i++) {
           const tg = near.length ? near[Math.floor(S.rng() * near.length)] : S.core;
           const gt = { x: tg.x + (S.rng() - 0.5) * 40, y: tg.y + (S.rng() - 0.5) * 40, r: 0 }; // 떨어질 지점 (미리 표시된다)
-          fire(S, e, gt, A.artillery.dmg * dmgMul(S.round) / Math.max(1, dmgMul(S.round) * 0.6), 0, 'es', { T: A.artillery.flight, aoe: A.artillery.radius });
+          fire(S, e, gt, A.artillery.dmg * dmgMul(S.round) / Math.max(1, dmgMul(S.round) * 0.6) * CFG.balance.enemyDmg, 0, 'es', { T: A.artillery.flight, aoe: A.artillery.radius });
         }
         e.swing = 0.4;
       }
@@ -836,8 +848,8 @@
       s.p += dt / s.T;
       const p = Math.min(1, s.p), tx = s.t.x, ty = s.t.y;
       s.x = s.sx + (tx - s.sx) * p; s.y = s.sy + (ty - s.sy) * p;
-      s.h = 4 * s.H * p * (1 - p);
-      s.vx = (tx - s.sx) / s.T; s.vy = (ty - s.sy) / s.T; s.vh = 4 * s.H * (1 - 2 * p) / s.T; // 화면에서 화살 방향을 그리기 위한 속도
+      s.h = 4 * s.H * p * (1 - p) + s.h0 * (1 - p); // 포구 높이에서 출발해 포물선을 그리며 지면 목표에 떨어진다
+      s.vx = (tx - s.sx) / s.T; s.vy = (ty - s.sy) / s.T; s.vh = (4 * s.H * (1 - 2 * p) - s.h0) / s.T; // 화면에서 화살 방향을 그리기 위한 속도
       if (s.p >= 1) { resolveShot(S, s); S.shots.splice(i, 1); }
     }
 
