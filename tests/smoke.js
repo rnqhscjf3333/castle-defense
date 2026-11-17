@@ -18,6 +18,7 @@ function play(seed, policy) {
   while (!S.over && S.t < 3000 && steps < 200000) {
     if (steps % 15 === 0) for (const t of BUY) C.buy(S, t);
     playCards(S, policy, rnd);
+    if (S.jobs.offer) C.pickJob(S, Math.floor(rnd() * S.jobs.offer.list.length)); // 보스 처치 후 전직 선택 (선택 전에는 시간이 멈춘다)
     C.tick(S, DT); steps++;
   }
   return { round: S.round, win: S.win, kills: S.kills, t: Math.round(S.t), units: S.units.length, coreHp: Math.round(S.core.hp), cards: Object.values(S.cards.taken).reduce((a, b) => a + b, 0), ms: Date.now() - t0 };
@@ -194,5 +195,59 @@ function arena(round, kinds) { const g = C.createGame(500 + round); g.captureEve
   for (let i = 0; i < 30 * 6 && !seen; i++) { C.tick(g, DT); for (const s of g.shots) { hs.push(s.h); hmax = Math.max(hmax, s.h); tFly += 1; seen = true; } }
   check('아군 화살/성채 포탄도 포물선', hmax > 8 && hs.length >= 1, 'h최대=' + hmax.toFixed(1)); }
 
+
+// 14) 특수 소환도 유닛 가격을 올린다
+{ const g = C.createGame(31); g.gold = 1e6; const before = C.unitCostOf(g, 'sword'), bc = g.buyCount;
+  applyById(g, 's_golem');
+  check('골렘 소환 → 모든 유닛 가격 상승 (priceSteps 3)', g.buyCount === bc + 3 && C.unitCostOf(g, 'sword') > before && C.unitCostOf(g, 'archer') > C.CFG.units.archer.cost, `${before}→${C.unitCostOf(g, 'sword')}`);
+  const bc2 = g.buyCount; applyById(g, 's_hero'); applyById(g, 's_turret');
+  check('용사(+2)·포탑(+1) 소환도 가격 상승', g.buyCount === bc2 + 3, 'buyCount ' + bc2 + '→' + g.buyCount);
+  check('카드 설명에 인구 표기 없음', C.CARD_DEFS.every(d => !String(d.desc ? d.desc(1) : '').includes('인구'))); }
+
+// 15) 전직: 보스를 처치하면 직업 선택, 선택하면 해당 직업이 강해진다
+function killBoss(g) { const b = g.enemies.find(e => e.kind === 'boss'); b.hp = 1; b.shieldT = 0; g.core.atk = 1e6; for (let i = 0; i < 90 && !g.jobs.offer; i++) C.tick(g, DT); return b; }
+{ const g = arena(5, [['boss', 1500, 1500 - 220]]); g.gold = 1e6; C.buy(g, 'sword'); g.buyCd.sword = 0; C.buy(g, 'archer'); g.buyCd.archer = 0; C.buy(g, 'priest');
+  const b = killBoss(g);
+  check('보스 처치 → 전직 선택(최대 3개) + 시간 정지', b.dead && g.jobs.offer && g.jobs.offer.list.length === 3 && g.jobs.offer.boss === b.bossName, g.jobs.offer && g.jobs.offer.list.map(o => o.className + ':' + o.name).join(' / '));
+  const t0 = g.t; for (let i = 0; i < 20; i++) C.tick(g, DT); check('전직 선택 중 시간이 멈춤', g.t === t0);
+  check('1단계 선택지는 직업마다 2갈래 중에서', g.jobs.offer.list.every(o => o.tier === 1));
+  // 검사 → 기사 선택
+  const knightIdx = g.jobs.offer.list.findIndex(o => o.id === 'knight');
+  if (knightIdx < 0) { g.jobs.offer.list[0] = C.jobOptions(g).find(o => o.id === 'knight'); }
+  const sw = g.units.find(u => u.type === 'sword'), hp0 = sw.max;
+  C.pickJob(g, g.jobs.offer.list.findIndex(o => o.id === 'knight'));
+  check('전직(기사): 체력 +60%, 직업 표시', Math.abs(sw.max - Math.round(hp0 * 1.6)) <= 1 && sw.job === 'knight' && sw.jobTier === 1, `${hp0}→${sw.max}`);
+  check('전직 선택 후 시간 재개', (() => { const t = g.t; C.tick(g, DT); return g.t > t; })());
+  check('새로 뽑는 유닛도 전직 효과를 받음', (() => { g.buyCd.sword = 0; const n = C.buy(g, 'sword').unit; return n.max === sw.max && n.job === 'knight'; })());
+  // 2단계: 기사 → 성기사 (같은 직업의 같은 갈래만 나옴)
+  const opts2 = C.jobOptions(g).filter(o => o.type === 'sword');
+  check('2단계 선택지는 선택한 갈래의 상위 직업만', opts2.length === 1 && opts2[0].id === 'paladin' && opts2[0].tier === 2, opts2.map(o => o.name).join());
+  g.jobs.offer = { boss: 't', list: opts2 }; C.pickJob(g, 0);
+  check('성기사: 체력 추가 증가 + 받는 피해 감소 + 재생 보정 합산', g.jobMods.sword.hp > 1.09 && g.jobMods.sword.def > 0.34 && g.jobMods.sword.regen === 0.02, JSON.stringify(g.jobMods.sword));
+  sw.hp = sw.max * 0.5; const h0 = sw.hp; g.enemies.length = 0; g.queue = []; for (let i = 0; i < 60; i++) C.tick(g, DT);
+  check('성기사 재생: 체력이 서서히 차오름', sw.hp > h0, Math.round(h0) + '→' + Math.round(sw.hp));
+  check('최종 전직 이후 그 직업은 더 이상 제안되지 않음', C.jobOptions(g).every(o => o.type !== 'sword'));
+  check('describeJobs에 전직 이력 표시', JSON.stringify(C.describeJobs(g).find(j => j.type === 'sword').names) === '["기사","성기사"]'); }
+{ // 각 직업의 효과
+  const g = C.createGame(41); g.gold = 1e7; for (const t of ['sword', 'archer', 'priest']) { g.buyCd[t] = 0; C.buy(g, t); }
+  const ar = g.units.find(u => u.type === 'archer'), pr = g.units.find(u => u.type === 'priest'), r0 = ar.range, hr0 = pr.healRange, heal0 = pr.heal;
+  const give = id => { const o = C.jobOptions(g).find(x => x.id === id); g.jobs.offer = { boss: 't', list: [o] }; C.pickJob(g, 0); };
+  give('sniper'); check('저격수: 사거리 +60, 공격력 상승', ar.range === r0 + 60 && ar.atk > C.CFG.units.archer.atk * 1.5, `${r0}→${ar.range}`);
+  give('deadeye'); check('명사수: 관통(화살이 뒤의 적을 맞힘) 효과 합산', g.jobMods.archer.pierce === 1);
+  give('bishop'); const rl = g.reviveLeft; check('주교: 부활 횟수 즉시 +1', rl >= 1, 'reviveLeft=' + rl);
+  give('archbishop'); check('대주교: 부활 +1 더 (라운드당 2회)', g.jobMods.priest.revive === 2);
+  const pr2 = g.units.find(u => u.type === 'priest'); check('주교 계열: 치유량 증가', pr2.heal > heal0, `${heal0}→${pr2.heal.toFixed(1)}`);
+  const g2 = C.createGame(42); g2.gold = 1e7; g2.buyCd.priest = 0; C.buy(g2, 'priest'); const p2 = g2.units[0], hr = p2.healRange;
+  g2.jobs.offer = { boss: 't', list: [C.jobOptions(g2).find(x => x.id === 'cleric')] }; C.pickJob(g2, 0); check('성직자: 치유 범위 +60', p2.healRange === hr + 60, `${hr}→${p2.healRange}`);
+  const g3 = C.createGame(43); g3.gold = 1e7; g3.buyCd.sword = 0; C.buy(g3, 'sword'); const s3 = g3.units[0], a0 = s3.atk;
+  g3.jobs.offer = { boss: 't', list: [C.jobOptions(g3).find(x => x.id === 'fighter')] }; C.pickJob(g3, 0); check('투사: 공격력 +50%, 공격 속도 +20%', Math.abs(s3.atk / a0 - 1.5) < 1e-9 && Math.abs(s3.rate / C.CFG.units.sword.rate - 1.2) < 1e-9);
+  g3.jobs.offer = { boss: 't', list: [C.jobOptions(g3).find(x => x.id === 'blademaster')] }; C.pickJob(g3, 0);
+  // 검성 베기: 주변 적에게도 피해
+  g3.enemies.length = 0; const e1 = C.spawnEnemy(g3, 'brute', s3.x + 30, s3.y), e2 = C.spawnEnemy(g3, 'brute', s3.x + 38, s3.y + 14); g3.core.atk = 0; g3.round = 5;
+  const h1 = e1.hp, h2 = e2.hp; for (let i = 0; i < 40; i++) C.tick(g3, DT);
+  check('검성: 주변 적에게도 베기 피해', e1.hp < h1 && e2.hp < h2, `${Math.round(h1 - e1.hp)} / ${Math.round(h2 - e2.hp)}`); }
+{ // 마지막 보스(30라운드)는 전직 제안 없이 승리 처리
+  const g = arena(30, [['boss', 1500, 1500 - 220]]); g.round = 30; g.queue = []; const b = g.enemies[0]; b.hp = 1; g.core.atk = 1e6; for (let i = 0; i < 90; i++) C.tick(g, DT);
+  check('30라운드 최종 보스 처치: 전직 없이 승리', g.jobs.offer === null && g.over && g.win); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

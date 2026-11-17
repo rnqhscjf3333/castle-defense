@@ -59,6 +59,42 @@
   // 휘두르기 각도 오프셋 (swing: 남은 시간, max: 전체 시간)
   function swingOff(e, max) { return e.swing > 0 ? -1.1 + 2.2 * (1 - e.swing / max) : 0.35; }
 
+  // ───────────── 전직 장식 ─────────────
+  function star(ctx, x, y, r) {
+    ctx.beginPath(); for (let i = 0; i < 8; i++) { const a = -Math.PI / 2 + i * Math.PI / 4, rr = i % 2 ? r * 0.42 : r; const px = x + Math.cos(a) * rr, py = y + Math.sin(a) * rr; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+    ctx.closePath();
+  }
+  // 전직한 유닛: 단계 별 + 직업별 소품 (머리 위/몸에 덧그림)
+  function jobDeco(ctx, e, s, h) {
+    const id = e.job; if (!id || e.flash > 0) return;
+    const hy = h.hyHead, d = e._dir;
+    ctx.lineJoin = 'round';
+    if (id === 'knight' || id === 'paladin') { // 투구 + 붉은 깃털
+      ctx.fillStyle = '#aab4c6'; ctx.strokeStyle = '#2a3140'; ctx.lineWidth = s; ctx.beginPath(); ctx.arc(0, hy - 0.4 * s, 6.3 * s, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#d83a3a'; ctx.beginPath(); ctx.ellipse(-d * 1 * s, hy - 8.4 * s, 1.7 * s, 4.2 * s, d * 0.5, 0, TAU); ctx.fill();
+      if (id === 'paladin') { ctx.strokeStyle = '#ffd84a'; ctx.lineWidth = 1.2 * s; ctx.beginPath(); ctx.arc(0, hy - 0.4 * s, 6.3 * s, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke(); ctx.fillStyle = '#ffd84a'; circle(ctx, d * 6 * s, -1.6 * s + h.bob, 2 * s); ctx.fill(); }
+    } else if (id === 'fighter' || id === 'blademaster') { // 붉은 머리띠
+      line(ctx, -5.6 * s, hy - 2 * s, 5.6 * s, hy - 2 * s, 2 * s, '#d83a3a'); line(ctx, -d * 5.6 * s, hy - 2 * s, -d * 10 * s, hy - 0.5 * s, 1.4 * s, '#d83a3a');
+      if (id === 'blademaster') { ctx.fillStyle = '#ffd84a'; circle(ctx, d * 2.4 * s, hy - 2 * s, 1.1 * s); ctx.fill(); }
+    } else if (id === 'sniper' || id === 'deadeye') { // 조준경(외눈 안경)
+      ctx.strokeStyle = id === 'deadeye' ? '#ffd84a' : '#cfd6e4'; ctx.lineWidth = 1.3 * s; circle(ctx, d * 3.7 * s, hy - 0.3 * s, 2.5 * s); ctx.stroke(); line(ctx, d * 3.7 * s, hy + 2.2 * s, d * 3 * s, hy + 5 * s, 1 * s, ctx.strokeStyle);
+    } else if (id === 'ranger' || id === 'stormarcher') { // 등에 멘 화살통
+      ctx.save(); ctx.translate(-d * 7 * s, -2 * s + h.bob); ctx.rotate(-d * 0.35); ctx.fillStyle = '#8a5a2a'; ctx.strokeStyle = '#3a2410'; ctx.lineWidth = s; rect(ctx, -1.8 * s, -2 * s, 3.6 * s, 10 * s, s); ctx.fill(); ctx.stroke();
+      for (const k of [-1, 0, 1]) line(ctx, k * 1.2 * s, -2 * s, k * 1.6 * s, -5.2 * s, 0.9 * s, id === 'stormarcher' ? '#ffe85a' : '#e8e0cc'); ctx.restore();
+    } else if (id === 'cleric' || id === 'highcleric') { // 큰 황금 광륜
+      ctx.strokeStyle = '#ffe36a'; ctx.lineWidth = (id === 'highcleric' ? 2.6 : 2) * s; ctx.globalAlpha = 0.9; ctx.beginPath(); ctx.ellipse(0, hy - 8.6 * s, 7 * s, 2.3 * s, 0, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1;
+      if (id === 'highcleric') { ctx.globalAlpha = 0.18; ctx.fillStyle = '#fff2a0'; circle(ctx, 0, hy - 8.6 * s, 11 * s); ctx.fill(); ctx.globalAlpha = 1; }
+    } else if (id === 'bishop' || id === 'archbishop') { // 주교관(뾰족한 흰 모자 + 금 십자)
+      ctx.fillStyle = '#fbf6e6'; ctx.strokeStyle = '#8a6a1a'; ctx.lineWidth = s; tri(ctx, -5 * s, hy - 4 * s, 5 * s, hy - 4 * s, 0, hy - 14 * s); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#e0a63a'; ctx.fillRect(-0.8 * s, hy - 12 * s, 1.6 * s, 5.4 * s); ctx.fillRect(-2.4 * s, hy - 9.8 * s, 4.8 * s, 1.5 * s);
+      if (id === 'archbishop') { ctx.strokeStyle = '#ffd84a'; ctx.lineWidth = 1.2 * s; ctx.beginPath(); ctx.arc(0, hy - 9 * s, 8 * s, -2.4, -0.74); ctx.stroke(); }
+    }
+    // 전직 단계 별
+    const n = e.jobTier || 1, top = hy - (id === 'bishop' || id === 'archbishop' ? 15 : id === 'knight' || id === 'paladin' ? 13.5 : id === 'cleric' || id === 'highcleric' ? 12.5 : 11) * s;
+    ctx.fillStyle = '#ffd84a'; ctx.strokeStyle = '#6a4a08'; ctx.lineWidth = 0.8 * s;
+    for (let i = 0; i < n; i++) { star(ctx, (i - (n - 1) / 2) * 5 * s, top - 2 * s, 2.6 * s); ctx.fill(); ctx.stroke(); }
+  }
+
   // ───────────── 유닛 ─────────────
   const UNIT = {
     sword(ctx, e, s) {
@@ -73,6 +109,7 @@
       line(ctx, gx, gy, bx, by, 2.4 * s, e.flash > 0 ? '#fff' : '#e8edf5');
       line(ctx, gx - Math.cos(ang + 1.57) * 3 * s, gy - Math.sin(ang + 1.57) * 3 * s, gx + Math.cos(ang + 1.57) * 3 * s, gy + Math.sin(ang + 1.57) * 3 * s, 1.6 * s, '#caa24a');
       if (e.swing > 0) { ctx.globalAlpha = 0.35; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.arc(gx, gy, 13 * s, ang - 0.9 * e._dir, ang, e._dir < 0); ctx.stroke(); ctx.globalAlpha = 1; }
+      jobDeco(ctx, e, s, h);
     },
     archer(ctx, e, s) {
       const h = body(ctx, e, { s, body: '#4fa86b', legs: '#2b5a3a', head: '#f3cfa6', line: '#10261a', belt: '#7a5a2a' });
@@ -91,6 +128,7 @@
       line(ctx, px, py, px + Math.cos(ang) * 11 * s, py + Math.sin(ang) * 11 * s, 1.3 * s, '#d8cfa8');
       tri(ctx, px + Math.cos(ang) * 13 * s, py + Math.sin(ang) * 13 * s, px + Math.cos(ang + 2.6) * 2 * s + Math.cos(ang) * 9 * s, py + Math.sin(ang + 2.6) * 2 * s + Math.sin(ang) * 9 * s, px + Math.cos(ang - 2.6) * 2 * s + Math.cos(ang) * 9 * s, py + Math.sin(ang - 2.6) * 2 * s + Math.sin(ang) * 9 * s);
       ctx.fillStyle = '#cfd6e4'; ctx.fill();
+      jobDeco(ctx, e, s, h);
     },
     priest(ctx, e, s) {
       const h = body(ctx, e, { s, body: '#f2ecd8', legs: '#c9b98a', head: '#f3cfa6', line: '#5a4a20', belt: '#e0a63a', bw: 13, bh: 14 });
@@ -104,6 +142,7 @@
       ctx.fillStyle = '#e8ffe8'; circle(ctx, sx, top - 2 * s, 2.6 * s); ctx.fill();
       // 가슴 십자
       if (e.flash <= 0) { ctx.fillStyle = '#d96a6a'; ctx.fillRect(-0.9 * s, -0.5 * s + h.bob, 1.8 * s, 6 * s); ctx.fillRect(-3 * s, 1.4 * s + h.bob, 6 * s, 1.8 * s); }
+      jobDeco(ctx, e, s, h);
     },
     golem(ctx, e, s) {
       const h = body(ctx, e, { s, body: '#7f93b8', legs: '#4b5d82', head: '#aab8d3', line: '#26324d', bw: 18, bh: 15, eye: '#ffd166', belt: '#5b6d92' });
@@ -255,7 +294,7 @@
     ctx.restore();
   }
   // 체력 바 위치 계산용: 그림의 머리 위 높이
-  function headTop(e) { return -(e.r / 10) * 1.25 * (e.kind === 'boss' ? 17 : 16); }
+  function headTop(e) { return -(e.r / 10) * 1.25 * (e.kind === 'boss' ? 17 : e.jobTier ? 21 : 16); }
 
   window.Figures = { draw, headTop };
 })();

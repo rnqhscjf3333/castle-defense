@@ -54,6 +54,7 @@ try {
   await ev("document.querySelectorAll('.ucard')[0].click()"); await sleep(300);
   const price1 = await ev("(()=>{const t=document.querySelectorAll('.ucard .cost')[1].textContent; return +t.replace('G','');})()");
   check('유닛을 뽑으면 다른 유닛 카드의 가격도 오름', price1 > price0, price0 + 'G→' + price1 + 'G');
+  check('가격이 오르면 카드에 +N 표시', await ev("(()=>{const d=document.querySelectorAll('.ucard .delta')[1]; return d.textContent.startsWith('+') && d.classList.contains('show');})()"), await ev("document.querySelectorAll('.ucard .delta')[1].textContent"));
 
   // 2) 카드 선택: 열림 → 시간 정지 → 리롤 문구 갱신 → 키보드 선택 → 닫힘 → 시간 재개
   await open('?bot=1&nopick=1&warp=53&seed=11&zoom=1', 1200);
@@ -70,6 +71,18 @@ try {
   check('선택 후 시간 재개', a1 - a0 > 1.2, (a1 - a0).toFixed(2) + '초');
   check('강화 반영(토스트/목록)', await ev("(document.getElementById('btnUp').click(), document.getElementById('upl').textContent.includes('Lv 1'))"));
 
+  // 2.5) 전직 선택창: 보스 처치 보상 (선택 중 시간 정지, 키보드 선택, 강화 목록 반영)
+  await open('?bot=1&nopick=1&seed=21&zoom=1', 800); // nopick: 봇이 선택창을 자동으로 넘기지 않게
+  await ev("(()=>{const g=__game,C=g.CastleCore,S=g.S; S.jobs.offer={boss:'돌격왕', list:C.jobOptions(S).slice(0,3)};})()"); await sleep(500);
+  check('전직 선택창 표시 (3개, 전직 스타일, 제목에 보스 이름)', await ev("(()=>{const p=document.getElementById('picker'); return !p.classList.contains('hidden') && document.querySelectorAll('#pickCards .pcard.job').length===3 && document.getElementById('pickTitle').textContent.includes('돌격왕') && document.getElementById('pickTitle').textContent.includes('전직');})()"), await ev("document.getElementById('pickTitle').textContent"));
+  check('전직 선택창에는 다시 뽑기 버튼이 없음', await ev("getComputedStyle(document.getElementById('btnReroll')).display==='none'"));
+  const jt0 = await ev('__game.S.t'); await sleep(600); check('전직 선택 중 시간 정지', (await ev('__game.S.t')) === jt0);
+  const pickedJob = await ev('__game.S.jobs.offer.list[0].name');
+  await send('Input.dispatchKeyEvent', { type: 'keyDown', key: '1', code: 'Digit1', text: '1' }); await send('Input.dispatchKeyEvent', { type: 'keyUp', key: '1', code: 'Digit1' }); await sleep(500);
+  check('키보드 1번으로 전직 → 창 닫힘, 시간 재개', await ev("document.getElementById('picker').classList.contains('hidden') && __game.S.jobs.offer===null") && (await ev('__game.S.t')) > jt0, pickedJob);
+  await ev("document.getElementById('btnUp').click()");
+  check('강화 목록에 전직 이력 표시', (await ev("document.getElementById('upl').textContent")).includes(pickedJob) && (await ev("document.getElementById('upl').textContent")).includes('전직'), await ev("document.getElementById('upl').textContent"));
+
   // 3) 마우스 드래그(실제 입력 이벤트)로 화면 이동
   await open('?bot=1&seed=11&zoom=1', 800);
   const c0 = await ev('({x:__game.cam.x,y:__game.cam.y})');
@@ -84,7 +97,7 @@ try {
   // 3.5) 보스 라운드 표시: 라운드 표시, 보스 체력 바, 화면 밖 보스는 미니맵/화살표 대상
   await open('?bot=1&warp=165&seed=3&zoom=1', 1200); // 5라운드(160초) 시작 직후
   check('보스 라운드 표시 (라운드 문구에 보스, 빨간색)', (await ev("document.getElementById('roundTxt').textContent")).includes('보스') && await ev("document.getElementById('roundTxt').classList.contains('boss')"), await ev("document.getElementById('roundTxt').textContent"));
-  check('보스 체력 바가 위에 크게 표시됨', await ev("(()=>{const b=document.getElementById('bossbar'); if(b.hidden) return false; const r=b.getBoundingClientRect(); return r.width>=300 && r.top<20 && document.getElementById('bossName').textContent==='돌격왕' && document.getElementById('bossHpTxt').textContent.includes('/');})()"), await ev("document.getElementById('bossName').textContent + ' ' + document.getElementById('bossHpTxt').textContent"));
+  check('보스 체력 바가 화면 맨 위에 작고 얇게 표시됨 (높이 ≤ 64px)', await ev("(()=>{const b=document.getElementById('bossbar'); if(b.hidden) return false; const r=b.getBoundingClientRect(); return r.width>=220 && r.top<=8 && r.height<=64 && document.getElementById('bossName').textContent==='돌격왕' && document.getElementById('bossHpTxt').textContent.includes('/');})()"), await ev("document.getElementById('bossName').textContent + ' ' + document.getElementById('bossHpTxt').textContent"));
   check('보스가 화면 밖이어도 위치 표시 가능 (보스 존재 + 카메라 밖)', await ev("(()=>{const b=__game.S.enemies.find(e=>e.kind==='boss'); const c=__game.cam; return !!b && (Math.abs(b.x-c.x)>500 || Math.abs(b.y-c.y)>350);})()"));
   check('보스 정보 제공 (5라운드 보스 = 돌격왕)', await ev("(()=>{const r=__game.CastleCore.bossInfo(5); return !!r && r.name==='돌격왕';})()"));
   await ev("(()=>{const b=__game.S.enemies.find(e=>e.kind==='boss'); b.hp = 300;})()"); await sleep(400);

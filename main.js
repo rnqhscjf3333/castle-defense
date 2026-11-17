@@ -91,12 +91,12 @@
   C.UNIT_TYPES.forEach((t, i) => {
     const b = document.createElement('button');
     b.className = 'btn panel ucard';
-    b.innerHTML = '<div class="nm"></div><div class="ds"></div><div class="cost"></div><div class="cdfill"></div><span class="key">' + KEYS[i] + '</span>';
+    b.innerHTML = '<div class="nm"></div><div class="ds"></div><div class="cost"></div><span class="delta"></span><div class="cdfill"></div><span class="key">' + KEYS[i] + '</span>';
     b.querySelector('.nm').textContent = CFG.units[t].name;
     b.querySelector('.ds').textContent = DESC[t];
     b.addEventListener('click', () => doBuy(t));
     $('units').appendChild(b);
-    ucards[t] = { el: b, cost: b.querySelector('.cost'), cd: b.querySelector('.cdfill') };
+    ucards[t] = { el: b, cost: b.querySelector('.cost'), cd: b.querySelector('.cdfill'), delta: b.querySelector('.delta') };
   });
   function doBuy(t) {
     if (!S || !running || paused) return;
@@ -108,9 +108,9 @@
   $('btnSpeed').addEventListener('click', () => { speed = speed === 1 ? 2 : speed === 2 ? 3 : 1; $('btnSpeed').textContent = speed + '×'; });
   window.addEventListener('keydown', e => {
     if (e.repeat) return;
-    if (S && S.cards.offer) { // 카드 선택 중에는 1·2·3이 카드 선택, R이 다시 뽑기
+    if (S && (S.cards.offer || S.jobs.offer)) { // 카드/전직 선택 중에는 1·2·3이 선택, R이 다시 뽑기(카드만)
       if (e.key === '1' || e.key === '2' || e.key === '3') choose(+e.key - 1);
-      else if (e.key === 'r' || e.key === 'R') C.reroll(S);
+      else if ((e.key === 'r' || e.key === 'R') && S.cards.offer && !S.jobs.offer) C.reroll(S);
       return;
     }
     if (e.key === '1' || e.key === '2' || e.key === '3') doBuy(C.UNIT_TYPES[+e.key - 1]);
@@ -152,6 +152,11 @@
     const f = $('hpfill'); f.style.width = pct + '%'; f.style.background = pct > 50 ? 'var(--ok)' : pct > 25 ? 'var(--gold)' : 'var(--danger)';
     for (const t of C.UNIT_TYPES) {
       const u = ucards[t], cost = C.unitCostOf(S, t), cd = S.buyCd[t] > 0 ? S.buyCd[t] / CFG.units[t].buyCd : 0;
+      if (u.last !== undefined && cost > u.last) { // 가격이 오르면 숫자가 붉게 튀고 +N이 떠오른다
+        u.cost.classList.remove('up'); void u.cost.offsetWidth; u.cost.classList.add('up');
+        u.delta.textContent = '+' + (cost - u.last); u.delta.classList.remove('show'); void u.delta.offsetWidth; u.delta.classList.add('show');
+      }
+      u.last = cost;
       u.cost.textContent = cost + 'G';
       u.cd.style.height = (cd * 100) + '%';
       const cant = S.gold < cost;
@@ -163,41 +168,55 @@
   const CAT_NAME = { unit: '유닛 강화', core: '성채 강화', summon: '특수 소환' };
   const RAR_NAME = { common: '일반', rare: '희귀', epic: '영웅' };
   let shownOffer = null;
+  const currentOffer = () => (S && S.jobs.offer) ? { kind: 'job', list: S.jobs.offer.list, ref: S.jobs.offer } : (S && S.cards.offer) ? { kind: 'card', list: S.cards.offer, ref: S.cards.offer } : null;
   function syncPicker() {
-    const offer = S ? S.cards.offer : null;
-    if (offer === shownOffer) { if (offer) updateReroll(); return; }
-    shownOffer = offer;
+    const cur = currentOffer(), ref = cur ? cur.ref : null;
+    if (ref === shownOffer) { if (cur && cur.kind === 'card') updateReroll(); return; }
+    shownOffer = ref;
     const el = $('picker');
-    if (!offer) { el.classList.add('hidden'); return; }
-    $('pickTitle').textContent = '라운드 ' + (S.round - 1) + ' 돌파 · 업그레이드 선택';
-    $('pickSub').textContent = S.cards.boss ? '보스 격파 보상 — 희귀 이상 카드가 한 장 이상 나와요' : '카드를 한 장 고르세요';
-    const box = $('pickCards'); box.innerHTML = '';
-    offer.forEach((c, i) => {
+    if (!cur) { el.classList.add('hidden'); return; }
+    const job = cur.kind === 'job', box = $('pickCards'); box.innerHTML = '';
+    if (job) {
+      $('pickTitle').textContent = S.jobs.offer.boss + ' 처치! 전직';
+      $('pickSub').textContent = '직업 하나를 골라 강화해요 — 이미 전직한 직업은 한 단계 더 강해져요';
+    } else {
+      $('pickTitle').textContent = '라운드 ' + (S.round - 1) + ' 돌파 · 업그레이드 선택';
+      $('pickSub').textContent = S.cards.boss ? '보스 격파 보상 — 희귀 이상 카드가 한 장 이상 나와요' : '카드를 한 장 고르세요';
+    }
+    $('btnReroll').style.display = job ? 'none' : '';
+    $('pickHint').textContent = job ? '1·2·3 선택 · 고르는 동안 시간이 멈춰요' : '1·2·3 선택 · R 다시 뽑기 · 고르는 동안 시간이 멈춰요';
+    cur.list.forEach((c, i) => {
       const b = document.createElement('button');
-      b.className = 'pcard rar-' + c.rar + ' cat-' + c.cat;
+      b.className = job ? 'pcard job' : 'pcard rar-' + c.rar + ' cat-' + c.cat;
       const tags = document.createElement('div'); tags.className = 'tags';
-      const cat = document.createElement('span'); cat.className = 'cat'; cat.textContent = CAT_NAME[c.cat];
-      const rar = document.createElement('span'); rar.className = 'rar'; rar.textContent = RAR_NAME[c.rar];
+      const cat = document.createElement('span'); cat.className = 'cat'; cat.textContent = job ? c.tier + '단계 전직' : CAT_NAME[c.cat];
+      const rar = document.createElement('span'); rar.className = 'rar'; rar.textContent = job ? c.className : RAR_NAME[c.rar];
       tags.append(cat, rar);
+      b.append(tags);
+      if (job) {
+        const hist = C.describeJobs(S).find(j => j.type === c.type);
+        if (hist) { const fr = document.createElement('div'); fr.className = 'from'; fr.textContent = c.className + ' › ' + hist.names.join(' › '); b.append(fr); }
+      }
       const pn = document.createElement('div'); pn.className = 'pn'; pn.textContent = c.name;
       const pd = document.createElement('div'); pd.className = 'pd'; pd.textContent = c.desc;
       const pk = document.createElement('span'); pk.className = 'pk'; pk.textContent = String(i + 1);
-      b.append(tags, pn, pd, pk);
+      b.append(pn, pd, pk);
       b.addEventListener('click', () => choose(i));
       box.appendChild(b);
     });
-    updateReroll();
+    if (!job) updateReroll();
     el.classList.remove('hidden');
   }
   function updateReroll() { const b = $('btnReroll'), n = S.cards.rerolls; b.textContent = '다시 뽑기 (' + n + ')'; b.disabled = n <= 0; }
-  function choose(i) { if (S && S.cards.offer) C.pickCard(S, i); }
+  function choose(i) { if (!S) return; if (S.jobs.offer) C.pickJob(S, i); else if (S.cards.offer) C.pickCard(S, i); }
   $('btnReroll').addEventListener('click', () => { if (S) C.reroll(S); });
 
   function renderUpgrades() {
     const el = $('upl'); if (!S) return;
-    const list = C.describeTaken(S);
+    const list = C.describeTaken(S), jobs = C.describeJobs(S);
     el.innerHTML = '';
-    if (!list.length) { el.textContent = '아직 선택한 강화가 없어요'; return; }
+    if (!list.length && !jobs.length) { el.textContent = '아직 선택한 강화가 없어요'; return; }
+    for (const j of jobs) { const row = document.createElement('div'); row.className = 'it epic'; const a = document.createElement('span'); a.textContent = j.className + ' 전직'; const b = document.createElement('b'); b.textContent = j.names.join(' › '); row.append(a, b); el.appendChild(row); }
     for (const it of list) {
       const row = document.createElement('div'); row.className = 'it ' + it.rar;
       const a = document.createElement('span'); a.textContent = it.name;
@@ -220,6 +239,11 @@
       else if (ev.type === 'revive') { fx.push({ k: 'heal', x: ev.x, y: ev.y, t: 0, max: 0.8 }); toast('아군이 부활했어요'); }
       else if (ev.type === 'picked') { toast(ev.name + ' 획득'); renderUpgrades(); }
       else if (ev.type === 'notice') toast(ev.text);
+      else if (ev.type === 'priceUp') toast('소환으로 모든 유닛 가격이 올랐어요');
+      else if (ev.type === 'promote') {
+        banner(ev.className + ' → ' + ev.name + ' 전직!'); renderUpgrades();
+        for (const u of S.units) if (u.type === ev.unitType && fx.length < 300) fx.push({ k: 'ring', x: u.x, y: u.y, t: 0, max: 0.7, c: '#ffd166' });
+      }
       else if (ev.type === 'bossDash') fx.push({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.5, c: '#ffb21a' });
       else if (ev.type === 'bossShield') { fx.push({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.6, c: '#8fd8ff' }); toast('보스가 방어막을 둘렀어요'); }
       else if (ev.type === 'bossSummon') { fx.push({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.6, c: '#ff6b6b' }); toast('보스가 졸개를 불렀어요'); }
@@ -389,6 +413,7 @@
     fx.length = 0; paused = false; speed = 1; shownOffer = null; $('picker').classList.add('hidden'); renderUpgrades();
     $('btnPause').textContent = '일시정지'; $('btnSpeed').textContent = '1×';
     for (const k in last) delete last[k];
+    for (const t of C.UNIT_TYPES) ucards[t].last = undefined;
     centerOnCore();
     // 디버그: ?warp=초 → 봇이 미리 진행 (스크린샷/점검용)
     if (params.get('bot')) startBot();
@@ -397,6 +422,7 @@
   let botT = 0;
   function startBot() { window.__bot = true; }
   function botAct() {
+    if (S.jobs.offer && !params.get('nopick')) C.pickJob(S, 0);
     if (S.cards.offer && !params.get('nopick')) C.pickCard(S, 0);
     botT += STEP; if (botT < 0.4) return; botT = 0;
     for (const t of ['sword', 'archer', 'sword', 'archer', 'priest']) C.buy(S, t);

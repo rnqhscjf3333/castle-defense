@@ -27,6 +27,7 @@ function runOne(task) {
   let step = 0;
   const maxSteps = Math.ceil((C.PREP_TIME + C.MAX_ROUND * C.ROUND_TIME + 120) / DT);
   while (!S.over && step < maxSteps) {
+    if (S.jobs.offer) { C.pickJob(S, Math.floor(rnd() * S.jobs.offer.list.length)); continue; } // 보스 처치 후 전직 (무작위 선택)
     if (S.cards.offer) {
       const offer = S.cards.offer, w = offer.map(c => weightOf(P, c));
       if (P.reroll && S.cards.rerolls > 0 && Math.max(...w) < P.reroll) { C.reroll(S); continue; }

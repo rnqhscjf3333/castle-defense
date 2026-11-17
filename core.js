@@ -33,9 +33,9 @@
       priest: { name: '사제', cost: 80, hp: 70,  atk: 0,  rate: 0,   range: 0,   speed: 80, r: 9,  buyCd: 2.5, aggro: 0,
                 heal: 14, healRate: 1.5, healRange: 200 },
       // 카드로만 얻는 유닛
-      golem:  { name: '골렘', hp: 900, atk: 35, rate: 0.8, range: 40,  speed: 55,  r: 18, aggro: 220 },
-      hero:   { name: '용사', hp: 350, atk: 40, rate: 1.3, range: 30,  speed: 100, r: 12, aggro: 260 },
-      turret: { name: '포탑', hp: 300, atk: 18, rate: 1.5, range: 240, speed: 0,   r: 11 },
+      golem:  { name: '골렘', hp: 900, atk: 35, rate: 0.8, range: 40,  speed: 55,  r: 18, aggro: 220, priceSteps: 3 }, // priceSteps: 소환하면 모든 유닛 가격이 이만큼 오른다 (직접 뽑는 유닛은 1)
+      hero:   { name: '용사', hp: 350, atk: 40, rate: 1.3, range: 30,  speed: 100, r: 12, aggro: 260, priceSteps: 2 },
+      turret: { name: '포탑', hp: 300, atk: 18, rate: 1.5, range: 240, speed: 0,   r: 11, priceSteps: 1 },
     },
     enemies: {
       grunt:  { name: '돌격병', hp: 30, dmg: 6,  speed: 70, r: 9,  range: 20, rate: 1.0, gold: 4,   aggro: 110 },
@@ -56,6 +56,39 @@
       20: { name: '철벽 장군', hp: 12000, look: { body: '#6a737f', head: '#d8dde6', weapon: 'shield' }, abil: { shield: { cd: 12, dur: 4, red: 0.8 }, dash: { cd: 10, dur: 1.2, mul: 2.5 }, summon: { cd: 12, n: 3, kind: 'shield' } } },
       25: { name: '광전사',    hp: 25000, look: { body: '#a3252d', head: '#f0cfa8', weapon: 'twin' },   abil: { rage: { at: 0.5, speed: 1.4, rate: 1.5, dmg: 1.5 }, dash: { cd: 6, dur: 1.2, mul: 3 }, artillery: { cd: 6, dmg: 90, radius: 100, count: 2, flight: 1.5 } } },
       30: { name: '마왕',      hp: 60000, look: { body: '#4a2a6a', head: '#d9c6e6', weapon: 'sword' },  abil: { summon: { cd: 8, n: 3, kind: 'bomber' }, artillery: { cd: 5, dmg: 120, radius: 110, count: 2, flight: 1.5 }, shield: { cd: 14, dur: 3, red: 0.7 }, rage: { at: 0.4, speed: 1.4, rate: 1.5, dmg: 1.5 } } },
+    },
+    // 전직: 보스를 처치하면 직업(검사/궁수/사제) 하나를 골라 승급시킨다. 1단계에서 갈래를 고르고, 2단계로 한 번 더 강화된다.
+    jobs: {
+      sword: {
+        t1: [
+          { id: 'knight', name: '기사', desc: '체력 +60%, 받는 피해 -20%', mods: { hp: 0.6, def: 0.2 } },
+          { id: 'fighter', name: '투사', desc: '공격력 +50%, 공격 속도 +20%', mods: { atk: 0.5, rate: 0.2 } },
+        ],
+        t2: {
+          knight: [{ id: 'paladin', name: '성기사', desc: '체력 +50%, 받는 피해 -15%, 초당 체력 2% 회복', mods: { hp: 0.5, def: 0.15, regen: 0.02 } }],
+          fighter: [{ id: 'blademaster', name: '검성', desc: '공격력 +60%, 주변 적에게 50% 베기 피해', mods: { atk: 0.6, cleave: 0.5 } }],
+        },
+      },
+      archer: {
+        t1: [
+          { id: 'sniper', name: '저격수', desc: '공격력 +60%, 사거리 +60, 공격 속도 -15%', mods: { atk: 0.6, range: 60, rate: -0.15 } },
+          { id: 'ranger', name: '속사수', desc: '공격 속도 +50%, 이동 속도 +15%', mods: { rate: 0.5, speed: 0.15 } },
+        ],
+        t2: {
+          sniper: [{ id: 'deadeye', name: '명사수', desc: '공격력 +50%, 화살이 뒤의 적 1명을 관통', mods: { atk: 0.5, pierce: 1 } }],
+          ranger: [{ id: 'stormarcher', name: '폭풍사수', desc: '공격 속도 +40%, 3번째 공격마다 화살 2발', mods: { rate: 0.4, multi: 3 } }],
+        },
+      },
+      priest: {
+        t1: [
+          { id: 'cleric', name: '성직자', desc: '치유량 +60%, 치유 범위 +60', mods: { heal: 0.6, healRange: 60 } },
+          { id: 'bishop', name: '주교', desc: '치유량 +20%, 쓰러진 아군을 라운드당 1회 부활', mods: { heal: 0.2, revive: 1 } },
+        ],
+        t2: {
+          cleric: [{ id: 'highcleric', name: '대성직자', desc: '치유량 +50%, 치유 속도 +30%', mods: { heal: 0.5, healRate: 0.3 } }],
+          bishop: [{ id: 'archbishop', name: '대주교', desc: '치유량 +30%, 부활 +1회', mods: { heal: 0.3, revive: 1 } }],
+        },
+      },
     },
     shots: { arc: 0.28, arcMin: 12, arcMax: 110, minT: 0.22 }, // 포물선 투사체: 거리에 비례해 높이 솟았다 떨어진다
     arrowSpeed: 430, shellSpeed: 360, enemyArrowSpeed: 400,
@@ -188,9 +221,9 @@
     { id: 'f_repair', cat: 'core', rar: 'rare',   max: 3, name: '자동 수리',     desc: l => '라운드가 바뀔 때 성채 체력 ' + Math.round(V().repair * 100 * l) + '% 회복' },
     { id: 'f_thorn',  cat: 'core', rar: 'rare',   max: 3, name: '가시 방벽',     desc: l => '성채를 때린 적에게 그 피해의 ' + Math.round(V().thorn * 100 * l) + '% 반사' },
     // 특수 소환
-    { id: 's_turret', cat: 'summon', rar: 'rare',   max: 3,  name: '자동 포탑',       desc: l => '성채 옆에 자동 포탑 설치 (' + l + '/3)' },
-    { id: 's_golem',  cat: 'summon', rar: 'epic',   max: 1,  name: '골렘 소환',       desc: () => '거대한 탱커 골렘 영구 소환 (인구 3)' },
-    { id: 's_hero',   cat: 'summon', rar: 'epic',   max: 1,  name: '용사 소환',       desc: () => '강력한 근접 영웅 용사 영구 소환 (인구 2)' },
+    { id: 's_turret', cat: 'summon', rar: 'rare',   max: 3,  name: '자동 포탑',       desc: l => '성채 옆에 자동 포탑 설치 (' + l + '/3) · 설치하면 모든 유닛 가격이 오른다' },
+    { id: 's_golem',  cat: 'summon', rar: 'epic',   max: 1,  name: '골렘 소환',       desc: () => '거대한 탱커 골렘을 영구 소환 · 소환하면 모든 유닛 가격이 오른다' },
+    { id: 's_hero',   cat: 'summon', rar: 'epic',   max: 1,  name: '용사 소환',       desc: () => '강력한 근접 영웅 용사를 영구 소환 · 소환하면 모든 유닛 가격이 오른다' },
   ];
   const V = () => CFG.cardVals;
   const DEF = Object.fromEntries(CARD_DEFS.map(d => [d.id, d]));
@@ -265,6 +298,34 @@
     S.cards.rerolls--; S.cards.offer = generateOffer(S, S.cards.boss);
     return true;
   }
+  // ───────────── 전직 ─────────────
+  function jobOptions(S) {
+    const out = [];
+    for (const type of UNIT_TYPES) {
+      const ids = S.jobs[type].ids, tier = ids.length, j = CFG.jobs[type];
+      const defs = tier === 0 ? j.t1 : tier === 1 ? (j.t2[ids[0]] || []) : [];
+      for (const d of defs) out.push({ type, className: CFG.units[type].name, tier: tier + 1, id: d.id, name: d.name, desc: d.desc });
+    }
+    return out;
+  }
+  function openJobs(S, bossName) {
+    const opts = jobOptions(S); if (!opts.length) return;
+    for (let i = opts.length - 1; i > 0; i--) { const j = Math.floor(S.rng() * (i + 1)); [opts[i], opts[j]] = [opts[j], opts[i]]; }
+    S.jobs.offer = { boss: bossName, list: opts.slice(0, 3) };
+  }
+  function pickJob(S, idx) {
+    const o = S.jobs.offer && S.jobs.offer.list[idx]; if (!o) return false;
+    const before = S.jobMods[o.type].revive;
+    S.jobs[o.type].ids.push(o.id); S.jobs.offer = null;
+    recompute(S); S.reviveLeft += S.jobMods[o.type].revive - before;
+    for (const u of S.units) if (u.type === o.type && !u.dead) refreshUnit(S, u);
+    emit(S, { type: 'promote', unitType: o.type, className: o.className, name: o.name, tier: o.tier });
+    return true;
+  }
+  function describeJobs(S) {
+    return UNIT_TYPES.filter(t => S.jobs[t].ids.length).map(t => ({ type: t, className: CFG.units[t].name, names: S.jobs[t].ids.map(id => jobDef(t, id).name) }));
+  }
+
   function pickCard(S, idx) {
     const c = S.cards.offer && S.cards.offer[idx]; if (!c) return false;
     S.cards.taken[c.key] = (S.cards.taken[c.key] || 0) + 1;
@@ -276,9 +337,8 @@
     const oldMax = S.core.max;
     recompute(S);
     if (S.core.max > oldMax) S.core.hp += S.core.max - oldMax;
-    if (c.id === 's_turret') addUnit(S, 'turret');
-    else if (c.id === 's_golem') addUnit(S, 'golem');
-    else if (c.id === 's_hero') addUnit(S, 'hero');
+    const summon = { s_turret: 'turret', s_golem: 'golem', s_hero: 'hero' }[c.id];
+    if (summon) { addUnit(S, summon); S.buyCount += CFG.units[summon].priceSteps || 1; emit(S, { type: 'priceUp' }); } // 특수 소환도 유닛 가격을 올린다
     emit(S, { type: 'picked', name: c.name });
     return true;
   }
@@ -293,23 +353,41 @@
     const boost = 1 + v.auraBoost * L('a_rad');
     S.aura = { heal: v.auraHeal * L('a_heal') * boost, atk: v.auraAtk * L('a_atk') * boost, def: Math.min(v.auraDefCap, v.auraDef * L('a_def') * boost), spd: v.auraSpd * L('a_spd') * boost, r: CFG.auraBase,
                on: AURA_IDS.some(a => L(a) > 0) };
+    S.jobMods = { sword: jobModsOf(S, 'sword'), archer: jobModsOf(S, 'archer'), priest: jobModsOf(S, 'priest') };
     S.perks = { guard: L('u_guard'), charge: L('u_charge'), pierce: L('u_pierce'), multi: L('u_multi'), aoeHeal: L('u_aoeheal'), revive: L('u_revive'),
                 splash: L('c_splash'), chain: L('c_chain'), bomb: L('c_bomb'), thorn: L('f_thorn'), repair: L('f_repair') };
   }
+  // 전직 효과 합산 (유닛 종류별)
+  const zeroMods = () => ({ hp: 0, atk: 0, rate: 0, speed: 0, def: 0, regen: 0, cleave: 0, range: 0, pierce: 0, multi: 0, heal: 0, healRange: 0, healRate: 0, revive: 0 });
+  function jobDef(type, id) {
+    const j = CFG.jobs[type]; if (!j) return null;
+    for (const d of j.t1) if (d.id === id) return d;
+    for (const k in j.t2) for (const d of j.t2[k]) if (d.id === id) return d;
+    return null;
+  }
+  function jobModsOf(S, type) {
+    const m = zeroMods(), ids = S.jobs[type] ? S.jobs[type].ids : [];
+    for (const id of ids) { const d = jobDef(type, id); if (!d) continue; for (const k in d.mods) { if (k === 'multi') m.multi = m.multi ? Math.min(m.multi, d.mods.multi) : d.mods.multi; else m[k] += d.mods[k]; } }
+    return m;
+  }
+  const pierceCount = S => S.perks.pierce + S.jobMods.archer.pierce;
   // 유닛 종류별 강화 수치 반영
   function statsOf(S, type) {
     // 사제는 유닛 수가 적어서 강화 효과를 2배로 쳐 준다
     const k = type === 'priest' ? 2 : 1;
     const b = CFG.units[type], l = S.up[type] || { hp: 0, atk: 0, rate: 0, speed: 0 }, p = Object.fromEntries(Object.entries(CFG.upPct).map(([n, v]) => [n, v * k]));
+    const jm = (S.jobMods && S.jobMods[type]) || zeroMods();
     return {
-      max: Math.round(b.hp * (1 + p.hp * l.hp)), atk: b.atk * (1 + p.atk * l.atk), rate: b.rate * (1 + p.rate * l.rate),
-      speed: b.speed * (1 + p.speed * l.speed), heal: (b.heal || 0) * (1 + p.atk * l.atk), healRate: b.healRate ? b.healRate / (1 + p.rate * l.rate) : 0,
+      max: Math.round(b.hp * (1 + p.hp * l.hp) * (1 + jm.hp)), atk: b.atk * (1 + p.atk * l.atk) * (1 + jm.atk), rate: b.rate * (1 + p.rate * l.rate) * (1 + jm.rate),
+      speed: b.speed * (1 + p.speed * l.speed) * (1 + jm.speed), heal: (b.heal || 0) * (1 + p.atk * l.atk) * (1 + jm.heal),
+      healRate: b.healRate ? b.healRate / ((1 + p.rate * l.rate) * (1 + jm.healRate)) : 0, range: (b.range || 0) + jm.range, healRange: (b.healRange || 0) + jm.healRange,
     };
   }
   function refreshUnit(S, u) {
     const s = statsOf(S, u.type);
     if (s.max > u.max) u.hp += s.max - u.max;
-    u.max = s.max; u.atk = s.atk; u.rate = s.rate; u.speed = s.speed; u.heal = s.heal; u.healRate = s.healRate;
+    u.max = s.max; u.atk = s.atk; u.rate = s.rate; u.speed = s.speed; u.heal = s.heal; u.healRate = s.healRate; u.range = s.range; u.healRange = s.healRange;
+    const ids = S.jobs[u.type] ? S.jobs[u.type].ids : []; u.job = ids.length ? ids[ids.length - 1] : null; u.jobTier = ids.length;
     if (u.hp > u.max) u.hp = u.max;
   }
   function describeTaken(S) {
@@ -338,7 +416,8 @@
       gU: makeGrid(48), gE: makeGrid(48),
       cards: { offer: null, rerolls: CFG.rerolls, taken: {}, boss: false },
       up: { sword: { hp: 0, atk: 0, rate: 0, speed: 0 }, archer: { hp: 0, atk: 0, rate: 0, speed: 0 }, priest: { hp: 0, atk: 0, rate: 0, speed: 0 } },
-      aura: null, perks: null, bombCd: 8, reviveLeft: 0,
+      aura: null, perks: null, bombCd: 8, reviveLeft: 0, jobMods: null,
+      jobs: { sword: { ids: [] }, archer: { ids: [] }, priest: { ids: [] }, offer: null },
     };
     recompute(S);
     return S;
@@ -358,8 +437,9 @@
     }
     const u = {
       id: S.nextId++, type, team: 'u', x, y,
-      hp: st.max, max: st.max, atk: st.atk, rate: st.rate, range: cfg.range, speed: st.speed, r: cfg.r,
-      heal: st.heal, healRate: st.healRate, healRange: cfg.healRange || 0,
+      hp: st.max, max: st.max, atk: st.atk, rate: st.rate, range: st.range, speed: st.speed, r: cfg.r,
+      heal: st.heal, healRate: st.healRate, healRange: st.healRange,
+      job: (S.jobs[type] && S.jobs[type].ids.length) ? S.jobs[type].ids[S.jobs[type].ids.length - 1] : null, jobTier: S.jobs[type] ? S.jobs[type].ids.length : 0,
       cd: 0, flash: 0, swing: 0, dead: false, ha, hr, hx: CX + Math.cos(ha) * hr, hy: CY + Math.sin(ha) * hr,
       aura: 0, n: 0,
     };
@@ -384,7 +464,7 @@
   function startRound(S) {
     S.phase = 'round'; S.round++; S.roundT = 0;
     const r = S.round;
-    S.reviveLeft = S.perks.revive;
+    S.reviveLeft = S.perks.revive + S.jobMods.priest.revive;
     if (r > 1) {
       S.gold += 15 + 2 * r;
       for (const u of S.units) if (!u.dead) u.hp = Math.min(u.max, u.hp + u.max * CFG.healAfterRound);
@@ -448,6 +528,7 @@
       let red = 0;
       if (tgt.aura) red += S.aura.def;
       if (S.perks.guard && tgt.type === 'sword' && Math.hypot(tgt.x - CX, tgt.y - CY) <= 300) red += V().guard * S.perks.guard;
+      if (S.jobMods && S.jobMods[tgt.type]) red += S.jobMods[tgt.type].def; // 전직 방어
       dmg *= 1 - Math.min(0.7, red);
     }
     tgt.hp -= dmg; tgt.flash = 0.1;
@@ -456,7 +537,10 @@
       S.reviveLeft--; tgt.hp = tgt.max * V().revive; emit(S, { type: 'revive', x: tgt.x, y: tgt.y }); return;
     }
     tgt.dead = true;
-    if (tgt.team === 'e') { S.gold += tgt.gold; S.kills++; emit(S, { type: 'kill', x: tgt.x, y: tgt.y, boss: tgt.kind === 'boss' }); }
+    if (tgt.team === 'e') {
+      S.gold += tgt.gold; S.kills++; emit(S, { type: 'kill', x: tgt.x, y: tgt.y, boss: tgt.kind === 'boss' });
+      if (tgt.kind === 'boss' && S.round < MAX_ROUND) openJobs(S, tgt.bossName); // 보스를 처치하면 전직 선택
+    }
     else emit(S, { type: 'udead', x: tgt.x, y: tgt.y });
   }
   // 투사체: 지면 위치(x,y)는 목표를 향해 직선으로 가고, 높이(h)가 포물선을 그린다. 도착하면 피해.
@@ -496,7 +580,7 @@
       }
     } else if (s.pierce) {
       const seen = new Set([t]); let cur = t;
-      for (let i = 0; i < S.perks.pierce; i++) {
+      for (let i = 0; i < pierceCount(S); i++) {
         let best = null, bd = 80;
         for (const e of S.enemies) { if (e.dead || seen.has(e)) continue; const d = Math.hypot(e.x - cur.x, e.y - cur.y); if (d < bd) { bd = d; best = e; } }
         if (!best) break;
@@ -573,12 +657,16 @@
       if (t) {
         const chargeRate = (u.type === 'sword' && S.perks.charge) ? 1 + V().chargeRate * S.perks.charge : 1;
         u.cd = 1 / (u.rate * spm * chargeRate); u.swing = 0.25; u.aim = Math.atan2(t.y - u.y, t.x - u.x);
-        if (melee) damage(S, t, atk);
-        else {
-          const arrow = S.perks.pierce ? { pierce: true } : null;
+        if (melee) {
+          damage(S, t, atk);
+          const cl = S.jobMods[u.type] ? S.jobMods[u.type].cleave : 0; // 검성: 주변 적에게 베기 피해
+          if (cl) for (const o of S.enemies) if (!o.dead && o !== t && Math.hypot(o.x - t.x, o.y - t.y) <= 46 + o.r) damage(S, o, atk * cl);
+        } else {
+          const arrow = pierceCount(S) > 0 && u.type === 'archer' || S.perks.pierce ? { pierce: true } : null;
           fire(S, u, t, atk, CFG.arrowSpeed, 'a', arrow);
           u.n++;
-          if (S.perks.multi && u.type === 'archer' && u.n % (5 - S.perks.multi) === 0) fire(S, u, t, atk, CFG.arrowSpeed, 'a', arrow);
+          const every = Math.min(S.perks.multi ? 5 - S.perks.multi : 99, S.jobMods.archer.multi || 99);
+          if (u.type === 'archer' && every < 99 && u.n % every === 0) fire(S, u, t, atk, CFG.arrowSpeed, 'a', arrow);
         }
       }
     }
@@ -677,7 +765,7 @@
 
   // ───────────── 한 틱 진행 ─────────────
   function tick(S, dt) {
-    if (S.over || S.cards.offer) return; // 카드 선택 중에는 시간이 멈춘다
+    if (S.over || S.cards.offer || S.jobs.offer) return; // 카드/전직 선택 중에는 시간이 멈춘다
     S.t += dt;
     for (const k in S.buyCd) if (S.buyCd[k] > 0) S.buyCd[k] -= dt;
 
@@ -723,6 +811,8 @@
       if (u.dead) continue;
       u.flash = Math.max(0, u.flash - dt); u.swing = Math.max(0, u.swing - dt);
       if (u.type === 'turret') { updateTurret(S, u, dt); continue; }
+      const jm = S.jobMods[u.type];
+      if (jm && jm.regen && u.hp < u.max) u.hp = Math.min(u.max, u.hp + u.max * jm.regen * dt);
       const a = S.threat + wrapAngle(u.ha - S.threat) * (1 - bias);
       u.hx = CX + Math.cos(a) * u.hr; u.hy = CY + Math.sin(a) * u.hr;
       if (u.type === 'priest') updatePriest(S, u, dt); else updateFighter(S, u, dt);
@@ -755,7 +845,7 @@
 
   return {
     CFG, MAX_ROUND, ROUND_TIME, SPAWN_TIME, PREP_TIME, SPAWN_RING, UNIT_TYPES, CARD_DEFS,
-    createGame, tick, buy, spawnEnemy, bossInfo: r => CFG.bosses[r] || null, drainEvents, pickCard, reroll, describeTaken, openCards,
+    createGame, tick, buy, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo: r => CFG.bosses[r] || null, drainEvents, pickCard, reroll, describeTaken, openCards,
     unitCostOf, enemyCount, hpMul, dmgMul, mulberry32,
   };
 });

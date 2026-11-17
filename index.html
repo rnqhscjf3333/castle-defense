@@ -17,53 +17,56 @@ canvas#cv { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: 
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; backdrop-filter: blur(6px); }
 button { font: inherit; color: inherit; cursor: pointer; }
 
-#hud { position: fixed; top: max(8px, env(safe-area-inset-top)); left: 8px; padding: 8px 12px; min-width: 190px; pointer-events: none; }
-#hud .row { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; line-height: 1.6; }
+#hud { position: fixed; top: max(5px, env(safe-area-inset-top)); left: 5px; padding: 5px 9px; min-width: 146px; pointer-events: none; border-radius: 9px; }
+#hud .row { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; line-height: 1.45; }
 #hud b { font-variant-numeric: tabular-nums; }
-#hpbar { height: 8px; border-radius: 4px; background: #2a3244; overflow: hidden; margin: 4px 0 2px; }
+#hpbar { height: 6px; border-radius: 3px; background: #2a3244; overflow: hidden; margin: 3px 0 2px; }
 #hpfill { height: 100%; width: 100%; background: var(--ok); transition: width .15s; }
 #gold { color: var(--gold); }
 
-#minimap { position: fixed; top: max(8px, env(safe-area-inset-top)); right: 8px; width: 132px; height: 132px; border-radius: 12px;
+#minimap { position: fixed; top: max(5px, env(safe-area-inset-top)); right: 5px; width: 100px; height: 100px; border-radius: 9px;
   border: 1px solid var(--line); background: rgba(16, 20, 28, .88); touch-action: none; }
-#tools { position: fixed; top: calc(max(8px, env(safe-area-inset-top)) + 140px); right: 8px; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
-.tbtn { padding: 8px 10px; font-size: 13px; min-height: 36px; border-radius: 10px; }
+#tools { position: fixed; top: calc(max(5px, env(safe-area-inset-top)) + 106px); right: 5px; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+.tbtn { padding: 4px 8px; font-size: 11.5px; min-height: 26px; border-radius: 8px; }
 
-#banner { position: fixed; top: 22%; left: 0; right: 0; text-align: center; font-size: 28px; font-weight: 700; letter-spacing: .02em;
+#banner { position: fixed; top: 20%; left: 0; right: 0; text-align: center; font-size: 22px; font-weight: 700; letter-spacing: .02em;
   color: #fff; text-shadow: 0 2px 12px rgba(0,0,0,.7); opacity: 0; pointer-events: none; transition: opacity .35s; }
 #banner.show { opacity: 1; }
-#banner.boss { color: #ff5a5a; font-size: 34px; letter-spacing: .04em; text-shadow: 0 0 18px rgba(255,60,60,.7), 0 2px 12px rgba(0,0,0,.8); animation: bossPulse .6s ease-in-out 3; }
+#banner.boss { color: #ff5a5a; font-size: 28px; letter-spacing: .04em; text-shadow: 0 0 18px rgba(255,60,60,.7), 0 2px 12px rgba(0,0,0,.8); animation: bossPulse .6s ease-in-out 3; }
 @keyframes bossPulse { 50% { transform: scale(1.08); } }
 #roundTxt.boss { color: #ff6b6b; font-weight: 700; }
 #roundTxt.nextboss { color: #ffb86b; }
-/* 보스 체력 바 */
-#bossbar { position: fixed; top: max(8px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); width: min(520px, calc(100vw - 440px)); min-width: 300px;
-  padding: 8px 14px 9px; border: 2px solid #8a2a3a; background: rgba(28, 12, 20, .92); border-radius: 12px; pointer-events: none; box-shadow: 0 0 24px rgba(255,60,80,.25); }
+/* 보스 체력 바: 화면 맨 위, 작고 얇게 (HUD와 미니맵 사이) */
+#bossbar { position: fixed; top: max(4px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); width: min(400px, calc(100vw - 340px)); min-width: 220px;
+  padding: 3px 10px 4px; border: 1.5px solid #8a2a3a; background: rgba(28, 12, 20, .9); border-radius: 9px; pointer-events: none; box-shadow: 0 0 14px rgba(255,60,80,.22); }
 #bossbar[hidden] { display: none; }
-#bossbar .bb-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
-#bossName { font-size: 19px; font-weight: 800; color: #ffb0b0; letter-spacing: .02em; }
-#bossHpTxt { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
-#bossbar .bb-track { position: relative; height: 22px; margin: 5px 0 4px; border-radius: 11px; background: #2a1620; overflow: hidden; border: 1px solid #5a2535; }
+#bossbar .bb-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+#bossName { font-size: 14px; font-weight: 800; color: #ffb0b0; }
+#bossHpTxt { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+#bossbar .bb-track { position: relative; height: 12px; margin: 2px 0 2px; border-radius: 6px; background: #2a1620; overflow: hidden; border: 1px solid #5a2535; }
 #bossFill { height: 100%; width: 100%; background: linear-gradient(90deg, #c0392b, #ff5a5a); transition: width .15s; }
 #bossbar.shielded #bossFill { background: linear-gradient(90deg, #3a8fd0, #8fd8ff); }
 #bossbar.rage #bossFill { background: linear-gradient(90deg, #ff3b1a, #ffb21a); }
-#bossState { font-size: 12px; color: #d8b8c0; min-height: 16px; }
+#bossState { font-size: 10.5px; color: #d8b8c0; min-height: 13px; line-height: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #bossbar.shielded #bossState { color: #8fd8ff; font-weight: 700; } #bossbar.rage #bossState { color: #ffb21a; font-weight: 700; }
-#toast { position: fixed; left: 50%; bottom: 150px; transform: translateX(-50%); padding: 6px 12px; border-radius: 8px; font-size: 13px;
+#toast { position: fixed; left: 50%; bottom: 112px; transform: translateX(-50%); padding: 5px 11px; border-radius: 8px; font-size: 12px;
   background: rgba(0,0,0,.75); opacity: 0; transition: opacity .25s; pointer-events: none; white-space: nowrap; }
 #toast.show { opacity: 1; }
 
-#dock { position: fixed; left: 0; right: 0; bottom: 0; padding: 8px 8px max(8px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 6px; align-items: center; pointer-events: none; }
-#modes, #units { display: flex; gap: 6px; pointer-events: auto; max-width: 100%; }
-#modes .mbtn { padding: 7px 10px; font-size: 13px; min-height: 34px; border-radius: 9px; }
-.mbtn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #07101d; font-weight: 700; }
-#units .ucard { position: relative; width: 104px; padding: 8px 8px 6px; border-radius: 12px; text-align: left; overflow: hidden; }
-.ucard .nm { font-weight: 700; font-size: 15px; }
-.ucard .ds { font-size: 11px; color: var(--muted); line-height: 1.35; min-height: 29px; }
-.ucard .cost { color: var(--gold); font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 700; }
+#dock { position: fixed; left: 0; right: 0; bottom: 0; padding: 5px 5px max(5px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 4px; align-items: center; pointer-events: none; }
+#units { display: flex; gap: 5px; pointer-events: auto; max-width: 100%; }
+#units .ucard { position: relative; width: 88px; padding: 6px 7px 5px; border-radius: 10px; text-align: left; overflow: hidden; }
+.ucard .nm { font-weight: 700; font-size: 13px; }
+.ucard .ds { font-size: 10px; color: var(--muted); line-height: 1.3; min-height: 24px; }
+.ucard .cost { color: var(--gold); font-variant-numeric: tabular-nums; font-size: 12.5px; font-weight: 700; display: inline-block; }
+.ucard .cost.up { animation: costUp .8s ease-out; }
+@keyframes costUp { 0% { color: #ff5a5a; transform: scale(1.35); } 100% { color: var(--gold); transform: scale(1); } }
+.ucard .delta { position: absolute; top: 5px; right: 7px; font-size: 11px; font-weight: 800; color: #ff7a7a; opacity: 0; pointer-events: none; }
+.ucard .delta.show { animation: deltaUp 1.1s ease-out; }
+@keyframes deltaUp { 0% { opacity: 1; transform: translateY(6px); } 100% { opacity: 0; transform: translateY(-6px); } }
 .ucard .cdfill { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: rgba(255,255,255,.16); pointer-events: none; }
 .ucard.off { opacity: .45; }
-.ucard .key { position: absolute; bottom: 6px; right: 8px; font-size: 10px; color: var(--muted); }
+.ucard .key { position: absolute; bottom: 5px; right: 7px; font-size: 9px; color: var(--muted); }
 
 .btn { background: #1c2434; border: 1px solid var(--line); }
 .btn:hover { border-color: var(--accent); }
@@ -98,17 +101,18 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .pcard.rar-common { border-color: #3a4660; } .pcard.rar-common .rar { color: #9fb0cc; }
 .pcard.rar-rare { border-color: #5aa9ff; box-shadow: 0 0 14px rgba(90,169,255,.25); } .pcard.rar-rare .rar { color: #7cc0ff; }
 .pcard.rar-epic { border-color: #ffd166; box-shadow: 0 0 18px rgba(255,209,102,.35); } .pcard.rar-epic .rar { color: #ffd166; }
+.pcard.job { border-color: #ffd166; box-shadow: 0 0 18px rgba(255,209,102,.3); } .pcard.job .cat { color: #ffd166; } .pcard.job .pn { color: #ffe9a8; } .pcard .from { font-size: 11px; color: #ffb86b; }
 .pcard.cat-unit .cat { color: #6bdc8b; } .pcard.cat-core .cat { color: #ffb86b; } .pcard.cat-summon .cat { color: #c77dff; }
 #pickFoot { margin-top: 12px; display: flex; gap: 12px; align-items: center; justify-content: center; font-size: 12px; color: var(--muted); }
 #btnReroll { padding: 8px 14px; border-radius: 10px; }
 #btnReroll:disabled { opacity: .4; cursor: default; }
-#upl { position: fixed; left: 8px; top: calc(max(8px, env(safe-area-inset-top)) + 128px); padding: 8px 10px; font-size: 12px; max-width: 220px; max-height: 40vh; overflow: auto; line-height: 1.6; }
+#upl { position: fixed; left: 5px; top: calc(max(5px, env(safe-area-inset-top)) + 84px); padding: 6px 9px; font-size: 11px; max-width: 210px; max-height: 40vh; overflow: auto; line-height: 1.6; }
 #upl[hidden] { display: none; }
 #upl .it { display: flex; justify-content: space-between; gap: 10px; }
 #upl .rare { color: #7cc0ff; } #upl .epic { color: #ffd166; }
-@media (max-width: 720px) { #bossbar { top: 112px; left: 8px; transform: none; width: calc(100vw - 140px); min-width: 0; padding: 6px 10px 7px; } #bossName { font-size: 16px; } #bossHpTxt { font-size: 14px; } #bossbar .bb-track { height: 18px; } }
+@media (max-width: 620px) { #bossbar { left: 156px; right: 108px; transform: none; width: auto; min-width: 0; padding: 3px 7px 4px; } #bossName { font-size: 12px; } #bossHpTxt { font-size: 10.5px; } #bossState { font-size: 9.5px; } }
 @media (max-width: 520px) { .pcard { width: 100%; min-height: 0; flex-direction: column; } #pickCards { flex-direction: column; } }
-@media (max-width: 520px) { #units .ucard { width: 96px; } #minimap { width: 108px; height: 108px; } #tools { top: calc(max(8px, env(safe-area-inset-top)) + 116px); } }
+@media (max-width: 520px) { #units .ucard { width: 80px; } #minimap { width: 84px; height: 84px; } #tools { top: calc(max(5px, env(safe-area-inset-top)) + 90px); } #hud { min-width: 128px; } #hud .row { font-size: 11px; } #bossbar { right: 92px; } }
 </style>
 </head>
 <body>
@@ -138,8 +142,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
 <div id="toast"></div>
 
 <div id="dock">
-  <div id="modes">
-  </div>
   <div id="units"></div>
 </div>
 
@@ -150,7 +152,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
     <h2 id="pickTitle"></h2>
     <p id="pickSub"></p>
     <div id="pickCards"></div>
-    <div id="pickFoot"><button class="btn" id="btnReroll">다시 뽑기</button><span>1·2·3 선택 · R 다시 뽑기 · 고르는 동안 시간이 멈춰요</span></div>
+    <div id="pickFoot"><button class="btn" id="btnReroll">다시 뽑기</button><span id="pickHint">1·2·3 선택 · R 다시 뽑기 · 고르는 동안 시간이 멈춰요</span></div>
   </div>
 </div>
 
