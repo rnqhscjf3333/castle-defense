@@ -254,6 +254,7 @@
       case 'melee': A2.play('sword', ev.x, ev.y); break;
       case 'kill': A2.play(ev.boss ? 'bigBoom' : 'kill', ev.x, ev.y); break;
       case 'udead': A2.play('udead', ev.x, ev.y); break;
+      case 'heroSkill': A2.play(ev.kind === 'marksman' ? 'shotB' : 'bigBoom', ev.x, ev.y); break;
       case 'heal': A2.play('heal', ev.tx, ev.ty); break;
       case 'spawn': A2.play('spawn', ev.x, ev.y); break;
       case 'chain': A2.play('chain', ev.x, ev.y); break;
@@ -290,6 +291,10 @@
       else if (ev.type === 'spawn') addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.35, c: '#5aa9ff' });
       else if (ev.type === 'chain') { addFx({ k: 'line', x: ev.x, y: ev.y, tx: ev.tx, ty: ev.ty, t: 0, max: 0.25, c: ev.small ? '#b9f5c8' : '#9ad0ff', small: ev.small }); }
       else if (ev.type === 'boom') { addFx({ k: 'boom', x: ev.x, y: ev.y, r: ev.r, t: 0, max: ev.big ? 0.6 : 0.3, big: ev.big, enemy: ev.enemy }); }
+      else if (ev.type === 'heroSkill') {
+        if (ev.kind === 'marksman') addFx({ k: 'beam', x: ev.x, y: ev.y - 11, tx: ev.tx, ty: ev.ty - 7, t: 0, max: 0.4, c: '#ffe14a' });
+        else { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.55, c: ev.kind === 'hero' ? '#ffe14a' : '#c8a46a', big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: -0.08, max: 0.5, c: '#ffffff' }); }
+      }
       else if (ev.type === 'revive') { addFx({ k: 'heal', x: ev.x, y: ev.y, t: 0, max: 0.8 }); toast('아군이 부활했어요'); }
       else if (ev.type === 'picked') { toast(ev.name + ' 획득'); renderUpgrades(); }
       else if (ev.type === 'notice') toast(ev.text);

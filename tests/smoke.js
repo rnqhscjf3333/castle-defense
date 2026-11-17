@@ -241,7 +241,7 @@ function killBoss(g) { const b = g.enemies.find(e => e.kind === 'boss'); b.hp = 
   give('archbishop'); check('대주교: 부활 +1 더 (라운드당 2회)', g.jobMods.priest.revive === 2);
   const pr2 = g.units.find(u => u.type === 'priest'); check('주교 계열: 치유량 증가', pr2.heal > heal0, `${heal0}→${pr2.heal.toFixed(1)}`);
   const g2 = C.createGame(42); g2.gold = 1e7; g2.buyCd.priest = 0; C.buy(g2, 'priest'); const p2 = g2.units[0], hr = p2.healRange;
-  g2.jobs.offer = { boss: 't', list: [C.jobOptions(g2).find(x => x.id === 'cleric')] }; C.pickJob(g2, 0); check('성직자: 치유 범위 +60', p2.healRange === hr + 60, `${hr}→${p2.healRange}`);
+  g2.jobs.offer = { boss: 't', list: [C.jobOptions(g2).find(x => x.id === 'cleric')] }; C.pickJob(g2, 0); check('성직자: 치유 범위 +40', p2.healRange === hr + 40, `${hr}→${p2.healRange}`);
   const g3 = C.createGame(43); g3.gold = 1e7; g3.buyCd.sword = 0; C.buy(g3, 'sword'); const s3 = g3.units[0], a0 = s3.atk;
   g3.jobs.offer = { boss: 't', list: [C.jobOptions(g3).find(x => x.id === 'fighter')] }; C.pickJob(g3, 0); check('투사: 공격력 +50%, 공격 속도 +20%', Math.abs(s3.atk / a0 - 1.5) < 1e-9 && Math.abs(s3.rate / C.CFG.units.sword.rate - 1.2) < 1e-9);
   g3.jobs.offer = { boss: 't', list: [C.jobOptions(g3).find(x => x.id === 'blademaster')] }; C.pickJob(g3, 0);
@@ -455,5 +455,13 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
 { const g = arena(3, [['grunt', 1500, 1000]]); g.hold = false; g.core.hp = g.core.max = 1e9; for (let i = 0; i < 60; i++) C.tick(g, DT); check('적이 남아 있으면 다음 라운드로 안 넘어감', g.round === 3);
   for (const e of g.enemies) e.dead = true; for (let i = 0; i < 5; i++) C.tick(g, DT); check('적을 모두 처치하면 즉시 다음 라운드', g.round === 4, 'round ' + g.round);
   const h = arena(10, [['boss', 1500, 1000]], 'summoner'); h.hold = false; h.core.hp = h.core.max = 1e9; for (let i = 0; i < 40; i++) C.tick(h, DT); const b = h.enemies.find(e => e.kind === 'boss'); C.damage(h, b, 1e12); if (h.jobs.offer) C.pickJob(h, 0); for (let i = 0; i < 40; i++) C.tick(h, DT); check('보스를 처치하면 즉시 다음 라운드', h.round === 11, 'round ' + h.round); }
+// 35) 영웅 스킬: 용사 일섬(범위 피해) / 골렘 대지 강타(피해+감속) / 명궁 일제 사격(여러 명 동시 저격)
+{ for (const [type, kind] of [['hero', 'hero'], ['golem', 'golem'], ['marksman', 'marksman']]) {
+    const g = arena(10, []); g.gold = 1e7; g.core.hp = g.core.max = 1e9; g.perks.chain = 0; const u = C.addUnit ? null : null;
+    const en = []; for (let i = 0; i < 6; i++) { const e = C.spawnEnemy(g, 'shield', 1500 + 30 + i * 6, 1500 - 150 + i * 4); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e7; en.push(e); }
+    g.units.push({ id: 9999, type, team: 'u', x: 1500, y: 1500 - 150, hx: 1500, hy: 1500 - 150, hp: 5000, max: 5000, atk: C.CFG.units[type].atk, rate: 1, range: C.CFG.units[type].range, speed: 0, r: 12, cd: 99, heal: 0, healRate: 0, healRange: 0, aura: 0, dead: false, flash: 0, swing: 0, aim: 0, skT: 0.01 });
+    let cast = 0; for (let i = 0; i < 20; i++) { C.tick(g, DT); for (const ev of C.drainEvents(g)) if (ev.type === 'heroSkill') cast++; }
+    const hit = en.filter(e => e.hp < e.max).length;
+    check(`${type} 스킬 발동 (${C.CFG.heroSkill[type].name})`, cast >= 1 && hit >= (type === 'marksman' ? 6 : 4), `이벤트 ${cast}, 맞은 적 ${hit}/6` + (type === 'golem' ? ` 감속 ${en.filter(e => e.slowT > 0).length}` : '')); } }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

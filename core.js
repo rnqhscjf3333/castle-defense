@@ -35,15 +35,21 @@
       sword:  { name: '검사', cost: 50, hp: 120, atk: 12, rate: 1.0, range: 30,  speed: 90, r: 10, buyCd: 1.2, aggro: 220 },
       archer: { name: '궁수', cost: 60, hp: 60,  atk: 10, rate: 1.2, range: 220, speed: 80, r: 9,  buyCd: 1.5, aggro: 260 },
       priest: { name: '사제', cost: 80, hp: 70,  atk: 0,  rate: 0,   range: 0,   speed: 80, r: 9,  buyCd: 2.5, aggro: 0,
-                heal: 12, healRate: 1.6, healRange: 200 },
+                heal: 12, healRate: 2.4, healRange: 200 },
       // 카드로만 얻는 유닛
       // 카드로 얻는 특수 유닛. line = 어느 직업 계열의 강화·전직을 받는지 (sword·archer·priest = 해당 직업, core = 성채 강화)
-      golem:  { name: '골렘', hp: 900, atk: 35, rate: 0.8, range: 40,  speed: 55,  r: 18, aggro: 220, priceSteps: 0, line: 'sword' }, // priceSteps: 소환하면 모든 유닛 가격이 이만큼 오른다 (직접 뽑는 유닛은 1, 특수 유닛은 모두 0)
-      hero:   { name: '용사', hp: 350, atk: 40, rate: 1.3, range: 30,  speed: 100, r: 12, aggro: 260, priceSteps: 0, line: 'sword' },
+      golem:  { name: '골렘', hp: 1500, atk: 52, rate: 0.8, range: 40,  speed: 55,  r: 18, aggro: 220, priceSteps: 0, line: 'sword' }, // priceSteps: 소환하면 모든 유닛 가격이 이만큼 오른다 (직접 뽑는 유닛은 1, 특수 유닛은 모두 0)
+      hero:   { name: '용사', hp: 560, atk: 62, rate: 1.3, range: 30,  speed: 100, r: 12, aggro: 260, priceSteps: 0, line: 'sword' },
       turret: { name: '포탑', hp: 300, atk: 18, rate: 1.5, range: 240, speed: 0,   r: 11, priceSteps: 0, line: 'core', static: true, shot: 't' },
-      marksman: { name: '명궁', hp: 200, atk: 48, rate: 0.7, range: 300, speed: 85, r: 11, aggro: 330, priceSteps: 0, line: 'archer', pierce: 1 },       // 긴 사거리·높은 공격력의 영웅 궁수 (화살이 1명 관통)
+      marksman: { name: '명궁', hp: 280, atk: 66, rate: 0.7, range: 300, speed: 85, r: 11, aggro: 330, priceSteps: 0, line: 'archer', pierce: 1 },       // 긴 사거리·높은 공격력의 영웅 궁수 (화살이 1명 관통)
       repeater: { name: '연노병', hp: 85, atk: 6, rate: 3.2, range: 190, speed: 88, r: 9, aggro: 250, priceSteps: 0, line: 'archer' },                    // 빠르게 연사하는 석궁병
       ballista: { name: '발리스타', hp: 380, atk: 52, rate: 0.45, range: 340, speed: 0, r: 13, priceSteps: 0, line: 'archer', static: true, shot: 'b', pierce: 2 }, // 설치형 대형 석궁 (적 2명 관통)
+    },
+    // 영웅 스킬: 영웅 등급 유닛이 쿨타임마다 자동 시전 (사거리 안에 적이 있을 때)
+    heroSkill: {
+      hero:     { name: '일섬',      cd: 5, r: 130, mul: 6.0 },              // 주변 적 전체에 큰 베기 피해
+      golem:    { name: '대지 강타',  cd: 7, r: 160, mul: 4.5, slow: 3 },     // 주변 적에게 피해 + 3초간 감속
+      marksman: { name: '일제 사격',  cd: 6, r: 340, mul: 4.5, n: 6 },        // 가까운 적 6명을 동시에 저격
     },
     enemies: {
       grunt:  { name: '돌격병', hp: 30, dmg: 6,  speed: 70, r: 9,  range: 20, rate: 1.0, gold: 4,   aggro: 110 },
@@ -95,12 +101,12 @@
       },
       priest: {
         t1: [
-          { id: 'cleric', name: '성직자', desc: '치유량 +60%, 치유 범위 +60', mods: { heal: 0.6, healRange: 60 } },
-          { id: 'bishop', name: '주교', desc: '치유량 +20%, 쓰러진 아군을 라운드당 1회 부활', mods: { heal: 0.2, revive: 1 } },
+          { id: 'cleric', name: '성직자', desc: '치유량 +35%, 치유 범위 +40', mods: { heal: 0.35, healRange: 40 } },
+          { id: 'bishop', name: '주교', desc: '치유량 +12%, 쓰러진 아군을 라운드당 1회 부활', mods: { heal: 0.12, revive: 1 } },
         ],
         t2: {
-          cleric: [{ id: 'highcleric', name: '대성직자', desc: '치유량 +50%, 치유 속도 +30%', mods: { heal: 0.5, healRate: 0.3 } }],
-          bishop: [{ id: 'archbishop', name: '대주교', desc: '치유량 +30%, 부활 +1회', mods: { heal: 0.3, revive: 1 } }],
+          cleric: [{ id: 'highcleric', name: '대성직자', desc: '치유량 +30%, 치유 속도 +15%', mods: { heal: 0.3, healRate: 0.15 } }],
+          bishop: [{ id: 'archbishop', name: '대주교', desc: '치유량 +18%, 부활 +1회', mods: { heal: 0.18, revive: 1 } }],
         },
       },
     },
@@ -261,7 +267,7 @@
     { id: 'u_pierce',  cat: 'unit', rar: 'rare', max: 3, type: 'archer', name: '궁수 · 관통 화살', desc: l => '화살이 뒤의 적 ' + l + '명에게 ' + Math.round(V().pierce * 100) + '% 피해' },
     { id: 'u_crit',    cat: 'unit', rar: 'rare', max: 3, type: 'archer', name: '궁수 · 치명타',    desc: l => '치명타 확률 +' + Math.round(V().crit * 100 * l) + '% (치명타 피해 ×' + V().critMul + ')' },
     { id: 'u_range',   cat: 'unit', rar: 'rare', max: 3, type: 'archer', name: '궁수 · 사거리',    desc: l => '궁수 계열 사거리 +' + Math.round(V().archerRange * 100 * l) + '%' },
-    { id: 'u_aoeheal', cat: 'unit', rar: 'rare', max: 3, type: 'priest', name: '사제 · 광역 치유', desc: l => '치유 대상 주변 아군도 ' + 35 * l + '% 회복' },
+    { id: 'u_aoeheal', cat: 'unit', rar: 'rare', max: 3, type: 'priest', name: '사제 · 광역 치유', desc: l => '치유 대상 바로 옆(붙어 있는) 아군도 ' + 35 * l + '% 회복' },
     { id: 'u_revive',  cat: 'unit', rar: 'epic', max: 3, type: 'priest', name: '사제 · 부활',      desc: l => '쓰러진 아군을 라운드당 ' + l + '회 체력 ' + Math.round(V().revive * 100) + '%로 부활' },
     // 성채 — 포격
     { id: 'c_atk',    cat: 'core', rar: 'common', max: 5, name: '성채 · 공격력',   desc: l => '성채 공격력 +' + Math.round(V().coreAtk * 100 * l) + '%' },
@@ -282,10 +288,10 @@
     { id: 'f_thorn',  cat: 'core', rar: 'rare',   max: 3, name: '가시 방벽',     desc: l => '성채를 때린 적에게 그 피해의 ' + Math.round(V().thorn * 100 * l) + '% 반사' },
     // 특수 소환
     { id: 's_turret', cat: 'summon', rar: 'rare',   max: 3,  name: '자동 포탑',       desc: l => '성채 옆에 자동 포탑 설치 (' + l + '/3) · 성채 공격력·공속·사거리 강화를 받음' },
-    { id: 's_golem',  cat: 'summon', rar: 'epic',   max: 1,  name: '골렘 소환',       desc: () => '거대한 탱커 골렘을 영구 소환 · 검사 계열 (검사 강화·전직 효과를 받음)' },
-    { id: 's_hero',   cat: 'summon', rar: 'epic',   max: 1,  name: '용사 소환',       desc: () => '강력한 근접 영웅 용사를 영구 소환 · 검사 계열 (검사 강화·전직 효과를 받음)' },
+    { id: 's_golem',  cat: 'summon', rar: 'epic',   max: 1,  name: '골렘 소환',       desc: () => '거대한 탱커 골렘을 영구 소환 · 검사 계열 · 스킬 [대지 강타]: 7초마다 주변 적에게 공격력 ×4.5 피해 + 3초 감속' },
+    { id: 's_hero',   cat: 'summon', rar: 'epic',   max: 1,  name: '용사 소환',       desc: () => '강력한 근접 영웅 용사를 영구 소환 · 검사 계열 · 스킬 [일섬]: 5초마다 주변 적 전체에 공격력 ×6 베기' },
     // 궁수 계열 특수 유닛: 궁수 강화 카드와 궁수 전직(저격수·속사수 등)의 효과를 받는다
-    { id: 's_marksman',  cat: 'summon', rar: 'epic', max: 1, name: '명궁 소환',    desc: () => '사거리 300의 영웅 궁수를 영구 소환 · 화살이 적 1명을 관통 · 궁수 계열 (궁수 강화·전직 효과를 받음)' },
+    { id: 's_marksman',  cat: 'summon', rar: 'epic', max: 1, name: '명궁 소환',    desc: () => '사거리 300의 영웅 궁수를 영구 소환 · 궁수 계열 · 스킬 [일제 사격]: 6초마다 가까운 적 6명을 동시에 저격 (공격력 ×4.5)' },
     { id: 's_repeaters', cat: 'summon', rar: 'rare', max: 3, name: '연노병 소환',  desc: l => '연노병 2명을 영구 소환 (' + l + '/3) · 초당 3발 이상 빠르게 쏘는 석궁병 · 궁수 계열 (궁수 강화·전직 효과를 받음)' },
     { id: 's_ballista',  cat: 'summon', rar: 'rare', max: 2, name: '발리스타 설치', desc: l => '대형 석궁 발리스타를 성채 옆에 설치 (' + l + '/2) · 큰 화살이 적 2명을 관통 · 궁수 계열 (궁수 강화·전직 효과를 받음)' },
   ];
@@ -454,7 +460,7 @@
       return { max: b.hp, atk: b.atk * (1 + v.coreAtk * L('c_atk')), rate: b.rate * (1 + v.coreRate * L('c_rate')), speed: b.speed, heal: 0, healRate: 0, range: b.range + v.coreRange * L('c_range'), healRange: 0 };
     }
     // 사제는 유닛 수가 적어서 강화 효과를 2배로 쳐 준다
-    const k = line === 'priest' ? 2 : 1;
+    const k = 1; // 사제도 일반 유닛과 같은 강화 효과 (치유량·속도 카드 증가폭 축소)
     const l = S.up[line] || { hp: 0, atk: 0, rate: 0, speed: 0 }, p = Object.fromEntries(Object.entries(CFG.upPct).map(([n, v]) => [n, v * k]));
     const jm = (S.jobMods && S.jobMods[line]) || zeroMods();
     return {
@@ -783,10 +789,22 @@
         applyHeal(S, t, amt); u.cd = u.healRate / spm; u.swing = 0.35; u.aim = Math.atan2(t.y - u.y, t.x - u.x);
         emit(S, { type: 'heal', x: u.x, y: u.y, tx: t.x, ty: t.y });
         if (S.perks.aoeHeal) {
-          for (const a of S.units) if (!a.dead && a !== t && Math.hypot(a.x - t.x, a.y - t.y) <= 120) { applyHeal(S, a, amt * 0.35 * S.perks.aoeHeal); emit(S, { type: 'heal', x: t.x, y: t.y, tx: a.x, ty: a.y, aoe: true }); }
+          for (const a of S.units) if (!a.dead && a !== t && Math.hypot(a.x - t.x, a.y - t.y) <= 42) { applyHeal(S, a, amt * 0.35 * S.perks.aoeHeal); emit(S, { type: 'heal', x: t.x, y: t.y, tx: a.x, ty: a.y, aoe: true }); }
         }
       }
     }
+  }
+  function castHeroSkill(S, u, atk) {
+    const sk = CFG.heroSkill[u.type];
+    if (u.type === 'marksman') {
+      const seen = new Set(), list = [];
+      for (let i = 0; i < sk.n; i++) { const t = nearestExcl(S.gE, u.x, u.y, sk.r, seen); if (!t) break; seen.add(t); list.push(t); }
+      for (const t of list) { damage(S, t, atk * sk.mul); emit(S, { type: 'heroSkill', kind: u.type, x: u.x, y: u.y, tx: t.x, ty: t.y }); }
+    } else {
+      eachNear(S.gE, u.x, u.y, sk.r, o => { damage(S, o, atk * sk.mul); if (sk.slow) o.slowT = sk.slow; });
+      emit(S, { type: 'heroSkill', kind: u.type, x: u.x, y: u.y, r: sk.r });
+    }
+    u.swing = 0.4;
   }
   function updateFighter(S, u, dt) {
     u.cd -= dt;
@@ -794,6 +812,8 @@
     const spm = 1 + (u.aura ? S.aura.spd : 0);
     const atk = u.atk * (1 + (u.aura ? S.aura.atk : 0)) * (u.weakT > 0 ? CFG.debuff.weak.mul : 1);
     const fromCore = Math.hypot(u.x - CX, u.y - CY);
+    const hs = CFG.heroSkill[u.type];
+    if (hs) { u.skT = (u.skT === undefined ? hs.cd * 0.5 : u.skT) - dt; if (u.skT <= 0 && nearest(S.gE, u.x, u.y, hs.r * 0.9)) { u.skT = hs.cd; castHeroSkill(S, u, atk); } }
     const cfg = CFG.units[u.type], aggro = cfg.aggro;
     const rush = (lineOf(u.type) === 'sword' && S.perks.charge) ? 1 + V().charge * S.perks.charge : 1;
     const stopFor = tgt => (melee ? u.range + u.r + tgt.r - 2 : u.range * 0.85 + tgt.r);
@@ -917,7 +937,8 @@
     if (e.age > ENRAGE_AFTER) boost += 0.1 * Math.ceil((e.age - ENRAGE_AFTER) / 10);
     if (e.abil) bossTick(S, e, dt);
     if (e.kind === 'shaman') return updateShaman(S, e, dt);
-    const c = S.core, spm = e.speedMul, dmg = e.dmg * boost * e.dmgMul, cdTime = 1 / (e.rate * e.rateMul || 1);
+    if (e.slowT > 0) e.slowT -= dt;
+    const c = S.core, spm = e.speedMul * (e.slowT > 0 ? 0.45 : 1), dmg = e.dmg * boost * e.dmgMul, cdTime = 1 / (e.rate * e.rateMul || 1);
     const tgt = nearest(S.gU, e.x, e.y, e.aggro);
     if (e.ranged) { // 사수: 사거리 끝에서 멈춰 포물선 화살을 쏜다
       const t = tgt || c, d = Math.hypot(t.x - e.x, t.y - e.y) - t.r - e.r;
