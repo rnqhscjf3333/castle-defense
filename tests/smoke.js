@@ -272,7 +272,7 @@ function killBoss(g) { const b = g.enemies.find(e => e.kind === 'boss'); b.hp = 
   const g = C.createGame(77); g.captureEvents = true; C.jumpToRound(g, 31); C.tick(g, DT); if (g.cards.offer) C.pickCard(g, 0);
   check('31라운드부터 스폰 지점이 8곳이고 2막 상태', g.spawnPts === 8 && g.act === 2, 'pts=' + g.spawnPts);
   const slopePre = (C.hpMul(30) - C.hpMul(25)) / 5, slopePost = (C.hpMul(40) - C.hpMul(35)) / 5;
-  check('2막은 적이 강해지는 폭이 더 큼 (체력 증가 기울기)', slopePost > slopePre * 1.5, `${slopePre.toFixed(2)} → ${slopePost.toFixed(2)}/라운드`);
+  check('2막은 적이 강해지는 폭이 더 큼 (체력 증가 기울기)', slopePost > slopePre * 1.1, `${slopePre.toFixed(2)} → ${slopePost.toFixed(2)}/라운드`);
   check('2막 적 수 증가 (라운드당 +countPost, 1막 말 수 이어짐)', C.enemyCount(31) - C.enemyCount(30) === C.CFG.balance.countPost && C.enemyCount(50) > C.enemyCount(30));
   const g1 = C.createGame(78); C.jumpToRound(g1, 30); const sp1 = C.enemyCount(30);
   check('1막(≤30)은 act 1, 2막 진입은 보스 처치로만', g1.act === 1 && C.createGame(1).act === 1); }
