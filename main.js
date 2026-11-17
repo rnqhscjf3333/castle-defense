@@ -517,7 +517,7 @@
   // ───────────── 시작/종료 ─────────────
   function newGame() {
     const seed = params.get('seed') ? +params.get('seed') : (Date.now() ^ (Math.random() * 1e9)) >>> 0;
-    S = C.createGame(seed); S.captureEvents = true;
+    S = C.createGame(seed); S.captureEvents = true; Net.begin(S);
     fx.length = 0; paused = false; speed = 1; shownOffer = null; $('picker').classList.add('hidden'); renderUpgrades();
     $('btnPause').textContent = '일시정지'; $('btnSpeed').textContent = '1×';
     for (const k in last) delete last[k];
@@ -545,10 +545,37 @@
     if (reached > best) store.set('cd-best', String(reached));
     $('ovTitle').textContent = win ? '방어 성공!' : '성채가 무너졌어요';
     $('ovBody').innerHTML = '<div class="stat"><div><b>' + reached + '</b>도달 라운드</div><div><b>' + S.kills + '</b>처치</div><div><b>' + fmtTime(S.t) + '</b>시간</div></div>'
-      + '<p>최고 기록: ' + Math.max(best, reached) + '라운드</p><p>랭킹 등록은 다음 단계에서 추가됩니다.</p>';
-    $('go').textContent = '다시 시작';
+      + '<p>최고 기록: ' + Math.max(best, reached) + '라운드</p>'
+      + '<div id="regbox"><input id="nameIn" maxlength="12" placeholder="닉네임 (최대 12자)" autocomplete="off"><button id="regBtn">랭킹 등록</button></div><div id="rankbox"></div>';
+    $('go').textContent = '다시 시작'; $('btnRank').classList.add('hidden');
     $('overlay').classList.remove('hidden');
+    Net.sendLog(S, 'end');
+    const ended = S, myScore = Net.scoreOf(S.win, S.round, S.kills, S.t);
+    $('nameIn').value = Net.name();
+    const reg = async () => {
+      const name = $('nameIn').value; $('regBtn').disabled = true; $('regBtn').textContent = '등록 중…';
+      await Net.submit(ended, name); $('regbox').remove(); showRank(myScore);
+    };
+    $('regBtn').addEventListener('click', reg);
+    $('nameIn').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') reg(); });
+    $('nameIn').addEventListener('keyup', e => e.stopPropagation());
+    showRank(null);
   }
+  // 랭킹 표: 서버가 있으면 서버 순위, 없으면 이 브라우저의 개인 기록
+  async function showRank(mine) {
+    const box = $('rankbox'); if (!box) return; box.innerHTML = '<p>랭킹 불러오는 중…</p>';
+    const r = await Net.top(10); if (!$('rankbox')) return;
+    const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    let hit = false;
+    const rows = r.list.map((e, i) => { const me = mine != null && !hit && e.score === mine; if (me) hit = true; return '<tr' + (me ? ' class="me"' : '') + '><td>' + (i + 1) + '</td><td>' + esc(e.name) + '</td><td>' + (e.win ? '클리어' : e.round + '라운드') + '</td><td>' + fmtTime(e.time) + '</td></tr>'; }).join('');
+    box.innerHTML = '<div class="rankhead">' + (r.server ? '전체 랭킹' : (Net.configured ? '서버에 연결하지 못해 내 기록만 표시' : '내 기록 (서버 미설정)')) + '</div>'
+      + (rows ? '<table class="rank"><tr><th>#</th><th>이름</th><th>기록</th><th>시간</th></tr>' + rows + '</table>' : '<p>아직 기록이 없어요.</p>');
+  }
+  $('btnRank').addEventListener('click', () => { $('ovBody').innerHTML = '<div id="rankbox"></div>'; showRank(null); $('btnRank').classList.add('hidden'); $('go').textContent = '게임 시작'; });
+  // 플레이 도중 창을 닫거나 숨길 때도 기록을 남긴다 (개선 자료)
+  const abandon = () => { if (S && running && !S.over) Net.sendLog(S, 'abandon', true); };
+  window.addEventListener('pagehide', abandon);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) abandon(); });
   $('go').addEventListener('click', () => { $('overlay').classList.add('hidden'); newGame(); });
 
   // ───────────── 메인 루프 ─────────────
@@ -570,6 +597,7 @@
   }
   function frame(now) {
     const f0 = performance.now();
+    if (running && !paused && document.visibilityState === 'visible' && now - prev < 1000) Net.lag(now - prev);
     adaptResolution(now - prev);
     const dt = Math.min(0.1, (now - prev) / 1000); prev = now;
     if (S && running && !paused) {
@@ -585,7 +613,7 @@
       if (S.cinematic && !cine) startCine(S.cinematic.name);
       if (cine) stepCine(now);
       else if (Scenery.act !== S.act) Scenery.setAct(S.act, true); // 불러오기/재시작/점프 시 막에 맞는 배경으로
-      const h0 = performance.now(); A2.setView({ x: cam.x, y: cam.y, zoom: cam.zoom, vw, vh }); updateMood(); handleEvents(); syncPicker(); updateHud(); const h1 = performance.now(); drawWorld(now); const h2 = performance.now(); drawMini(); const h3 = performance.now();
+      const h0 = performance.now(); Net.sample(S, perf, renderScale); A2.setView({ x: cam.x, y: cam.y, zoom: cam.zoom, vw, vh }); updateMood(); handleEvents(); syncPicker(); updateHud(); const h1 = performance.now(); drawWorld(now); const h2 = performance.now(); drawMini(); const h3 = performance.now();
       ema('hud', h1 - h0); ema('draw', h2 - h1); ema('mini', h3 - h2);
     }
     ema('frame', performance.now() - f0);
