@@ -233,13 +233,16 @@
   // ───────────── 난이도 곡선 ─────────────
   // 체력은 선형, R20 이후 "대혼란" 단계에서 증가율이 커진다. 공격력은 체력 증가의 절반만 반영.
   // 난이도 수치는 CFG.balance에 모여 있다 (시뮬레이터가 덮어써서 조정한다)
-  const enemyCount = r => { const b = CFG.balance, f = x => Math.floor(b.countBase + b.countLinear * x + b.countQuad * x * x); return r > ACT1_END ? Math.floor(f(ACT1_END) + b.countPost * (r - ACT1_END)) : f(r); };
-  const hpMul = r => { const b = CFG.balance; return 1 + b.hpSlope * (Math.min(r, b.lateFrom) - 1) + b.hpSlopeLate * Math.max(0, Math.min(r, ACT1_END) - b.lateFrom) + b.hpSlopePost * Math.max(0, r - ACT1_END); };
+  const enemyCount = r => { const b = CFG.balance, f = x => Math.floor(b.countBase + b.countLinear * x + b.countQuad * x * x); return r > ACT1_END ? Math.floor((f(ACT1_END) + b.countPost * (r - ACT1_END)) * (1 + 0.05 * endE(r))) : f(r); };
+  // 무한 모드(51라운드~): 체력·공격·수·속도가 가파르게 오른다
+  const endE = r => Math.max(0, r - MAX_ROUND);
+  const endF = r => { const e = endE(r); return e ? 1 + 0.28 * e + 0.02 * e * e : 1; };
+  const hpMul = r => { const b = CFG.balance; return endF(r) * (1 + b.hpSlope * (Math.min(r, b.lateFrom) - 1) + b.hpSlopeLate * Math.max(0, Math.min(r, ACT1_END) - b.lateFrom) + b.hpSlopePost * Math.max(0, r - ACT1_END)); };
   const dmgMul = r => 1 + CFG.balance.dmgShare * (hpMul(r) - 1);
   const spawnPointCount = r => (r > ACT1_END ? 8 : r >= 10 ? 6 : 4);
   // 스폰 지점 방향: 큰 길 4개(90도 간격) + 10라운드부터 샛길 2개(대각선). 배경의 길도 이 각도를 따른다.
   const spawnAngles = pts => { const b = 0.4, a = [0, 1, 2, 3].map(k => b + k * Math.PI / 2); if (pts >= 6) a.push(b + Math.PI / 4, b + 5 * Math.PI / 4); if (pts >= 8) a.push(b + 3 * Math.PI / 4, b + 7 * Math.PI / 4); return a.slice(0, pts); };
-  const enemySpeedMul = r => (r >= CFG.balance.lateFrom ? CFG.balance.lateSpeed : 1) * (r > ACT1_END ? CFG.balance.postSpeed : 1);
+  const enemySpeedMul = r => (r >= CFG.balance.lateFrom ? CFG.balance.lateSpeed : 1) * (r > ACT1_END ? CFG.balance.postSpeed : 1) * Math.min(1.5, 1 + 0.012 * endE(r));
   // 비용 = 기본 비용 × 배율^(지금까지 뽑은 유닛 수). 모든 유닛 종류가 함께 오른다.
   const unitCostOf = (S, type) => Math.round(CFG.units[type].cost * Math.pow(CFG.economy.costGrowth, S.buyCount));
 
@@ -546,10 +549,12 @@
   function bossDefFor(S, r) {
     if (r === MAX_ROUND) return CFG.finalBoss;
     if (r === ACT1_END) return CFG.act1Boss;
+    if (r > MAX_ROUND) return r % 5 === 0 ? (r % 10 === 0 ? CFG.finalBoss : CFG.bossPool[(r / 5) % CFG.bossPool.length]) : null; // 무한 모드: 5라운드마다 보스, 10라운드마다 마왕
     if (r % 5 !== 0 || r < 5 || r > 45) return null;
     return r < ACT1_END ? CFG.bossPool[S.bossOrder[r / 5 - 1]] : CFG.bossPool[S.bossOrder2[(r - 35) / 5]];
   }
-  const bossInfo = (S, r) => { const d = bossDefFor(S, r); return d ? Object.assign({ hp: CFG.bossHp[r] }, d) : null; };
+  const bossBaseHp = r => CFG.bossHp[r] || CFG.bossHp[MAX_ROUND] * endF(r);
+  const bossInfo = (S, r) => { const d = bossDefFor(S, r); return d ? Object.assign({ hp: bossBaseHp(r) }, d) : null; };
   // 풀 보스의 패턴 수치를 라운드에 맞춰 조정 (15라운드 = 기준). 일찍 나오면 약하게, 늦게 나오면 강하게.
   function scaleAbil(abil, r) {
     const s = clamp(r / 15, 0.5, 2.2), out = {};
@@ -591,6 +596,8 @@
     let text = '라운드 ' + r;
     if (r === 10) text += ' · 스폰 지점 증가';
     if (r === 20) text += ' · 대혼란';
+    if (r === MAX_ROUND + 1) { text = '🩸 무한 모드 · 하늘이 붉게 물든다'; emit(S, { type: 'notice', text: '마왕을 쓰러뜨렸다! 이제부터 끝없이 강해지는 적을 버텨라' }); }
+    else if (r > MAX_ROUND) text += ' · 무한';
     emit(S, boss ? { type: 'banner', text: '⚠ 보스 라운드 · ' + boss.name, boss: true } : { type: 'banner', text });
     const next = bossDefFor(S, r + 1);
     if (next) emit(S, { type: 'notice', text: '다음 라운드 보스: ' + next.name });
@@ -606,7 +613,7 @@
       y = clamp(CY + Math.sin(ang) * SPAWN_RING + (S.rng() - 0.5) * 80, 20, H - 20);
     }
     const bd = kind === 'boss' ? (bossDefFor(S, r) || CFG.bossPool[0]) : null;
-    const hp = Math.max(1, Math.round((bd ? (CFG.bossHp[r] || CFG.bossHp[MAX_ROUND]) * CFG.balance.bossHp : cfg.hp * hpMul(r)) * CFG.balance.enemyHp * (!bd && !cfg.ranged && !cfg.healRange ? CFG.balance.meleeHp : 1)));
+    const hp = Math.max(1, Math.round((bd ? bossBaseHp(r) * CFG.balance.bossHp : cfg.hp * hpMul(r)) * CFG.balance.enemyHp * (!bd && !cfg.ranged && !cfg.healRange ? CFG.balance.meleeHp : 1)));
     const e = {
       id: S.nextId++, kind, team: 'e', x, y, hp, max: hp, dmg: cfg.dmg * dmgMul(r) * CFG.balance.enemyDmg * (!bd && cfg.ranged ? CFG.balance.rangedDmg : 1), rate: cfg.rate, range: cfg.range,
       speed: cfg.speed * enemySpeedMul(r), r: (bd && bd.r) || cfg.r, gold: cfg.gold, aggro: cfg.aggro,
@@ -654,7 +661,7 @@
         emit(S, { type: 'bossWipe', x: tgt.x, y: tgt.y });
       }
       if (tgt.kind === 'boss' && S.round === ACT1_END && S.act === 1) { S.act = 2; S.cinematic = { name: tgt.bossName }; emit(S, { type: 'act2', boss: tgt.bossName }); } // 1막 마지막 보스 처치 → 연출 후 2막
-      if (tgt.kind === 'boss' && S.round < MAX_ROUND) openJobs(S, tgt.bossName); // 보스를 처치하면 전직 선택
+      if (tgt.kind === 'boss') openJobs(S, tgt.bossName); // 보스를 처치하면 전직 선택
     }
     else emit(S, { type: 'udead', x: tgt.x, y: tgt.y });
   }
@@ -944,8 +951,8 @@
         while (S.spawnT <= 0 && S.queue.length) { spawnEnemy(S, S.queue.shift()); S.spawnT += S.spawnGap; }
       }
       const gate = S.round === ACT1_END && S.act === 1; // 30라운드는 보스를 처치해야(2막 연출) 다음 라운드로 넘어간다
-      if (S.roundT >= ROUND_TIME && S.round < MAX_ROUND && !gate && !S.hold) startRound(S); // 라운드는 시간제: 적이 남아도 다음 라운드가 시작되어 쌓인다
-      else if (!gate && !S.hold && S.round < MAX_ROUND && S.roundT >= 1 && !S.queue.length && !S.enemies.some(e => !e.dead)) startRound(S); // 적을 모두 처치하면(보스 처치 포함) 즉시 다음 라운드
+      if (S.roundT >= ROUND_TIME && !gate && !S.hold) startRound(S); // 라운드는 시간제: 적이 남아도 다음 라운드가 시작되어 쌓인다
+      else if (!gate && !S.hold && S.roundT >= 1 && !S.queue.length && !S.enemies.some(e => !e.dead)) startRound(S); // 적을 모두 처치하면(보스 처치 포함) 즉시 다음 라운드
       if (S.cards.offer) return; // 방금 새 라운드가 열리며 카드창이 떴다
     }
 
@@ -1025,11 +1032,6 @@
     // 정리
     if (S.units.some(u => u.dead)) S.units = S.units.filter(u => !u.dead);
     if (S.enemies.some(e => e.dead)) S.enemies = S.enemies.filter(e => !e.dead);
-
-    // 승리 판정: 마지막 라운드의 적을 전부 처치
-    if (S.round >= MAX_ROUND && S.queue.length === 0 && S.enemies.length === 0 && !S.over) {
-      S.over = true; S.win = true; emit(S, { type: 'over', win: true });
-    }
   }
 
   return {

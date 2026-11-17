@@ -103,7 +103,7 @@ try {
   // 3.5) 보스 라운드 표시: 라운드 표시, 보스 체력 바, 화면 밖 보스는 미니맵/화살표 대상
   await open('?bot=1&warp=100&round=5&seed=3&zoom=1', 1200); // 5라운드 시작 직후
   check('보스 라운드 표시 (라운드 문구에 보스, 빨간색)', (await ev("document.getElementById('roundTxt').textContent")).includes('보스') && await ev("document.getElementById('roundTxt').classList.contains('boss')"), await ev("document.getElementById('roundTxt').textContent"));
-  check('보스 체력 바가 화면 맨 위에 작고 얇게 표시됨 (높이 ≤ 64px)', await ev("(()=>{const b=document.getElementById('bossbar'); if(b.hidden) return false; const r=b.getBoundingClientRect(); return r.width>=220 && r.top<=8 && r.height<=64 && document.getElementById('bossName').textContent===__game.CastleCore.bossInfo(__game.S,5).name && document.getElementById('bossHpTxt').textContent.includes('/');})()"), await ev("document.getElementById('bossName').textContent + ' ' + document.getElementById('bossHpTxt').textContent"));
+  check('보스 체력 바가 화면 맨 위에 작고 얇게 표시됨 (높이 ≤ 64px)', await ev("(()=>{const b=document.getElementById('bossbar'); if(b.hidden) return false; const r=b.getBoundingClientRect(); return r.width>=170 && r.top<=8 && r.height<=64 && document.getElementById('bossName').textContent===__game.CastleCore.bossInfo(__game.S,5).name && document.getElementById('bossHpTxt').textContent.includes('/');})()"), await ev("document.getElementById('bossName').textContent + ' ' + document.getElementById('bossHpTxt').textContent"));
   // 보스가 가까워서 화면 안일 수 있으니 카메라를 멀리 옮겨 '화면 밖 보스' 상황을 만들고, 그려도 오류가 없는지 확인한다
   await ev("(()=>{__game.cam.x = 300; __game.cam.y = 300;})()"); await sleep(400);
   check('보스가 화면 밖일 때(화살표 표시 경로)도 오류 없이 그려짐', await ev("(()=>{const b=__game.S.enemies.find(e=>e.kind==='boss'); const c=__game.cam; return !!b && (Math.abs(b.x-c.x)>500 || Math.abs(b.y-c.y)>350);})()") && (await ev("window.__errs ? window.__errs.length : 0")) === 0);
@@ -121,14 +121,14 @@ try {
   const insideUI = (x, y, rects) => rects.some(r => x > r.l && x < r.r && y > r.t && y < r.b);
   let o = await place(500, 330);
   check('보스가 UI에 안 가려진 화면 안이면 화살표 없음', o.a.length === 0, JSON.stringify(o.a));
-  o = await place(500, 22); const bb = o.r.find(r => r.sel === '#bossbar');
-  check('보스가 위쪽 보스 바 뒤에 있으면 화살표 표시 (바 아래에, UI에 안 가려짐)', o.a.length === 1 && o.a[0].why === 'ui:#bossbar' && o.a[0].y > bb.b && !insideUI(o.a[0].x, o.a[0].y, o.r), JSON.stringify(o.a[0]));
+  o = await place(VW - 100, 22); const bb = o.r.find(r => r.sel === '#bossbar');
+  check('보스가 오른쪽 위 보스 바 뒤에 있으면 화살표 표시 (UI에 안 가려짐)', o.a.length === 1 && o.a[0].why === 'ui:#bossbar' && !insideUI(o.a[0].x, o.a[0].y, o.r), JSON.stringify(o.a[0]));
   o = await place(500, VH - 30); const un = o.r.find(r => r.sel === '#units');
   check('보스가 아래쪽 유닛 카드 뒤에 있으면 화살표 표시 (카드 위에, UI에 안 가려짐)', o.a.length === 1 && o.a[0].why === 'ui:#units' && o.a[0].y < un.t && !insideUI(o.a[0].x, o.a[0].y, o.r), JSON.stringify(o.a[0]));
   o = await place(60, 40);
   check('보스가 왼쪽 위 HUD 뒤에 있으면 화살표 표시', o.a.length === 1 && o.a[0].why === 'ui:#hud' && !insideUI(o.a[0].x, o.a[0].y, o.r), JSON.stringify(o.a[0]));
   o = await place(VW - 40, 40);
-  check('보스가 오른쪽 위 미니맵 뒤에 있으면 화살표 표시', o.a.length === 1 && o.a[0].why === 'ui:#minimap' && !insideUI(o.a[0].x, o.a[0].y, o.r), JSON.stringify(o.a[0]));
+  check('보스가 오른쪽 위 구석(보스 바·버튼 열) 뒤에 있으면 화살표 표시', o.a.length === 1 && /ui:#(bossbar|tools)/.test(o.a[0].why) && !insideUI(o.a[0].x, o.a[0].y, o.r), JSON.stringify(o.a[0]));
   const tl = o.r.find(r => r.sel === '#tools'); o = await place(VW - 30, tl.b - 8); // 미니맵에서 충분히 떨어진 버튼 열 아래쪽
   check('보스가 오른쪽 버튼 열 뒤에 있으면 화살표 표시', o.a.length === 1 && o.a[0].why === 'ui:#tools' && !insideUI(o.a[0].x, o.a[0].y, o.r), JSON.stringify(o.a[0]));
   o = await place(-300, 350);

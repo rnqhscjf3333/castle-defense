@@ -24,8 +24,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #hpfill { height: 100%; width: 100%; background: var(--ok); transition: width .15s; }
 #gold { color: var(--gold); }
 
-#minimap { position: fixed; top: max(5px, env(safe-area-inset-top)); right: 5px; width: 100px; height: 100px; border-radius: 9px;
-  border: 1px solid var(--line); background: rgba(16, 20, 28, .88); touch-action: none; }
 #tools { position: fixed; top: calc(max(5px, env(safe-area-inset-top)) + 106px); right: 5px; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
 .tbtn { padding: 4px 8px; font-size: 11.5px; min-height: 26px; border-radius: 8px; }
 
@@ -49,7 +47,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #roundTxt.boss { color: #ff6b6b; font-weight: 700; }
 #roundTxt.nextboss { color: #ffb86b; }
 /* 보스 체력 바: 화면 맨 위, 작고 얇게 (HUD와 미니맵 사이) */
-#bossbar { position: fixed; top: max(4px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); width: min(400px, calc(100vw - 340px)); min-width: 220px;
+#bossbar { position: fixed; top: max(5px, env(safe-area-inset-top)); right: 5px; width: 210px;
   padding: 3px 10px 4px; border: 1.5px solid #8a2a3a; background: rgba(28, 12, 20, .9); border-radius: 9px; pointer-events: none; box-shadow: 0 0 14px rgba(255,60,80,.22); }
 #bossbar[hidden] { display: none; }
 #bossbar .bb-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
@@ -61,9 +59,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #bossbar.rage #bossFill { background: linear-gradient(90deg, #ff3b1a, #ffb21a); }
 #bossState { font-size: 10.5px; color: #d8b8c0; min-height: 13px; line-height: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #bossbar.shielded #bossState { color: #8fd8ff; font-weight: 700; } #bossbar.rage #bossState { color: #ffb21a; font-weight: 700; }
-#toast { position: fixed; left: 50%; bottom: 112px; transform: translateX(-50%); padding: 5px 11px; border-radius: 8px; font-size: 12px;
-  background: rgba(0,0,0,.75); opacity: 0; transition: opacity .25s; pointer-events: none; white-space: nowrap; }
-#toast.show { opacity: 1; }
+#toast { position: fixed; left: 50%; bottom: 112px; transform: translateX(-50%); display: flex; flex-direction: column-reverse; align-items: center; gap: 4px; pointer-events: none; z-index: 30; }
+#toast .tmsg { padding: 5px 11px; border-radius: 8px; font-size: 12px; background: rgba(0,0,0,.75); white-space: nowrap; max-width: 92vw; overflow: hidden; text-overflow: ellipsis;
+  opacity: 0; transform: translateY(10px); transition: opacity .3s, transform .3s; }
+#toast .tmsg.in { opacity: 1; transform: none; }
+#toast .tmsg.old { opacity: .55; }
+#toast .tmsg.out { opacity: 0; transform: translateY(-26px); }
 
 #dock { position: fixed; left: 0; right: 0; bottom: 0; padding: 5px 5px max(5px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 4px; align-items: center; pointer-events: none; }
 #units { display: flex; gap: 5px; pointer-events: auto; max-width: 100%; }
@@ -133,9 +134,9 @@ table.rank tr.me td { background: rgba(255,204,64,.16); font-weight: 700; }
 #upl[hidden] { display: none; }
 #upl .it { display: flex; justify-content: space-between; gap: 10px; }
 #upl .rare { color: #7cc0ff; } #upl .epic { color: #ffd166; }
-@media (max-width: 620px) { #bossbar { left: 156px; right: 108px; transform: none; width: auto; min-width: 0; padding: 3px 7px 4px; } #bossName { font-size: 12px; } #bossHpTxt { font-size: 10.5px; } #bossState { font-size: 9.5px; } }
+@media (max-width: 620px) { #bossbar { width: 180px; padding: 3px 7px 4px; } #bossName { font-size: 12px; } #bossHpTxt { font-size: 10.5px; } #bossState { font-size: 9.5px; } }
 @media (max-width: 520px) { .pcard { width: 100%; min-height: 0; flex-direction: column; } #pickCards { flex-direction: column; } }
-@media (max-width: 520px) { #units .ucard { width: 80px; } #minimap { width: 84px; height: 84px; } #tools { top: calc(max(5px, env(safe-area-inset-top)) + 90px); } #hud { min-width: 128px; } #hud .row { font-size: 11px; } #bossbar { right: 92px; } }
+@media (max-width: 520px) { #units .ucard { width: 80px; } #tools { top: calc(max(5px, env(safe-area-inset-top)) + 90px); } #hud { min-width: 128px; } #hud .row { font-size: 11px; } }
 </style>
 </head>
 <body>
@@ -148,7 +149,6 @@ table.rank tr.me td { background: rgba(255,204,64,.16); font-weight: 700; }
   <div class="row"><span>유닛 <b id="unitTxt">0</b></span><span>처치 <b id="killTxt">0</b></span></div>
 </div>
 
-<canvas id="minimap" width="264" height="264"></canvas>
 <div id="tools">
   <button class="btn panel tbtn" id="btnCenter" title="성채로 돌아가기 (H)">성채로</button>
   <button class="btn panel tbtn" id="btnUp" title="내 업그레이드 (U)">강화 목록</button>
@@ -187,7 +187,7 @@ table.rank tr.me td { background: rgba(255,204,64,.16); font-weight: 700; }
   <div id="card" class="panel">
     <h1 id="ovTitle">성채방어</h1>
     <div id="ovBody">
-      <p>사방에서 몰려오는 적으로부터 중앙 성채를 지키세요.<br>50라운드를 버티면 승리합니다.</p>
+      <p>사방에서 몰려오는 적으로부터 중앙 성채를 지키세요.<br>50라운드의 마왕을 쓰러뜨리면 붉은 하늘의 무한 모드가 시작됩니다. 얼마나 오래 버티나요?</p>
       <ul class="help">
         <li><b>화면 이동</b>: 빈 곳을 드래그 · 휠/핀치로 확대·축소 (<b>H</b> 성채로)</li>
         <li><b>유닛 생산</b>: 아래 카드를 누르거나 키보드 1·2·3</li>

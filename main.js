@@ -3,7 +3,7 @@
   'use strict';
   const C = window.CastleCore, CFG = C.CFG, W = CFG.world.w, H = CFG.world.h, CX = CFG.world.cx, CY = CFG.world.cy;
   const $ = id => document.getElementById(id);
-  const cv = $('cv'), ctx = cv.getContext('2d'), mini = $('minimap'), mctx = mini.getContext('2d');
+  const cv = $('cv'), ctx = cv.getContext('2d');
   const params = new URLSearchParams(location.search);
   const STEP = 1 / 30;
 
@@ -82,16 +82,19 @@
   cv.addEventListener('contextmenu', e => e.preventDefault());
 
   // 미니맵: 누르거나 끌면 이동
-  const MS = 264 / W;
-  function miniMove(e) { const r = mini.getBoundingClientRect(); cam.x = (e.clientX - r.left) / r.width * W; cam.y = (e.clientY - r.top) / r.height * H; clampCam(); }
-  let miniDown = false;
-  mini.addEventListener('pointerdown', e => { miniDown = true; try { mini.setPointerCapture(e.pointerId); } catch (err) {} miniMove(e); });
-  mini.addEventListener('pointermove', e => { if (miniDown) miniMove(e); });
-  mini.addEventListener('pointerup', () => { miniDown = false; });
 
   // ───────────── UI ─────────────
   let toastT = null, bannerT = null;
-  function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 1800); }
+  // 알림은 아래에서 쌓이고, 새 알림이 오면 이전 알림은 위로 밀려나며 흐려졌다가 사라진다
+  function toast(t) {
+    const box = $('toast'), d = document.createElement('div'); d.className = 'tmsg'; d.textContent = t;
+    box.insertBefore(d, box.firstChild); // column-reverse: 첫 자식이 맨 아래
+    requestAnimationFrame(() => d.classList.add('in'));
+    for (let k = 1; k < box.children.length; k++) box.children[k].classList.add('old');
+    const kill = el => { el.classList.add('out'); setTimeout(() => el.remove(), 400); };
+    setTimeout(() => kill(d), 2600);
+    while (box.children.length > 5) kill(box.lastChild);
+  }
   function banner(t, boss) { const el = $('banner'); el.textContent = t; el.classList.toggle('boss', !!boss); el.classList.add('show'); clearTimeout(bannerT); bannerT = setTimeout(() => el.classList.remove('show'), boss ? 3200 : 1900); }
   const DESC = { sword: '체력 높은 전위', archer: '멀리서 공격', priest: '아군을 치유' };
   const KEYS = ['1', '2', '3'];
@@ -156,7 +159,7 @@
   function updateHud() {
     const c = S.core;
     const bi = C.bossInfo(S, S.round), nb = C.bossInfo(S, S.round + 1), rt = $('roundTxt');
-    setText('roundTxt', '라운드 ' + Math.max(1, S.round) + ' / ' + C.MAX_ROUND + (bi ? ' · 보스' : nb ? ' · 다음 보스' : S.act === 2 ? ' · 2막' : '') + (S.phase === 'round' ? ' · 남은 적 ' + (S.enemies.length + S.queue.length) : ''));
+    setText('roundTxt', '라운드 ' + Math.max(1, S.round) + (S.round > C.MAX_ROUND ? ' · 무한' : ' / ' + C.MAX_ROUND) + (bi ? ' · 보스' : nb ? ' · 다음 보스' : S.act === 2 ? ' · 2막' : '') + (S.phase === 'round' ? ' · 남은 적 ' + (S.enemies.length + S.queue.length) : ''));
     rt.classList.toggle('boss', !!bi); rt.classList.toggle('nextboss', !bi && !!nb); rt.classList.toggle('act2', S.act === 2 && !bi && !nb);
     updateBossBar();
     setText('timeTxt', fmtTime(S.t));
@@ -433,6 +436,13 @@
     ema('rest', performance.now() - p2);
     // 2막: 어두운 밤 (성채 주변만 횃불로 밝다)
     if (S.act === 2 && !S.cinematic) { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); Scenery.drawNight(ctx, vw, vh, (CX - cam.x) * z + vw / 2, (CY - cam.y) * z + vh / 2, z, now); }
+    // 무한 모드(51라운드~): 하늘이 붉게 물들고 점점 짙어진다
+    if (S.round > C.MAX_ROUND) {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); const k = Math.min(1, (S.round - C.MAX_ROUND) / 12), pulse = 0.5 + 0.5 * Math.sin(now / 700);
+      ctx.fillStyle = 'rgba(170,10,10,' + (0.2 + 0.12 * k + 0.04 * pulse).toFixed(3) + ')'; ctx.fillRect(0, 0, vw, vh);
+      const g = ctx.createRadialGradient(vw / 2, vh / 2, Math.min(vw, vh) * 0.3, vw / 2, vh / 2, Math.max(vw, vh) * 0.75);
+      g.addColorStop(0, 'rgba(60,0,0,0)'); g.addColorStop(1, 'rgba(60,0,0,' + (0.45 + 0.2 * k).toFixed(2) + ')'); ctx.fillStyle = g; ctx.fillRect(0, 0, vw, vh);
+    }
     // 화면 밖/UI에 가려진 위험 방향 표시
     drawEdgeWarnings(now);
   }
@@ -443,7 +453,7 @@
   function uiRects(force) {
     if (!force && uiAge < 4) { uiAge++; return uiCache; }
     uiAge = 0; const out = [];
-    for (const sel of ['#hud', '#minimap', '#tools', '#bossbar', '#units']) {
+    for (const sel of ['#hud', '#tools', '#bossbar', '#units']) {
       const el = document.querySelector(sel); if (!el || el.hidden) continue;
       const r = el.getBoundingClientRect(); if (r.width > 0 && r.height > 0) out.push({ sel, l: r.left, t: r.top, r: r.right, b: r.bottom });
     }
@@ -455,9 +465,9 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     bossArrows.length = 0; enemyArrows.length = 0;
     const z = cam.zoom, R = uiRects(), find = sel => R.find(r => r.sel === sel);
-    const mmap = find('#minimap'), bbar = find('#bossbar'), units = find('#units');
+    const units = find('#units');
     // 화살표를 놓을 수 있는 안전 영역: UI를 피한 가운데 구역
-    const sx0 = 12, sx1 = (mmap ? mmap.l : vw) - 12, sy0 = Math.max(bbar ? bbar.b : 0, 12) + 10, sy1 = (units ? units.t : vh) - 10;
+    const sx0 = 12, sx1 = vw - 12, sy0 = 22, sy1 = (units ? units.t : vh) - 10;
     const cx = (sx0 + sx1) / 2, cy = (sy0 + sy1) / 2, hw = Math.max(40, (sx1 - sx0) / 2 - 34), hh = Math.max(30, (sy1 - sy0) / 2 - 34);
     const inUI = (x, y, m) => R.some(r => x > r.l - m && x < r.r + m && y > r.t - m && y < r.b + m);
     const spot = a => { // 안전 영역 가장자리 위치. 모서리의 HUD·미니맵 등에 겹치면 중심 쪽으로 밀어서 UI를 벗어난다.
@@ -496,27 +506,6 @@
       ctx.globalAlpha = Math.min(0.9, 0.35 + b.n * 0.05); ctx.fillStyle = '#ff6b6b'; poly(px, py, sz, 3, b.a); ctx.fill(); ctx.globalAlpha = 1;
     }
   }
-  function drawMini() {
-    mctx.setTransform(1, 0, 0, 1, 0, 0);
-    mctx.fillStyle = '#244a2e'; mctx.fillRect(0, 0, 264, 264);
-    mctx.strokeStyle = '#a3835a'; mctx.lineCap = 'round';
-    for (const a of C.spawnAngles(S.act === 2 ? 8 : 6)) { mctx.lineWidth = 5; mctx.beginPath(); mctx.moveTo(CX * MS, CY * MS); mctx.lineTo((CX + Math.cos(a) * 1500) * MS, (CY + Math.sin(a) * 1500) * MS); mctx.stroke(); }
-    mctx.fillStyle = '#8a909c'; mctx.beginPath(); mctx.arc(CX * MS, CY * MS, 166 * MS, 0, Math.PI * 2); mctx.fill();
-    mctx.strokeStyle = 'rgba(255,107,107,.5)'; mctx.lineWidth = 1.5; for (const a of C.spawnAngles(S.spawnPts || 4)) { mctx.beginPath(); mctx.arc((CX + Math.cos(a) * C.SPAWN_RING) * MS, (CY + Math.sin(a) * C.SPAWN_RING) * MS, 4, 0, Math.PI * 2); mctx.stroke(); }
-    mctx.fillStyle = '#ff6b6b'; for (const e of S.enemies) { if (e.kind === 'boss') continue; mctx.fillRect(e.x * MS - 1.5, e.y * MS - 1.5, 3, 3); }
-    for (const e of S.enemies) { // 보스: 맥박처럼 커지는 고리 + 큰 점
-      if (e.kind !== 'boss') continue;
-      const pr = 6 + 3 * (0.5 + 0.5 * Math.sin(performance.now() * 0.008));
-      mctx.strokeStyle = '#ff3b4a'; mctx.lineWidth = 2; mctx.beginPath(); mctx.arc(e.x * MS, e.y * MS, pr, 0, Math.PI * 2); mctx.stroke();
-      mctx.fillStyle = '#ff3b4a'; mctx.fillRect(e.x * MS - 3.5, e.y * MS - 3.5, 7, 7);
-    }
-    mctx.fillStyle = '#5aa9ff'; for (const u of S.units) mctx.fillRect(u.x * MS - 1.5, u.y * MS - 1.5, 3, 3);
-    mctx.fillStyle = '#ffd166'; mctx.fillRect(CX * MS - 4, CY * MS - 4, 8, 8);
-    mctx.strokeStyle = '#fff'; mctx.lineWidth = 1.5;
-    const hw = vw / 2 / cam.zoom, hh = vh / 2 / cam.zoom;
-    mctx.strokeRect((cam.x - hw) * MS, (cam.y - hh) * MS, hw * 2 * MS, hh * 2 * MS);
-  }
-
   // ───────────── 2막 전환 연출 ─────────────
   // 1막 마지막 보스를 쓰러뜨리면: 화면이 어두워지고 → 길이 늘어나고(바닥을 새로 그림) → 마왕의 군세가 온다는 문구 → 2막 시작. 건너뛰기 가능.
   let cine = null;
@@ -625,7 +614,7 @@
   const ema = (k, v) => { perf[k] += (v - perf[k]) * 0.1; };
   function updateMood() {
     const boss = S.enemies.some(e => e.kind === 'boss');
-    A2.setMood(S.act === 2 ? (boss ? 'dark2' : 'dark') : (boss ? 'boss' : 'calm'));
+    A2.setMood(S.act === 2 || S.round > C.MAX_ROUND ? (boss ? 'dark2' : 'dark') : (boss ? 'boss' : 'calm'));
   }
   function frame(now) {
     const f0 = performance.now();
@@ -645,8 +634,8 @@
       if (S.cinematic && !cine) startCine(S.cinematic.name);
       if (cine) stepCine(now);
       else if (Scenery.act !== S.act) Scenery.setAct(S.act, true); // 불러오기/재시작/점프 시 막에 맞는 배경으로
-      const h0 = performance.now(); Net.sample(S, perf, renderScale); A2.setView({ x: cam.x, y: cam.y, zoom: cam.zoom, vw, vh }); updateMood(); handleEvents(); syncPicker(); updateHud(); const h1 = performance.now(); drawWorld(now); const h2 = performance.now(); drawMini(); const h3 = performance.now();
-      ema('hud', h1 - h0); ema('draw', h2 - h1); ema('mini', h3 - h2);
+      const h0 = performance.now(); Net.sample(S, perf, renderScale); A2.setView({ x: cam.x, y: cam.y, zoom: cam.zoom, vw, vh }); updateMood(); handleEvents(); syncPicker(); updateHud(); const h1 = performance.now(); drawWorld(now); const h2 = performance.now();
+      ema('hud', h1 - h0); ema('draw', h2 - h1);
     }
     ema('frame', performance.now() - f0);
     if (perfEl && now - perfT > 500) { perfT = now; perfEl.textContent = '프레임 ' + perf.dt.toFixed(1) + 'ms (' + (1000 / Math.max(1, perf.dt)).toFixed(0) + 'fps)\n작업 ' + perf.frame.toFixed(1) + 'ms = 틱 ' + perf.tick.toFixed(1) + ' + 그리기 ' + perf.draw.toFixed(1) + '\n적 ' + (S ? S.enemies.length : 0) + ' 아군 ' + (S ? S.units.length : 0) + ' 투사체 ' + (S ? S.shots.length : 0) + '\n그린 개체 ' + drawnCount + (liteMode ? ' (간단 모드)' : '') + '\n해상도 ' + Math.round(renderScale * 100) + '%'; }

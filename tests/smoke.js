@@ -263,9 +263,12 @@ function killBoss(g) { const b = g.enemies.find(e => e.kind === 'boss'); b.hp = 
   b.x = 1500; b.y = 1500 - 200; g.core.atk = 1e6; b.hp = 1; for (let i = 0; i < 90 && !g.cinematic; i++) C.tick(g, DT); C.endCinematic(g); if (g.jobs.offer) C.pickJob(g, 0); g.hold = false;
   for (let i = 0; i < 30 * 5; i++) C.tick(g, DT);
   check('보스를 처치하고 연출이 끝나면 곧바로 31라운드(2막)가 시작됨', g.round === 31 && g.act === 2, 'round=' + g.round); }
-{ // 50라운드 마왕 처치 → 승리 (전직 없음)
+{ // 50라운드 마왕 처치 → 무한 모드(51라운드) 시작
   const g = arena(50, [['boss', 1500, 1500 - 220]]); g.act = 2; g.round = 50; g.queue = []; const b = g.enemies[0]; b.hp = 1; g.core.atk = 1e6; for (let i = 0; i < 90; i++) C.tick(g, DT);
-  check('50라운드 마왕 처치: 전직 없이 승리', b.bossName === '마왕' && g.jobs.offer === null && g.over && g.win); }
+  if (g.jobs.offer) C.pickJob(g, 0); g.hold = false; for (let i = 0; i < 60; i++) C.tick(g, DT);
+  check('50라운드 마왕 처치 → 게임이 끝나지 않고 51라운드(무한)로', b.bossName === '마왕' && !g.over && g.round === 51, 'round ' + g.round);
+  check('무한 모드는 라운드마다 점점 훨씬 강해짐', C.hpMul(60) > C.hpMul(50) * 3 && C.enemyCount(60) > C.enemyCount(50) * 1.4, `hp ×${(C.hpMul(60) / C.hpMul(50)).toFixed(1)} 수 ×${(C.enemyCount(60) / C.enemyCount(50)).toFixed(1)}`);
+  const e55 = C.bossInfo(g, 55), e60 = C.bossInfo(g, 60); check('무한 모드 5라운드마다 보스(10라운드마다 마왕)', !!e55 && e60.name === '마왕' && C.bossInfo(g, 56) === null); }
 { // 2막 구조: 새 길(8방향), 더 가파른 난이도, 보스 라운드
   const a8 = C.spawnAngles(8), a6 = C.spawnAngles(6);
   check('2막 스폰 방향 8곳 (1막 6곳 + 새 길 2개, 중복 없음)', a8.length === 8 && new Set(a8.map(x => x.toFixed(3))).size === 8 && a6.every((x, i) => Math.abs(x - a8[i]) < 1e-9));

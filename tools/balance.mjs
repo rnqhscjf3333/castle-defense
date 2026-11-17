@@ -27,9 +27,10 @@ function runOne(task) {
   const P = task.policy, S = C.createGame(task.seed), rnd = C.mulberry32(task.seed * 7919 + 13);
   const ratio = P.ratio || { sword: 3, archer: 2, priest: 1 }; // 검사 비중이 높은 구성이 가장 좋았다 (시뮬레이션)
   let step = 0;
-  const maxSteps = Math.ceil((C.PREP_TIME + C.MAX_ROUND * 120 + 120) / DT);
+  const maxSteps = Math.ceil((C.PREP_TIME + (P.endless ? 90 : C.MAX_ROUND) * 120 + 120) / DT);
   let act2At = -1;
   while (!S.over && step < maxSteps) {
+    if (S.round > C.MAX_ROUND && !P.endless) { S.win = true; break; } // 마왕 처치 = 50라운드 클리어 (이후는 무한 모드)
     if (S.cinematic) { C.endCinematic(S); act2At = S.round; if (P.stopAct2) break; continue; } // 2막 연출은 바로 넘긴다 (30라운드 보스를 처치한 것)
     if (S.jobs.offer) { // 보스 처치 후 전직: jobPrefer가 제시되면 그것을, 아니면 무작위
       const lst = S.jobs.offer.list, pref = P.jobPrefer ? lst.findIndex(o => o.id === P.jobPrefer) : -1;

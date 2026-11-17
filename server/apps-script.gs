@@ -14,7 +14,7 @@
  *
  * 주의: 점수는 브라우저가 보낸 값이라 조작할 수 있다. 여기서는 범위만 검사한다(아래 valid).
  */
-var MAX_ROUND = 50;
+var MAX_ROUND = 999; // 무한 모드
 
 function sheet_(name, header) {
   var ss = SpreadsheetApp.getActiveSpreadsheet(), sh = ss.getSheetByName(name);
@@ -26,7 +26,7 @@ function logs_() { return sheet_('logs', ['시각', '상태', '버전', 'pid', '
 
 function valid_(o) {
   return o && typeof o.score === 'number' && o.round >= 1 && o.round <= MAX_ROUND && o.kills >= 0 && o.kills < 100000 &&
-    o.score <= (MAX_ROUND + 1) * 100000 + 99999 && o.time >= (o.round - 1) * 30; // 라운드는 40초마다 넘어가므로, 라운드 수에 비해 게임 시간이 너무 짧으면 거부
+    o.score <= (MAX_ROUND + 1) * 100000 + 99999 && o.time >= (o.round - 1) * 8; // 라운드는 40초마다 넘어가므로, 라운드 수에 비해 게임 시간이 너무 짧으면 거부
 }
 
 function doPost(e) {
