@@ -1,7 +1,7 @@
 // 성채방어 밸런스 시뮬레이터 — core.js를 그대로 재사용해 봇이 수천 판을 돌린다.
 //   node tools/balance.mjs baseline [N]           정책별 클리어율/도달 라운드
 //   node tools/balance.mjs cards [N] [정책]        카드별 기여도 (그 카드를 우선 선택했을 때 평균 도달 라운드 변화)
-//   node tools/balance.mjs sweep <키> <값,값,…> [N]  수치(balance.*, popCap, startGold, leash, bias) 스윕
+//   node tools/balance.mjs sweep <키> <값,값,…> [N]  수치(balance.*, economy 'growth', startGold, leash, bias) 스윕
 //   node tools/balance.mjs smart [N]               저장된 가중치(tools/weights.json)로 smart 정책 평가
 // 같은 시드를 모든 조건에 공통으로 써서 비교 잡음을 줄인다. 결과 지표: 도달 라운드(클리어=31).
 import { Worker, isMainThread, parentPort } from 'node:worker_threads';
@@ -38,9 +38,7 @@ function runOne(task) {
       const cnt = { sword: 0, archer: 0, priest: 0 };
       for (const u of S.units) if (cnt[u.type] !== undefined) cnt[u.type]++;
       const order = Object.keys(ratio).sort((a, b) => cnt[a] / ratio[a] - cnt[b] / ratio[b]);
-      for (const t of order) { const r = C.buy(S, t); if (r.ok || r.reason === 'gold' || r.reason === 'pop') break; }
-      if (P.expand !== false && C.popUsed(S) >= S.popCap - 2) C.expandPop(S);
-      if (P.early !== false && S.phase === 'round' && S.queue.length === 0 && S.enemies.length === 0 && S.round < C.MAX_ROUND) C.callEarly(S);
+      for (const t of order) { const r = C.buy(S, t); if (r.ok || r.reason === 'gold') break; }
     }
     C.tick(S, DT); step++;
   }
@@ -99,8 +97,8 @@ async function main() {
   const t0 = Date.now();
   if (cmd === 'baseline') {
     const n = +a1 || 60, W = loadWeights();
-    const rows = [['무작위 카드', {}], ['무작위 카드 · 인구확장 안 함', { expand: false }], ['무작위 카드 · 다음 라운드 호출 안 함', { early: false }]];
-    if (W) rows.push(['smart 카드', { weights: W, reroll: 1.2 }], ['smart 카드 · 인구확장 안 함', { weights: W, reroll: 1.2, expand: false }]);
+    const rows = [['무작위 카드', {}]];
+    if (W) rows.push(['smart 카드', { weights: W, reroll: 1.2 }]);
     for (const [label, policy] of rows) console.log(label.padEnd(22), fmt(summarize(await runPolicy(policy, n))));
   } else if (cmd === 'cards') {
     const n = +a1 || 60, W = a2 === 'smart' ? loadWeights() : null;
@@ -125,7 +123,7 @@ async function main() {
     const key = a1, vals = (a2 || '').split(',').map(Number), n = +a3 || 40, W = loadWeights();
     const policy = W ? { weights: W, reroll: 1.2 } : {};
     for (const v of vals) {
-      const ov = {}; if (['popCap', 'startGold', 'leash'].includes(key)) ov[key] = v; else if (key === 'bias') ov.ai = { bias: v }; else ov.balance = { [key]: v };
+      const ov = {}; if (['startGold', 'leash'].includes(key)) ov[key] = v; else if (key === 'growth') ov.economy = { costGrowth: v }; else if (key === 'bias') ov.ai = { bias: v }; else ov.balance = { [key]: v };
       console.log((key + '=' + v).padEnd(18), fmt(summarize(await runPolicy(policy, n, ov))));
     }
   } else if (cmd === 'smart') {

@@ -36,9 +36,9 @@ load('../index.html?bot=1&seed=7&zoom=1', w => {
     g.cam.zoom = 0.8; const zz = g.cam.zoom;
     ev('pointerdown', 450, 350, 11); ev('pointerdown', 550, 350, 12); ev('pointermove', 400, 350, 11); ev('pointermove', 600, 350, 12);
     log(g.cam.zoom > zz, '핀치 확대', zz.toFixed(2) + '→' + g.cam.zoom.toFixed(2)); ev('pointerup', 400, 350, 11); ev('pointerup', 600, 350, 12);
-    const popBefore = g.CastleCore.popUsed(g.S);
-    g.S.gold = 500; g.S.buyCd.sword = 0; d.querySelectorAll('.ucard')[0].click();
-    log(g.CastleCore.popUsed(g.S) === popBefore + 1 || popBefore >= g.S.popCap, '유닛 구매', popBefore + '→' + g.CastleCore.popUsed(g.S));
+    const nBefore = g.S.units.length;
+    g.S.gold = 5000; g.S.buyCd.sword = 0; d.querySelectorAll('.ucard')[0].click();
+    log(g.S.units.length === nBefore + 1, '유닛 구매', nBefore + '→' + g.S.units.length);
     d.getElementById('btnPause').click(); log(d.getElementById('btnPause').textContent === '계속', '일시정지 표시');
     d.getElementById('btnPause').click(); d.getElementById('btnSpeed').click(); log(d.getElementById('btnSpeed').textContent === '2×', '배속 2×');
     log(!window.__errs.length, '콘솔 오류 없음(조작)', window.__errs.join(' | '));

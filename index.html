@@ -100,7 +100,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   <div class="row"><span id="roundTxt">준비</span><b id="timeTxt">0:00</b></div>
   <div id="hpbar"><div id="hpfill"></div></div>
   <div class="row"><span>성채 <b id="hpTxt">1000</b></span><span>골드 <b id="gold">200</b></span></div>
-  <div class="row"><span>인구 <b id="popTxt">0/12</b></span><span>처치 <b id="killTxt">0</b></span></div>
+  <div class="row"><span>유닛 <b id="unitTxt">0</b></span><span>처치 <b id="killTxt">0</b></span></div>
 </div>
 
 <canvas id="minimap" width="264" height="264"></canvas>
@@ -116,8 +116,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 <div id="dock">
   <div id="modes">
-    <button class="btn mbtn" id="btnPop" title="골드로 인구 상한 확장 (P)">인구 확장</button>
-    <button class="btn mbtn" id="btnNext" style="border-color:#7a5a1f">다음 라운드</button>
   </div>
   <div id="units"></div>
 </div>
@@ -141,7 +139,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
       <ul class="help">
         <li><b>화면 이동</b>: 빈 곳을 드래그 · 휠/핀치로 확대·축소 (<b>H</b> 성채로)</li>
         <li><b>유닛 생산</b>: 아래 카드를 누르거나 키보드 1·2·3</li>
-        <li><b>유닛</b>은 성채 주변에 퍼져서 스스로 싸워요 · <b>인구 확장</b>으로 더 많이 둘 수 있어요</li>
+        <li><b>골드 0원으로 시작</b>: 1라운드는 성채가 혼자 버텨요. 처치 골드로 유닛을 뽑으세요 (뽑을수록 모든 유닛 가격이 올라가요)</li>
+        <li><b>유닛</b>은 성채 주변에 퍼져서 스스로 싸워요</li>
         <li><b>업그레이드</b>: 라운드를 넘길 때마다 3장 중 1장을 골라요</li>
         <li><b>미니맵</b>을 눌러 바로 이동</li>
       </ul>

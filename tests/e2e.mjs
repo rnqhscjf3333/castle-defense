@@ -48,9 +48,12 @@ try {
   await ev("document.getElementById('btnPause').click()"); const p0 = await ev('__game.S.t'); await sleep(800); const p1 = await ev('__game.S.t');
   check('일시정지 중 시간 정지', p1 === p0);
   await ev("document.getElementById('btnPause').click()");
-  // 인구 확장 버튼 (골드 사용처)
-  const cap0 = await ev('__game.S.popCap'); await ev('__game.S.gold = 5000'); await ev("document.getElementById('btnPop').click()"); await sleep(300);
-  check('인구 확장 버튼 → 상한 증가 + 문구 갱신', (await ev('__game.S.popCap')) === cap0 + 2 && (await ev("document.getElementById('btnPop').textContent")).includes('G'), cap0 + '→' + await ev('__game.S.popCap') + ' / ' + await ev("document.getElementById('btnPop').textContent"));
+  // 인구 제한/수동 라운드 버튼이 없고, 가격이 오르는지
+  check('인구 확장·다음 라운드 버튼 없음', await ev("!document.getElementById('btnPop') && !document.getElementById('btnNext')"));
+  await ev('__game.S.gold = 100000; __game.S.buyCd.sword = 0'); const price0 = await ev("(()=>{const t=document.querySelectorAll('.ucard .cost')[1].textContent; return +t.replace('G','');})()");
+  await ev("document.querySelectorAll('.ucard')[0].click()"); await sleep(300);
+  const price1 = await ev("(()=>{const t=document.querySelectorAll('.ucard .cost')[1].textContent; return +t.replace('G','');})()");
+  check('유닛을 뽑으면 다른 유닛 카드의 가격도 오름', price1 > price0, price0 + 'G→' + price1 + 'G');
 
   // 2) 카드 선택: 열림 → 시간 정지 → 리롤 문구 갱신 → 키보드 선택 → 닫힘 → 시간 재개
   await open('?bot=1&nopick=1&warp=53&seed=11&zoom=1', 1200);
@@ -79,9 +82,10 @@ try {
   check('마우스 휠 확대', (await ev('__game.cam.zoom')) > 1.1, String(await ev('__game.cam.zoom')));
 
   // 4) 한 판 끝까지(디버그 가속) — 종료 화면이 뜨는지
-  await open('?bot=1&warp=900&seed=5&zoom=0.6', 800); // 봇이 미리 진행하다 성채가 무너진 상태
+  await open('?bot=1&warp=2400&seed=5&zoom=0.6', 1500); // 봇이 30라운드 끝까지(승리 또는 패배) 미리 진행한 상태
   check('종료 화면 표시(빨리감기 중 종료)', (await ev('__game.S.over')) && !(await ev("document.getElementById('overlay').classList.contains('hidden')")), '라운드 ' + await ev('__game.S.round'));
-  check('결과 문구', (await ev("document.getElementById('ovTitle').textContent")).length > 0, await ev("document.getElementById('ovTitle').textContent"));
+  const title = await ev("document.getElementById('ovTitle').textContent");
+  check('결과 문구(승리/패배)', title === '방어 성공!' || title === '성채가 무너졌어요', title);
   await ev("document.getElementById('go').click()"); await sleep(500);
   check('다시 시작 → 새 게임', (await ev('__game.S.t')) < 2 && (await ev("document.getElementById('overlay').classList.contains('hidden')")), 't=' + await ev('__game.S.t'));
 } catch (e) {

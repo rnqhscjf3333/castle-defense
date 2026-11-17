@@ -40,9 +40,20 @@ for (const [label, pol] of [['항상 첫 번째 카드', 'first'], ['무작위 �
 
 // 3) 구매 규칙
 let S = C.createGame(1);
+check('골드 0원으로 시작', S.gold === 0 && C.CFG.startGold === 0);
+check('골드가 없으면 아무도 못 뽑음', ['sword', 'archer', 'priest'].every(t => { const r = C.buy(S, t); return !r.ok && r.reason === 'gold'; }));
+S.gold = 1000;
+const base = { sword: C.unitCostOf(S, 'sword'), archer: C.unitCostOf(S, 'archer'), priest: C.unitCostOf(S, 'priest') };
 const r1 = C.buy(S, 'sword'), r2 = C.buy(S, 'sword');
 check('구매 쿨다운', r1.ok && !r2.ok && r2.reason === 'cooldown');
-check('비용 증가', C.unitCostOf(S, 'sword') === Math.round(50 * 1.05), C.unitCostOf(S, 'sword'));
+check('한 유닛을 뽑으면 모든 유닛 종류의 가격이 오름', ['sword', 'archer', 'priest'].every(t => C.unitCostOf(S, t) > base[t]), JSON.stringify(base) + '→' + ['sword', 'archer', 'priest'].map(t => C.unitCostOf(S, t)));
+check('가격 = 기본가 × 상승배율^뽑은 수', C.unitCostOf(S, 'archer') === Math.round(C.CFG.units.archer.cost * Math.pow(C.CFG.economy.costGrowth, 1)));
+S.buyCd.sword = 0; S.buyCd.archer = 0;
+const g0 = S.gold; C.buy(S, 'archer');
+check('골드 차감과 구매 횟수 증가', S.gold === g0 - Math.round(C.CFG.units.archer.cost * C.CFG.economy.costGrowth) && S.buyCount === 2, 'buyCount=' + S.buyCount);
+let many = C.createGame(2); many.gold = 1e9; let cnt = 0; for (let i = 0; i < 200; i++) { many.buyCd.sword = 0; if (C.buy(many, 'sword').ok) cnt++; }
+check('인구 제한 없음 (200명도 뽑힘)', cnt === 200 && many.units.length === 200, cnt + '명');
+check('가격은 계속 오름 (사라져도 내려가지 않음)', C.unitCostOf(many, 'sword') > 100 * C.CFG.units.sword.cost);
 
 // 4) 카드 규칙
 S = C.createGame(5);
@@ -51,7 +62,6 @@ for (let i = 0; i < 40 * 30 + 5 && !S.cards.offer; i++) C.tick(S, DT);
 check('라운드 2 시작 시 카드 3장 제시', S.cards.offer && S.cards.offer.length === 3, S.cards.offer && S.cards.offer.map(c => c.name).join(' / '));
 const tBefore = S.t; for (let i = 0; i < 30; i++) C.tick(S, DT);
 check('카드 선택 중 시간 정지', S.t === tBefore);
-check('선택 중 다음 라운드 호출 불가', C.callEarly(S).ok === false);
 const rr = S.cards.rerolls; C.reroll(S);
 check('리롤', S.cards.rerolls === rr - 1 && S.cards.offer.length === 3);
 const picked = S.cards.offer[0]; C.pickCard(S, 0);
@@ -86,29 +96,28 @@ function applyById(g, id, type) {
   g.cards.offer = [{ key, id, cat: def.cat, rar: def.rar, type: type || def.type || null, name: id, desc: '', lv: 1 }];
   C.pickCard(g, 0);
 }
-S = C.createGame(3); C.buy(S, 'sword'); const sw = S.units[0], hp0 = sw.max;
+S = C.createGame(3); S.gold = 1000; C.buy(S, 'sword'); const sw = S.units[0], hp0 = sw.max;
 const V = C.CFG.cardVals;
 applyById(S, 'u_hp', 'sword'); check('검사 체력 강화(CFG.upPct.hp)', sw.max === Math.round(hp0 * (1 + C.CFG.upPct.hp)), hp0 + '→' + sw.max);
 applyById(S, 'c_atk'); check('성채 공격력 강화', Math.abs(S.core.atk - C.CFG.core.atk * (1 + V.coreAtk)) < 1e-9, S.core.atk);
 applyById(S, 'f_hp'); check('성채 체력 증가(즉시 회복)', S.core.max === C.CFG.core.hp + V.fortHp && S.core.hp === S.core.max, S.core.max);
-applyById(S, 'f_pop'); check('인구 상한 +2', S.popCap === C.CFG.popCap + 2);
 applyById(S, 'a_atk'); check('군기 오라', Math.abs(S.aura.atk - V.auraAtk) < 1e-9 && S.aura.on);
 applyById(S, 'a_rad'); check('오라 강화: 모든 오라 효과 증폭', Math.abs(S.aura.atk - V.auraAtk * (1 + V.auraBoost)) < 1e-9, S.aura.atk.toFixed(4));
-applyById(S, 's_golem'); check('골렘 소환(인구 3)', S.units.some(u => u.type === 'golem') && C.popUsed(S) === 4);
+applyById(S, 's_golem'); check('골렘 소환', S.units.some(u => u.type === 'golem'));
 applyById(S, 's_turret'); applyById(S, 's_turret'); check('포탑 2개', S.units.filter(u => u.type === 'turret').length === 2);
 applyById(S, 's_wolves'); check('늑대 소환', S.units.filter(u => u.type === 'wolf').length === V.wolves, V.wolves + '마리');
 for (let i = 0; i < (C.CFG.units.wolf.life + 2) * 30; i++) { if (S.cards.offer) C.pickCard(S, 0); C.tick(S, DT); } // 카드창이 열리면 시간이 멈추므로 선택하며 진행
 check('늑대는 수명이 지나면 사라짐', S.units.filter(u => u.type === 'wolf').length === 0, C.CFG.units.wolf.life + '초');
 
-// 8) 인구 확장 (골드 사용처)
+// 8) 자동 라운드 + 1라운드는 성채 혼자 버티며 골드를 번다
 S = C.createGame(4);
-const c0 = C.popExpandCost(S); S.gold = 0;
-check('골드 부족 시 인구 확장 불가', C.expandPop(S).ok === false && S.popCap === C.CFG.popCap);
-S.gold = c0 + 5; const e1 = C.expandPop(S);
-check('인구 확장: 상한 +' + C.CFG.popExpand.step + ', 골드 차감', e1.ok && S.popCap === C.CFG.popCap + C.CFG.popExpand.step && S.gold === 5, 'cost=' + c0);
-check('확장 비용은 살수록 증가', C.popExpandCost(S) > c0, c0 + '→' + C.popExpandCost(S));
-S.gold = 1e9; let n = 0; while (C.expandPop(S).ok) n++;
-check('확장 횟수 상한', n === C.CFG.popExpand.max - 1 && C.expandPop(S).reason === 'max', n + 1 + '회');
+check('준비 시간 없이 바로 시작', C.PREP_TIME === 0);
+C.tick(S, DT);
+check('첫 틱에 라운드 1 자동 시작', S.round === 1 && S.phase === 'round');
+let t1 = 0; while (S.round < 2 && t1 < 3000) { C.tick(S, DT); t1++; }
+check('라운드는 시간이 지나면 자동으로 넘어감', S.round === 2, 't=' + S.t.toFixed(1));
+check('1라운드: 유닛 없이 성채가 버티고 처치 골드를 얻음', S.core.hp > 0 && S.kills > 0 && S.gold > 0, `처치 ${S.kills}, 골드 ${Math.round(S.gold)}, 성채 ${Math.round(S.core.hp)}`);
+check('자동 라운드 진행 중 callEarly 같은 수동 호출 API 없음', C.callEarly === undefined && C.expandPop === undefined);
 
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

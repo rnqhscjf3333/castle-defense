@@ -14,14 +14,13 @@
   const MAX_ROUND = 30;
   const ROUND_TIME = 40;   // 한 라운드 최대 시간(초). 적이 남아도 다음 라운드가 시작된다.
   const SPAWN_TIME = 25;   // 라운드 시작 후 이 시간 동안 적이 나뉘어 나온다.
-  const PREP_TIME = 12;    // 첫 라운드 전 준비 시간
+  const PREP_TIME = 0;     // 라운드는 시작하자마자 자동으로 진행된다 (준비 시간 없음)
   const SPAWN_RING = 1300; // 중앙에서 스폰 지점까지 거리
   const ENRAGE_AFTER = 60; // 한 적이 이 시간(초) 이상 살아 있으면 점점 강해진다.
 
   const CFG = {
     world: { w: W, h: H, cx: CX, cy: CY },
-    startGold: 200,
-    popCap: 12,
+    startGold: 0,   // 첫 라운드는 성채 혼자 버티며 처치 골드로 첫 유닛을 뽑는다
     leash: 240,           // 유닛이 성채로부터 추격할 수 있는 최대 거리
     ai: {
       bias: 0.5,          // 대기 자리를 적이 오는 쪽으로 쏠리게 하는 정도 (0 = 사방에 고르게, 1 = 전부 적 방향)
@@ -29,15 +28,15 @@
     },
     core: { hp: 1000, atk: 20, rate: 1.0, range: 260, r: 36 },
     units: {
-      sword:  { name: '검사', cost: 50, hp: 120, atk: 12, rate: 1.0, range: 30,  speed: 90, r: 10, pop: 1, buyCd: 1.2, aggro: 220 },
-      archer: { name: '궁수', cost: 60, hp: 60,  atk: 10, rate: 1.2, range: 220, speed: 80, r: 9,  pop: 1, buyCd: 1.5, aggro: 260 },
-      priest: { name: '사제', cost: 80, hp: 70,  atk: 0,  rate: 0,   range: 0,   speed: 80, r: 9,  pop: 1, buyCd: 2.5, aggro: 0,
+      sword:  { name: '검사', cost: 50, hp: 120, atk: 12, rate: 1.0, range: 30,  speed: 90, r: 10, buyCd: 1.2, aggro: 220 },
+      archer: { name: '궁수', cost: 60, hp: 60,  atk: 10, rate: 1.2, range: 220, speed: 80, r: 9,  buyCd: 1.5, aggro: 260 },
+      priest: { name: '사제', cost: 80, hp: 70,  atk: 0,  rate: 0,   range: 0,   speed: 80, r: 9,  buyCd: 2.5, aggro: 0,
                 heal: 14, healRate: 1.5, healRange: 200 },
       // 카드로만 얻는 유닛
-      golem:  { name: '골렘', hp: 900, atk: 35, rate: 0.8, range: 40,  speed: 55,  r: 18, pop: 3, aggro: 220 },
-      hero:   { name: '용사', hp: 350, atk: 40, rate: 1.3, range: 30,  speed: 100, r: 12, pop: 2, aggro: 260 },
-      turret: { name: '포탑', hp: 300, atk: 18, rate: 1.5, range: 240, speed: 0,   r: 11, pop: 0 },
-      wolf:   { name: '늑대', hp: 100, atk: 12, rate: 1.5, range: 22,  speed: 130, r: 8,  pop: 0, aggro: 320, life: 60 },
+      golem:  { name: '골렘', hp: 900, atk: 35, rate: 0.8, range: 40,  speed: 55,  r: 18, aggro: 220 },
+      hero:   { name: '용사', hp: 350, atk: 40, rate: 1.3, range: 30,  speed: 100, r: 12, aggro: 260 },
+      turret: { name: '포탑', hp: 300, atk: 18, rate: 1.5, range: 240, speed: 0,   r: 11 },
+      wolf:   { name: '늑대', hp: 100, atk: 12, rate: 1.5, range: 22,  speed: 130, r: 8,  aggro: 320, life: 60 },
     },
     enemies: {
       grunt:  { name: '돌격병', hp: 30, dmg: 6,  speed: 70, r: 9,  range: 20, rate: 1.0, gold: 4,   aggro: 110 },
@@ -52,8 +51,7 @@
     },
     // 보스는 고정 수치표 (이전 보스 수에 따라 체력이 누적되지 않는다)
     bossHp: { 5: 600, 10: 2000, 15: 5000, 20: 12000, 25: 25000, 30: 60000 },
-    popExpand: { base: 120, growth: 1.3, step: 2, max: 16 }, // 골드로 인구 상한 확장: 비용 = base·growth^횟수
-    unitCostStep: 0.05,   // 같은 유닛이 살아 있는 수 1마리당 비용 +5%
+    economy: { costGrowth: 1.06 }, // (임시값: 1.05는 너무 쉽고 1.08은 어려웠음 — 밸런스는 나중에 재조정) // 유닛을 하나 뽑을 때마다 모든 유닛의 비용이 이 배율만큼 오른다 (인구 제한은 없다)
     healAfterRound: 0.30, // 새 라운드 시작 시 생존 유닛 회복 비율
     // 카드/강화 수치
     upPct: { hp: 0.30, atk: 0.15, rate: 0.10, speed: 0.12 },
@@ -140,11 +138,8 @@
   const dmgMul = r => 1 + CFG.balance.dmgShare * (hpMul(r) - 1);
   const spawnPointCount = r => (r >= 10 ? 6 : 4);
   const enemySpeedMul = r => (r >= CFG.balance.lateFrom ? CFG.balance.lateSpeed : 1);
-  const unitCostOf = (S, type) => {
-    let n = 0; for (const u of S.units) if (u.type === type && !u.dead) n++;
-    return Math.round(CFG.units[type].cost * (1 + CFG.unitCostStep * n));
-  };
-  const popUsed = S => { let p = 0; for (const u of S.units) if (!u.dead) p += CFG.units[u.type].pop; return p; };
+  // 비용 = 기본 비용 × 배율^(지금까지 뽑은 유닛 수). 모든 유닛 종류가 함께 오른다.
+  const unitCostOf = (S, type) => Math.round(CFG.units[type].cost * Math.pow(CFG.economy.costGrowth, S.buyCount));
 
   // ───────────── 카드 정의 ─────────────
   const TN = { sword: '검사', archer: '궁수', priest: '사제' };
@@ -179,7 +174,6 @@
     { id: 'f_hp',     cat: 'core', rar: 'common', max: 5, name: '성채 · 체력',   desc: l => '성채 최대 체력 +' + V().fortHp * l + ' (즉시 회복)' },
     { id: 'f_repair', cat: 'core', rar: 'rare',   max: 3, name: '자동 수리',     desc: l => '라운드가 바뀔 때 성채 체력 ' + Math.round(V().repair * 100 * l) + '% 회복' },
     { id: 'f_thorn',  cat: 'core', rar: 'rare',   max: 3, name: '가시 방벽',     desc: l => '성채를 때린 적에게 그 피해의 ' + Math.round(V().thorn * 100 * l) + '% 반사' },
-    { id: 'f_pop',    cat: 'core', rar: 'common', max: 5, name: '인구 상한',     desc: l => '인구 상한 +' + 2 * l },
     // 특수 소환
     { id: 's_wolves', cat: 'summon', rar: 'common', max: 99, name: '비상 소환 · 늑대', desc: () => '늑대 ' + V().wolves + '마리를 ' + CFG.units.wolf.life + '초간 소환 (인구 소모 없음)' },
     { id: 's_turret', cat: 'summon', rar: 'rare',   max: 3,  name: '자동 포탑',       desc: l => '성채 옆에 자동 포탑 설치 (' + l + '/3)' },
@@ -285,7 +279,6 @@
     c.atk = b.atk * (1 + v.coreAtk * L('c_atk'));
     c.rate = b.rate * (1 + v.coreRate * L('c_rate'));
     c.range = b.range + v.coreRange * L('c_range');
-    S.popCap = CFG.popCap + 2 * L('f_pop') + CFG.popExpand.step * S.popBuys;
     const boost = 1 + v.auraBoost * L('a_rad');
     S.aura = { heal: v.auraHeal * L('a_heal') * boost, atk: v.auraAtk * L('a_atk') * boost, def: Math.min(v.auraDefCap, v.auraDef * L('a_def') * boost), spd: v.auraSpd * L('a_spd') * boost, r: CFG.auraBase,
                on: AURA_IDS.some(a => L(a) > 0) };
@@ -324,7 +317,7 @@
       seed: seed >>> 0, rng: mulberry32(seed >>> 0),
       t: 0, phase: 'prep', prepT: PREP_TIME, round: 0, roundT: 0,
       queue: [], spawnT: 0, spawnGap: 1, spawnPts: 4,
-      gold: CFG.startGold, popCap: CFG.popCap,
+      gold: CFG.startGold, buyCount: 0,
       core: { x: CX, y: CY, hp: CFG.core.hp, max: CFG.core.hp, r: CFG.core.r, atk: CFG.core.atk, rate: CFG.core.rate, range: CFG.core.range, cd: 0, flash: 0 },
       units: [], enemies: [], shots: [],
       kills: 0, nextId: 1,
@@ -334,7 +327,7 @@
       gU: makeGrid(48), gE: makeGrid(48),
       cards: { offer: null, rerolls: CFG.rerolls, taken: {}, boss: false },
       up: { sword: { hp: 0, atk: 0, rate: 0, speed: 0 }, archer: { hp: 0, atk: 0, rate: 0, speed: 0 }, priest: { hp: 0, atk: 0, rate: 0, speed: 0 } },
-      aura: null, perks: null, bombCd: 8, reviveLeft: 0, popBuys: 0,
+      aura: null, perks: null, bombCd: 8, reviveLeft: 0,
     };
     recompute(S);
     return S;
@@ -372,28 +365,8 @@
     if (S.buyCd[type] > 0) return { ok: false, reason: 'cooldown' };
     const cost = unitCostOf(S, type);
     if (S.gold < cost) return { ok: false, reason: 'gold' };
-    if (popUsed(S) + cfg.pop > S.popCap) return { ok: false, reason: 'pop' };
-    S.gold -= cost; S.buyCd[type] = cfg.buyCd;
+    S.gold -= cost; S.buyCd[type] = cfg.buyCd; S.buyCount++;
     return { ok: true, unit: addUnit(S, type), cost };
-  }
-  // 인구 상한 확장 (골드 사용처): 살 때마다 비용이 오른다
-  const popExpandCost = S => Math.round(CFG.popExpand.base * Math.pow(CFG.popExpand.growth, S.popBuys));
-  function expandPop(S) {
-    if (S.over) return { ok: false, reason: 'over' };
-    if (S.popBuys >= CFG.popExpand.max) return { ok: false, reason: 'max' };
-    const cost = popExpandCost(S);
-    if (S.gold < cost) return { ok: false, reason: 'gold' };
-    S.gold -= cost; S.popBuys++; recompute(S);
-    return { ok: true, cost };
-  }
-  // 다음 라운드 앞당기기: 스폰이 끝났을 때만 가능, 남은 시간만큼 보너스 골드
-  function callEarly(S) {
-    if (S.over || S.cards.offer) return { ok: false };
-    if (S.phase === 'prep') { startRound(S); return { ok: true, bonus: 0 }; }
-    if (S.round >= MAX_ROUND || S.queue.length > 0) return { ok: false };
-    const bonus = Math.floor(Math.max(0, ROUND_TIME - S.roundT) * 1.5);
-    S.gold += bonus; startRound(S);
-    return { ok: true, bonus };
   }
 
   // ───────────── 라운드 ─────────────
@@ -667,7 +640,7 @@
 
   return {
     CFG, MAX_ROUND, ROUND_TIME, SPAWN_TIME, PREP_TIME, SPAWN_RING, UNIT_TYPES, CARD_DEFS,
-    createGame, tick, buy, expandPop, popExpandCost, callEarly, drainEvents, pickCard, reroll, describeTaken, openCards,
-    unitCostOf, popUsed, enemyCount, hpMul, dmgMul, mulberry32,
+    createGame, tick, buy, drainEvents, pickCard, reroll, describeTaken, openCards,
+    unitCostOf, enemyCount, hpMul, dmgMul, mulberry32,
   };
 });

@@ -101,19 +101,8 @@
   function doBuy(t) {
     if (!S || !running || paused) return;
     const r = C.buy(S, t);
-    if (!r.ok) toast({ gold: '골드가 부족해요', pop: '인구 상한이에요', cooldown: '잠시 후 다시 생산할 수 있어요' }[r.reason] || '생산할 수 없어요');
+    if (!r.ok) toast({ gold: '골드가 부족해요', cooldown: '잠시 후 다시 생산할 수 있어요' }[r.reason] || '생산할 수 없어요');
   }
-  $('btnNext').addEventListener('click', () => {
-    if (!S || !running || paused) return;
-    const r = C.callEarly(S);
-    if (!r.ok) toast('적이 모두 나온 뒤에 앞당길 수 있어요'); else if (r.bonus) toast('보너스 골드 +' + r.bonus);
-  });
-  function doExpand() {
-    if (!S || !running || paused) return;
-    const r = C.expandPop(S);
-    if (r.ok) toast('인구 상한 +' + CFG.popExpand.step); else toast(r.reason === 'max' ? '더 이상 확장할 수 없어요' : '골드가 부족해요');
-  }
-  $('btnPop').addEventListener('click', doExpand);
   $('btnCenter').addEventListener('click', centerOnCore);
   $('btnPause').addEventListener('click', () => { paused = !paused; $('btnPause').textContent = paused ? '계속' : '일시정지'; });
   $('btnSpeed').addEventListener('click', () => { speed = speed === 1 ? 2 : speed === 2 ? 3 : 1; $('btnSpeed').textContent = speed + '×'; });
@@ -126,7 +115,6 @@
     }
     if (e.key === '1' || e.key === '2' || e.key === '3') doBuy(C.UNIT_TYPES[+e.key - 1]);
     else if (e.key === 'u' || e.key === 'U') $('btnUp').click();
-    else if (e.key === 'p' || e.key === 'P') doExpand();
     else if (e.key === ' ') { e.preventDefault(); $('btnPause').click(); }
     else if (e.key === 'h' || e.key === 'H') centerOnCore();
   });
@@ -140,7 +128,7 @@
     setText('timeTxt', fmtTime(S.t));
     setText('hpTxt', String(Math.ceil(c.hp)));
     setText('gold', String(Math.floor(S.gold)));
-    setText('popTxt', C.popUsed(S) + '/' + S.popCap);
+    setText('unitTxt', String(S.units.filter(u => u.type !== 'turret' && u.type !== 'wolf').length));
     setText('killTxt', String(S.kills));
     const pct = Math.max(0, c.hp / c.max * 100);
     const f = $('hpfill'); f.style.width = pct + '%'; f.style.background = pct > 50 ? 'var(--ok)' : pct > 25 ? 'var(--gold)' : 'var(--danger)';
@@ -148,15 +136,9 @@
       const u = ucards[t], cost = C.unitCostOf(S, t), cd = S.buyCd[t] > 0 ? S.buyCd[t] / CFG.units[t].buyCd : 0;
       u.cost.textContent = cost + 'G';
       u.cd.style.height = (cd * 100) + '%';
-      const cant = S.gold < cost || C.popUsed(S) + CFG.units[t].pop > S.popCap;
+      const cant = S.gold < cost;
       u.el.classList.toggle('off', cant);
     }
-    const maxed = S.popBuys >= CFG.popExpand.max, pc = C.popExpandCost(S), pb = $('btnPop');
-    const ptxt = maxed ? '인구 최대' : '인구 +' + CFG.popExpand.step + ' · ' + pc + 'G';
-    if (pb.textContent !== ptxt) pb.textContent = ptxt;
-    pb.style.opacity = !maxed && S.gold >= pc ? 1 : 0.5;
-    const early = !S.cards.offer && (S.phase === 'prep' || (S.round < C.MAX_ROUND && S.queue.length === 0));
-    $('btnNext').style.opacity = early ? 1 : 0.5;
   }
 
   // ───────────── 업그레이드 선택창 / 강화 목록 ─────────────
