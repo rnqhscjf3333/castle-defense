@@ -368,5 +368,42 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   check('소환사 졸개 수도 라운드에 따라 늘어남', sm5.abil.summon.n < sm25.abil.summon.n, `${sm5.abil.summon.n} → ${sm25.abil.summon.n}`);
   const fin = arena(30, [['boss', 1500, 800]]).enemies[0]; check('암흑 기사단장(30라운드)은 패턴 4종 고정 수치', Object.keys(fin.abil).length === 4 && fin.abil.artillery.dmg === C.CFG.act1Boss.abil.artillery.dmg);
   const fin50 = arena(50, [['boss', 1500, 800]]).enemies[0]; check('마왕(50라운드)은 패턴 5종 고정 수치, 더 큼', Object.keys(fin50.abil).length === 5 && fin50.abil.artillery.count === 2 && fin50.r > 33 && fin50.bossName === '마왕'); }
+
+// 23) 졸개 소환: 성채 가까이 왔을 때만, 보스 앞(성채 방향)에 나온다
+{ const g = arena(10, [['boss', 1500, 1500 - 1000]], 'summoner'); g.core.atk = 0; g.core.hp = g.core.max = 1e9; const b = g.enemies[0]; b.speed = 0; let early = 0;
+  for (let i = 0; i < 30 * 30; i++) { C.tick(g, DT); if (g.cards.offer) C.pickCard(g, 0); } // 보스가 멀리(1000px) 정지: 소환 시간이 흐르지 않음
+  check('보스가 성채에서 멀면(600px 밖) 졸개를 소환하지 않음', g.enemies.length === 1, '적 ' + g.enemies.length + '마리');
+  b.x = 1500; b.y = 1500 - 500; g.captureEvents = true; let ev = null, minions = [];
+  for (let i = 0; i < 30 * 20 && !ev; i++) { C.tick(g, DT); if (g.cards.offer) C.pickCard(g, 0); ev = C.drainEvents(g).find(e => e.type === 'bossSummon'); }
+  minions = g.enemies.filter(e => e.kind !== 'boss');
+  check('성채 가까이(500px) 오면 소환하고 마릿수가 알림에 담김', !!ev && ev.n === minions.length && minions.length >= 3, ev && `n=${ev.n}, 실제 ${minions.length}`);
+  check('졸개는 보스 앞(성채 쪽)에 나옴 (보스보다 성채에 가까움)', minions.length > 0 && minions.every(m => Math.hypot(m.x - 1500, m.y - 1500) < Math.hypot(b.x - 1500, b.y - 1500) + 20), minions.map(m => Math.round(Math.hypot(m.x - 1500, m.y - 1500))).join(',') + ' vs 보스 ' + Math.round(Math.hypot(b.x - 1500, b.y - 1500)));
+  const kinds = new Set(); for (const id of ['summoner', 'bombardier', 'warden']) { const gg = arena(15, [['boss', 1500, 1500 - 400]], id); gg.core.atk = 0; gg.core.hp = gg.core.max = 1e9; gg.enemies[0].speed = 0; for (let i = 0; i < 30 * 16; i++) { C.tick(gg, DT); if (gg.cards.offer) C.pickCard(gg, 0); } kinds.add(gg.enemies.filter(e => e.kind !== 'boss').map(e => e.kind)[0]); }
+  check('소환사·포격대장·철벽 장군이 각자의 졸개(돌격병·사수·방패병)를 소환', ['grunt', 'archer', 'shield'].every(k => kinds.has(k)), [...kinds].join()); }
+
+// 24) 성채 원형: 아군은 들어올 수 없다
+{ const g = arena(3, []); g.gold = 1e7; for (const t of ['sword', 'archer', 'priest', 'sword', 'archer', 'priest', 'sword', 'sword', 'priest', 'archer']) { g.buyCd[t] = 0; C.buy(g, t); }
+  let minD = 1e9; for (let i = 0; i < 30 * 20; i++) { if (i === 150) for (let k = 0; k < 6; k++) C.spawnEnemy(g, 'grunt', 1500 + (k - 3) * 60, 1500 - 300); C.tick(g, DT); for (const u of g.units) if (!C.CFG.units[u.type].static) minD = Math.min(minD, Math.hypot(u.x - 1500, u.y - 1500)); }
+  check('아군(검사·궁수·사제)은 성채 원형(반지름 ' + C.CFG.core.blockR + ') 안으로 들어오지 않음', minD >= C.CFG.core.blockR - 0.5, '최소 거리 ' + minD.toFixed(1));
+  const g2 = arena(3, []); g2.gold = 1e6; g2.buyCd.priest = 0; const pr = C.buy(g2, 'priest').unit; pr.x = 1500; pr.y = 1500; for (let i = 0; i < 5; i++) C.tick(g2, DT);
+  check('성채 한가운데로 보내도 바로 원 밖으로 밀려남', Math.hypot(pr.x - 1500, pr.y - 1500) >= C.CFG.core.blockR - 0.5);
+  check('사제의 대기 반경이 성채 원형 밖', C.CFG.ai.homeR.priest * 0.9 > C.CFG.core.blockR + 10); }
+// 25) 방어 자세: 거리 조건 없이 검사 계열이 받는 피해 감소, 문구에도 300 없음
+{ const g = arena(3, []); g.gold = 1e6; g.buyCd.sword = 0; const sw = C.buy(g, 'sword').unit; applyById(g, 'u_guard'); sw.x = 1500 + 800; sw.y = 1500; sw.hp = sw.max = 1e6;
+  const e = C.spawnEnemy(g, 'grunt', sw.x + 15, sw.y); e.dmg = 100; e.cd = 0; g.core.atk = 0; const h0 = sw.hp; C.tick(g, DT); C.tick(g, DT);
+  const taken = h0 - sw.hp; const expected = 100 * (1 - C.CFG.cardVals.guard);
+  check('방어 자세: 성채에서 멀리 있어도(800px) 검사 피해 감소 적용', taken > 0 && Math.abs(taken - expected) < 1, taken.toFixed(1) + ' (기대 ' + expected.toFixed(1) + ')');
+  check('방어 자세 문구에 "성채 주변(300)" 없음', !C.CARD_DEFS.find(d => d.id === 'u_guard').desc(1).includes('300') && !C.CARD_DEFS.some(d => String(d.desc ? d.desc(1) : '').includes('성채 주변(300)'))); }
+
+// 26) 투사체 풀링: 재사용해도 이전 투사체의 값이 남지 않음
+{ const g = arena(15, [['boss', 1500, 1500 - 500]], 'bombardier'); g.gold = 1e6; g.buyCd.archer = 0; C.buy(g, 'archer'); g.core.hp = g.core.max = 1e9;
+  let sawAoe = false, stale = 0, shots = 0; for (let i = 0; i < 30 * 30; i++) { C.tick(g, DT); if (g.cards.offer) C.pickCard(g, 0); for (const s of g.shots) { shots++; if (s.aoe) sawAoe = true; else if (s.color !== 'es' && s.aoe) stale++; if (s.color === 'a' && (s.aoe || s.pc !== null && s.pierce === false)) stale++; } }
+  check('투사체가 풀에서 재사용되고(풀 크기>0) 이전 값(aoe 등)이 남지 않음', g.shotPool.length > 0 && stale === 0 && sawAoe, `풀 ${g.shotPool.length}, 발사 ${shots}, 오염 ${stale}`); }
+// 27) 격자 조회로 바꾼 범위 공격: 폭발탄/연쇄/관통/베기가 여전히 주변 적을 맞힘
+{ const g = arena(3, []); g.core.hp = g.core.max = 1e9; applyById(g, 'c_splash'); applyById(g, 'c_chain'); applyById(g, 'c_chain');
+  const a = C.spawnEnemy(g, 'brute', 1500 + 200, 1500), b = C.spawnEnemy(g, 'brute', 1500 + 200, 1500 + 40), c = C.spawnEnemy(g, 'brute', 1500 + 200, 1500 - 60), far = C.spawnEnemy(g, 'brute', 1500 - 700, 1500);
+  for (const e of [a, b, c, far]) { e.speed = 0; e.dmg = 0; e.hp = e.max = 1e6; } g.core.atk = 100;
+  for (let i = 0; i < 30 * 3; i++) C.tick(g, DT);
+  check('폭발탄+연쇄: 목표 주변 적이 같이 피해를 받고, 멀리 있는 적은 받지 않음', b.hp < b.max && c.hp < c.max && far.hp === far.max, `주변 ${Math.round(b.max - b.hp)}/${Math.round(c.max - c.hp)}, 먼 적 ${Math.round(far.max - far.hp)}`); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

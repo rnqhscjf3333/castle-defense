@@ -343,8 +343,15 @@
     fn(ctx, e, s);
     ctx.restore();
   }
+  // 적이 아주 많을 때/멀리서 볼 때 쓰는 간단한 그림: 몸통(네모) + 머리(동그라미)만, 무기·그림자·방향 애니메이션 없음
+  const LITE = { grunt: ['#c8453f', '#c9d99a'], shield: ['#8f2f33', '#d6c79a'], archer: ['#7a3b2a', '#c9d99a'], bomber: ['#e07a2a', '#e6d58a'], shaman: ['#6a3f8f', '#c9d99a'], brute: ['#7a2a2a', '#bcd08a'] };
+  function drawLite(ctx, e) {
+    const s = (e.r / 10) * 1.25, c = LITE[e.kind] || LITE.grunt, fl = e.flash > 0;
+    ctx.fillStyle = fl ? '#fff' : c[0]; ctx.fillRect(e.x - 6 * s, e.y - 8 * s, 12 * s, 13 * s);
+    ctx.fillStyle = fl ? '#fff' : c[1]; ctx.beginPath(); ctx.arc(e.x, e.y - 11 * s, 5 * s, 0, TAU); ctx.fill();
+  }
   // 체력 바 위치 계산용: 그림의 머리 위 높이
   function headTop(e) { return -(e.r / 10) * 1.25 * (e.kind === 'boss' ? 17 : e.jobTier ? 21 : 16); }
 
-  window.Figures = { draw, headTop };
+  window.Figures = { draw, drawLite, headTop };
 })();

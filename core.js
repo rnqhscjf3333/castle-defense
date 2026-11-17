@@ -28,9 +28,9 @@
       biasAlert: 0.6,     // 적이 alertRange 안으로 들어오면 이만큼까지 서서히 쏠린다
       alertRange: 420,    // 성채에서 이 거리 안에 적이 있으면 경계 상태
       sway: 6,            // 대기 중 살짝 흔들리는 폭(px) — 가만히 서 있는 느낌을 줄인다
-      homeR: { sword: 170, archer: 110, priest: 70, golem: 150, hero: 140, marksman: 125, repeater: 100 }, // 역할별 대기 반경
+      homeR: { sword: 170, archer: 110, priest: 100, golem: 150, hero: 140, marksman: 125, repeater: 100 }, // 역할별 대기 반경
     },
-    core: { hp: 1000, atk: 20, rate: 1.0, range: 260, r: 46 },
+    core: { hp: 1000, atk: 20, rate: 1.0, range: 260, r: 46, blockR: 64 }, // blockR: 성채 원형 안으로 아군이 들어올 수 없다
     units: {
       sword:  { name: '검사', cost: 50, hp: 120, atk: 12, rate: 1.0, range: 30,  speed: 90, r: 10, buyCd: 1.2, aggro: 220 },
       archer: { name: '궁수', cost: 60, hp: 60,  atk: 10, rate: 1.2, range: 220, speed: 80, r: 9,  buyCd: 1.5, aggro: 260 },
@@ -117,6 +117,7 @@
       countPost: 3,                                   // 2막에서는 라운드마다 적이 이만큼 늘어난다 (1막 말 수 + 이 값 × 경과 라운드)
       hpSlopePost: 0.35,                              // 2막 체력 증가 기울기 (라운드당)
       postSpeed: 1.08,                                // 2막 적 이동 속도 배율
+      summonRange: 600,                               // 보스가 성채에서 이 거리 안에 들어와야 졸개 소환 시간이 흐른다
       shellCoreMul: 0.4,                              // 보스 포격이 성채에 주는 피해 비율 (성벽이 튼튼하다)
       coreRepair: 0.04,                               // 라운드가 바뀔 때마다 성채가 기본으로 복구하는 비율 (최대 체력 기준)
     },
@@ -173,6 +174,26 @@
     }
     return best;
   }
+  // 반경 r 안의 살아 있는 개체에 fn을 호출한다 (격자 조회: 전체를 훑지 않는다)
+  function eachNear(g, x, y, r, fn) {
+    const c = g.cell, reach = r + 30;
+    const x0 = Math.floor((x - reach) / c), x1 = Math.floor((x + reach) / c), y0 = Math.floor((y - reach) / c), y1 = Math.floor((y + reach) / c);
+    for (let cx = x0; cx <= x1; cx++) for (let cy = y0; cy <= y1; cy++) {
+      const arr = g.map.get(gkey(cx, cy)); if (!arr) continue;
+      for (let i = 0; i < arr.length; i++) { const e = arr[i]; if (!e.dead && Math.hypot(e.x - x, e.y - y) <= r + e.r) fn(e); }
+    }
+  }
+  // 중심 거리가 range 이내인 가장 가까운 개체 (이미 처리한 seen은 제외)
+  function nearestExcl(g, x, y, range, seen) {
+    const c = g.cell, reach = range + 32;
+    const x0 = Math.floor((x - reach) / c), x1 = Math.floor((x + reach) / c), y0 = Math.floor((y - reach) / c), y1 = Math.floor((y + reach) / c);
+    let best = null, bd = range;
+    for (let cx = x0; cx <= x1; cx++) for (let cy = y0; cy <= y1; cy++) {
+      const arr = g.map.get(gkey(cx, cy)); if (!arr) continue;
+      for (let i = 0; i < arr.length; i++) { const e = arr[i]; if (e.dead || seen.has(e)) continue; const d = Math.hypot(e.x - x, e.y - y); if (d < bd) { bd = d; best = e; } }
+    }
+    return best;
+  }
   function separate(list, g) {
     for (let i = 0; i < list.length; i++) {
       const e = list[i]; if (e.dead || isStatic(e)) continue;
@@ -221,7 +242,7 @@
     { id: 'u_atk',   cat: 'unit', rar: 'common', max: 5, generic: 'atk' },
     { id: 'u_rate',  cat: 'unit', rar: 'common', max: 4, generic: 'rate' },
     // 유닛 특성 (종류 고정)
-    { id: 'u_guard',   cat: 'unit', rar: 'rare', max: 3, type: 'sword',  name: '검사 · 방어 자세', desc: l => '성채 주변(300)에서 검사가 받는 피해 -' + Math.round(V().guard * 100 * l) + '%' },
+    { id: 'u_guard',   cat: 'unit', rar: 'rare', max: 3, type: 'sword',  name: '검사 · 방어 자세', desc: l => '검사가 받는 피해 -' + Math.round(V().guard * 100 * l) + '%' },
     { id: 'u_charge',  cat: 'unit', rar: 'rare', max: 2, type: 'sword',  name: '검사 · 돌진',      desc: l => '검사 접근 속도 +' + Math.round(V().charge * 100 * l) + '%, 공격 속도 +' + Math.round(V().chargeRate * 100 * l) + '%' },
     { id: 'u_pierce',  cat: 'unit', rar: 'rare', max: 3, type: 'archer', name: '궁수 · 관통 화살', desc: l => '화살이 뒤의 적 ' + l + '명에게 ' + Math.round(V().pierce * 100) + '% 피해' },
     { id: 'u_multi',   cat: 'unit', rar: 'rare', max: 3, type: 'archer', name: '궁수 · 연사',      desc: l => (5 - l) + '번째 공격마다 화살 2발' },
@@ -451,7 +472,7 @@
       queue: [], spawnT: 0, spawnGap: 1, spawnPts: 4,
       gold: CFG.startGold, buyCount: 0,
       core: { x: CX, y: CY, hp: CFG.core.hp, max: CFG.core.hp, r: CFG.core.r, atk: CFG.core.atk, rate: CFG.core.rate, range: CFG.core.range, cd: 0, flash: 0, aim: -Math.PI / 2, swing: 0 },
-      units: [], enemies: [], shots: [],
+      units: [], enemies: [], shots: [], shotPool: [],
       kills: 0, nextId: 1,
       spawnN: 0, buyCd: { sword: 0, archer: 0, priest: 0 },
       threat: 0, over: false, win: false,
@@ -475,7 +496,7 @@
   // ───────────── 유닛 추가 (생산/소환 공통) ─────────────
   function addUnit(S, type) {
     const cfg = CFG.units[type], st = statsOf(S, type);
-    const a = S.rng() * Math.PI * 2, rr = 70 + S.rng() * 20;
+    const a = S.rng() * Math.PI * 2, rr = 86 + S.rng() * 20; // 성채 원형 밖에서 나온다
     const ha = S.spawnN++ * 2.39996323 + S.rng() * 0.3, hr = (CFG.ai.homeR[type] || 120) * (0.9 + 0.2 * S.rng()); // 황금각으로 사방에 퍼뜨림
     let x = CX + Math.cos(a) * rr, y = CY + Math.sin(a) * rr;
     if (cfg.static) { // 설치형(포탑/발리스타): 성채 둘레의 정해진 자리
@@ -600,7 +621,7 @@
     if (tgt.team === 'u') {
       let red = 0;
       if (tgt.aura) red += S.aura.def;
-      if (S.perks.guard && lineOf(tgt.type) === 'sword' && Math.hypot(tgt.x - CX, tgt.y - CY) <= 300) red += V().guard * S.perks.guard;
+      if (S.perks.guard && lineOf(tgt.type) === 'sword') red += V().guard * S.perks.guard;
       if (S.jobMods && S.jobMods[lineOf(tgt.type)]) red += S.jobMods[lineOf(tgt.type)].def; // 전직 방어
       dmg *= 1 - Math.min(0.7, red);
     }
@@ -634,7 +655,10 @@
     const dx = tgt.x - sx, dy = tgt.y - sy, d = Math.hypot(dx, dy), cf = CFG.shots;
     const T = extra && extra.T ? extra.T : Math.max(cf.minT, d / spd);
     const H = clamp(cf.arc * d + cf.arcMin, cf.arcMin, cf.arcMax);
-    S.shots.push(Object.assign({ x: sx, y: sy, sx, sy, p: 0, T, H, h: m.h0, h0: m.h0, vx: 0, vy: 0, vh: 0, t: tgt, dmg, color }, extra || null));
+    const s = S.shotPool.length ? S.shotPool.pop() : {}; // 쓴 투사체 객체를 재사용 (풀링)
+    s.x = sx; s.y = sy; s.sx = sx; s.sy = sy; s.p = 0; s.T = T; s.H = H; s.h = m.h0; s.h0 = m.h0; s.vx = 0; s.vy = 0; s.vh = 0; s.t = tgt; s.dmg = dmg; s.color = color;
+    s.pierce = !!(extra && extra.pierce); s.pc = extra && extra.pc != null ? extra.pc : null; s.aoe = extra && extra.aoe ? extra.aoe : 0;
+    S.shots.push(s);
   }
   // 도착한 투사체 처리
   function resolveShot(S, s) {
@@ -651,14 +675,13 @@
     if (s.color === 'c' || s.color === 't') { // 성채 탄과 포탑 탄: 폭발·연쇄
       if (S.perks.splash) {
         const R = 50 + 10 * S.perks.splash;
-        for (const e of S.enemies) if (!e.dead && e !== t && Math.hypot(e.x - t.x, e.y - t.y) <= R + e.r) damage(S, e, s.dmg * 0.5);
+        eachNear(S.gE, t.x, t.y, R, e => { if (e !== t) damage(S, e, s.dmg * 0.5); });
         emit(S, { type: 'boom', x: t.x, y: t.y, r: R });
       }
       if (S.perks.chain) {
         const seen = new Set([t]); let cur = t;
         for (let i = 0; i < S.perks.chain + 1; i++) {
-          let best = null, bd = 140;
-          for (const e of S.enemies) { if (e.dead || seen.has(e)) continue; const d = Math.hypot(e.x - cur.x, e.y - cur.y); if (d < bd) { bd = d; best = e; } }
+          const best = nearestExcl(S.gE, cur.x, cur.y, 140, seen);
           if (!best) break;
           seen.add(best); emit(S, { type: 'chain', x: cur.x, y: cur.y, tx: best.x, ty: best.y });
           damage(S, best, s.dmg * 0.6); cur = best;
@@ -667,8 +690,7 @@
     } else if (s.pierce) {
       const seen = new Set([t]); let cur = t;
       for (let i = 0; i < (s.pc != null ? s.pc : pierceCount(S)); i++) {
-        let best = null, bd = 80;
-        for (const e of S.enemies) { if (e.dead || seen.has(e)) continue; const d = Math.hypot(e.x - cur.x, e.y - cur.y); if (d < bd) { bd = d; best = e; } }
+        const best = nearestExcl(S.gE, cur.x, cur.y, 80, seen);
         if (!best) break;
         seen.add(best); emit(S, { type: 'chain', x: cur.x, y: cur.y, tx: best.x, ty: best.y, small: true });
         damage(S, best, s.dmg * V().pierce); cur = best;
@@ -746,7 +768,7 @@
         if (melee) {
           damage(S, t, atk);
           const cl = S.jobMods[lineOf(u.type)] ? S.jobMods[lineOf(u.type)].cleave : 0; // 검성: 주변 적에게 베기 피해
-          if (cl) for (const o of S.enemies) if (!o.dead && o !== t && Math.hypot(o.x - t.x, o.y - t.y) <= 46 + o.r) damage(S, o, atk * cl);
+          if (cl) eachNear(S.gE, t.x, t.y, 46, o => { if (o !== t) damage(S, o, atk * cl); });
         } else {
           const line = lineOf(u.type), pc = (line === 'archer' ? pierceCount(S) : 0) + (CFG.units[u.type].pierce | 0), arrow = pc > 0 ? { pierce: true, pc } : null;
           fire(S, u, t, atk, CFG.arrowSpeed, 'a', arrow);
@@ -787,11 +809,13 @@
       else { e.t.shield -= dt; if (e.t.shield <= 0) { e.shieldT = A.shield.dur; e.shieldRed = A.shield.red; e.t.shield = A.shield.cd; emit(S, { type: 'bossShield', x: e.x, y: e.y }); } }
     }
     if (A.summon) {
-      e.t.summon -= dt;
+      // 보스가 성채 가까이(summonRange) 왔을 때만 소환 시간을 센다 → 화면에 보이는 곳에서 소환한다
+      if (Math.hypot(e.x - CX, e.y - CY) <= CFG.balance.summonRange) e.t.summon -= dt;
       if (e.t.summon <= 0) {
         e.t.summon = A.summon.cd;
-        for (let i = 0; i < A.summon.n; i++) { const a = S.rng() * Math.PI * 2, d = 60 + S.rng() * 40; spawnEnemy(S, A.summon.kind, clamp(e.x + Math.cos(a) * d, 20, W - 20), clamp(e.y + Math.sin(a) * d, 20, H - 20)); }
-        emit(S, { type: 'bossSummon', x: e.x, y: e.y });
+        const toCore = Math.atan2(CY - e.y, CX - e.x); // 졸개는 보스 앞(성채 방향)에 나온다
+        for (let i = 0; i < A.summon.n; i++) { const a = toCore + (S.rng() - 0.5) * 1.9, d = 75 + S.rng() * 55; spawnEnemy(S, A.summon.kind, clamp(e.x + Math.cos(a) * d, 20, W - 20), clamp(e.y + Math.sin(a) * d, 20, H - 20)); }
+        emit(S, { type: 'bossSummon', x: e.x, y: e.y, n: A.summon.n, kind: A.summon.kind });
       }
     }
     if (A.artillery) {
@@ -911,6 +935,9 @@
       u.hx = CX + Math.cos(a) * u.hr + Math.sin(S.t * 0.6 + u.id * 1.7) * CFG.ai.sway; u.hy = CY + Math.sin(a) * u.hr + Math.cos(S.t * 0.5 + u.id * 2.3) * CFG.ai.sway;
       if (u.type === 'priest') updatePriest(S, u, dt); else updateFighter(S, u, dt);
       u.x = clamp(u.x, 10, W - 10); u.y = clamp(u.y, 10, H - 10);
+      // 성채 원형에는 들어올 수 없다: 반지름 안이면 바깥으로 밀어낸다 (유닛당 거리 계산 한 번이라 매우 싸다)
+      const bx = u.x - CX, by = u.y - CY, bd = Math.hypot(bx, by), bmin = CFG.core.blockR + u.r * 0.6;
+      if (bd < bmin) { if (bd < 1) { u.x = CX + bmin; } else { u.x = CX + bx / bd * bmin; u.y = CY + by / bd * bmin; } }
     }
     for (const e of S.enemies) { if (e.dead) continue; e.flash = Math.max(0, e.flash - dt); e.swing = Math.max(0, e.swing - dt); updateEnemy(S, e, dt); }
     separate(S.units, S.gU); separate(S.enemies, S.gE);
@@ -918,13 +945,13 @@
     // 투사체 (포물선)
     for (let i = S.shots.length - 1; i >= 0; i--) {
       const s = S.shots[i];
-      if (s.t.dead) { S.shots.splice(i, 1); continue; }
+      if (s.t.dead) { s.t = null; S.shotPool.push(s); S.shots.splice(i, 1); continue; }
       s.p += dt / s.T;
       const p = Math.min(1, s.p), tx = s.t.x, ty = s.t.y;
       s.x = s.sx + (tx - s.sx) * p; s.y = s.sy + (ty - s.sy) * p;
       s.h = 4 * s.H * p * (1 - p) + s.h0 * (1 - p); // 포구 높이에서 출발해 포물선을 그리며 지면 목표에 떨어진다
       s.vx = (tx - s.sx) / s.T; s.vy = (ty - s.sy) / s.T; s.vh = (4 * s.H * (1 - 2 * p) - s.h0) / s.T; // 화면에서 화살 방향을 그리기 위한 속도
-      if (s.p >= 1) { resolveShot(S, s); S.shots.splice(i, 1); }
+      if (s.p >= 1) { resolveShot(S, s); s.t = null; S.shotPool.push(s); S.shots.splice(i, 1); }
     }
 
     // 정리

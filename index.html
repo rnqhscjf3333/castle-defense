@@ -7,14 +7,14 @@
 <meta name="theme-color" content="#10141c">
 <style>
 :root {
-  --bg: #10141c; --panel: rgba(22, 28, 40, .92); --line: #2b3548; --ink: #e8edf5; --muted: #8e9bb3;
+  --bg: #10141c; --panel: rgba(22, 28, 40, .95); --line: #2b3548; --ink: #e8edf5; --muted: #8e9bb3;
   --accent: #5aa9ff; --gold: #ffd166; --danger: #ff6b6b; --ok: #6bdc8b;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
   font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; overflow: hidden; overscroll-behavior: none; }
 canvas#cv { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; }
-.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; backdrop-filter: blur(6px); }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; } /* backdrop-filter 블러는 캔버스가 매 프레임 바뀔 때 합성 비용이 커서 쓰지 않는다 */
 button { font: inherit; color: inherit; cursor: pointer; }
 
 #hud { position: fixed; top: max(5px, env(safe-area-inset-top)); left: 5px; padding: 5px 9px; min-width: 146px; pointer-events: none; border-radius: 9px; }
@@ -43,6 +43,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #cineTitle.show, #cineText.show { opacity: 1; }
 #cineSkip { position: absolute; right: 16px; bottom: 16px; padding: 8px 14px; border-radius: 10px; font-size: 13px; opacity: .7; }
 @media (max-width: 520px) { #cineText { font-size: 22px; } #cineTitle { font-size: 16px; } }
+#perf { position: fixed; left: 8px; bottom: 100px; z-index: 40; padding: 5px 8px; font: 11px/1.5 ui-monospace, Menlo, monospace; color: #bfe8c8; background: rgba(0,0,0,.7); border-radius: 6px; pointer-events: none; white-space: pre; }
+#perf[hidden] { display: none; }
 #roundTxt.act2 { color: #c9a8ff; }
 #roundTxt.boss { color: #ff6b6b; font-weight: 700; }
 #roundTxt.nextboss { color: #ffb86b; }
@@ -144,6 +146,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 </div>
 
 <div id="banner"></div>
+<div id="perf" hidden></div>
 <div id="bossbar" hidden>
   <div class="bb-top"><span id="bossName"></span><span id="bossHpTxt"></span></div>
   <div class="bb-track"><div id="bossFill"></div></div>
