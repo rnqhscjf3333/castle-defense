@@ -239,6 +239,7 @@
       else if (ev.type === 'revive') { fx.push({ k: 'heal', x: ev.x, y: ev.y, t: 0, max: 0.8 }); toast('아군이 부활했어요'); }
       else if (ev.type === 'picked') { toast(ev.name + ' 획득'); renderUpgrades(); }
       else if (ev.type === 'notice') toast(ev.text);
+      else if (ev.type === 'espawn') { if (fx.length < 300) fx.push({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: ev.boss ? 0.9 : 0.45, c: '#ff5a5a', big: ev.boss }); }
       else if (ev.type === 'priceUp') toast('소환으로 모든 유닛 가격이 올랐어요');
       else if (ev.type === 'promote') {
         banner(ev.className + ' → ' + ev.name + ' 전직!'); renderUpgrades();
@@ -283,18 +284,11 @@
     const z = cam.zoom;
     ctx.setTransform(dpr * z, 0, 0, dpr * z, (vw / 2 - cam.x * z) * dpr, (vh / 2 - cam.y * z) * dpr);
     const x0 = Math.max(0, cam.x - vw / 2 / z), x1 = Math.min(W, cam.x + vw / 2 / z), y0 = Math.max(0, cam.y - vh / 2 / z), y1 = Math.min(H, cam.y + vh / 2 / z);
-    // 맵 바닥
-    ctx.fillStyle = '#131925'; ctx.fillRect(0, 0, W, H);
-    ctx.strokeStyle = COL.grid; ctx.lineWidth = 1 / z; ctx.beginPath();
-    for (let x = Math.floor(x0 / 100) * 100; x <= x1; x += 100) { ctx.moveTo(x, y0); ctx.lineTo(x, y1); }
-    for (let y = Math.floor(y0 / 100) * 100; y <= y1; y += 100) { ctx.moveTo(x0, y); ctx.lineTo(x1, y); }
-    ctx.stroke();
-    ctx.strokeStyle = COL.border; ctx.lineWidth = 3 / z; ctx.strokeRect(0, 0, W, H);
-    // 적 출현 지대 + 스폰 지점
-    ctx.strokeStyle = COL.ring; ctx.lineWidth = 2 / z; ctx.setLineDash([14 / z, 14 / z]);
-    ctx.beginPath(); ctx.arc(CX, CY, C.SPAWN_RING, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
-    const pts = S.phase === 'prep' ? 4 : S.spawnPts;
-    for (let k = 0; k < pts; k++) { const a = (Math.PI * 2 / pts) * k + 0.4; ctx.fillStyle = 'rgba(255,107,107,.35)'; poly(CX + Math.cos(a) * C.SPAWN_RING, CY + Math.sin(a) * C.SPAWN_RING, 26, 3, a); ctx.fill(); }
+    // 맵 바닥: 풀밭, 흙길, 돌바닥 광장, 덤불·바위·꽃 (조각으로 캐시)
+    Scenery.drawGround(ctx, x0, y0, x1, y1);
+    // 적 출현 포탈: 길 위의 붉은 룬 원 (화면 바로 밖에서 적이 나타난다)
+    const angs = C.spawnAngles(S.spawnPts || 4);
+    for (const a of angs) { const px = CX + Math.cos(a) * C.SPAWN_RING, py = CY + Math.sin(a) * C.SPAWN_RING; if (px > x0 - 60 && px < x1 + 60 && py > y0 - 40 && py < y1 + 40) Scenery.drawPortal(ctx, px, py, now); }
 
     const c = S.core;
     // 성채 사거리
@@ -304,16 +298,14 @@
       ctx.fillStyle = 'rgba(107,220,139,.05)'; ctx.beginPath(); ctx.arc(c.x, c.y, S.aura.r, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = 'rgba(107,220,139,.35)'; ctx.lineWidth = 1.5 / z; ctx.setLineDash([10 / z, 8 / z]); ctx.stroke(); ctx.setLineDash([]);
     }
-    // 성채 본체
-    ctx.fillStyle = c.flash > 0 ? '#ffffff' : '#2c3a55'; ctx.strokeStyle = '#6f89b8'; ctx.lineWidth = 3 / z;
-    ctx.fillRect(c.x - 30, c.y - 30, 60, 60); ctx.strokeRect(c.x - 30, c.y - 30, 60, 60);
-    for (const [dx, dy] of [[-30, -30], [30, -30], [-30, 30], [30, 30]]) { ctx.fillStyle = '#3b4d70'; ctx.fillRect(c.x + dx - 9, c.y + dy - 9, 18, 18); ctx.strokeRect(c.x + dx - 9, c.y + dy - 9, 18, 18); }
-    ctx.fillStyle = '#ffd166'; ctx.fillRect(c.x - 6, c.y - 6, 12, 12);
+    // 성채 (포신이 적을 향해 돌고, 체력이 줄면 금·연기·불)
+    Scenery.drawCastle(ctx, c, now);
 
     // 유닛 + 적: 아래쪽에 있는 개체가 앞에 오도록 y 순서로 그린다
-    const all = S.units.concat(S.enemies);
+    const all = S.units.concat(S.enemies, Scenery.visibleTrees(x0, y0, x1, y1));
     all.sort((p, q) => p.y - q.y);
     for (const e of all) {
+      if (e._tree) { Scenery.drawTree(ctx, e, now); continue; }
       if (e.kind === 'boss') bossAura(e, now, z);
       Figures.draw(ctx, e, now);
       if (e.kind === 'boss' && e.shieldT > 0) { ctx.globalAlpha = 0.28 + 0.12 * Math.sin(now * 0.012); ctx.fillStyle = '#8fd8ff'; ctx.beginPath(); ctx.arc(e.x, e.y - 6, e.r * 1.7, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 0.9; ctx.strokeStyle = '#d8f2ff'; ctx.lineWidth = 2.5 / z; ctx.stroke(); ctx.globalAlpha = 1; }
@@ -346,7 +338,7 @@
     for (let i = fx.length - 1; i >= 0; i--) {
       const f = fx[i], p = f.t / f.max;
       if (f.k === 'burst') { ctx.globalAlpha = 1 - p; ctx.fillStyle = f.c; ctx.beginPath(); ctx.arc(f.x, f.y, (f.big ? 20 : 8) + p * (f.big ? 50 : 16), 0, Math.PI * 2); ctx.fill(); }
-      else if (f.k === 'ring') { ctx.globalAlpha = 1 - p; ctx.strokeStyle = f.c; ctx.lineWidth = 2 / z; ctx.beginPath(); ctx.arc(f.x, f.y, 6 + p * 24, 0, Math.PI * 2); ctx.stroke(); }
+      else if (f.k === 'ring') { ctx.globalAlpha = 1 - p; ctx.strokeStyle = f.c; ctx.lineWidth = (f.big ? 4 : 2) / z; ctx.beginPath(); ctx.arc(f.x, f.y, 6 + p * (f.big ? 60 : 24), 0, Math.PI * 2); ctx.stroke(); }
       else if (f.k === 'line') { ctx.globalAlpha = 1 - p; ctx.strokeStyle = f.c; ctx.lineWidth = (f.small ? 1.5 : 3) / z; ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(f.tx, f.ty); ctx.stroke(); }
       else if (f.k === 'boom') { ctx.globalAlpha = (1 - p) * 0.5; ctx.fillStyle = f.enemy ? '#ff5a3a' : f.big ? '#ff9f43' : '#ffd166'; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (0.4 + 0.6 * p), 0, Math.PI * 2); ctx.fill(); }
       else if (f.k === 'heal') { ctx.globalAlpha = 1 - p; ctx.fillStyle = '#9dffb0'; const y = f.y - 12 - p * 16; ctx.fillRect(f.x - 1.5, y - 5, 3, 10); ctx.fillRect(f.x - 5, y - 1.5, 10, 3); }
@@ -390,8 +382,11 @@
   }
   function drawMini() {
     mctx.setTransform(1, 0, 0, 1, 0, 0);
-    mctx.fillStyle = '#0d1118'; mctx.fillRect(0, 0, 264, 264);
-    mctx.strokeStyle = 'rgba(255,107,107,.25)'; mctx.beginPath(); mctx.arc(CX * MS, CY * MS, C.SPAWN_RING * MS, 0, Math.PI * 2); mctx.stroke();
+    mctx.fillStyle = '#244a2e'; mctx.fillRect(0, 0, 264, 264);
+    mctx.strokeStyle = '#a3835a'; mctx.lineCap = 'round';
+    for (const a of C.spawnAngles(6)) { mctx.lineWidth = 5; mctx.beginPath(); mctx.moveTo(CX * MS, CY * MS); mctx.lineTo((CX + Math.cos(a) * 1500) * MS, (CY + Math.sin(a) * 1500) * MS); mctx.stroke(); }
+    mctx.fillStyle = '#8a909c'; mctx.beginPath(); mctx.arc(CX * MS, CY * MS, 166 * MS, 0, Math.PI * 2); mctx.fill();
+    mctx.strokeStyle = 'rgba(255,107,107,.5)'; mctx.lineWidth = 1.5; for (const a of C.spawnAngles(S.spawnPts || 4)) { mctx.beginPath(); mctx.arc((CX + Math.cos(a) * C.SPAWN_RING) * MS, (CY + Math.sin(a) * C.SPAWN_RING) * MS, 4, 0, Math.PI * 2); mctx.stroke(); }
     mctx.fillStyle = '#ff6b6b'; for (const e of S.enemies) { if (e.kind === 'boss') continue; mctx.fillRect(e.x * MS - 1.5, e.y * MS - 1.5, 3, 3); }
     for (const e of S.enemies) { // 보스: 맥박처럼 커지는 고리 + 큰 점
       if (e.kind !== 'boss') continue;
@@ -456,6 +451,7 @@
   }
 
   window.addEventListener('resize', resize);
+  Scenery.init(C);
   resize();
   S = C.createGame(1); // 시작 화면 뒤에 보일 빈 맵
   centerOnCore();

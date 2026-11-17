@@ -34,6 +34,7 @@ async function open(query, wait = 1200) { await send('Page.navigate', { url: URL
 try {
   await connect();
   await send('Page.enable'); await send('Runtime.enable');
+  await send('Page.addScriptToEvaluateOnNewDocument', { source: 'window.__errs = []; window.addEventListener("error", e => window.__errs.push(e.message));' });
   const errors = []; // 콘솔 오류 수집
   await send('Log.enable');
 
@@ -94,11 +95,19 @@ try {
   await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 500, y: 350, deltaX: 0, deltaY: -240 }); await sleep(100);
   check('마우스 휠 확대', (await ev('__game.cam.zoom')) > 1.1, String(await ev('__game.cam.zoom')));
 
+  // 3.2) 맵 배경/성채 그래픽이 로드되고 그려짐
+  await open('?bot=1&warp=120&seed=3&zoom=1', 1200);
+  check('배경·성채 렌더러 로드 (Scenery)', await ev("typeof window.Scenery === 'object' && typeof Scenery.drawCastle === 'function' && Scenery.visibleTrees(0,0,3000,3000).length > 300"), String(await ev("Scenery.visibleTrees(0,0,3000,3000).length")) + '그루');
+  check('캔버스에 풀밭색이 칠해짐 (예전 격자 배경 아님)', await ev("(()=>{const c=document.getElementById('cv'); const x=c.getContext('2d'); const d=x.getImageData(Math.round(c.width*0.1), Math.round(c.height*0.5), 1, 1).data; return d[1] > d[0] && d[1] > d[2] && d[1] > 60;})()"));
+
   // 3.5) 보스 라운드 표시: 라운드 표시, 보스 체력 바, 화면 밖 보스는 미니맵/화살표 대상
   await open('?bot=1&warp=165&seed=3&zoom=1', 1200); // 5라운드(160초) 시작 직후
   check('보스 라운드 표시 (라운드 문구에 보스, 빨간색)', (await ev("document.getElementById('roundTxt').textContent")).includes('보스') && await ev("document.getElementById('roundTxt').classList.contains('boss')"), await ev("document.getElementById('roundTxt').textContent"));
   check('보스 체력 바가 화면 맨 위에 작고 얇게 표시됨 (높이 ≤ 64px)', await ev("(()=>{const b=document.getElementById('bossbar'); if(b.hidden) return false; const r=b.getBoundingClientRect(); return r.width>=220 && r.top<=8 && r.height<=64 && document.getElementById('bossName').textContent==='돌격왕' && document.getElementById('bossHpTxt').textContent.includes('/');})()"), await ev("document.getElementById('bossName').textContent + ' ' + document.getElementById('bossHpTxt').textContent"));
-  check('보스가 화면 밖이어도 위치 표시 가능 (보스 존재 + 카메라 밖)', await ev("(()=>{const b=__game.S.enemies.find(e=>e.kind==='boss'); const c=__game.cam; return !!b && (Math.abs(b.x-c.x)>500 || Math.abs(b.y-c.y)>350);})()"));
+  // 보스가 가까워서 화면 안일 수 있으니 카메라를 멀리 옮겨 '화면 밖 보스' 상황을 만들고, 그려도 오류가 없는지 확인한다
+  await ev("(()=>{__game.cam.x = 300; __game.cam.y = 300;})()"); await sleep(400);
+  check('보스가 화면 밖일 때(화살표 표시 경로)도 오류 없이 그려짐', await ev("(()=>{const b=__game.S.enemies.find(e=>e.kind==='boss'); const c=__game.cam; return !!b && (Math.abs(b.x-c.x)>500 || Math.abs(b.y-c.y)>350);})()") && (await ev("window.__errs ? window.__errs.length : 0")) === 0);
+  await ev("(()=>{__game.cam.x = 1500; __game.cam.y = 1500;})()");
   check('보스 정보 제공 (5라운드 보스 = 돌격왕)', await ev("(()=>{const r=__game.CastleCore.bossInfo(5); return !!r && r.name==='돌격왕';})()"));
   await ev("(()=>{const b=__game.S.enemies.find(e=>e.kind==='boss'); b.hp = 300;})()"); await sleep(400);
   const barTxt = await ev("document.getElementById('bossHpTxt').textContent"), barW = await ev("document.getElementById('bossFill').style.width");

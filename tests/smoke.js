@@ -249,5 +249,32 @@ function killBoss(g) { const b = g.enemies.find(e => e.kind === 'boss'); b.hp = 
 { // 마지막 보스(30라운드)는 전직 제안 없이 승리 처리
   const g = arena(30, [['boss', 1500, 1500 - 220]]); g.round = 30; g.queue = []; const b = g.enemies[0]; b.hp = 1; g.core.atk = 1e6; for (let i = 0; i < 90; i++) C.tick(g, DT);
   check('30라운드 최종 보스 처치: 전직 없이 승리', g.jobs.offer === null && g.over && g.win); }
+
+// 16) 적은 맵 끝이 아니라 성채 근처(SPAWN_RING)에서 나타나 금방 도착한다
+{ const g = arena(3, []); g.captureEvents = true; g.spawnPts = 6;
+  const dists = []; for (let i = 0; i < 60; i++) { const e = C.spawnEnemy(g, 'grunt'); dists.push(Math.hypot(e.x - 1500, e.y - 1500)); }
+  check('적 출현 위치는 성채에서 약 ' + C.SPAWN_RING + 'px (맵 끝이 아님)', dists.every(d => Math.abs(d - C.SPAWN_RING) < 120) && C.SPAWN_RING <= 800, `${Math.round(Math.min(...dists))}~${Math.round(Math.max(...dists))}`);
+  check('출현 이벤트 발생 (나타나는 효과용)', C.drainEvents(g).filter(e => e.type === 'espawn').length === 60);
+  const a4 = C.spawnAngles(4), a6 = C.spawnAngles(6);
+  check('스폰 방향: 4곳(90° 간격) / 6곳(샛길 2개 추가), 중복 없음', a4.length === 4 && a6.length === 6 && new Set(a6.map(x => x.toFixed(3))).size === 6 && a6.slice(0, 4).every((x, i) => Math.abs(x - a4[i]) < 1e-9));
+  const g2 = arena(3, [['grunt', 1500, 1500 - C.SPAWN_RING]]); g2.core.atk = 0; const gr = g2.enemies[0]; let tArrive = 0; for (let i = 0; i < 30 * 40; i++) { C.tick(g2, DT); if (Math.hypot(gr.x - 1500, gr.y - 1500) < 100) { tArrive = g2.t; break; } }
+  check('출현 후 성채까지 도착이 빠름 (돌격병 15초 이내)', tArrive > 0 && tArrive < 15, tArrive.toFixed(1) + '초'); }
+
+// 17) 유닛 기본 위치: 평소에는 사방으로 고르게, 적이 가까이 오면 그쪽으로 쏠림
+function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []; for (const u of g.units) { const dx = u.x - 1500, dy = u.y - 1500; dy < 0 ? q.up++ : q.down++; dx < 0 ? q.left++ : q.right++; ang.push(Math.atan2(dy, dx)); } ang.sort((a, b) => a - b); let gap = 0; for (let i = 0; i < ang.length; i++) { let d = ang[(i + 1) % ang.length] - ang[i]; if (d <= 0) d += 2 * Math.PI; gap = Math.max(gap, d); } return { q, gapDeg: gap * 180 / Math.PI }; }
+{ const g = arena(3, []); g.gold = 1e7; for (const t of ['sword', 'archer', 'sword', 'priest', 'archer', 'sword', 'sword', 'archer', 'priest', 'sword', 'archer', 'sword']) { g.buyCd[t] = 0; C.buy(g, t); }
+  for (let i = 0; i < 30 * 8; i++) C.tick(g, DT);
+  const sp = spreadOf(g);
+  check('적이 없을 때 유닛이 사방에 고르게 분포 (위/아래/좌/우 각각 4기 이상)', sp.q.up >= 4 && sp.q.down >= 4 && sp.q.left >= 4 && sp.q.right >= 4, JSON.stringify(sp.q));
+  check('빈 각도가 크지 않음 (가장 큰 공백 < 100°)', sp.gapDeg < 100, Math.round(sp.gapDeg) + '°');
+  // 위쪽에서 적이 성채 가까이 접근 → 서서히 그쪽으로 쏠림
+  C.spawnEnemy(g, 'brute', 1500, 1500 - 380); g.core.atk = 0; const b0 = g.biasNow;
+  for (let i = 0; i < 30 * 3; i++) C.tick(g, DT);
+  check('적이 가까이 오면 위협 방향으로 서서히 모임 (쏠림 증가)', g.biasNow > b0 + 0.2, `bias ${b0.toFixed(2)}→${g.biasNow.toFixed(2)}`); }
+
+// 18) 성채: 적을 향해 조준하고 쏠 때 반동 상태가 생김
+{ const g = arena(3, [['grunt', 1500 + 200, 1500]]); let aimed = false, swung = false;
+  for (let i = 0; i < 30 * 4; i++) { C.tick(g, DT); if (g.core.swing > 0) swung = true; if (swung && Math.abs(g.core.aim - 0) < 0.3) aimed = true; }
+  check('성채가 적 방향으로 대포를 조준하고 발사 상태(swing)가 됨', swung && aimed, 'aim=' + g.core.aim.toFixed(2)); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

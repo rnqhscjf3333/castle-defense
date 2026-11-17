@@ -15,7 +15,7 @@
   const ROUND_TIME = 40;   // 한 라운드 최대 시간(초). 적이 남아도 다음 라운드가 시작된다.
   const SPAWN_TIME = 25;   // 라운드 시작 후 이 시간 동안 적이 나뉘어 나온다.
   const PREP_TIME = 0;     // 라운드는 시작하자마자 자동으로 진행된다 (준비 시간 없음)
-  const SPAWN_RING = 1300; // 중앙에서 스폰 지점까지 거리
+  const SPAWN_RING = 700;  // 중앙에서 스폰 지점까지 거리 (맵 끝에서 오래 걸어오지 않고 화면 바로 밖에서 나타난다)
   const ENRAGE_AFTER = 60; // 한 적이 이 시간(초) 이상 살아 있으면 점점 강해진다.
 
   const CFG = {
@@ -23,10 +23,13 @@
     startGold: 0,   // 첫 라운드는 성채 혼자 버티며 처치 골드로 첫 유닛을 뽑는다
     leash: 240,           // 유닛이 성채로부터 추격할 수 있는 최대 거리
     ai: {
-      bias: 0.5,          // 대기 자리를 적이 오는 쪽으로 쏠리게 하는 정도 (0 = 사방에 고르게, 1 = 전부 적 방향)
+      bias: 0.08,         // 평소(적이 멀 때) 대기 자리가 적 방향으로 쏠리는 정도 (0 = 사방에 고르게, 1 = 전부 적 방향)
+      biasAlert: 0.6,     // 적이 alertRange 안으로 들어오면 이만큼까지 서서히 쏠린다
+      alertRange: 420,    // 성채에서 이 거리 안에 적이 있으면 경계 상태
+      sway: 6,            // 대기 중 살짝 흔들리는 폭(px) — 가만히 서 있는 느낌을 줄인다
       homeR: { sword: 170, archer: 110, priest: 70, golem: 150, hero: 140 }, // 역할별 대기 반경
     },
-    core: { hp: 1000, atk: 20, rate: 1.0, range: 260, r: 36 },
+    core: { hp: 1000, atk: 20, rate: 1.0, range: 260, r: 46 },
     units: {
       sword:  { name: '검사', cost: 50, hp: 120, atk: 12, rate: 1.0, range: 30,  speed: 90, r: 10, buyCd: 1.2, aggro: 220 },
       archer: { name: '궁수', cost: 60, hp: 60,  atk: 10, rate: 1.2, range: 220, speed: 80, r: 9,  buyCd: 1.5, aggro: 260 },
@@ -183,6 +186,8 @@
   const hpMul = r => { const b = CFG.balance; return 1 + b.hpSlope * (Math.min(r, b.lateFrom) - 1) + b.hpSlopeLate * Math.max(0, r - b.lateFrom); };
   const dmgMul = r => 1 + CFG.balance.dmgShare * (hpMul(r) - 1);
   const spawnPointCount = r => (r >= 10 ? 6 : 4);
+  // 스폰 지점 방향: 큰 길 4개(90도 간격) + 10라운드부터 샛길 2개(대각선). 배경의 길도 이 각도를 따른다.
+  const spawnAngles = pts => { const b = 0.4, a = [0, 1, 2, 3].map(k => b + k * Math.PI / 2); if (pts >= 6) a.push(b + Math.PI / 4, b + 5 * Math.PI / 4); return a.slice(0, pts); };
   const enemySpeedMul = r => (r >= CFG.balance.lateFrom ? CFG.balance.lateSpeed : 1);
   // 비용 = 기본 비용 × 배율^(지금까지 뽑은 유닛 수). 모든 유닛 종류가 함께 오른다.
   const unitCostOf = (S, type) => Math.round(CFG.units[type].cost * Math.pow(CFG.economy.costGrowth, S.buyCount));
@@ -407,7 +412,7 @@
       t: 0, phase: 'prep', prepT: PREP_TIME, round: 0, roundT: 0,
       queue: [], spawnT: 0, spawnGap: 1, spawnPts: 4,
       gold: CFG.startGold, buyCount: 0,
-      core: { x: CX, y: CY, hp: CFG.core.hp, max: CFG.core.hp, r: CFG.core.r, atk: CFG.core.atk, rate: CFG.core.rate, range: CFG.core.range, cd: 0, flash: 0 },
+      core: { x: CX, y: CY, hp: CFG.core.hp, max: CFG.core.hp, r: CFG.core.r, atk: CFG.core.atk, rate: CFG.core.rate, range: CFG.core.range, cd: 0, flash: 0, aim: -Math.PI / 2, swing: 0 },
       units: [], enemies: [], shots: [],
       kills: 0, nextId: 1,
       spawnN: 0, buyCd: { sword: 0, archer: 0, priest: 0 },
@@ -416,7 +421,7 @@
       gU: makeGrid(48), gE: makeGrid(48),
       cards: { offer: null, rerolls: CFG.rerolls, taken: {}, boss: false },
       up: { sword: { hp: 0, atk: 0, rate: 0, speed: 0 }, archer: { hp: 0, atk: 0, rate: 0, speed: 0 }, priest: { hp: 0, atk: 0, rate: 0, speed: 0 } },
-      aura: null, perks: null, bombCd: 8, reviveLeft: 0, jobMods: null,
+      aura: null, perks: null, bombCd: 8, reviveLeft: 0, jobMods: null, biasNow: 0.08,
       jobs: { sword: { ids: [] }, archer: { ids: [] }, priest: { ids: [] }, offer: null },
     };
     recompute(S);
@@ -493,8 +498,8 @@
   function spawnEnemy(S, kind, x, y) {
     const cfg = CFG.enemies[kind], r = S.round;
     if (x === undefined) {
-      const k = Math.floor(S.rng() * S.spawnPts);
-      const ang = (Math.PI * 2 / S.spawnPts) * k + 0.4 + (S.rng() - 0.5) * 0.12;
+      const angs = spawnAngles(S.spawnPts), k = Math.floor(S.rng() * angs.length);
+      const ang = angs[k] + (S.rng() - 0.5) * 0.12;
       x = clamp(CX + Math.cos(ang) * SPAWN_RING + (S.rng() - 0.5) * 80, 20, W - 20);
       y = clamp(CY + Math.sin(ang) * SPAWN_RING + (S.rng() - 0.5) * 80, 20, H - 20);
     }
@@ -513,6 +518,7 @@
       emit(S, { type: 'bossSpawn', name: bd.name });
     }
     S.enemies.push(e);
+    emit(S, { type: 'espawn', x, y, boss: !!bd }); // 나타나는 순간 효과
     return e;
   }
 
@@ -798,15 +804,17 @@
     if (near) S.threat += wrapAngle(Math.atan2(near.y - CY, near.x - CX) - S.threat) * Math.min(1, 2 * dt);
 
     // 성채 공격 + 대형 포탄
-    const c = S.core; c.cd -= dt; c.flash = Math.max(0, c.flash - dt);
+    const c = S.core; c.cd -= dt; c.flash = Math.max(0, c.flash - dt); c.swing = Math.max(0, c.swing - dt);
     if (c.cd <= 0) {
       const t = nearest(S.gE, c.x, c.y, c.range);
-      if (t) { c.cd = 1 / c.rate; fire(S, c, t, c.atk, CFG.shellSpeed, 'c'); }
+      if (t) { c.cd = 1 / c.rate; c.swing = 0.22; c.aim = Math.atan2(t.y - c.y, t.x - c.x); fire(S, c, t, c.atk, CFG.shellSpeed, 'c'); }
     }
     if (S.perks.bomb) { S.bombCd -= dt; if (S.bombCd <= 0) bigBomb(S); }
 
     // 유닛: 대기 자리는 사방에 퍼지되 적이 오는 쪽으로 약간 쏠린다
-    const bias = CFG.ai.bias;
+    // 경계 상태에 따라 쏠림을 부드럽게 바꾼다
+    S.biasNow += ((nd < CFG.ai.alertRange ? CFG.ai.biasAlert : CFG.ai.bias) - S.biasNow) * Math.min(1, 1.5 * dt);
+    const bias = S.biasNow;
     for (const u of S.units) {
       if (u.dead) continue;
       u.flash = Math.max(0, u.flash - dt); u.swing = Math.max(0, u.swing - dt);
@@ -814,7 +822,7 @@
       const jm = S.jobMods[u.type];
       if (jm && jm.regen && u.hp < u.max) u.hp = Math.min(u.max, u.hp + u.max * jm.regen * dt);
       const a = S.threat + wrapAngle(u.ha - S.threat) * (1 - bias);
-      u.hx = CX + Math.cos(a) * u.hr; u.hy = CY + Math.sin(a) * u.hr;
+      u.hx = CX + Math.cos(a) * u.hr + Math.sin(S.t * 0.6 + u.id * 1.7) * CFG.ai.sway; u.hy = CY + Math.sin(a) * u.hr + Math.cos(S.t * 0.5 + u.id * 2.3) * CFG.ai.sway;
       if (u.type === 'priest') updatePriest(S, u, dt); else updateFighter(S, u, dt);
       u.x = clamp(u.x, 10, W - 10); u.y = clamp(u.y, 10, H - 10);
     }
@@ -845,7 +853,7 @@
 
   return {
     CFG, MAX_ROUND, ROUND_TIME, SPAWN_TIME, PREP_TIME, SPAWN_RING, UNIT_TYPES, CARD_DEFS,
-    createGame, tick, buy, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo: r => CFG.bosses[r] || null, drainEvents, pickCard, reroll, describeTaken, openCards,
+    createGame, tick, buy, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo: r => CFG.bosses[r] || null, drainEvents, pickCard, reroll, describeTaken, openCards,
     unitCostOf, enemyCount, hpMul, dmgMul, mulberry32,
   };
 });
