@@ -5,7 +5,7 @@
 <div id="host"></div>
 <script>
 // 실행: Chrome --headless=new --allow-file-access-from-files --virtual-time-budget=12000 --dump-dom file://.../tests/ui-test.html
-// 입력 이벤트(드래그/휠/핀치/우클릭/버튼) 위주의 빠른 점검. 렌더링 프레임이 필요한 검증은 tests/e2e.mjs.
+// 입력 이벤트(드래그/휠/핀치/버튼) 위주의 빠른 점검. 렌더링 프레임이 필요한 검증은 tests/e2e.mjs.
 const out = [];
 const log = (pass, name, extra) => out.push((pass ? 'PASS ' : 'FAIL ') + name + (extra !== undefined ? ' ' + extra : ''));
 const show = () => { document.getElementById('out').textContent = out.join('\n'); };
@@ -28,11 +28,7 @@ load('../index.html?bot=1&seed=7&zoom=1', w => {
     const z0 = g.cam.zoom; cv.dispatchEvent(new w.WheelEvent('wheel', { deltaY: -300, clientX: 500, clientY: 350, bubbles: true, cancelable: true }));
     log(g.cam.zoom > z0, '휠 확대', z0.toFixed(2) + '→' + g.cam.zoom.toFixed(2));
     cv.dispatchEvent(new w.MouseEvent('contextmenu', { clientX: 300, clientY: 300, bubbles: true, cancelable: true }));
-    log(!!g.S.flag && !d.getElementById('btnFlag').hidden, '우클릭 깃발', JSON.stringify(g.S.flag && { x: Math.round(g.S.flag.x), y: Math.round(g.S.flag.y) }));
-    d.getElementById('btnFlag').click(); log(g.S.flag === null, '깃발 해제');
-    d.querySelector('[data-mode="hold"]').click(); log(g.S.modes.all === 'hold', '전체 모드 변경');
-    d.querySelectorAll('.ucard .tm')[1].click(); log(g.S.modes.archer === 'free', '유닛별 모드(궁수)', String(g.S.modes.archer));
-    d.querySelector('[data-mode="rally"]').click(); log(g.S.modes.archer === null && g.S.modes.all === 'rally', '전체 모드가 유닛별 설정을 초기화');
+    log(d.querySelector('.mbtn[data-mode]') === null, '모드 버튼 제거됨(깃발/모드 UI 없음)');
     d.getElementById('btnCenter').click(); log(Math.abs(g.cam.x - 1500) < 1 && Math.abs(g.cam.y - 1500) < 1, '성채로 이동');
     const mini = d.getElementById('minimap'), r = mini.getBoundingClientRect();
     mini.dispatchEvent(new PE('pointerdown', { pointerId: 2, clientX: r.left + r.width * 0.2, clientY: r.top + r.height * 0.2, bubbles: true }));

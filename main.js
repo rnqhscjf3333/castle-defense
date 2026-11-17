@@ -36,23 +36,15 @@
   }
   function centerOnCore() { cam.x = CX; cam.y = CY; clampCam(); }
 
-  // ───────────── 입력: 드래그 이동 / 핀치 / 길게 눌러 깃발 ─────────────
+  // ───────────── 입력: 드래그 이동 / 핀치 확대 ─────────────
   const ptrs = new Map();
-  let drag = null, pinch = null, longTimer = null;
-  function cancelLong() { if (longTimer) { clearTimeout(longTimer); longTimer = null; } }
+  let drag = null, pinch = null;
   cv.addEventListener('pointerdown', e => {
     try { cv.setPointerCapture(e.pointerId); } catch (err) { /* 일부 환경에서 지원 안 함 */ }
     ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (ptrs.size === 1) {
-      drag = { sx: e.clientX, sy: e.clientY, cx: cam.x, cy: cam.y, moved: false };
-      cancelLong();
-      longTimer = setTimeout(() => {
-        if (drag && !drag.moved && S && running) {
-          const [wx, wy] = toWorld(drag.sx, drag.sy); placeFlag(wx, wy); drag.moved = true; // 이후 드래그로 취급하지 않음
-        }
-      }, 480);
-    } else if (ptrs.size === 2) {
-      cancelLong(); drag = null;
+    if (ptrs.size === 1) drag = { sx: e.clientX, sy: e.clientY, cx: cam.x, cy: cam.y, moved: false };
+    else if (ptrs.size === 2) {
+      drag = null;
       const [a, b] = [...ptrs.values()];
       pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), zoom: cam.zoom };
     }
@@ -66,22 +58,19 @@
       zoomAt((a.x + b.x) / 2, (a.y + b.y) / 2, f);
     } else if (drag) {
       const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
-      if (!drag.moved && Math.hypot(dx, dy) > 8) { drag.moved = true; cancelLong(); }
-      if (drag.moved && !longTimer) { cam.x = drag.cx - dx / cam.zoom; cam.y = drag.cy - dy / cam.zoom; clampCam(); }
+      if (!drag.moved && Math.hypot(dx, dy) > 6) drag.moved = true;
+      if (drag.moved) { cam.x = drag.cx - dx / cam.zoom; cam.y = drag.cy - dy / cam.zoom; clampCam(); }
     }
   });
   function endPtr(e) {
-    ptrs.delete(e.pointerId); cancelLong();
+    ptrs.delete(e.pointerId);
     if (ptrs.size < 2) pinch = null;
     if (ptrs.size === 0) drag = null;
     else if (ptrs.size === 1) { const [p] = [...ptrs.values()]; drag = { sx: p.x, sy: p.y, cx: cam.x, cy: cam.y, moved: true }; }
   }
   cv.addEventListener('pointerup', endPtr); cv.addEventListener('pointercancel', endPtr);
   cv.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.0012)); }, { passive: false });
-  cv.addEventListener('contextmenu', e => { e.preventDefault(); if (S && running) { const [wx, wy] = toWorld(e.clientX, e.clientY); placeFlag(wx, wy); } });
-
-  function placeFlag(x, y) { C.setFlag(S, x, y); $('btnFlag').hidden = false; toast('깃발을 세웠어요 · ‘전선 유지’ 모드에서 이 지점을 지켜요'); }
-  $('btnFlag').addEventListener('click', () => { if (S) { C.clearFlag(S); $('btnFlag').hidden = true; } });
+  cv.addEventListener('contextmenu', e => e.preventDefault());
 
   // 미니맵: 누르거나 끌면 이동
   const MS = 264 / W;
@@ -95,7 +84,6 @@
   let toastT = null, bannerT = null;
   function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 1800); }
   function banner(t) { const el = $('banner'); el.textContent = t; el.classList.add('show'); clearTimeout(bannerT); bannerT = setTimeout(() => el.classList.remove('show'), 1900); }
-  const MODE_NAME = { free: '자유', rally: '집결', hold: '유지', retreat: '후퇴' };
   const DESC = { sword: '체력 높은 전위', archer: '멀리서 공격', priest: '아군을 치유' };
   const KEYS = ['1', '2', '3'];
 
@@ -103,25 +91,18 @@
   C.UNIT_TYPES.forEach((t, i) => {
     const b = document.createElement('button');
     b.className = 'btn panel ucard';
-    b.innerHTML = '<div class="nm"></div><div class="ds"></div><div class="cost"></div><div class="cdfill"></div><span class="tm" role="button" title="이 유닛만 다른 모드로"></span><span class="key">' + KEYS[i] + '</span>';
+    b.innerHTML = '<div class="nm"></div><div class="ds"></div><div class="cost"></div><div class="cdfill"></div><span class="key">' + KEYS[i] + '</span>';
     b.querySelector('.nm').textContent = CFG.units[t].name;
     b.querySelector('.ds').textContent = DESC[t];
-    b.addEventListener('click', e => { if (e.target.classList.contains('tm')) return; doBuy(t); });
-    b.querySelector('.tm').addEventListener('click', e => { e.stopPropagation(); cycleTypeMode(t); });
+    b.addEventListener('click', () => doBuy(t));
     $('units').appendChild(b);
-    ucards[t] = { el: b, cost: b.querySelector('.cost'), cd: b.querySelector('.cdfill'), tm: b.querySelector('.tm') };
+    ucards[t] = { el: b, cost: b.querySelector('.cost'), cd: b.querySelector('.cdfill') };
   });
   function doBuy(t) {
     if (!S || !running || paused) return;
     const r = C.buy(S, t);
     if (!r.ok) toast({ gold: '골드가 부족해요', pop: '인구 상한이에요', cooldown: '잠시 후 다시 생산할 수 있어요' }[r.reason] || '생산할 수 없어요');
   }
-  function cycleTypeMode(t) {
-    if (!S) return;
-    const order = [null, 'free', 'rally', 'hold', 'retreat'], cur = S.modes[t], i = order.indexOf(cur);
-    C.setMode(S, t, order[(i + 1) % order.length]);
-  }
-  document.querySelectorAll('#modes .mbtn[data-mode]').forEach(b => b.addEventListener('click', () => { if (S) C.setMode(S, 'all', b.dataset.mode); }));
   $('btnNext').addEventListener('click', () => {
     if (!S || !running || paused) return;
     const r = C.callEarly(S);
@@ -148,8 +129,6 @@
     else if (e.key === 'p' || e.key === 'P') doExpand();
     else if (e.key === ' ') { e.preventDefault(); $('btnPause').click(); }
     else if (e.key === 'h' || e.key === 'H') centerOnCore();
-    else if (e.key === 'f' || e.key === 'F') S && C.setMode(S, 'all', 'free');
-    else if (e.key === 'r' || e.key === 'R') S && C.setMode(S, 'all', 'rally');
   });
 
   const last = {};
@@ -165,14 +144,12 @@
     setText('killTxt', String(S.kills));
     const pct = Math.max(0, c.hp / c.max * 100);
     const f = $('hpfill'); f.style.width = pct + '%'; f.style.background = pct > 50 ? 'var(--ok)' : pct > 25 ? 'var(--gold)' : 'var(--danger)';
-    document.querySelectorAll('#modes .mbtn[data-mode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === S.modes.all ? 'true' : 'false'));
     for (const t of C.UNIT_TYPES) {
       const u = ucards[t], cost = C.unitCostOf(S, t), cd = S.buyCd[t] > 0 ? S.buyCd[t] / CFG.units[t].buyCd : 0;
       u.cost.textContent = cost + 'G';
       u.cd.style.height = (cd * 100) + '%';
       const cant = S.gold < cost || C.popUsed(S) + CFG.units[t].pop > S.popCap;
       u.el.classList.toggle('off', cant);
-      u.tm.textContent = S.modes[t] ? MODE_NAME[S.modes[t]] : '전체';
     }
     const maxed = S.popBuys >= CFG.popExpand.max, pc = C.popExpandCost(S), pb = $('btnPop');
     const ptxt = maxed ? '인구 최대' : '인구 +' + CFG.popExpand.step + ' · ' + pc + 'G';
@@ -259,7 +236,7 @@
   }
   function hpBar(e) {
     if (e.hp >= e.max) return;
-    const w = Math.max(18, e.r * 2.2), x = e.x - w / 2, y = e.y - e.r - 8;
+    const w = Math.max(20, e.r * 2.4), x = e.x - w / 2, y = e.y + Figures.headTop(e) - 8;
     ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(x, y, w, 4);
     ctx.fillStyle = e.team === 'u' ? '#6bdc8b' : '#ff7a7a'; ctx.fillRect(x, y, w * Math.max(0, e.hp / e.max), 4);
   }
@@ -283,13 +260,8 @@
     for (let k = 0; k < pts; k++) { const a = (Math.PI * 2 / pts) * k + 0.4; ctx.fillStyle = 'rgba(255,107,107,.35)'; poly(CX + Math.cos(a) * C.SPAWN_RING, CY + Math.sin(a) * C.SPAWN_RING, 26, 3, a); ctx.fill(); }
 
     const c = S.core;
-    // 성채 사거리/모드 범위
+    // 성채 사거리
     ctx.strokeStyle = 'rgba(90,169,255,.18)'; ctx.lineWidth = 1.5 / z; ctx.beginPath(); ctx.arc(c.x, c.y, c.range, 0, Math.PI * 2); ctx.stroke();
-    if (S.flag) {
-      const f = S.flag; ctx.strokeStyle = 'rgba(255,209,102,.5)'; ctx.setLineDash([6 / z, 6 / z]); ctx.beginPath(); ctx.arc(f.x, f.y, 110, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
-      ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 3 / z; ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(f.x, f.y - 34); ctx.stroke();
-      ctx.fillStyle = '#ffd166'; ctx.beginPath(); ctx.moveTo(f.x, f.y - 34); ctx.lineTo(f.x + 22, f.y - 27); ctx.lineTo(f.x, f.y - 20); ctx.closePath(); ctx.fill();
-    }
     // 보급 오라 범위
     if (S.aura.on) {
       ctx.fillStyle = 'rgba(107,220,139,.05)'; ctx.beginPath(); ctx.arc(c.x, c.y, S.aura.r, 0, Math.PI * 2); ctx.fill();
@@ -301,24 +273,12 @@
     for (const [dx, dy] of [[-30, -30], [30, -30], [-30, 30], [30, 30]]) { ctx.fillStyle = '#3b4d70'; ctx.fillRect(c.x + dx - 9, c.y + dy - 9, 18, 18); ctx.strokeRect(c.x + dx - 9, c.y + dy - 9, 18, 18); }
     ctx.fillStyle = '#ffd166'; ctx.fillRect(c.x - 6, c.y - 6, 12, 12);
 
-    // 유닛
-    for (const u of S.units) {
-      ctx.fillStyle = u.flash > 0 ? '#fff' : COL[u.type]; ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.lineWidth = 1.5 / z;
-      if (u.type === 'sword') { ctx.beginPath(); ctx.rect(u.x - u.r, u.y - u.r, u.r * 2, u.r * 2); ctx.fill(); ctx.stroke(); }
-      else if (u.type === 'archer') { poly(u.x, u.y, u.r + 2, 3, -Math.PI / 2); ctx.fill(); ctx.stroke(); }
-      else if (u.type === 'priest') { ctx.beginPath(); ctx.arc(u.x, u.y, u.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#9a7a1c'; ctx.fillRect(u.x - 1.6, u.y - 5, 3.2, 10); ctx.fillRect(u.x - 5, u.y - 1.6, 10, 3.2); }
-      else if (u.type === 'golem') { poly(u.x, u.y, u.r, 6, 0); ctx.fill(); ctx.lineWidth = 3 / z; ctx.strokeStyle = '#4b5d82'; ctx.stroke(); }
-      else if (u.type === 'hero') { poly(u.x, u.y, u.r + 3, 4, Math.PI / 4); ctx.fill(); ctx.lineWidth = 2 / z; ctx.strokeStyle = '#fff'; ctx.stroke(); }
-      else if (u.type === 'turret') { ctx.beginPath(); ctx.rect(u.x - u.r, u.y - u.r, u.r * 2, u.r * 2); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#7a4a12'; ctx.beginPath(); ctx.arc(u.x, u.y, 4, 0, Math.PI * 2); ctx.fill(); }
-      else { poly(u.x, u.y, u.r + 1, 3, -Math.PI / 2); ctx.fill(); ctx.stroke(); }
-      hpBar(u);
-    }
-    // 적
-    for (const e of S.enemies) {
-      ctx.fillStyle = e.flash > 0 ? '#fff' : COL[e.kind]; ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.lineWidth = 1.5 / z;
-      const rot = e.id * 0.7 + now * 0.0006 * (e.kind === 'boss' ? 1 : 0);
-      poly(e.x, e.y, e.r, e.kind === 'grunt' ? 3 : e.kind === 'shield' ? 6 : 8, rot); ctx.fill(); ctx.stroke();
-      if (e.kind === 'boss' || e.hp < e.max) hpBar(e);
+    // 유닛 + 적: 아래쪽에 있는 개체가 앞에 오도록 y 순서로 그린다
+    const all = S.units.concat(S.enemies);
+    all.sort((p, q) => p.y - q.y);
+    for (const e of all) {
+      Figures.draw(ctx, e, now);
+      if (e.hp < e.max || e.kind === 'boss') hpBar(e);
     }
     // 투사체
     for (const s of S.shots) { ctx.fillStyle = s.color === 'c' ? '#ffd166' : '#b9f5c8'; ctx.beginPath(); ctx.arc(s.x, s.y, s.color === 'c' ? 4 : 3, 0, Math.PI * 2); ctx.fill(); }
@@ -358,7 +318,6 @@
     mctx.fillStyle = '#ff6b6b'; for (const e of S.enemies) { const s = e.kind === 'boss' ? 6 : 3; mctx.fillRect(e.x * MS - s / 2, e.y * MS - s / 2, s, s); }
     mctx.fillStyle = '#5aa9ff'; for (const u of S.units) mctx.fillRect(u.x * MS - 1.5, u.y * MS - 1.5, 3, 3);
     mctx.fillStyle = '#ffd166'; mctx.fillRect(CX * MS - 4, CY * MS - 4, 8, 8);
-    if (S.flag) { mctx.fillStyle = '#ffd166'; mctx.fillRect(S.flag.x * MS - 2, S.flag.y * MS - 2, 4, 4); }
     mctx.strokeStyle = '#fff'; mctx.lineWidth = 1.5;
     const hw = vw / 2 / cam.zoom, hh = vh / 2 / cam.zoom;
     mctx.strokeRect((cam.x - hw) * MS, (cam.y - hh) * MS, hw * 2 * MS, hh * 2 * MS);
@@ -368,7 +327,7 @@
   function newGame() {
     const seed = params.get('seed') ? +params.get('seed') : (Date.now() ^ (Math.random() * 1e9)) >>> 0;
     S = C.createGame(seed); S.captureEvents = true;
-    fx.length = 0; $('btnFlag').hidden = true; paused = false; speed = 1; shownOffer = null; $('picker').classList.add('hidden'); renderUpgrades();
+    fx.length = 0; paused = false; speed = 1; shownOffer = null; $('picker').classList.add('hidden'); renderUpgrades();
     $('btnPause').textContent = '일시정지'; $('btnSpeed').textContent = '1×';
     for (const k in last) delete last[k];
     centerOnCore();
@@ -377,7 +336,7 @@
     running = true;
   }
   let botT = 0;
-  function startBot() { C.setMode(S, 'all', 'rally'); window.__bot = true; }
+  function startBot() { window.__bot = true; }
   function botAct() {
     if (S.cards.offer && !params.get('nopick')) C.pickCard(S, 0);
     botT += STEP; if (botT < 0.4) return; botT = 0;

@@ -22,7 +22,11 @@
     world: { w: W, h: H, cx: CX, cy: CY },
     startGold: 200,
     popCap: 12,
-    leash: 300,           // 자유 모드에서 성채로부터 추격할 수 있는 최대 거리
+    leash: 240,           // 유닛이 성채로부터 추격할 수 있는 최대 거리
+    ai: {
+      bias: 0.5,          // 대기 자리를 적이 오는 쪽으로 쏠리게 하는 정도 (0 = 사방에 고르게, 1 = 전부 적 방향)
+      homeR: { sword: 170, archer: 110, priest: 70, golem: 150, hero: 140, wolf: 130 }, // 역할별 대기 반경
+    },
     core: { hp: 1000, atk: 20, rate: 1.0, range: 260, r: 36 },
     units: {
       sword:  { name: '검사', cost: 50, hp: 120, atk: 12, rate: 1.0, range: 30,  speed: 90, r: 10, pop: 1, buyCd: 1.2, aggro: 220 },
@@ -42,7 +46,7 @@
     },
     balance: {
       countBase: 8, countLinear: 3, countQuad: 0.08, // 라운드별 적 수 = base + linear·r + quad·r²
-      hpSlope: 0.08, hpSlopeLate: 0.16, lateFrom: 20, // 체력 배율: 선형, lateFrom(대혼란) 이후 기울기 증가
+      hpSlope: 0.055, hpSlopeLate: 0.16, lateFrom: 20, // 체력 배율: 선형, lateFrom(대혼란) 이후 기울기 증가
       dmgShare: 0.5,                                  // 공격력은 체력 증가분의 이 비율만 반영
       lateSpeed: 1.1,                                 // 대혼란 이후 적 이동 속도 배율
     },
@@ -51,11 +55,6 @@
     popExpand: { base: 120, growth: 1.3, step: 2, max: 16 }, // 골드로 인구 상한 확장: 비용 = base·growth^횟수
     unitCostStep: 0.05,   // 같은 유닛이 살아 있는 수 1마리당 비용 +5%
     healAfterRound: 0.30, // 새 라운드 시작 시 생존 유닛 회복 비율
-    modes: ['free', 'rally', 'hold', 'retreat'],
-    ring: {
-      rally: { sword: 170, archer: 110, priest: 60, golem: 150, hero: 130 },
-      hold:  { sword: 110, archer: 70,  priest: 40, golem: 95,  hero: 85 },
-    },
     // 카드/강화 수치
     upPct: { hp: 0.30, atk: 0.15, rate: 0.10, speed: 0.12 },
     auraBase: 300,
@@ -329,8 +328,7 @@
       core: { x: CX, y: CY, hp: CFG.core.hp, max: CFG.core.hp, r: CFG.core.r, atk: CFG.core.atk, rate: CFG.core.rate, range: CFG.core.range, cd: 0, flash: 0 },
       units: [], enemies: [], shots: [],
       kills: 0, nextId: 1,
-      modes: { all: 'free', sword: null, archer: null, priest: null },
-      flag: null, buyCd: { sword: 0, archer: 0, priest: 0 },
+      spawnN: 0, buyCd: { sword: 0, archer: 0, priest: 0 },
       threat: 0, over: false, win: false,
       captureEvents: false, events: [],
       gU: makeGrid(48), gE: makeGrid(48),
@@ -348,7 +346,7 @@
   function addUnit(S, type) {
     const cfg = CFG.units[type], st = statsOf(S, type);
     const a = S.rng() * Math.PI * 2, rr = 70 + S.rng() * 20;
-    const ha = S.rng() * Math.PI * 2, hr = 90 + S.rng() * 70;
+    const ha = S.spawnN++ * 2.39996323 + S.rng() * 0.3, hr = (CFG.ai.homeR[type] || 120) * (0.9 + 0.2 * S.rng()); // 황금각으로 사방에 퍼뜨림
     let x = CX + Math.cos(a) * rr, y = CY + Math.sin(a) * rr;
     if (type === 'turret') {
       const n = S.units.filter(u => u.type === 'turret' && !u.dead).length, ta = n * Math.PI + 0.8;
@@ -358,7 +356,7 @@
       id: S.nextId++, type, team: 'u', x, y,
       hp: st.max, max: st.max, atk: st.atk, rate: st.rate, range: cfg.range, speed: st.speed, r: cfg.r,
       heal: st.heal, healRate: st.healRate, healRange: cfg.healRange || 0,
-      cd: 0, flash: 0, dead: false, hx: CX + Math.cos(ha) * hr, hy: CY + Math.sin(ha) * hr,
+      cd: 0, flash: 0, swing: 0, dead: false, ha, hr, hx: CX + Math.cos(ha) * hr, hy: CY + Math.sin(ha) * hr,
       life: cfg.life || 0, aura: 0, n: 0,
     };
     S.units.push(u);
@@ -388,13 +386,6 @@
     S.gold -= cost; S.popBuys++; recompute(S);
     return { ok: true, cost };
   }
-  function setMode(S, who, mode) {
-    if (who === 'all') { if (!CFG.modes.includes(mode)) return; S.modes.all = mode; for (const t of UNIT_TYPES) S.modes[t] = null; }
-    else if (UNIT_TYPES.includes(who)) S.modes[who] = (mode && CFG.modes.includes(mode)) ? mode : null;
-  }
-  const effMode = (S, type) => (type === 'wolf' ? 'free' : (S.modes[type] || S.modes.all));
-  function setFlag(S, x, y) { S.flag = { x: clamp(x, 40, W - 40), y: clamp(y, 40, H - 40) }; }
-  function clearFlag(S) { S.flag = null; }
   // 다음 라운드 앞당기기: 스폰이 끝났을 때만 가능, 남은 시간만큼 보너스 골드
   function callEarly(S) {
     if (S.over || S.cards.offer) return { ok: false };
@@ -438,7 +429,7 @@
     S.enemies.push({
       id: S.nextId++, kind, team: 'e', x, y, hp, max: hp, dmg: cfg.dmg * dmgMul(r), rate: cfg.rate, range: cfg.range,
       speed: cfg.speed * enemySpeedMul(r), r: cfg.r, gold: cfg.gold, aggro: cfg.aggro,
-      cd: 0, age: 0, flash: 0, dead: false,
+      cd: 0, age: 0, flash: 0, swing: 0, dead: false,
     });
   }
 
@@ -509,21 +500,6 @@
     S.bombCd = 11 - lv;
   }
 
-  // ───────────── 진형 슬롯 ─────────────
-  function slotPos(S, u, idx, n, mode) {
-    let cx = CX, cy = CY, ang = S.threat, R;
-    if (mode === 'retreat') { ang = S.threat + Math.PI; R = 70; }
-    else {
-      const useFlag = mode === 'hold' && S.flag;
-      if (useFlag) { cx = S.flag.x; cy = S.flag.y; }
-      R = (useFlag ? CFG.ring.hold : CFG.ring.rally)[u.type] || 140;
-    }
-    const step = Math.min(0.9, 26 / R), perRow = Math.max(1, Math.floor(2.4 / step));
-    const row = Math.floor(idx / perRow), col = idx % perRow, cols = Math.min(perRow, n - row * perRow);
-    const a = ang + (col - (cols - 1) / 2) * step, rr = R + row * 26;
-    return [cx + Math.cos(a) * rr, cy + Math.sin(a) * rr];
-  }
-
   // ───────────── 유닛 AI ─────────────
   function lowestAlly(S, u, range) {
     let best = null, bp = 1;
@@ -534,23 +510,23 @@
     }
     return best;
   }
-  function updatePriest(S, u, dt, slot, mode) {
+  function updatePriest(S, u, dt) {
     u.cd -= dt;
     const spm = 1 + (u.aura ? S.aura.spd : 0);
     const near = nearest(S.gE, u.x, u.y, 90);
     if (near) {
       const dx = u.x - near.x, dy = u.y - near.y, d = Math.hypot(dx, dy) || 1;
       u.x += (dx / d) * u.speed * spm * dt; u.y += (dy / d) * u.speed * spm * dt;
-    } else if (mode === 'free') {
+    } else {
       const hurt = lowestAlly(S, u, 420);
       if (hurt && hurt !== u) moveToward(u, hurt.x, hurt.y, dt, u.healRange * 0.6, spm);
       else moveToward(u, u.hx, u.hy, dt, 6, spm);
-    } else moveToward(u, slot[0], slot[1], dt, 4, spm);
+    }
     if (u.cd <= 0) {
       const t = lowestAlly(S, u, u.healRange);
       if (t) {
         const amt = u.heal * (1 + (u.aura ? S.aura.atk : 0));
-        t.hp = Math.min(t.max, t.hp + amt); u.cd = u.healRate / spm;
+        t.hp = Math.min(t.max, t.hp + amt); u.cd = u.healRate / spm; u.swing = 0.35; u.aim = Math.atan2(t.y - u.y, t.x - u.x);
         emit(S, { type: 'heal', x: u.x, y: u.y, tx: t.x, ty: t.y });
         if (S.perks.aoeHeal) {
           for (const a of S.units) if (!a.dead && a !== t && Math.hypot(a.x - t.x, a.y - t.y) <= 120) a.hp = Math.min(a.max, a.hp + amt * 0.35 * S.perks.aoeHeal);
@@ -558,7 +534,7 @@
       }
     }
   }
-  function updateFighter(S, u, dt, slot, mode) {
+  function updateFighter(S, u, dt) {
     u.cd -= dt;
     const melee = u.range < 60;
     const spm = 1 + (u.aura ? S.aura.spd : 0);
@@ -567,25 +543,15 @@
     const cfg = CFG.units[u.type], aggro = cfg.aggro;
     const rush = (u.type === 'sword' && S.perks.charge) ? 1 + V().charge * S.perks.charge : 1;
     const stopFor = tgt => (melee ? u.range + u.r + tgt.r - 2 : u.range * 0.85 + tgt.r);
-    if (mode === 'free') {
-      let tgt = nearest(S.gE, u.x, u.y, aggro);
-      if (tgt && Math.hypot(tgt.x - CX, tgt.y - CY) > CFG.leash) tgt = null;
-      if (tgt && fromCore <= CFG.leash + 40) moveToward(u, tgt.x, tgt.y, dt, stopFor(tgt), spm * rush);
-      else moveToward(u, u.hx, u.hy, dt, 6, spm);
-    } else if (mode === 'retreat') {
-      moveToward(u, slot[0], slot[1], dt, 4, spm);
-    } else { // rally / hold: 슬롯을 지키되 가까운 적은 맞아 싸운다
-      const reach = melee ? u.range + 60 : u.range;
-      const tgt = nearest(S.gE, u.x, u.y, reach);
-      const toSlot = Math.hypot(u.x - slot[0], u.y - slot[1]);
-      if (tgt && toSlot <= 130) moveToward(u, tgt.x, tgt.y, dt, stopFor(tgt), spm * rush);
-      else moveToward(u, slot[0], slot[1], dt, 4, spm);
-    }
+    let tgt = nearest(S.gE, u.x, u.y, aggro);
+    if (tgt && Math.hypot(tgt.x - CX, tgt.y - CY) > CFG.leash) tgt = null; // 성채에서 너무 먼 적은 쫓지 않는다
+    if (tgt && fromCore <= CFG.leash + 40) moveToward(u, tgt.x, tgt.y, dt, stopFor(tgt), spm * rush);
+    else moveToward(u, u.hx, u.hy, dt, 6, spm);
     if (u.cd <= 0) {
       const t = nearest(S.gE, u.x, u.y, u.range + u.r);
       if (t) {
         const chargeRate = (u.type === 'sword' && S.perks.charge) ? 1 + V().chargeRate * S.perks.charge : 1;
-        u.cd = 1 / (u.rate * spm * chargeRate);
+        u.cd = 1 / (u.rate * spm * chargeRate); u.swing = 0.25; u.aim = Math.atan2(t.y - u.y, t.x - u.x);
         if (melee) damage(S, t, atk);
         else {
           const arrow = S.perks.pierce ? { pierce: true } : null;
@@ -600,7 +566,7 @@
     u.cd -= dt;
     if (u.cd > 0) return;
     const t = nearest(S.gE, u.x, u.y, u.range);
-    if (t) { u.cd = 1 / (u.rate * (1 + (u.aura ? S.aura.spd : 0))); fire(S, u, t, u.atk * (1 + (u.aura ? S.aura.atk : 0)), 560, 't'); }
+    if (t) { u.cd = 1 / (u.rate * (1 + (u.aura ? S.aura.spd : 0))); u.swing = 0.2; u.aim = Math.atan2(t.y - u.y, t.x - u.x); fire(S, u, t, u.atk * (1 + (u.aura ? S.aura.atk : 0)), 560, 't'); }
   }
 
   // ───────────── 적 AI ─────────────
@@ -612,11 +578,11 @@
     const tgt = nearest(S.gU, e.x, e.y, e.aggro);
     if (tgt) {
       moveToward(e, tgt.x, tgt.y, dt, e.range + e.r + tgt.r - 2);
-      if (e.cd <= 0 && Math.hypot(tgt.x - e.x, tgt.y - e.y) - tgt.r - e.r <= e.range + 2) { e.cd = 1 / e.rate; damage(S, tgt, e.dmg * boost); }
+      if (e.cd <= 0 && Math.hypot(tgt.x - e.x, tgt.y - e.y) - tgt.r - e.r <= e.range + 2) { e.cd = 1 / e.rate; e.swing = 0.25; e.aim = Math.atan2(tgt.y - e.y, tgt.x - e.x); damage(S, tgt, e.dmg * boost); }
     } else {
       moveToward(e, c.x, c.y, dt, e.range + e.r + c.r - 2);
       if (e.cd <= 0 && Math.hypot(c.x - e.x, c.y - e.y) - c.r - e.r <= e.range + 2) {
-        e.cd = 1 / e.rate; c.hp -= e.dmg * boost; c.flash = 0.12;
+        e.cd = 1 / e.rate; e.swing = 0.25; e.aim = Math.atan2(c.y - e.y, c.x - e.x); c.hp -= e.dmg * boost; c.flash = 0.12;
         if (S.perks.thorn) damage(S, e, e.dmg * boost * V().thorn * S.perks.thorn);
         if (c.hp <= 0) { c.hp = 0; S.over = true; S.win = false; emit(S, { type: 'over', win: false }); }
       }
@@ -666,21 +632,18 @@
     }
     if (S.perks.bomb) { S.bombCd -= dt; if (S.bombCd <= 0) bigBomb(S); }
 
-    // 유닛 (유형별 슬롯 번호)
-    const counts = {}, idxs = {};
-    for (const u of S.units) if (!u.dead && u.type !== 'turret') counts[u.type] = (counts[u.type] || 0) + 1;
+    // 유닛: 대기 자리는 사방에 퍼지되 적이 오는 쪽으로 약간 쏠린다
+    const bias = CFG.ai.bias;
     for (const u of S.units) {
       if (u.dead) continue;
-      u.flash = Math.max(0, u.flash - dt);
+      u.flash = Math.max(0, u.flash - dt); u.swing = Math.max(0, u.swing - dt);
       if (u.type === 'turret') { updateTurret(S, u, dt); continue; }
-      const mode = effMode(S, u.type);
-      const i = idxs[u.type] = (idxs[u.type] === undefined ? 0 : idxs[u.type] + 1);
-      const slot = slotPos(S, u, i, counts[u.type], mode);
-      if (u.type === 'priest') updatePriest(S, u, dt, slot, mode);
-      else updateFighter(S, u, dt, slot, mode);
+      const a = S.threat + wrapAngle(u.ha - S.threat) * (1 - bias);
+      u.hx = CX + Math.cos(a) * u.hr; u.hy = CY + Math.sin(a) * u.hr;
+      if (u.type === 'priest') updatePriest(S, u, dt); else updateFighter(S, u, dt);
       u.x = clamp(u.x, 10, W - 10); u.y = clamp(u.y, 10, H - 10);
     }
-    for (const e of S.enemies) { if (e.dead) continue; e.flash = Math.max(0, e.flash - dt); updateEnemy(S, e, dt); }
+    for (const e of S.enemies) { if (e.dead) continue; e.flash = Math.max(0, e.flash - dt); e.swing = Math.max(0, e.swing - dt); updateEnemy(S, e, dt); }
     separate(S.units, S.gU); separate(S.enemies, S.gE);
 
     // 투사체
@@ -704,7 +667,7 @@
 
   return {
     CFG, MAX_ROUND, ROUND_TIME, SPAWN_TIME, PREP_TIME, SPAWN_RING, UNIT_TYPES, CARD_DEFS,
-    createGame, tick, buy, expandPop, popExpandCost, setMode, setFlag, clearFlag, callEarly, drainEvents, pickCard, reroll, describeTaken, openCards,
-    unitCostOf, popUsed, effMode, enemyCount, hpMul, dmgMul, mulberry32,
+    createGame, tick, buy, expandPop, popExpandCost, callEarly, drainEvents, pickCard, reroll, describeTaken, openCards,
+    unitCostOf, popUsed, enemyCount, hpMul, dmgMul, mulberry32,
   };
 });

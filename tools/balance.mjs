@@ -1,7 +1,7 @@
 // 성채방어 밸런스 시뮬레이터 — core.js를 그대로 재사용해 봇이 수천 판을 돌린다.
 //   node tools/balance.mjs baseline [N]           정책별 클리어율/도달 라운드
 //   node tools/balance.mjs cards [N] [정책]        카드별 기여도 (그 카드를 우선 선택했을 때 평균 도달 라운드 변화)
-//   node tools/balance.mjs sweep <키> <값,값,…> [N] [모드] 수치(balance.*, popCap, startGold, leash) 스윕. 모드 기본 rally
+//   node tools/balance.mjs sweep <키> <값,값,…> [N]  수치(balance.*, popCap, startGold, leash, bias) 스윕
 //   node tools/balance.mjs smart [N]               저장된 가중치(tools/weights.json)로 smart 정책 평가
 // 같은 시드를 모든 조건에 공통으로 써서 비교 잡음을 줄인다. 결과 지표: 도달 라운드(클리어=31).
 import { Worker, isMainThread, parentPort } from 'node:worker_threads';
@@ -23,7 +23,6 @@ function deepAssign(dst, src) { for (const k in src) { if (src[k] && typeof src[
 function runOne(task) {
   deepAssign(C.CFG, BASE); deepAssign(C.CFG, task.overrides || {});
   const P = task.policy, S = C.createGame(task.seed), rnd = C.mulberry32(task.seed * 7919 + 13);
-  C.setMode(S, 'all', P.mode || 'rally');
   const ratio = P.ratio || { sword: 2, archer: 2, priest: 1 };
   let step = 0;
   const maxSteps = Math.ceil((C.PREP_TIME + C.MAX_ROUND * C.ROUND_TIME + 120) / DT);
@@ -100,12 +99,12 @@ async function main() {
   const t0 = Date.now();
   if (cmd === 'baseline') {
     const n = +a1 || 60, W = loadWeights();
-    const rows = [['무작위 카드 · 집결', { mode: 'rally' }], ['무작위 카드 · 자유', { mode: 'free' }], ['무작위 카드 · 후퇴(방치)', { mode: 'retreat' }]];
-    if (W) rows.push(['smart 카드 · 집결', { mode: 'rally', weights: W, reroll: 1.2 }], ['smart 카드 · 자유', { mode: 'free', weights: W, reroll: 1.2 }]);
+    const rows = [['무작위 카드', {}], ['무작위 카드 · 인구확장 안 함', { expand: false }], ['무작위 카드 · 다음 라운드 호출 안 함', { early: false }]];
+    if (W) rows.push(['smart 카드', { weights: W, reroll: 1.2 }], ['smart 카드 · 인구확장 안 함', { weights: W, reroll: 1.2, expand: false }]);
     for (const [label, policy] of rows) console.log(label.padEnd(22), fmt(summarize(await runPolicy(policy, n))));
   } else if (cmd === 'cards') {
     const n = +a1 || 60, W = a2 === 'smart' ? loadWeights() : null;
-    const base = { mode: 'rally', weights: W || undefined, reroll: W ? 1.2 : undefined };
+    const base = { weights: W || undefined, reroll: W ? 1.2 : undefined };
     const b = summarize(await runPolicy(base, n));
     console.log(`기준(${W ? 'smart' : '무작위'} 정책)`.padEnd(14), fmt(b));
     const keys = cardKeys(), out = [];
@@ -124,15 +123,14 @@ async function main() {
     }
   } else if (cmd === 'sweep') {
     const key = a1, vals = (a2 || '').split(',').map(Number), n = +a3 || 40, W = loadWeights();
-    const mode = a4 || 'rally';
-    const policy = W ? { mode, weights: W, reroll: 1.2 } : { mode };
+    const policy = W ? { weights: W, reroll: 1.2 } : {};
     for (const v of vals) {
-      const ov = {}; if (['popCap', 'startGold', 'leash'].includes(key)) ov[key] = v; else ov.balance = { [key]: v };
+      const ov = {}; if (['popCap', 'startGold', 'leash'].includes(key)) ov[key] = v; else if (key === 'bias') ov.ai = { bias: v }; else ov.balance = { [key]: v };
       console.log((key + '=' + v).padEnd(18), fmt(summarize(await runPolicy(policy, n, ov))));
     }
   } else if (cmd === 'smart') {
     const n = +a1 || 60, W = loadWeights();
-    console.log('smart', fmt(summarize(await runPolicy({ mode: 'rally', weights: W, reroll: 1.2 }, n))));
+    console.log('smart', fmt(summarize(await runPolicy({ weights: W, reroll: 1.2 }, n))));
   } else console.log('사용법: baseline|cards|sweep|smart (파일 상단 주석 참고)');
   console.log(`\n(${((Date.now() - t0) / 1000).toFixed(0)}초, 워커 ${Math.min(cpus().length - 1, 99)}개)`);
 }

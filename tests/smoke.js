@@ -12,9 +12,8 @@ function playCards(S, policy, rnd) {
   if (policy === 'rand') C.pickCard(S, Math.floor(rnd() * S.cards.offer.length));
   else C.pickCard(S, 0);
 }
-function play(seed, mode, policy) {
+function play(seed, policy) {
   const S = C.createGame(seed), rnd = C.mulberry32(seed + 99);
-  C.setMode(S, 'all', mode);
   let steps = 0; const t0 = Date.now();
   while (!S.over && S.t < 3000 && steps < 200000) {
     if (steps % 15 === 0) for (const t of BUY) C.buy(S, t);
@@ -26,15 +25,15 @@ function play(seed, mode, policy) {
 const strip = r => { const { ms, ...rest } = r; return JSON.stringify(rest); };
 
 // 1) 결정론
-const a = play(123, 'rally', 'rand'), b = play(123, 'rally', 'rand'), c = play(124, 'rally', 'rand');
+const a = play(123, 'rand'), b = play(123, 'rand'), c = play(124, 'rand');
 check('결정론(같은 시드·같은 선택)', strip(a) === strip(b), strip(a));
 check('시드별 차이', strip(a) !== strip(c));
 
 // 2) 정책별 봇 결과 (카드가 실제로 도움이 되는지)
 const N = +process.argv[2] || 5;
-for (const [label, mode, pol] of [['항상 첫 번째 카드', 'rally', 'first'], ['무작위 선택/집결', 'rally', 'rand'], ['무작위 선택/자유', 'free', 'rand']]) {
+for (const [label, pol] of [['항상 첫 번째 카드', 'first'], ['무작위 선택', 'rand']]) {
   const res = [];
-  for (let i = 0; i < N; i++) res.push(play(1000 + i, mode, pol));
+  for (let i = 0; i < N; i++) res.push(play(1000 + i, pol));
   const rounds = res.map(r => r.round).sort((x, y) => x - y);
   console.log(label.padEnd(28), '클리어', res.filter(r => r.win).length + '/' + N, '| 도달 라운드', rounds.join(','), '| 평균 카드', Math.round(res.reduce((s, r) => s + r.cards, 0) / N), '| 판당 ms', Math.round(res.reduce((s, r) => s + r.ms, 0) / N));
 }
