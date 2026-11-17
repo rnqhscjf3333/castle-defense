@@ -304,13 +304,13 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   for (let i = 0; i < 30 * 4; i++) { C.tick(g, DT); if (g.core.swing > 0) swung = true; if (swung && Math.abs(g.core.aim - 0) < 0.3) aimed = true; }
   check('성채가 적 방향으로 대포를 조준하고 발사 상태(swing)가 됨', swung && aimed, 'aim=' + g.core.aim.toFixed(2)); }
 
-// 19) 적 스탯 절반 (체력·공격력, 이동 속도는 그대로)
+// 19) 적 스탯 배율 (체력 enemyHp·공격력 enemyDmg, 이동 속도는 그대로)
 { const g = arena(1, []); const e = C.spawnEnemy(g, 'grunt', 1500, 800), base = C.CFG.enemies.grunt;
-  check('적 체력이 절반', e.max === Math.round(base.hp * C.hpMul(1) * 0.5) && C.CFG.balance.enemyHp === 0.5, `${base.hp}→${e.max}`);
+  check('적 체력 = 기본 × 라운드 배율 × enemyHp', e.max === Math.round(base.hp * C.hpMul(1) * C.CFG.balance.enemyHp), `${base.hp}→${e.max}`);
   check('적 공격력이 절반', Math.abs(e.dmg - base.dmg * C.dmgMul(1) * 0.5) < 1e-9, `${base.dmg}→${e.dmg}`);
   check('이동 속도는 그대로', Math.abs(e.speed - base.speed) < 1e-9, String(e.speed));
   const bb = (() => { const g2 = arena(5, []); return C.spawnEnemy(g2, 'boss', 1500, 800); })();
-  check('보스 체력도 절반 (돌격왕 600→300)', bb.max === 300, String(bb.max)); }
+  check('보스 체력도 같은 배율 (돌격왕 600 × enemyHp)', bb.max === Math.round(600 * C.CFG.balance.enemyHp), String(bb.max)); }
 
 // 20) 발사 위치: 몸 중심이 아니라 포구/활 위치에서 출발하고, 높이가 지면 목표로 떨어진다
 { const g = arena(3, [['grunt', 1500 + 220, 1500]]); g.core.atk = 20; let first = null;
