@@ -22,12 +22,14 @@ const BASE = JSON.parse(JSON.stringify(C.CFG));
 function deepAssign(dst, src) { for (const k in src) { if (src[k] && typeof src[k] === 'object' && !Array.isArray(src[k])) deepAssign(dst[k] ??= {}, src[k]); else dst[k] = src[k]; } }
 
 function runOne(task) {
-  deepAssign(C.CFG, BASE); deepAssign(C.CFG, task.overrides || {});
+  deepAssign(C.CFG, JSON.parse(JSON.stringify(BASE))); deepAssign(C.CFG, task.overrides || {}); // 기준값을 매번 복사해서 쓴다 (배열 덮어쓰기가 기준값을 오염시키지 않게)
   const P = task.policy, S = C.createGame(task.seed), rnd = C.mulberry32(task.seed * 7919 + 13);
-  const ratio = P.ratio || { sword: 2, archer: 2, priest: 1 };
+  const ratio = P.ratio || { sword: 3, archer: 2, priest: 1 }; // 검사 비중이 높은 구성이 가장 좋았다 (시뮬레이션)
   let step = 0;
   const maxSteps = Math.ceil((C.PREP_TIME + C.MAX_ROUND * C.ROUND_TIME + 120) / DT);
+  let act2At = -1;
   while (!S.over && step < maxSteps) {
+    if (S.cinematic) { C.endCinematic(S); act2At = S.round; if (P.stopAct2) break; continue; } // 2막 연출은 바로 넘긴다 (30라운드 보스를 처치한 것)
     if (S.jobs.offer) { // 보스 처치 후 전직: jobPrefer가 제시되면 그것을, 아니면 무작위
       const lst = S.jobs.offer.list, pref = P.jobPrefer ? lst.findIndex(o => o.id === P.jobPrefer) : -1;
       C.pickJob(S, pref >= 0 ? pref : Math.floor(rnd() * lst.length)); continue;
@@ -47,7 +49,8 @@ function runOne(task) {
     }
     C.tick(S, DT); step++;
   }
-  return { round: S.round, win: S.win, kills: S.kills, t: S.t, taken: S.cards.taken, coreDmgBy: S.coreDmgBy };
+  const bossAt = {}; for (const r of [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]) { const bi = C.bossInfo(S, r); if (bi) bossAt[r] = bi.id; }
+  return { bossAt, round: S.round, win: S.win, act2: S.act === 2, kills: S.kills, t: S.t, taken: S.cards.taken, coreDmgBy: S.coreDmgBy };
 }
 function weightOf(P, c) {
   const W = P.weights || {};
@@ -77,14 +80,15 @@ async function pool(tasks) {
 }
 
 const score = r => (r.win ? C.MAX_ROUND + 1 : r.round);
+const clearOf = r => r.win; // 50라운드 클리어
 const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
 const sd = a => { const m = mean(a); return Math.sqrt(mean(a.map(x => (x - m) ** 2))); };
 const pct = (a, p) => { const s = [...a].sort((x, y) => x - y); return s[Math.min(s.length - 1, Math.floor(p * s.length))]; };
 function summarize(rs) {
   const sc = rs.map(score);
-  return { n: rs.length, clear: rs.filter(r => r.win).length / rs.length, mean: mean(sc), sd: sd(sc), p10: pct(sc, 0.1), p50: pct(sc, 0.5), p90: pct(sc, 0.9), early: rs.filter(r => r.round < 8).length / rs.length };
+  return { n: rs.length, act2: rs.filter(r => r.act2).length / rs.length, clear: rs.filter(r => r.win).length / rs.length, mean: mean(sc), sd: sd(sc), p10: pct(sc, 0.1), p50: pct(sc, 0.5), p90: pct(sc, 0.9), early: rs.filter(r => r.round < 8).length / rs.length };
 }
-const fmt = s => `클리어 ${(s.clear * 100).toFixed(0).padStart(3)}% | 평균 ${s.mean.toFixed(1).padStart(5)} (±${(s.sd / Math.sqrt(s.n)).toFixed(1)}) | 하위10% ${String(s.p10).padStart(2)} · 중앙 ${String(s.p50).padStart(2)} · 상위10% ${String(s.p90).padStart(2)} | 8라운드 전 사망 ${(s.early * 100).toFixed(0)}%`;
+const fmt = s => `30R보스 처치 ${(s.act2 * 100).toFixed(0).padStart(3)}% · 50R 클리어 ${(s.clear * 100).toFixed(0).padStart(3)}% | 평균 ${s.mean.toFixed(1).padStart(5)} (±${(s.sd / Math.sqrt(s.n)).toFixed(1)}) | 하위10% ${String(s.p10).padStart(2)} · 중앙 ${String(s.p50).padStart(2)} · 상위10% ${String(s.p90).padStart(2)} | 8라운드 전 사망 ${(s.early * 100).toFixed(0)}%`;
 const seeds = n => Array.from({ length: n }, (_, i) => 10000 + i);
 const runPolicy = (policy, n, overrides) => pool(seeds(n).map(seed => ({ seed, policy, overrides })));
 const loadWeights = () => { const f = join(HERE, 'weights.json'); return existsSync(f) ? JSON.parse(readFileSync(f, 'utf8')) : null; };
@@ -148,12 +152,24 @@ async function main() {
     out.sort((x, y) => y.d - x.d);
     console.log('\n전직별 (평균 라운드 변화 / 클리어율). 잡음은 ±1 안팎');
     for (const o of out) console.log(C.CFG.units[o.t].name.padEnd(4), o.name.padEnd(8), (o.d >= 0 ? '+' : '') + o.d.toFixed(1).padStart(5), '| 클리어', (o.clear * 100).toFixed(0).padStart(3) + '%');
+  } else if (cmd === 'where') { // 죽은 구간별로 그 구간 보스가 누구였는지 집계
+    const n = +a1 || 80, W = loadWeights(), rs = await runPolicy({ weights: W, reroll: 1.2 }, n);
+    const zones = [[24, 29, 25], [34, 38, 35], [39, 43, 40], [44, 48, 45], [15, 23, 20]];
+    for (const [lo, hi, br] of zones) {
+      const dead = rs.filter(r => !r.win && r.round >= lo && r.round <= hi), by = {};
+      for (const r of dead) { const id = r.bossAt[br]; by[id] = (by[id] || 0) + 1; }
+      const all = {}; for (const r of rs) if (r.round >= br || r.win) { const id = r.bossAt[br]; all[id] = (all[id] || 0) + 1; }
+      console.log(`${lo}~${hi}라운드 사망 ${dead.length}명 | ${br}라운드 보스별:`, Object.keys(all).map(k => `${k} ${by[k] || 0}/${all[k]}`).join('  '));
+    }
   } else if (cmd === 'coredmg') { // 성채가 어떤 공격에 얼마나 맞는지 (판당 평균)
     const n = +a1 || 60, W = loadWeights(), rs = await runPolicy({ weights: W, reroll: 1.2 }, n), tot = {};
     for (const r of rs) for (const k in r.coreDmgBy) tot[k] = (tot[k] || 0) + r.coreDmgBy[k];
     const all = Object.values(tot).reduce((x, y) => x + y, 0);
     console.log('smart', fmt(summarize(rs)));
     for (const [k, v] of Object.entries(tot).sort((x, y) => y[1] - x[1])) console.log(' ', k.padEnd(14), (v / n).toFixed(0).padStart(6), '판당 피해', (v / all * 100).toFixed(0).padStart(3) + '%');
+  } else if (cmd === 'policy') { // node tools/balance.mjs policy '{"ratio":{...}}' [N] — smart 기본 정책에 JSON을 덮어써서 평가
+    const n = +a2 || 60, W = loadWeights(), p = { weights: W, reroll: 1.2, ...JSON.parse(a1 || '{}') };
+    console.log((a1 || '{}').slice(0, 60).padEnd(60), fmt(summarize(await runPolicy(p, n))));
   } else if (cmd === 'smart') {
     const n = +a1 || 60, W = loadWeights();
     console.log('smart', fmt(summarize(await runPolicy({ weights: W, reroll: 1.2 }, n))));

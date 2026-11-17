@@ -18,6 +18,7 @@ function play(seed, policy) {
   while (!S.over && S.t < 3000 && steps < 200000) {
     if (steps % 15 === 0) for (const t of BUY) C.buy(S, t);
     playCards(S, policy, rnd);
+    if (S.cinematic) C.endCinematic(S); // 2막 연출은 바로 넘긴다
     if (S.jobs.offer) C.pickJob(S, Math.floor(rnd() * S.jobs.offer.list.length)); // 보스 처치 후 전직 선택 (선택 전에는 시간이 멈춘다)
     C.tick(S, DT); steps++;
   }
@@ -135,7 +136,7 @@ check('각 적은 등장 라운드 이전에는 나오지 않음', early === fal
 check('라운드가 갈수록 종류가 늘어남 (사수·폭파병·주술사·거한 모두 등장)', ['grunt', 'shield', 'archer', 'bomber', 'shaman', 'brute', 'boss'].every(k => seenBefore[k] > 0), JSON.stringify(seenBefore));
 
 // 10) 보스: 보스 라운드에는 시작과 동시에 확실히 나온다 + 예고
-for (const r of [5, 10, 15, 20, 25, 30]) {
+for (const r of [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]) {
   const g = C.createGame(r); g.captureEvents = true; g.round = r - 1; g.phase = 'round'; g.roundT = C.ROUND_TIME; g.queue = []; C.tick(g, DT);
   if (g.cards.offer) C.pickCard(g, 0);
   const info = C.bossInfo(g, r);
@@ -248,9 +249,33 @@ function killBoss(g) { const b = g.enemies.find(e => e.kind === 'boss'); b.hp = 
   g3.enemies.length = 0; const e1 = C.spawnEnemy(g3, 'brute', s3.x + 30, s3.y), e2 = C.spawnEnemy(g3, 'brute', s3.x + 38, s3.y + 14); g3.core.atk = 0; g3.round = 5;
   const h1 = e1.hp, h2 = e2.hp; for (let i = 0; i < 40; i++) C.tick(g3, DT);
   check('검성: 주변 적에게도 베기 피해', e1.hp < h1 && e2.hp < h2, `${Math.round(h1 - e1.hp)} / ${Math.round(h2 - e2.hp)}`); }
-{ // 마지막 보스(30라운드)는 전직 제안 없이 승리 처리
-  const g = arena(30, [['boss', 1500, 1500 - 220]]); g.round = 30; g.queue = []; const b = g.enemies[0]; b.hp = 1; g.core.atk = 1e6; for (let i = 0; i < 90; i++) C.tick(g, DT);
-  check('30라운드 최종 보스 처치: 전직 없이 승리', g.jobs.offer === null && g.over && g.win); }
+{ // 30라운드 보스(암흑 기사단장) 처치 → 승리가 아니라 2막 연출, 시간 정지, 전직 선택
+  const g = arena(30, [['boss', 1500, 1500 - 220]]); g.captureEvents = true; g.round = 30; g.queue = []; const b = g.enemies[0]; b.hp = 1; g.core.atk = 1e6; for (let i = 0; i < 90 && !g.cinematic; i++) C.tick(g, DT);
+  check('30라운드 보스 처치: 게임이 끝나지 않고 2막 연출이 시작됨', b.dead && !g.over && g.act === 2 && !!g.cinematic && C.drainEvents(g).some(e => e.type === 'act2'), 'act=' + g.act);
+  check('연출 중에는 시간이 멈춤', (() => { const t = g.t; for (let i = 0; i < 30; i++) C.tick(g, DT); return g.t === t; })());
+  check('2막 연출과 함께 전직 선택도 제시됨', !!g.jobs.offer);
+  C.pickJob(g, 0); C.tick(g, DT); check('전직을 골라도 연출이 끝나기 전엔 시간이 멈춰 있음', (() => { const t = g.t; C.tick(g, DT); return g.t === t; })());
+  C.endCinematic(g); const t1 = g.t; C.tick(g, DT); check('연출이 끝나면 시간이 다시 흐름', g.t > t1); }
+{ // 30라운드 보스가 살아 있으면 31라운드로 넘어가지 않는다 (보스를 처치해야 2막)
+  const g = arena(30, [['boss', 1500, 1500 - 900]]); g.round = 30; g.queue = []; g.core.atk = 0; g.core.hp = g.core.max = 1e9; const b = g.enemies[0]; b.speed = 0; b.abil = {};
+  for (let i = 0; i < 30 * 130; i++) C.tick(g, DT);
+  check('30라운드 보스가 살아 있으면 130초가 지나도 라운드가 그대로 (게이트)', g.round === 30 && g.act === 1 && !b.dead, 'round=' + g.round);
+  b.x = 1500; b.y = 1500 - 200; g.core.atk = 1e6; b.hp = 1; for (let i = 0; i < 90 && !g.cinematic; i++) C.tick(g, DT); C.endCinematic(g); if (g.jobs.offer) C.pickJob(g, 0);
+  for (let i = 0; i < 30 * 2; i++) C.tick(g, DT);
+  check('보스를 처치하고 연출이 끝나면 곧바로 31라운드(2막)가 시작됨', g.round === 31 && g.act === 2, 'round=' + g.round); }
+{ // 50라운드 마왕 처치 → 승리 (전직 없음)
+  const g = arena(50, [['boss', 1500, 1500 - 220]]); g.act = 2; g.round = 50; g.queue = []; const b = g.enemies[0]; b.hp = 1; g.core.atk = 1e6; for (let i = 0; i < 90; i++) C.tick(g, DT);
+  check('50라운드 마왕 처치: 전직 없이 승리', b.bossName === '마왕' && g.jobs.offer === null && g.over && g.win); }
+{ // 2막 구조: 새 길(8방향), 더 가파른 난이도, 보스 라운드
+  const a8 = C.spawnAngles(8), a6 = C.spawnAngles(6);
+  check('2막 스폰 방향 8곳 (1막 6곳 + 새 길 2개, 중복 없음)', a8.length === 8 && new Set(a8.map(x => x.toFixed(3))).size === 8 && a6.every((x, i) => Math.abs(x - a8[i]) < 1e-9));
+  const g = C.createGame(77); g.captureEvents = true; C.jumpToRound(g, 31); C.tick(g, DT); if (g.cards.offer) C.pickCard(g, 0);
+  check('31라운드부터 스폰 지점이 8곳이고 2막 상태', g.spawnPts === 8 && g.act === 2, 'pts=' + g.spawnPts);
+  const slopePre = (C.hpMul(30) - C.hpMul(25)) / 5, slopePost = (C.hpMul(40) - C.hpMul(35)) / 5;
+  check('2막은 적이 강해지는 폭이 더 큼 (체력 증가 기울기)', slopePost > slopePre * 1.5, `${slopePre.toFixed(2)} → ${slopePost.toFixed(2)}/라운드`);
+  check('2막 적 수 증가 (라운드당 +countPost, 1막 말 수 이어짐)', C.enemyCount(31) - C.enemyCount(30) === C.CFG.balance.countPost && C.enemyCount(50) > C.enemyCount(30));
+  const g1 = C.createGame(78); C.jumpToRound(g1, 30); const sp1 = C.enemyCount(30);
+  check('1막(≤30)은 act 1, 2막 진입은 보스 처치로만', g1.act === 1 && C.createGame(1).act === 1); }
 
 // 16) 적은 맵 끝이 아니라 성채 근처(SPAWN_RING)에서 나타나 금방 도착한다
 { const g = arena(3, []); g.captureEvents = true; g.spawnPts = 6;
@@ -322,13 +347,14 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   for (let seed = 1; seed <= 200; seed++) {
     const g = C.createGame(seed), seq = [5, 10, 15, 20, 25].map(r => C.bossInfo(g, r).id);
     if (new Set(seq).size !== 5) allPerm = false; seq.forEach(x => names.add(x)); orders.add(seq.join());
-    if (C.bossInfo(g, 30).id !== 'overlord') finalOk = false;
+    if (C.bossInfo(g, 30).id !== 'darkknight' || C.bossInfo(g, 50).id !== 'overlord') finalOk = false;
+    const act2 = [35, 40, 45].map(r => C.bossInfo(g, r).id); if (new Set(act2).size !== 3 || act2.some(id => !C.CFG.bossPool.some(b => b.id === id))) allPerm = false;
     const g2 = C.createGame(seed); if ([5, 10, 15, 20, 25].map(r => C.bossInfo(g2, r).id).join() !== seq.join()) det = false;
     if (C.bossInfo(g, 7) !== null) allPerm = false;
   }
   check('5·10·15·20·25라운드에 일반 보스 5종이 한 번씩 (중복 없음)', allPerm && names.size === 5);
   check('보스 순서가 게임마다 다름 (200판에서 서로 다른 순서 다수)', orders.size > 40, orders.size + '가지');
-  check('30라운드 보스는 항상 마왕', finalOk);
+  check('30라운드 보스는 항상 암흑 기사단장, 50라운드는 항상 마왕, 35·40·45는 일반 보스 3종(중복 없음)', finalOk);
   check('같은 시드는 같은 보스 순서 (결정론)', det);
   // 모든 보스 위치 분포가 고른지: 5라운드에 5종이 대체로 비슷한 빈도
   const cnt = {}; for (let seed = 1; seed <= 1000; seed++) { const id = C.bossInfo(C.createGame(seed), 5).id; cnt[id] = (cnt[id] || 0) + 1; }
@@ -340,6 +366,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   check('광전사 포격: 이른 라운드는 약하게, 늦은 라운드는 강하게 (피해·발수)', early.abil.artillery.dmg < late.abil.artillery.dmg && early.abil.artillery.count <= late.abil.artillery.count, `R5 ${early.abil.artillery.dmg}×${early.abil.artillery.count} / R25 ${late.abil.artillery.dmg}×${late.abil.artillery.count}`);
   const sm5 = arena(5, [['boss', 1500, 800]], 'summoner').enemies[0], sm25 = arena(25, [['boss', 1500, 800]], 'summoner').enemies[0];
   check('소환사 졸개 수도 라운드에 따라 늘어남', sm5.abil.summon.n < sm25.abil.summon.n, `${sm5.abil.summon.n} → ${sm25.abil.summon.n}`);
-  const fin = arena(30, [['boss', 1500, 800]]).enemies[0]; check('최종 보스(마왕)는 패턴 4종 고정 수치', Object.keys(fin.abil).length === 4 && fin.abil.artillery.dmg === C.CFG.finalBoss.abil.artillery.dmg); }
+  const fin = arena(30, [['boss', 1500, 800]]).enemies[0]; check('암흑 기사단장(30라운드)은 패턴 4종 고정 수치', Object.keys(fin.abil).length === 4 && fin.abil.artillery.dmg === C.CFG.act1Boss.abil.artillery.dmg);
+  const fin50 = arena(50, [['boss', 1500, 800]]).enemies[0]; check('마왕(50라운드)은 패턴 5종 고정 수치, 더 큼', Object.keys(fin50.abil).length === 5 && fin50.abil.artillery.count === 2 && fin50.r > 33 && fin50.bossName === '마왕'); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

@@ -34,6 +34,16 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #banner.show { opacity: 1; }
 #banner.boss { color: #ff5a5a; font-size: 28px; letter-spacing: .04em; text-shadow: 0 0 18px rgba(255,60,60,.7), 0 2px 12px rgba(0,0,0,.8); animation: bossPulse .6s ease-in-out 3; }
 @keyframes bossPulse { 50% { transform: scale(1.08); } }
+/* 2막 전환 연출 */
+#cine { position: fixed; inset: 0; z-index: 30; background: #02030a; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; opacity: 0; pointer-events: none; transition: opacity .9s ease; text-align: center; padding: 20px; }
+#cine.on { opacity: 1; pointer-events: auto; }
+#cine.hidden { display: none; }
+#cineTitle { font-size: 22px; color: #ff8a8a; letter-spacing: .08em; min-height: 30px; opacity: 0; transition: opacity .8s; }
+#cineText { white-space: pre-line; font-size: 30px; font-weight: 800; color: #f2ecff; letter-spacing: .04em; text-shadow: 0 0 24px rgba(150,90,255,.7); min-height: 80px; opacity: 0; transition: opacity .8s; line-height: 1.5; }
+#cineTitle.show, #cineText.show { opacity: 1; }
+#cineSkip { position: absolute; right: 16px; bottom: 16px; padding: 8px 14px; border-radius: 10px; font-size: 13px; opacity: .7; }
+@media (max-width: 520px) { #cineText { font-size: 22px; } #cineTitle { font-size: 16px; } }
+#roundTxt.act2 { color: #c9a8ff; }
 #roundTxt.boss { color: #ff6b6b; font-weight: 700; }
 #roundTxt.nextboss { color: #ffb86b; }
 /* 보스 체력 바: 화면 맨 위, 작고 얇게 (HUD와 미니맵 사이) */
@@ -155,6 +165,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
     <div id="pickFoot"><button class="btn" id="btnReroll">다시 뽑기</button><span id="pickHint">1·2·3 선택 · R 다시 뽑기 · 고르는 동안 시간이 멈춰요</span></div>
   </div>
 </div>
+
+<div id="cine" class="hidden"><div id="cineTitle"></div><div id="cineText"></div><button class="btn" id="cineSkip">건너뛰기</button></div>
 
 <div id="overlay">
   <div id="card" class="panel">

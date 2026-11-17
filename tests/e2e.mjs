@@ -108,7 +108,7 @@ try {
   await ev("(()=>{__game.cam.x = 300; __game.cam.y = 300;})()"); await sleep(400);
   check('보스가 화면 밖일 때(화살표 표시 경로)도 오류 없이 그려짐', await ev("(()=>{const b=__game.S.enemies.find(e=>e.kind==='boss'); const c=__game.cam; return !!b && (Math.abs(b.x-c.x)>500 || Math.abs(b.y-c.y)>350);})()") && (await ev("window.__errs ? window.__errs.length : 0")) === 0);
   await ev("(()=>{__game.cam.x = 1500; __game.cam.y = 1500;})()");
-  check('보스 정보 제공 (5라운드 보스 이름이 실제 등장한 보스와 같음, 30라운드는 마왕)', await ev("(()=>{const C=__game.CastleCore,S=__game.S; const r=C.bossInfo(S,5), b=S.enemies.find(e=>e.kind==='boss'); return !!r && !!b && r.name===b.bossName && C.bossInfo(S,30).name==='마왕' && C.bossInfo(S,7)===null;})()"));
+  check('보스 정보 제공 (5라운드 보스 이름이 실제 등장한 보스와 같음, 30라운드는 암흑 기사단장, 50라운드는 마왕)', await ev("(()=>{const C=__game.CastleCore,S=__game.S; const r=C.bossInfo(S,5), b=S.enemies.find(e=>e.kind==='boss'); return !!r && !!b && r.name===b.bossName && C.bossInfo(S,30).name==='암흑 기사단장' && C.bossInfo(S,50).name==='마왕' && C.bossInfo(S,7)===null;})()"));
   const bmax = await ev("__game.S.enemies.find(e=>e.kind==='boss').max");
   await ev("(()=>{const b=__game.S.enemies.find(e=>e.kind==='boss'); b.hp = b.max / 2;})()"); await sleep(400);
   const barTxt = await ev("document.getElementById('bossHpTxt').textContent"), barW = await ev("document.getElementById('bossFill').style.width");
@@ -129,13 +129,45 @@ try {
   check('보스가 왼쪽 위 HUD 뒤에 있으면 화살표 표시', o.a.length === 1 && o.a[0].why === 'ui:#hud' && !insideUI(o.a[0].x, o.a[0].y, o.r), JSON.stringify(o.a[0]));
   o = await place(VW - 40, 40);
   check('보스가 오른쪽 위 미니맵 뒤에 있으면 화살표 표시', o.a.length === 1 && o.a[0].why === 'ui:#minimap' && !insideUI(o.a[0].x, o.a[0].y, o.r), JSON.stringify(o.a[0]));
-  const tl = o.r.find(r => r.sel === '#tools'); o = await place(VW - 30, tl.t + 20);
+  const tl = o.r.find(r => r.sel === '#tools'); o = await place(VW - 30, tl.b - 8); // 미니맵에서 충분히 떨어진 버튼 열 아래쪽
   check('보스가 오른쪽 버튼 열 뒤에 있으면 화살표 표시', o.a.length === 1 && o.a[0].why === 'ui:#tools' && !insideUI(o.a[0].x, o.a[0].y, o.r), JSON.stringify(o.a[0]));
   o = await place(-300, 350);
   check('화면 밖(왼쪽)이면 기존처럼 화살표, 왼쪽을 가리킴', o.a.length === 1 && o.a[0].why === 'offscreen' && Math.abs(Math.abs(o.a[0].angle) - Math.PI) < 0.5 && !insideUI(o.a[0].x, o.a[0].y, o.r), JSON.stringify(o.a[0]));
   o = await place(500, 200);
   check('UI 바로 옆이지만 보이는 위치면 화살표 없음', o.a.length === 0, JSON.stringify(o.a));
   await ev("document.getElementById('btnPause').click()");
+
+  // 3.8) 일반 적 화살표도 보스와 같은 규칙: 화면 밖이거나 UI에 가려지면 안전 영역 가장자리에 작은 삼각형
+  await open('?bot=1&nopick=1&seed=7&zoom=1', 800);
+  await ev("(()=>{const g=__game; g.S.enemies.length=0; g.S.queue=[]; document.getElementById('btnPause').click();})()");
+  const placeE = async (pts) => { await ev(`(()=>{const g=__game,C=g.CastleCore,S=g.S; S.enemies.length=0; g.cam.x=1500; g.cam.y=1500; g.cam.zoom=1; const vw=innerWidth, vh=innerHeight; for(const [px,py] of ${JSON.stringify(pts)}){ C.spawnEnemy(S,'grunt',1500+(px-vw/2),1500+(py-vh/2)); }})()`); await sleep(350); return ev("JSON.stringify({a:__game.enemyArrows, r:__game.uiRects()})").then(JSON.parse); };
+  const VW2 = await ev('innerWidth'), VH2 = await ev('innerHeight');
+  let oe = await placeE([[500, 330]]);
+  check('UI에 안 가려진 화면 안의 일반 적은 삼각형 없음', oe.a.length === 0, JSON.stringify(oe.a));
+  oe = await placeE([[500, VH2 - 24]]); const un2 = oe.r.find(r => r.sel === '#units');
+  check('아래쪽 유닛 카드에 가려진 일반 적도 삼각형 표시 (카드 위, UI에 안 가려짐)', oe.a.length === 1 && oe.a[0].why === 'ui:#units' && oe.a[0].y < un2.t && !insideUI(oe.a[0].x, oe.a[0].y, oe.r), JSON.stringify(oe.a[0]));
+  oe = await placeE([[60, 40]]);
+  check('왼쪽 위 HUD에 가려진 일반 적도 삼각형 표시 (HUD에 안 가려짐)', oe.a.length === 1 && oe.a[0].why === 'ui:#hud' && !insideUI(oe.a[0].x, oe.a[0].y, oe.r), JSON.stringify(oe.a[0]));
+  oe = await placeE([[500, 20]]);
+  check('보스 바가 없을 때 위쪽 가운데의 일반 적은 가려지지 않아 삼각형 없음', oe.a.length === 0, JSON.stringify(oe.a));
+  oe = await placeE([[-200, 300], [-220, 330], [-240, 310]]);
+  check('화면 밖 같은 방향의 여러 적은 하나의 삼각형으로 묶임 (n=3)', oe.a.length === 1 && oe.a[0].n === 3 && oe.a[0].why === 'offscreen', JSON.stringify(oe.a));
+  await ev("(()=>{__game.S.enemies.length=0;})()");
+
+  // 3.9) 2막 전환 연출: 보스 처치 후 연출 → 건너뛰기 → 2막(새 길, 어두운 맵)
+  await open('?bot=1&nopick=1&seed=7&zoom=1', 800);
+  check('시작은 1막, 배경도 1막', await ev("__game.S.act === 1 && Scenery.act === 1"));
+  await ev("(()=>{const S=__game.S; S.act = 2; S.cinematic = { name: '암흑 기사단장' };})()"); await sleep(900);
+  check('2막 연출이 화면을 덮음 (제목에 보스 이름)', await ev("(()=>{const c=document.getElementById('cine'); return !c.classList.contains('hidden') && c.classList.contains('on') && document.getElementById('cineTitle').textContent.includes('암흑 기사단장');})()"));
+  const ct0 = await ev('__game.S.t'); await sleep(600); check('연출 중에는 시간이 멈춤', (await ev('__game.S.t')) === ct0);
+  await sleep(1300); check('연출 도중 화면이 가려지면 배경이 2막(새 길)으로 바뀜', await ev("Scenery.act === 2"));
+  await ev("__game.skipCinematic()"); await sleep(400);
+  check('건너뛰기 → 연출 종료, 시간 재개', await ev("__game.S.cinematic === null") && (await ev('__game.S.t')) > ct0, 't ' + ct0.toFixed(1) + '→' + (await ev('__game.S.t')).toFixed(1));
+  await sleep(1100); check('연출 오버레이가 사라짐', await ev("document.getElementById('cine').classList.contains('hidden')"));
+  check('HUD에 2막 표시', (await ev("document.getElementById('roundTxt').textContent")).includes('2막'), await ev("document.getElementById('roundTxt').textContent"));
+  // 31라운드로 점프: 스폰 지점 8곳(포탈), 미니맵 길 8갈래
+  await open('?bot=1&nopick=1&startRound=31&seed=7&zoom=1', 1200);
+  check('startRound=31 → 2막, 스폰 지점 8곳, 배경도 2막', await ev("(()=>{const S=__game.S; return S.act===2 && S.spawnPts===8 && Scenery.act===2 && S.round===31;})()"), await ev("JSON.stringify({round:__game.S.round, pts:__game.S.spawnPts, act:__game.S.act})"));
 
   // 4) 한 판 끝까지(디버그 가속) — 종료 화면이 뜨는지
   await open('?bot=1&warp=2400&seed=5&zoom=0.6', 1500); // 봇이 30라운드 끝까지(승리 또는 패배) 미리 진행한 상태

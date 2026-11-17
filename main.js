@@ -108,6 +108,7 @@
   $('btnSpeed').addEventListener('click', () => { speed = speed === 1 ? 2 : speed === 2 ? 3 : 1; $('btnSpeed').textContent = speed + '×'; });
   window.addEventListener('keydown', e => {
     if (e.repeat) return;
+    if (S && S.cinematic) { if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') endCine(); return; }
     if (S && (S.cards.offer || S.jobs.offer)) { // 카드/전직 선택 중에는 1·2·3이 선택, R이 다시 뽑기(카드만)
       if (e.key === '1' || e.key === '2' || e.key === '3') choose(+e.key - 1);
       else if ((e.key === 'r' || e.key === 'R') && S.cards.offer && !S.jobs.offer) C.reroll(S);
@@ -140,13 +141,13 @@
   function updateHud() {
     const c = S.core;
     const bi = C.bossInfo(S, S.round), nb = C.bossInfo(S, S.round + 1), rt = $('roundTxt');
-    setText('roundTxt', '라운드 ' + Math.max(1, S.round) + ' / ' + C.MAX_ROUND + (bi ? ' · 보스' : nb ? ' · 다음 보스' : ''));
-    rt.classList.toggle('boss', !!bi); rt.classList.toggle('nextboss', !bi && !!nb);
+    setText('roundTxt', '라운드 ' + Math.max(1, S.round) + ' / ' + C.MAX_ROUND + (bi ? ' · 보스' : nb ? ' · 다음 보스' : S.act === 2 ? ' · 2막' : ''));
+    rt.classList.toggle('boss', !!bi); rt.classList.toggle('nextboss', !bi && !!nb); rt.classList.toggle('act2', S.act === 2 && !bi && !nb);
     updateBossBar();
     setText('timeTxt', fmtTime(S.t));
     setText('hpTxt', String(Math.ceil(c.hp)));
     setText('gold', String(Math.floor(S.gold)));
-    setText('unitTxt', String(S.units.filter(u => u.type !== 'turret').length));
+    setText('unitTxt', String(S.units.filter(u => !CFG.units[u.type].static).length)); // 설치형(포탑·발리스타)은 제외
     setText('killTxt', String(S.kills));
     const pct = Math.max(0, c.hp / c.max * 100);
     const f = $('hpfill'); f.style.width = pct + '%'; f.style.background = pct > 50 ? 'var(--ok)' : pct > 25 ? 'var(--gold)' : 'var(--danger)';
@@ -170,7 +171,7 @@
   let shownOffer = null;
   const currentOffer = () => (S && S.jobs.offer) ? { kind: 'job', list: S.jobs.offer.list, ref: S.jobs.offer } : (S && S.cards.offer) ? { kind: 'card', list: S.cards.offer, ref: S.cards.offer } : null;
   function syncPicker() {
-    const cur = currentOffer(), ref = cur ? cur.ref : null;
+    const cur = S && S.cinematic ? null : currentOffer(), ref = cur ? cur.ref : null;
     if (ref === shownOffer) { if (cur && cur.kind === 'card') updateReroll(); return; }
     shownOffer = ref;
     const el = $('picker');
@@ -344,11 +345,13 @@
       else if (f.k === 'heal') { ctx.globalAlpha = 1 - p; ctx.fillStyle = '#9dffb0'; const y = f.y - 12 - p * 16; ctx.fillRect(f.x - 1.5, y - 5, 3, 10); ctx.fillRect(f.x - 5, y - 1.5, 10, 3); }
       ctx.globalAlpha = 1;
     }
-    // 화면 밖 위험 방향 표시
+    // 2막: 어두운 밤 (성채 주변만 횃불로 밝다)
+    if (S.act === 2 && !S.cinematic) { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); Scenery.drawNight(ctx, vw, vh, (CX - cam.x) * z + vw / 2, (CY - cam.y) * z + vh / 2, z, now); }
+    // 화면 밖/UI에 가려진 위험 방향 표시
     drawEdgeWarnings(now);
   }
   // 화면 위에서 UI가 차지하는 영역들(HUD, 미니맵, 버튼 열, 보스 바, 하단 유닛 카드)의 실제 크기
-  const bossArrows = [];
+  const bossArrows = [], enemyArrows = [];
   function uiRects() {
     const out = [];
     for (const sel of ['#hud', '#minimap', '#tools', '#bossbar', '#units']) {
@@ -357,55 +360,58 @@
     }
     return out;
   }
+  // 화면 밖이거나 UI에 가려진 적의 위치를 가장자리 화살표로 알려준다 (보스는 크게+이름/거리, 일반 적은 작은 삼각형을 방향별로 묶어서).
+  // 보스는 몸이 커서 UI 근처(여백 안)에만 와도 가려진 것으로 본다.
   function drawEdgeWarnings(now) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const z = cam.zoom, m = 22, bins = new Map();
-    // 보스: 화면 밖이거나 UI(보스 바·HUD·미니맵·버튼·하단 유닛 카드)에 가려져 있으면 크고 눈에 띄는 화살표 + 이름/거리
-    bossArrows.length = 0;
-    const bosses = S.enemies.filter(e => e.kind === 'boss');
-    if (bosses.length) {
-      const R = uiRects(), find = sel => R.find(r => r.sel === sel);
-      const mmap = find('#minimap'), bbar = find('#bossbar'), units = find('#units');
-      // 화살표를 놓을 수 있는 안전 영역: UI를 피한 가운데 구역
-      const sx0 = 12, sx1 = (mmap ? mmap.l : vw) - 12, sy0 = Math.max(bbar ? bbar.b : 0, 12) + 10, sy1 = (units ? units.t : vh) - 10;
-      const cx = (sx0 + sx1) / 2, cy = (sy0 + sy1) / 2, hw = Math.max(40, (sx1 - sx0) / 2 - 34), hh = Math.max(30, (sy1 - sy0) / 2 - 34);
-      for (const bs of bosses) {
-        const sx = (bs.x - cam.x) * z + vw / 2, sy = (bs.y - cam.y) * z + vh / 2, pad = 14;
-        const outside = sx < 0 || sx > vw || sy < 0 || sy > vh;
-        const covered = !outside && R.find(r => sx > r.l - pad && sx < r.r + pad && sy > r.t - pad && sy < r.b + pad);
-        if (!outside && !covered) continue; // 눈에 보이면 화살표 없음
-        const a = Math.atan2(sy - cy, sx - cx), dx = Math.cos(a), dy = Math.sin(a);
-        const t = Math.min(hw / Math.abs(dx || 1e-6), hh / Math.abs(dy || 1e-6));
-        const px = cx + dx * t, py = cy + dy * t, pulse = 1 + 0.18 * Math.sin(now * 0.012);
-        bossArrows.push({ x: px, y: py, angle: a, why: outside ? 'offscreen' : 'ui:' + covered.sel });
+    bossArrows.length = 0; enemyArrows.length = 0;
+    const z = cam.zoom, R = uiRects(), find = sel => R.find(r => r.sel === sel);
+    const mmap = find('#minimap'), bbar = find('#bossbar'), units = find('#units');
+    // 화살표를 놓을 수 있는 안전 영역: UI를 피한 가운데 구역
+    const sx0 = 12, sx1 = (mmap ? mmap.l : vw) - 12, sy0 = Math.max(bbar ? bbar.b : 0, 12) + 10, sy1 = (units ? units.t : vh) - 10;
+    const cx = (sx0 + sx1) / 2, cy = (sy0 + sy1) / 2, hw = Math.max(40, (sx1 - sx0) / 2 - 34), hh = Math.max(30, (sy1 - sy0) / 2 - 34);
+    const inUI = (x, y, m) => R.some(r => x > r.l - m && x < r.r + m && y > r.t - m && y < r.b + m);
+    const spot = a => { // 안전 영역 가장자리 위치. 모서리의 HUD·미니맵 등에 겹치면 중심 쪽으로 밀어서 UI를 벗어난다.
+      const dx = Math.cos(a), dy = Math.sin(a), t = Math.min(hw / Math.abs(dx || 1e-6), hh / Math.abs(dy || 1e-6));
+      let px = cx + dx * t, py = cy + dy * t;
+      for (let i = 0; i < 80 && inUI(px, py, 12); i++) { px -= dx * 5; py -= dy * 5; }
+      return [px, py, dx, dy];
+    };
+    const hidden = (sx, sy, pad) => { // [화면 밖인가, 가린 UI]
+      if (sx < 0 || sx > vw || sy < 0 || sy > vh) return { outside: true };
+      const c = R.find(r => sx > r.l - pad && sx < r.r + pad && sy > r.t - pad && sy < r.b + pad); return c ? { covered: c } : null;
+    };
+    const bins = new Map();
+    for (const e of S.enemies) {
+      const sx = (e.x - cam.x) * z + vw / 2, sy = (e.y - cam.y) * z + vh / 2, isBoss = e.kind === 'boss';
+      const hd = hidden(sx, sy, isBoss ? 30 + 45 * z : 10 + 8 * z);
+      if (!hd) continue;
+      const a = Math.atan2(sy - cy, sx - cx);
+      if (isBoss) { // 보스: 크고 눈에 띄는 화살표 + 이름/거리
+        const [px, py, dx, dy] = spot(a), pulse = 1 + 0.18 * Math.sin(now * 0.012);
+        bossArrows.push({ x: px, y: py, angle: a, why: hd.outside ? 'offscreen' : 'ui:' + hd.covered.sel });
         ctx.save(); ctx.translate(px, py); ctx.rotate(a); ctx.scale(pulse, pulse);
         ctx.fillStyle = '#ff3b4a'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.lineJoin = 'round';
         ctx.beginPath(); ctx.moveTo(24, 0); ctx.lineTo(-10, -17); ctx.lineTo(-3, 0); ctx.lineTo(-10, 17); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
-        const dist = Math.round(Math.hypot(bs.x - cam.x, bs.y - cam.y));
+        const dist = Math.round(Math.hypot(e.x - cam.x, e.y - cam.y));
         ctx.font = '700 13px Rubik, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.lineWidth = 4;
-        const lx = px - dx * 38, ly = py - dy * 38 + 4, label = bs.bossName + ' · ' + dist;
+        const lx = px - dx * 38, ly = py - dy * 38 + 4, label = e.bossName + ' · ' + dist;
         ctx.strokeText(label, lx, ly); ctx.fillText(label, lx, ly); ctx.textAlign = 'left';
+      } else { // 일반 적: 방향별로 묶어 작은 삼각형 (많을수록 커지고 진해짐)
+        const k = Math.round(a / 0.35), b = bins.get(k) || { a: 0, n: 0, why: hd.outside ? 'offscreen' : 'ui:' + hd.covered.sel }; b.a = a; b.n++; bins.set(k, b);
       }
     }
-    for (const e of S.enemies) {
-      if (e.kind === 'boss') continue;
-      const sx = (e.x - cam.x) * z + vw / 2, sy = (e.y - cam.y) * z + vh / 2;
-      if (sx >= 0 && sx <= vw && sy >= 0 && sy <= vh) continue;
-      const a = Math.atan2(sy - vh / 2, sx - vw / 2), k = Math.round(a / 0.35);
-      const b = bins.get(k) || { a: 0, n: 0 }; b.a = a; b.n++; bins.set(k, b);
-    }
     for (const b of bins.values()) {
-      const cx = vw / 2, cy = vh / 2, dx = Math.cos(b.a), dy = Math.sin(b.a);
-      const t = Math.min((vw / 2 - m) / Math.abs(dx || 1e-6), (vh / 2 - m - 70) / Math.abs(dy || 1e-6));
-      const px = cx + dx * t, py = cy + dy * t;
-      ctx.globalAlpha = Math.min(0.9, 0.35 + b.n * 0.05); ctx.fillStyle = '#ff6b6b'; poly(px, py, 8 + Math.min(8, b.n * 0.4), 3, b.a); ctx.fill(); ctx.globalAlpha = 1;
+      const [px, py] = spot(b.a), sz = 8 + Math.min(8, b.n * 0.4);
+      enemyArrows.push({ x: px, y: py, angle: b.a, n: b.n, why: b.why });
+      ctx.globalAlpha = Math.min(0.9, 0.35 + b.n * 0.05); ctx.fillStyle = '#ff6b6b'; poly(px, py, sz, 3, b.a); ctx.fill(); ctx.globalAlpha = 1;
     }
   }
   function drawMini() {
     mctx.setTransform(1, 0, 0, 1, 0, 0);
     mctx.fillStyle = '#244a2e'; mctx.fillRect(0, 0, 264, 264);
     mctx.strokeStyle = '#a3835a'; mctx.lineCap = 'round';
-    for (const a of C.spawnAngles(6)) { mctx.lineWidth = 5; mctx.beginPath(); mctx.moveTo(CX * MS, CY * MS); mctx.lineTo((CX + Math.cos(a) * 1500) * MS, (CY + Math.sin(a) * 1500) * MS); mctx.stroke(); }
+    for (const a of C.spawnAngles(S.act === 2 ? 8 : 6)) { mctx.lineWidth = 5; mctx.beginPath(); mctx.moveTo(CX * MS, CY * MS); mctx.lineTo((CX + Math.cos(a) * 1500) * MS, (CY + Math.sin(a) * 1500) * MS); mctx.stroke(); }
     mctx.fillStyle = '#8a909c'; mctx.beginPath(); mctx.arc(CX * MS, CY * MS, 166 * MS, 0, Math.PI * 2); mctx.fill();
     mctx.strokeStyle = 'rgba(255,107,107,.5)'; mctx.lineWidth = 1.5; for (const a of C.spawnAngles(S.spawnPts || 4)) { mctx.beginPath(); mctx.arc((CX + Math.cos(a) * C.SPAWN_RING) * MS, (CY + Math.sin(a) * C.SPAWN_RING) * MS, 4, 0, Math.PI * 2); mctx.stroke(); }
     mctx.fillStyle = '#ff6b6b'; for (const e of S.enemies) { if (e.kind === 'boss') continue; mctx.fillRect(e.x * MS - 1.5, e.y * MS - 1.5, 3, 3); }
@@ -422,6 +428,35 @@
     mctx.strokeRect((cam.x - hw) * MS, (cam.y - hh) * MS, hw * 2 * MS, hh * 2 * MS);
   }
 
+  // ───────────── 2막 전환 연출 ─────────────
+  // 1막 마지막 보스를 쓰러뜨리면: 화면이 어두워지고 → 길이 늘어나고(바닥을 새로 그림) → 마왕의 군세가 온다는 문구 → 2막 시작. 건너뛰기 가능.
+  let cine = null;
+  const CINE_STEPS = [
+    { t: 1.6, text: '하늘이 어두워진다…' },
+    { t: 3.7, text: '숨겨진 길이 열렸다' },
+    { t: 5.8, text: '마왕의 군세가 몰려온다\n50라운드까지 버텨라' },
+  ];
+  function cineSetText(txt) { const el = $('cineText'); el.classList.remove('show'); setTimeout(() => { if (!cine) return; el.textContent = txt; el.classList.add('show'); }, 380); }
+  function startCine(name) {
+    cine = { t0: performance.now(), step: -1, swapped: false };
+    $('cineTitle').textContent = name + ' 처치!'; $('cineText').textContent = ''; $('cineText').classList.remove('show'); $('cineTitle').classList.remove('show');
+    $('cine').classList.remove('hidden'); requestAnimationFrame(() => { $('cine').classList.add('on'); $('cineTitle').classList.add('show'); });
+  }
+  function stepCine(now) {
+    const t = (now - cine.t0) / 1000;
+    if (!cine.swapped && t > 1.3) { cine.swapped = true; Scenery.setAct(2, true); } // 화면이 완전히 가려진 뒤 길/바닥을 새로 만든다
+    while (cine.step + 1 < CINE_STEPS.length && t >= CINE_STEPS[cine.step + 1].t) { cine.step++; cineSetText(CINE_STEPS[cine.step].text); }
+    if (t > 7.9) endCine();
+  }
+  function endCine() {
+    if (!cine) return;
+    if (!cine.swapped) Scenery.setAct(2, true);
+    cine = null; C.endCinematic(S);
+    $('cine').classList.remove('on'); setTimeout(() => { if (!cine) $('cine').classList.add('hidden'); }, 950);
+  }
+  $('cineSkip').addEventListener('click', endCine);
+  $('cine').addEventListener('click', e => { if (e.target === $('cine')) endCine(); });
+
   // ───────────── 시작/종료 ─────────────
   function newGame() {
     const seed = params.get('seed') ? +params.get('seed') : (Date.now() ^ (Math.random() * 1e9)) >>> 0;
@@ -430,6 +465,8 @@
     $('btnPause').textContent = '일시정지'; $('btnSpeed').textContent = '1×';
     for (const k in last) delete last[k];
     for (const t of C.UNIT_TYPES) ucards[t].last = undefined;
+    cine = null; $('cine').classList.add('hidden'); $('cine').classList.remove('on'); Scenery.setAct(1, false);
+    const sr = +params.get('startRound'); if (sr > 1) C.jumpToRound(S, sr); // 디버그: 해당 라운드로 바로 시작
     centerOnCore();
     // 디버그: ?warp=초 → 봇이 미리 진행 (스크린샷/점검용)
     if (params.get('bot')) startBot();
@@ -438,6 +475,7 @@
   let botT = 0;
   function startBot() { window.__bot = true; }
   function botAct() {
+    if (S.cinematic && !params.get('nopick')) C.endCinematic(S);
     if (S.jobs.offer && !params.get('nopick')) C.pickJob(S, 0);
     if (S.cards.offer && !params.get('nopick')) C.pickCard(S, 0);
     botT += STEP; if (botT < 0.4) return; botT = 0;
@@ -467,7 +505,12 @@
       if (acc > STEP * 8) acc = 0;
       for (let i = fx.length - 1; i >= 0; i--) { fx[i].t += dt * speed; if (fx[i].t >= fx[i].max) fx.splice(i, 1); }
     }
-    if (S) { handleEvents(); syncPicker(); updateHud(); drawWorld(now); drawMini(); }
+    if (S) {
+      if (S.cinematic && !cine) startCine(S.cinematic.name);
+      if (cine) stepCine(now);
+      else if (Scenery.act !== S.act) Scenery.setAct(S.act, true); // 불러오기/재시작/점프 시 막에 맞는 배경으로
+      handleEvents(); syncPicker(); updateHud(); drawWorld(now); drawMini();
+    }
     requestAnimationFrame(frame);
   }
 
@@ -478,5 +521,5 @@
   centerOnCore();
   if (params.get('bot')) { $('overlay').classList.add('hidden'); newGame(); const warp = +params.get('warp') || 0; for (let i = 0; i < warp / STEP && !S.over; i++) { botAct(); C.tick(S, STEP); } C.drainEvents(S); if (S.over) showEnd(S.win); cam.zoom = +params.get('zoom') || 0.5; clampCam(); }
   requestAnimationFrame(frame);
-  window.__game = { get S() { return S; }, cam, CastleCore: C, get bossArrows() { return bossArrows; }, uiRects };
+  window.__game = { get S() { return S; }, cam, CastleCore: C, get bossArrows() { return bossArrows; }, get enemyArrows() { return enemyArrows; }, uiRects, skipCinematic: () => $('cineSkip').click() };
 })();
