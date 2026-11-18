@@ -145,6 +145,13 @@ table.rank tr.me td { background: rgba(255,204,64,.16); font-weight: 700; }
 @media (max-width: 520px) { .pcard { width: 100%; min-height: 0; flex-direction: column; } #pickCards { flex-direction: column; } }
 @media (max-width: 520px) { #units .ucard { width: 80px; } #tools { top: calc(max(5px, env(safe-area-inset-top)) + 90px); } #hud { min-width: 128px; } #hud .row { font-size: 11px; } }
 
+#modes { display: flex; gap: 8px; justify-content: center; margin: 10px 0 12px; flex-wrap: wrap; }
+.mode { display: flex; gap: 6px; align-items: flex-start; text-align: left; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 10px; cursor: pointer; font-size: 12px; line-height: 1.4; width: 200px; background: rgba(255,255,255,.03); }
+.mode:has(input:checked) { border-color: #ffd166; background: rgba(255,209,102,.08); }
+.mode input { margin-top: 3px; accent-color: #ffd166; }
+.mode b { font-size: 13px; }
+table.rank .mtag { font-size: 10px; color: #ffd166; border: 1px solid #ffd16688; border-radius: 4px; padding: 0 3px; margin-left: 3px; }
+#modes.hidden { display: none; }
 /* UI를 전체적으로 작게 */
 #hud, #units, #tools, #bossbar, #newEnemy, #pickBox { zoom: .84; }
 .ucard .cnt { font-weight: 800; color: #9fd8ff; font-size: 11px; margin-left: 3px; }
@@ -219,8 +226,11 @@ table.rank tr.me td { background: rgba(255,204,64,.16); font-weight: 700; }
         <li><b>시작 골드로 유닛 3기</b>를 바로 뽑을 수 있어요. 적을 처치해 골드를 모아 더 뽑으세요 (뽑을수록 모든 유닛 가격이 올라가요)</li>
         <li><b>유닛</b>은 성채 주변에 퍼져서 스스로 싸워요</li>
         <li><b>업그레이드</b>: 라운드를 넘길 때마다 3장 중 1장을 골라요</li>
-        <li><b>미니맵</b>을 눌러 바로 이동</li>
       </ul>
+    </div>
+    <div id="modes">
+      <label class="mode"><input type="radio" name="mode" value="normal" checked><span><b>기본 모드</b><br>유닛이 성채 주변을 지키며 싸웁니다</span></label>
+      <label class="mode"><input type="radio" name="mode" value="free"><span><b>자유 모드</b><br>유닛이 범위 안의 적을 멀리까지 쫓아가 공격합니다</span></label>
     </div>
     <button id="go">시작</button> <button id="btnRank">랭킹</button>
   </div>

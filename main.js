@@ -165,6 +165,7 @@
     if (want > have && S.round >= 2) {
       for (let i = have; i < want; i++) { const pts = Scenery.roadPts(i); for (let k = 0; k < pts.length; k += 2) { const p = pts[k]; for (let m = 0; m < 2; m++) addFx({ k: 'dust', x: p[0] + (Math.random() - 0.5) * 40, y: p[1] + (Math.random() - 0.5) * 30, t: -k * 0.05 - Math.random() * 0.25, max: 1.5 + Math.random() * 0.6, r: 20 + Math.random() * 18 }); } }
       toast('새로운 길이 열렸습니다! (' + have + ' → ' + want + '곳에서 적이 나옵니다)'); A2.play('cine');
+      setTimeout(() => banner('🛤 새로운 길이 열렸습니다 · 적이 ' + want + '곳에서 나옵니다'), 1600); // 라운드 안내 배너 다음에 크게 알린다
     }
   }
   // 새로운 종류의 적이 처음 나오면 왼쪽 위에 모습·이름·능력을 잠깐 보여준다
@@ -640,7 +641,8 @@
   // ───────────── 시작/종료 ─────────────
   function newGame() {
     const seed = params.get('seed') ? +params.get('seed') : (Date.now() ^ (Math.random() * 1e9)) >>> 0;
-    S = C.createGame(seed); S.captureEvents = true; Net.begin(S);
+    const mode = (document.querySelector('input[name=mode]:checked') || {}).value === 'free' || params.get('mode') === 'free' ? 'free' : 'normal'; store.set('cd-mode', mode);
+    S = C.createGame(seed, mode); S.captureEvents = true; Net.begin(S);
     fx.length = 0; numFx = 0; paused = false; speed = 1; shownOffer = null; $('picker').classList.add('hidden'); renderUpgrades();
     $('btnPause').textContent = '일시정지'; $('btnSpeed').textContent = '1×';
     for (const k in last) delete last[k];
@@ -690,10 +692,11 @@
     const r = await Net.top(10); if (!$('rankbox')) return;
     const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     let hit = false;
-    const rows = r.list.map((e, i) => { const me = mine != null && !hit && e.score === mine; if (me) hit = true; return '<tr' + (me ? ' class="me"' : '') + '><td>' + (i + 1) + '</td><td>' + esc(e.name) + '</td><td>' + (e.win ? '클리어' : e.round + '라운드') + '</td><td>' + fmtTime(e.time) + '</td></tr>'; }).join('');
+    const rows = r.list.map((e, i) => { const me = mine != null && !hit && e.score === mine; if (me) hit = true; return '<tr' + (me ? ' class="me"' : '') + '><td>' + (i + 1) + '</td><td>' + esc(e.name) + (e.mode === 'free' ? ' <span class="mtag">자유</span>' : '') + '</td><td>' + (e.win ? '클리어' : e.round + '라운드') + '</td><td>' + fmtTime(e.time) + '</td></tr>'; }).join('');
     box.innerHTML = '<div class="rankhead">' + (r.server ? '전체 랭킹' : (Net.configured ? '서버에 연결하지 못해 내 기록만 표시' : '내 기록 (서버 미설정)')) + '</div>'
       + (rows ? '<table class="rank"><tr><th>#</th><th>이름</th><th>기록</th><th>시간</th></tr>' + rows + '</table>' : '<p>아직 기록이 없어요.</p>');
   }
+  { const m = store.get('cd-mode'); const el = document.querySelector('input[name=mode][value=' + (m === 'free' ? 'free' : 'normal') + ']'); if (el) el.checked = true; }
   $('btnRank').addEventListener('click', () => { $('ovBody').innerHTML = '<div id="rankbox"></div>'; showRank(null); $('btnRank').classList.add('hidden'); $('go').textContent = '게임 시작'; });
   // 플레이 도중 창을 닫거나 숨길 때도 기록을 남긴다 (개선 자료)
   const abandon = () => { if (S && running && !S.over) Net.sendLog(S, 'abandon', true); };

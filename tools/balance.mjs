@@ -24,7 +24,7 @@ if (process.env.OVR) deepAssign(BASE, JSON.parse(process.env.OVR)); // 환경변
 
 function runOne(task) {
   deepAssign(C.CFG, JSON.parse(JSON.stringify(BASE))); deepAssign(C.CFG, task.overrides || {}); // 기준값을 매번 복사해서 쓴다 (배열 덮어쓰기가 기준값을 오염시키지 않게)
-  const P = task.policy, S = C.createGame(task.seed), rnd = C.mulberry32(task.seed * 7919 + 13);
+  const P = task.policy, S = C.createGame(task.seed, process.env.MODE), rnd = C.mulberry32(task.seed * 7919 + 13);
   const ratio = P.ratio || { sword: 3, archer: 2, priest: 1 }; // 검사 비중이 높은 구성이 가장 좋았다 (시뮬레이션)
   let step = 0;
   const maxSteps = Math.ceil((C.PREP_TIME + (P.endless ? 90 : C.MAX_ROUND) * 120 + 120) / DT);

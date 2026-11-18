@@ -39,7 +39,7 @@
     const jobs = {}; for (const k of ['sword', 'archer', 'priest']) if (S.jobs[k]) jobs[k] = S.jobs[k].ids.slice();
     const by = Object.entries(S.coreDmgBy || {}).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, v]) => [k, Math.round(v)]);
     return {
-      type: 'log', v: CFG.VERSION, pid, run: run.id, status, seed: S.seed, round: S.round, act: S.act, win: !!S.win, kills: S.kills, time: Math.round(S.t),
+      type: 'log', mode: S.mode, v: CFG.VERSION, pid, run: run.id, status, seed: S.seed, round: S.round, act: S.act, win: !!S.win, kills: S.kills, time: Math.round(S.t),
       coreHp: Math.round(S.core.hp), gold: Math.round(S.gold), buys: S.buyCount, units: ut, cards: Object.assign({}, S.cards.taken), jobs, coreDmgBy: by, timeline: run.tl,
       lag: { n: run.lagN, ms: Math.round(run.lagMs) }, real: Math.round((Date.now() - run.start) / 1000),
       env: { ua: navigator.userAgent.slice(0, 140), w: innerWidth, h: innerHeight, dpr: window.devicePixelRatio || 1, touch: 'ontouchstart' in window, cores: navigator.hardwareConcurrency || 0 },
@@ -82,9 +82,9 @@
   }
   async function submit(S, name) {
     name = String(name || '').replace(/[<>&"'`]/g, '').trim().slice(0, 12) || '이름없음'; ls.set('cd-name', name);
-    const e = { name, score: scoreOf(S.win, S.round, S.kills, S.t), round: S.round, win: !!S.win, kills: S.kills, time: Math.round(S.t), at: Date.now() };
+    const e = { name, mode: S.mode, score: scoreOf(S.win, S.round, S.kills, S.t), round: S.round, win: !!S.win, kills: S.kills, time: Math.round(S.t), at: Date.now() };
     addLocal(e);
-    if (API) { try { await post({ type: 'score', v: CFG.VERSION, pid, run: run.id, seed: S.seed, name, score: e.score, round: e.round, win: e.win, kills: e.kills, time: e.time }); } catch (er) { enqueue({ type: 'score', v: CFG.VERSION, pid, run: run.id, seed: S.seed, name, score: e.score, round: e.round, win: e.win, kills: e.kills, time: e.time }); } }
+    if (API) { try { await post({ type: 'score', mode: S.mode, v: CFG.VERSION, pid, run: run.id, seed: S.seed, name, score: e.score, round: e.round, win: e.win, kills: e.kills, time: e.time }); } catch (er) { enqueue({ type: 'score', v: CFG.VERSION, pid, run: run.id, seed: S.seed, name, score: e.score, round: e.round, win: e.win, kills: e.kills, time: e.time }); } }
     return e;
   }
 

@@ -524,5 +524,10 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   const dmgIn = sec => { const a0 = u.hp; for (let i = 0; i < 30 * sec; i++) { C.tick(h, DT); u.x = 1500; u.y = 1500 - 100; } return a0 - u.hp; };
   const early = dmgIn(10); e.age = 100; const late = dmgIn(10);
   check('40초가 지난 적은 공격력이 점점 증가 (age 100에서 약 2.8배)', late > early * 2.2 && e.enr, `${early.toFixed(0)} → ${late.toFixed(0)}`); }
+// 40) 자유 모드: 성채에서 먼 적도 쫓아감 (기본 모드는 안 쫓음)
+{ const run = mode => { const g = C.createGame(5, mode); g.hold = true; g.phase = 'round'; g.round = 5; g.core.atk = 0; g.core.hp = g.core.max = 1e9; g.gold = 1e6; g.buyCd.sword = 0; const u = C.buy(g, 'sword').unit; u.hx = 1500 + 150; u.hy = 1500; u.x = u.hx; u.y = u.hy;
+    const e = C.spawnEnemy(g, 'brute', 1500 + 380, 1500); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; e.aggro = 0; for (let i = 0; i < 30 * 8; i++) C.tick(g, DT); return Math.hypot(u.x - 1500, u.y - 1500); };
+  const dn = run('normal'), df = run('free');
+  check('기본 모드: 먼 적을 쫓지 않음 / 자유 모드: 쫓아감', dn < 200 && df > 300, `기본 ${dn.toFixed(0)} 자유 ${df.toFixed(0)}`); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);
