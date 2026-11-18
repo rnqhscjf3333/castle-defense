@@ -113,6 +113,44 @@ table.rank th { color: var(--muted); font-weight: 500; text-align: left; padding
 table.rank td { padding: 4px 6px; border-top: 1px solid rgba(255,255,255,.07); text-align: left; }
 table.rank tr.me td { background: rgba(255,204,64,.16); font-weight: 700; }
 #go { margin-top: 10px; padding: 12px 28px; font-size: 17px; font-weight: 700; background: var(--accent); color: #07101d; border: 0; border-radius: 12px; }
+
+/* 타이틀 화면 (모바일 게임식): 아무 곳이나 누르면 메뉴가 나온다 */
+#title { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; user-select: none; -webkit-user-select: none;
+  background: radial-gradient(ellipse at 50% 108%, #5b2a4a 0%, #2a1c45 38%, #0e1230 75%, #070914 100%); transition: opacity .5s; }
+#title.hidden { display: none; } #title.out { opacity: 0; pointer-events: none; }
+#title .stars, #title .stars::after { content: ''; position: absolute; inset: 0; background-image: radial-gradient(1.5px 1.5px at 12% 18%, #fff, transparent), radial-gradient(1px 1px at 27% 44%, #fff, transparent), radial-gradient(1.5px 1.5px at 41% 12%, #cfe, transparent), radial-gradient(1px 1px at 58% 30%, #fff, transparent), radial-gradient(1.5px 1.5px at 73% 16%, #fff, transparent), radial-gradient(1px 1px at 86% 38%, #fec, transparent), radial-gradient(1px 1px at 93% 9%, #fff, transparent), radial-gradient(1px 1px at 6% 52%, #fff, transparent); animation: twinkle 3.2s ease-in-out infinite alternate; }
+#title .stars::after { transform: scale(1.3) translate(4%, 6%); animation-duration: 4.4s; opacity: .7; }
+@keyframes twinkle { from { opacity: .45; } to { opacity: 1; } }
+#title .moon { position: absolute; top: 9%; right: 14%; width: 64px; height: 64px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fffbe8, #e9d99a 70%); box-shadow: 0 0 40px 10px rgba(255,235,160,.28); }
+#title .castle { position: absolute; left: 50%; bottom: 0; width: min(620px, 118vw); transform: translateX(-50%); opacity: .95; pointer-events: none; }
+#title .logo { position: relative; text-align: center; margin-top: -8vh; animation: logoIn 1s cubic-bezier(.2,.9,.3,1.2) both; }
+#title .logo h1 { margin: 0; font-size: clamp(46px, 11vw, 82px); letter-spacing: .08em; color: #ffe9a8; text-shadow: 0 3px 0 #8a4a14, 0 0 28px rgba(255,170,60,.55), 0 6px 18px rgba(0,0,0,.6); }
+#title .logo p { margin: 4px 0 0; font-size: clamp(12px, 3vw, 15px); letter-spacing: .3em; color: #cdb8ee; }
+@keyframes logoIn { from { opacity: 0; transform: translateY(-30px) scale(.9); } to { opacity: 1; transform: none; } }
+#tapHint { position: absolute; left: 0; right: 0; bottom: 17%; text-align: center; font-size: 17px; color: #fff; letter-spacing: .1em; animation: blinkHint 1.4s ease-in-out infinite; text-shadow: 0 2px 8px #000; }
+@keyframes blinkHint { 50% { opacity: .25; } }
+#tMenu { position: relative; display: none; flex-direction: column; gap: 12px; margin-top: 34px; width: min(260px, 72vw); }
+#title.menu #tMenu { display: flex; animation: menuIn .45s ease-out both; } #title.menu #tapHint { display: none; }
+@keyframes menuIn { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+#tMenu button { padding: 14px 10px; font-size: 18px; font-weight: 800; letter-spacing: .12em; color: #fff; border-radius: 14px; border: 2px solid rgba(255,220,150,.5); background: linear-gradient(180deg, rgba(80,50,120,.9), rgba(40,24,70,.92)); box-shadow: 0 4px 0 rgba(0,0,0,.45), 0 0 18px rgba(160,110,255,.25); }
+#tMenu button.main { color: #2a1400; border-color: #fff1b0; background: linear-gradient(180deg, #ffd96a, #f1a62a); box-shadow: 0 4px 0 #8a5412, 0 0 22px rgba(255,190,70,.45); }
+#tMenu button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.45); }
+#tMsg { position: relative; margin-top: 14px; min-height: 18px; font-size: 13px; color: #d9c8f5; text-align: center; }
+#tVer { position: absolute; right: 10px; bottom: 8px; font-size: 10px; color: rgba(255,255,255,.35); }
+#howto { position: fixed; inset: 0; z-index: 55; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(5,6,14,.82); }
+#howto.hidden { display: none; }
+#howto .panel { max-width: 460px; width: 100%; padding: 20px 20px 16px; text-align: center; max-height: 92vh; overflow: auto; }
+#howto h2 { margin: 0 0 6px; } #howto p { color: var(--muted); font-size: 14px; line-height: 1.55; margin: 6px 0; }
+#howto .help { text-align: left; font-size: 13px; margin: 12px 0; padding: 10px 12px 10px 28px; background: rgba(255,255,255,.04); border-radius: 10px; line-height: 1.6; }
+/* 시작 연출: 구름이 걷히며 성채가 가까워진다 */
+#clouds { position: fixed; inset: 0; z-index: 20; pointer-events: none; overflow: hidden; background: #cfdcea; animation: skyOff 2.6s ease-in .5s forwards; }
+#clouds.hidden { display: none; }
+#clouds i { position: absolute; left: 50%; top: 50%; width: 60vmax; height: 34vmax; margin: -17vmax 0 0 -30vmax; border-radius: 50%; background: radial-gradient(closest-side, #fff 40%, rgba(255,255,255,.85) 62%, rgba(255,255,255,0)); filter: blur(6px);
+  transform: translate(var(--x), var(--y)); animation: cloudAway 3.1s cubic-bezier(.5,0,.8,.6) .35s forwards; }
+@keyframes cloudAway { to { transform: translate(calc(var(--x) * 3.2), calc(var(--y) * 3.2)) scale(1.5); opacity: 0; } }
+@keyframes skyOff { 0%,30% { opacity: 1; } 100% { opacity: 0; } }
+body.introOn #hud, body.introOn #units, body.introOn #tools, body.introOn #modeBar, body.introOn #bossbar { opacity: 0; }
+#hud, #units, #tools, #modeBar, #bossbar { transition: opacity .8s; }
 /* 업그레이드 선택 */
 #picker { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(8, 11, 17, .7); padding: 12px; z-index: 5; }
 #picker.hidden { display: none; }
@@ -277,7 +315,24 @@ body.comicOn { overflow: hidden; }
 
 <div id="cine" class="hidden"><div id="cineTitle"></div><div id="cineText"></div><button class="btn" id="cineSkip">건너뛰기</button></div>
 
-<div id="overlay">
+<div id="title" class="hidden">
+  <div class="stars"></div><div class="moon"></div><svg class="castle" viewBox="0 0 620 300" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><g fill="#07091a"><path d="M0 300V250q60-14 120-8 40-52 60-52h20v-30h14l8-18 8 18h14v30h24l20-70 18-18 18 18 20 70h24v-30h14l8-18 8 18h14v30h20q20 0 60 52 60-6 120 8v50z"/></g><g fill="#fcd96b" opacity=".85"><rect x="283" y="130" width="8" height="14" rx="3"/><rect x="329" y="130" width="8" height="14" rx="3"/><rect x="300" y="200" width="20" height="30" rx="10"/><rect x="212" y="176" width="6" height="10" rx="2"/><rect x="402" y="176" width="6" height="10" rx="2"/></g></svg>
+  <div class="logo"><h1>성채방어</h1><p>CASTLE DEFENSE</p></div>
+  <div id="tapHint">화면을 터치하거나 아무 키나 누르세요</div>
+  <div id="tMenu"><button id="mStart" class="main">게임 시작</button><button id="mHow">게임 방법</button><button id="mRank">랭킹</button><button id="mQuit">게임 종료</button></div>
+  <div id="tMsg"></div><div id="tVer"></div>
+</div>
+<div id="howto" class="hidden"><div class="panel"><h2>게임 방법</h2>
+  <p>사방에서 몰려오는 적으로부터 중앙 성채를 지키세요.<br>50라운드의 마왕을 쓰러뜨리면 붉은 하늘의 무한 모드가 시작됩니다.</p>
+  <ul class="help">
+    <li><b>화면 이동</b>: 빈 곳을 드래그 · 휠/핀치로 확대·축소 (<b>H</b> 성채로)</li>
+    <li><b>유닛 생산</b>: 아래 카드를 누르거나 키보드 1·2·3 (성채 업그레이드는 4)</li>
+    <li>시작 골드로 유닛 3기를 바로 뽑고, 적을 처치해 골드를 모아 더 뽑으세요 (뽑을수록 가격이 올라요)</li>
+    <li>유닛은 성채 주변에 퍼져서 스스로 싸워요. 인구가 가득 차면 성채를 업그레이드하세요</li>
+    <li>라운드를 넘길 때마다 업그레이드 카드 3장 중 1장을 고르고, 보스를 쓰러뜨리면 전직·보상을 받아요</li>
+  </ul><button id="howClose" class="btn" style="padding:10px 28px;font-size:15px">닫기</button></div></div>
+<div id="clouds" class="hidden"></div>
+<div id="overlay" class="hidden">
   <div id="card" class="panel">
     <h1 id="ovTitle">성채방어</h1>
     <div id="ovBody">

@@ -822,9 +822,40 @@
     wait.then(() => { if (!over) show(); });
   }
   $('go').addEventListener('click', () => {
+    if ($('go').dataset.back) { delete $('go').dataset.back; $('overlay').classList.add('hidden'); return; }
     A2.init(); $('overlay').classList.add('hidden');
     if (!openingSeen && !params.get('nointro')) { openingSeen = true; playOpening(() => newGame()); } else newGame();
   });
+
+
+  // ───────────── 타이틀 화면 · 시작 연출 ─────────────
+  let intro = null;
+  function startIntro() { // 구름이 걷히면서 멀리서 성채로 확대된다
+    const cl = $('clouds'); cl.innerHTML = '';
+    for (let i = 0; i < 9; i++) { const a = i / 9 * 6.283 + 0.4, d = i % 2 ? 14 : 26, c = document.createElement('i'); c.style.cssText = '--x:' + (Math.cos(a) * d).toFixed(1) + 'vmax;--y:' + (Math.sin(a) * d * 0.7).toFixed(1) + 'vmax;width:' + (46 + (i * 7) % 24) + 'vmax'; cl.appendChild(c); }
+    cl.classList.remove('hidden'); document.body.classList.add('introOn');
+    intro = { t0: performance.now(), z1: Math.max(cam.zoom, 0.9) }; cam.zoom = minZoom(); centerOnCore(); A2.play('horn');
+    setTimeout(() => cl.classList.add('hidden'), 3800);
+  }
+  function stepIntro(now) {
+    const t = (now - intro.t0) / 1000, k = Math.min(1, Math.max(0, (t - 0.5) / 3.0)), e = 1 - Math.pow(1 - k, 3);
+    cam.zoom = minZoom() + (intro.z1 - minZoom()) * e; centerOnCore();
+    if (t > 3.7) { intro = null; document.body.classList.remove('introOn'); }
+  }
+  const titleEl = $('title');
+  function showTitle() { titleEl.classList.remove('hidden', 'out', 'menu'); $('tMsg').textContent = ''; $('tVer').textContent = 'v' + ((window.CD_CONFIG || {}).VERSION || ''); }
+  function openMenu() { if (titleEl.classList.contains('menu')) return; titleEl.classList.add('menu'); A2.init(); A2.play('ui'); }
+  function startFromTitle() {
+    A2.init(); titleEl.classList.add('out'); setTimeout(() => titleEl.classList.add('hidden'), 520);
+    if (!openingSeen && !params.get('nointro')) { openingSeen = true; playOpening(() => { newGame(); startIntro(); }); } else { newGame(); startIntro(); }
+  }
+  titleEl.addEventListener('click', e => { if (!titleEl.classList.contains('menu')) openMenu(); });
+  window.addEventListener('keydown', e => { if (!titleEl.classList.contains('hidden') && !titleEl.classList.contains('out')) { if (!titleEl.classList.contains('menu')) { e.preventDefault(); e.stopPropagation(); openMenu(); } else if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); startFromTitle(); } } }, true);
+  $('mStart').addEventListener('click', e => { e.stopPropagation(); startFromTitle(); });
+  $('mHow').addEventListener('click', e => { e.stopPropagation(); $('howto').classList.remove('hidden'); });
+  $('howClose').addEventListener('click', () => $('howto').classList.add('hidden'));
+  $('mRank').addEventListener('click', e => { e.stopPropagation(); $('ovTitle').textContent = '랭킹'; $('ovBody').innerHTML = '<div id="rankbox"></div>'; $('go').textContent = '닫기'; $('go').dataset.back = '1'; $('btnRank').classList.add('hidden'); $('overlay').classList.remove('hidden'); showRank(null); });
+  $('mQuit').addEventListener('click', e => { e.stopPropagation(); window.close(); setTimeout(() => { $('tMsg').textContent = '브라우저에서는 직접 종료할 수 없어요. 탭이나 창을 닫아 주세요.'; }, 150); });
 
   // ───────────── 메인 루프 ─────────────
   let prev = performance.now(), acc = 0;
@@ -858,11 +889,12 @@
     }
   }
   function frameBody(now) {
+    if (intro) stepIntro(now);
     const f0 = performance.now();
     if (running && !paused && document.visibilityState === 'visible' && now - prev < 1000) Net.lag(now - prev);
     adaptResolution(now - prev);
     const dt = Math.min(0.1, (now - prev) / 1000); prev = now;
-    if (S && running && !paused) {
+    if (S && running && !paused && !intro) {
       acc += dt * speed;
       let n = 0;
       const k0 = performance.now();
@@ -892,6 +924,7 @@
   resize();
   S = C.createGame(1); // 시작 화면 뒤에 보일 빈 맵
   centerOnCore();
+  if (!params.get('bot') && !params.get('notitle')) showTitle(); else $('overlay').classList.add('hidden');
   if (params.get('bot')) { $('overlay').classList.add('hidden'); newGame(); const warp = +params.get('warp') || 0; for (let i = 0; i < warp / STEP && !S.over; i++) { botAct(); C.tick(S, STEP); } if (+params.get('round')) { C.jumpToRound(S, +params.get('round')); C.tick(S, STEP); } C.drainEvents(S); if (S.over) showEnd(S.win); cam.zoom = +params.get('zoom') || 0.5; clampCam(); }
   requestAnimationFrame(frame);
   window.__game = { toast, get S() { return S; }, cam, CastleCore: C, get bossArrows() { return bossArrows; }, get enemyArrows() { return enemyArrows; }, perf, get liteMode() { return liteMode; }, get drawnCount() { return drawnCount; }, get renderScale() { return renderScale; }, get fxPoolSize() { return fxPool.length; }, uiRects, skipCinematic: () => $('cineSkip').click() };
