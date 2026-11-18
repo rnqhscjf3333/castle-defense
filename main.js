@@ -143,6 +143,21 @@
   // 보스 체력 바 (화면 위 가운데): 이름, 체력 숫자, 현재 상태, 가진 패턴
   const PAT = { dash: '돌진', summon: '소환', artillery: '포격', shield: '방어막', rage: '분노' };
   const DBK = { stun: ['기절', '#ffe14a'], poison: ['중독', '#7be04a'], weak: ['공격력 감소', '#ff6b6b'], wound: ['치유 감소', '#c77dff'] };
+  // 새로운 종류의 적이 처음 나오면 왼쪽 위에 모습·이름·능력을 잠깐 보여준다
+  const neQ = []; let neBusy = false;
+  function showNewEnemy(kind) { if (CFG.enemies[kind]) neQ.push(kind); if (!neBusy) nextNewEnemy(); }
+  function nextNewEnemy() {
+    const kind = neQ.shift(), el = $('newEnemy'); if (!kind) { neBusy = false; el.classList.add('hidden'); return; }
+    neBusy = true; const cfg = CFG.enemies[kind], cv2 = $('neCv'), c2 = cv2.getContext('2d');
+    setText('neName', cfg.name); setText('neDesc', cfg.desc || ''); el.classList.remove('hidden');
+    const fake = { team: 'e', kind, id: 3, x: 0, y: 0, r: cfg.r, flash: 0, swing: 0, type: kind }; const t0 = performance.now();
+    (function loop() {
+      const now = performance.now(), el2 = now - t0; if (el2 > 5200) { el.classList.add('hidden'); setTimeout(nextNewEnemy, 600); return; }
+      fake.x += 0.5; fake.y = 0; c2.setTransform(1, 0, 0, 1, 0, 0); c2.clearRect(0, 0, 88, 88);
+      c2.translate(44 - fake.x * 2.2, 54); c2.scale(2.2, 2.2); Figures.draw(c2, fake, now);
+      requestAnimationFrame(loop);
+    })();
+  }
   function updateBossBar() {
     const b = S.enemies.find(e => e.kind === 'boss'), el = $('bossbar');
     if (!b) { if (!el.hidden) el.hidden = true; return; }
@@ -197,8 +212,9 @@
     if (!cur) { el.classList.add('hidden'); return; }
     const job = cur.kind === 'job', box = $('pickCards'); box.innerHTML = '';
     if (job) {
-      $('pickTitle').textContent = S.jobs.offer.boss + ' 처치! 전직';
-      $('pickSub').textContent = '직업 하나를 골라 강화해요 — 이미 전직한 직업은 한 단계 더 강해져요';
+      const rw = S.jobs.offer.reward;
+      $('pickTitle').textContent = S.jobs.offer.boss + (rw ? ' 처치! 보스 보상' : ' 처치! 전직');
+      $('pickSub').textContent = rw ? '강력한 용병이나 강화 효과 중 하나를 고르세요' : '직업 하나를 골라 강화해요 — 이미 전직한 직업은 한 단계 더 강해져요';
     } else {
       $('pickTitle').textContent = '라운드 ' + (S.round - 1) + ' 돌파 · 업그레이드 선택';
       $('pickSub').textContent = S.cards.boss ? '보스 격파 보상 — 희귀 이상 카드가 한 장 이상 나와요' : '카드를 한 장 고르세요';
@@ -209,12 +225,12 @@
       const b = document.createElement('button');
       b.className = job ? 'pcard job' : 'pcard rar-' + c.rar + ' cat-' + c.cat;
       const tags = document.createElement('div'); tags.className = 'tags';
-      const cat = document.createElement('span'); cat.className = 'cat'; cat.textContent = job ? c.tier + '단계 전직' : CAT_NAME[c.cat];
-      const rar = document.createElement('span'); rar.className = 'rar'; rar.textContent = job ? c.className : RAR_NAME[c.rar];
+      const cat = document.createElement('span'); cat.className = 'cat'; cat.textContent = job ? (c.reward ? '보스 보상' : c.tier + '단계 전직') : CAT_NAME[c.cat];
+      const rar = document.createElement('span'); rar.className = 'rar'; rar.textContent = job ? (c.reward ? '영웅' : c.className) : RAR_NAME[c.rar];
       tags.append(cat, rar);
       b.append(tags);
       if (job) {
-        const hist = C.describeJobs(S).find(j => j.type === c.type);
+        const hist = c.reward ? null : C.describeJobs(S).find(j => j.type === c.type);
         if (hist) { const fr = document.createElement('div'); fr.className = 'from'; fr.textContent = c.className + ' › ' + hist.names.join(' › '); b.append(fr); }
       }
       const pn = document.createElement('div'); pn.className = 'pn'; pn.textContent = c.name;
@@ -296,6 +312,8 @@
         const zz = cam.zoom; if (numFx >= 70 || (zz < 0.45 && !ev.crit) || Math.abs(ev.x - cam.x) > vw / 2 / zz + 40 || Math.abs(ev.y - cam.y) > vh / 2 / zz + 40) continue;
         if (fx.length >= 300) continue; numFx++; addFx({ k: 'num', x: ev.x + (Math.random() - 0.5) * 14, y: ev.y, t: 0, max: ev.crit ? 0.95 : 0.75, v: Math.round(ev.v), n: ev.heal ? 'h' : ev.crit ? 'c' : ev.team === 'u' ? 'u' : 'e' });
       }
+      else if (ev.type === 'newEnemy') showNewEnemy(ev.kind);
+      else if (ev.type === 'reward') toast('보상 획득: ' + ev.name);
       else if (ev.type === 'heroSkill') {
         if (ev.kind === 'marksman') addFx({ k: 'beam', x: ev.x, y: ev.y - 11, tx: ev.tx, ty: ev.ty - 7, t: 0, max: 0.4, c: '#ffe14a' });
         else { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.55, c: ev.kind === 'hero' ? '#ffe14a' : '#c8a46a', big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: -0.08, max: 0.5, c: '#ffffff' }); }

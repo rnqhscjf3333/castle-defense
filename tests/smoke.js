@@ -478,5 +478,28 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   check('적 피해 숫자는 합산해서 1개(25), 치명타는 따로, 아군 피해는 team u', en.length === 1 && Math.round(en[0].v) === 25 && cr.length === 1 && cr[0].v === 50 && al.length === 1 && Math.round(al[0].v) === 7, JSON.stringify(nums.map(v => [v.team, Math.round(v.v), v.crit ? 'c' : '', v.heal ? 'h' : ''])));
   g.events = []; u.max = 1000; u.hp = 500; g.buyCd.priest = 0; const pr = C.buy(g, 'priest').unit; pr.x = u.x + 20; pr.y = u.y; for (let i = 0; i < 60; i++) C.tick(g, DT);
   check('치유 숫자(heal) 이벤트 발생', C.drainEvents(g).some(v => v.type === 'num' && v.heal)); }
+// 37) 새 적: 공중형(활만) / 방패병 원거리 절반 / 유령 근접 절반 / 독거미 중독 / 첫 등장 이벤트 / 보스 보상
+{ const g = arena(10, []); g.core.atk = 0; g.core.hp = g.core.max = 1e9; g.gold = 1e7;
+  const bat = C.spawnEnemy(g, 'bat', 1500, 1500 - 170); bat.speed = 0; bat.dmg = 0; bat.hp = bat.max = 1e6;
+  const ev0 = C.drainEvents(g).filter(e => e.type === 'newEnemy' && e.kind === 'bat'); check('새 종류 첫 등장 이벤트(newEnemy)', ev0.length === 1);
+  g.buyCd.sword = 0; const sw = C.buy(g, 'sword').unit; sw.x = 1500; sw.y = 1500 - 160; sw.hx = sw.x; sw.hy = sw.y;
+  for (let i = 0; i < 90; i++) { C.tick(g, DT); sw.x = 1500; sw.y = 1500 - 160; }
+  check('근접 유닛·성채는 공중형을 공격하지 못함', bat.hp === bat.max, `hp ${bat.hp}`);
+  g.buyCd.archer = 0; const ar = C.buy(g, 'archer').unit; ar.x = 1500; ar.y = 1500 - 170 + 100; ar.hx = ar.x; ar.hy = ar.y;
+  for (let i = 0; i < 90; i++) { C.tick(g, DT); ar.x = 1500; ar.y = 1500 - 70; }
+  check('궁수는 공중형을 맞출 수 있음', bat.hp < bat.max, `hp ${bat.hp}`);
+  const sh = C.spawnEnemy(g, 'shield', 1500 + 200, 1500 + 200), gh = C.spawnEnemy(g, 'ghost', 1500 - 200, 1500 + 200); sh.speed = gh.speed = 0; sh.dmg = gh.dmg = 0; sh.hp = sh.max = gh.hp = gh.max = 1e6;
+  const a0 = sh.hp; const sht = { x: 0, y: 0, sx: 0, sy: 0, T: 1, H: 0, h: 0, h0: 0, vx: 0, vy: 0, vh: 0, p: 0.999, t: sh, dmg: 100, color: 'a', pierce: false, pc: null, aoe: 0 }; g.shots.push(sht); C.tick(g, DT);
+  check('방패병은 화살 피해를 절반만 받음', Math.abs((a0 - sh.hp) - 50) < 1, `${(a0 - sh.hp).toFixed(1)}`);
+  check('유령은 근접 피해 배율 0.5', gh.mres === 0.5 && C.CFG.enemies.ghost.mres === 0.5);
+  const sp = C.spawnEnemy(g, 'spider', 1500, 1500 + 300); sp.speed = 0; g.buyCd.sword = 0; const v = C.buy(g, 'sword').unit; v.x = 1500 + 2; v.y = 1500 + 300; v.hx = v.x; v.hy = v.y; v.max = v.hp = 1e5; sp.dmg = 5; sp.cd = 0;
+  for (let i = 0; i < 40; i++) { C.tick(g, DT); v.x = 1502; v.y = 1800; }
+  check('독거미에게 물리면 중독', v.poisonT > 0, `poisonT ${v.poisonT}`);
+  // 보상: 전직이 모두 끝난 뒤 보스 처치 → 보상 3택
+  const h = arena(35, [['boss', 1500, 1300]]); h.act = 2; for (const t of ['sword', 'archer', 'priest']) { h.jobs[t].ids.push('x', 'y'); } h.hold = false; h.core.hp = h.core.max = 1e9;
+  C.damage(h, h.enemies.find(e => e.kind === 'boss'), 1e12);
+  check('전직이 끝난 뒤 보스 처치 → 보상 선택(3개)', h.jobs.offer && h.jobs.offer.reward && h.jobs.offer.list.length === 3, JSON.stringify(h.jobs.offer && h.jobs.offer.list.map(o => o.name)));
+  const idx = h.jobs.offer.list.findIndex(o => o.id === 'r_knights'); h.jobs.offer.list[0] = { type: 'reward', reward: true, id: 'r_knights', name: 'x', desc: '', className: '', tier: 0 };
+  const n0 = h.units.length; C.pickJob(h, 0); check('용병 기사단 보상: 용사 2명 합류', h.units.length === n0 + 2 && h.units.filter(u => u.type === 'hero').length === 2); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

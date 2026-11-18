@@ -59,6 +59,13 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #bossbar.rage #bossFill { background: linear-gradient(90deg, #ff3b1a, #ffb21a); }
 #bossState { font-size: 10.5px; color: #d8b8c0; min-height: 13px; line-height: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #bossbar.shielded #bossState { color: #8fd8ff; font-weight: 700; } #bossbar.rage #bossState { color: #ffb21a; font-weight: 700; }
+#newEnemy { position: fixed; left: 5px; top: calc(max(5px, env(safe-area-inset-top)) + 96px); width: 250px; display: flex; gap: 8px; align-items: center; padding: 6px 10px 6px 6px; border-radius: 10px;
+  background: rgba(24, 12, 16, .9); border: 1.5px solid #a33a4a; box-shadow: 0 0 14px rgba(255,70,90,.25); pointer-events: none; z-index: 25; transition: opacity .5s, transform .5s; }
+#newEnemy.hidden { opacity: 0; transform: translateX(-30px); }
+#newEnemy canvas { width: 66px; height: 66px; flex: none; background: rgba(255,255,255,.05); border-radius: 8px; }
+#newEnemy .ne-tag { font-size: 10px; color: #ff8a8a; font-weight: 700; letter-spacing: .5px; }
+#newEnemy #neName { font-size: 15px; font-weight: 800; margin: 1px 0 2px; }
+#newEnemy #neDesc { font-size: 11px; line-height: 1.35; color: #e6d6d6; }
 #toast { position: fixed; left: 50%; bottom: 112px; transform: translateX(-50%); display: flex; flex-direction: column-reverse; align-items: center; gap: 4px; pointer-events: none; z-index: 30; }
 #toast .tmsg { padding: 5px 11px; border-radius: 8px; font-size: 12px; background: rgba(0,0,0,.75); white-space: nowrap; max-width: 92vw; overflow: hidden; text-overflow: ellipsis;
   opacity: 0; transform: translateY(10px); transition: opacity .3s, transform .3s; }
@@ -164,6 +171,7 @@ table.rank tr.me td { background: rgba(255,204,64,.16); font-weight: 700; }
   <div class="bb-track"><div id="bossFill"></div></div>
   <div id="bossState"></div>
 </div>
+<div id="newEnemy" class="hidden"><canvas id="neCv" width="88" height="88"></canvas><div class="ne-txt"><div class="ne-tag">새로운 적</div><div id="neName"></div><div id="neDesc"></div></div></div>
 <div id="toast"></div>
 
 <div id="dock">

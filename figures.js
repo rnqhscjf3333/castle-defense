@@ -334,6 +334,61 @@
     },
   };
 
+  // ── 동물·몬스터 (인간형이 아닌 적) ──
+  function shadow(ctx, s, w, y) { ctx.globalAlpha = 0.28; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(0, (y || 10) * s, w * s, 3 * s, 0, 0, TAU); ctx.fill(); ctx.globalAlpha = 1; }
+  // 네발 짐승: 몸통 타원 + 머리 + 귀 + 다리 + 꼬리
+  function beast(ctx, e, s, o) {
+    const d = e._dir, fl = e.flash > 0, w = e._walk || 0, mv = e._moving ? 1 : 0, lunge = e.swing > 0 ? 3 * s : 0;
+    shadow(ctx, s, 12);
+    ctx.lineCap = 'round'; ctx.strokeStyle = fl ? FLASH : o.legs; ctx.lineWidth = 2.4 * s;
+    for (let i = 0; i < 4; i++) { const lx = (i < 2 ? 6 : -6) * s * d + (i % 2 ? 2 : -2) * s * d, sw = mv ? Math.sin(w * 1.6 + i * 1.6) * 3 * s : 0; ctx.beginPath(); ctx.moveTo(lx, 4 * s); ctx.lineTo(lx + sw, 10 * s); ctx.stroke(); }
+    ctx.strokeStyle = fl ? FLASH : o.body; ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.moveTo(-9 * s * d, 0); ctx.quadraticCurveTo(-15 * s * d, -4 * s + (mv ? Math.sin(w) * 2 * s : 0), -14 * s * d, -8 * s); ctx.stroke(); // 꼬리
+    ctx.fillStyle = fl ? FLASH : o.body; ctx.strokeStyle = o.line; ctx.lineWidth = Math.max(1, 1.1 * s);
+    ctx.beginPath(); ctx.ellipse(0, 1.5 * s, (o.rx || 11) * s, (o.ry || 6.5) * s, 0, 0, TAU); ctx.fill(); ctx.stroke();
+    if (!fl && o.belly) { ctx.fillStyle = o.belly; ctx.beginPath(); ctx.ellipse(0, 4 * s, (o.rx || 11) * 0.7 * s, 2.6 * s, 0, 0, Math.PI); ctx.fill(); }
+    if (!fl && o.mane) { ctx.fillStyle = o.mane; for (let i = 0; i < 5; i++) { const mx = (2 + i * 2.2) * s * d, my = -4.5 * s; tri(ctx, mx - 1.4 * s, my + 1 * s, mx, my - 3.4 * s, mx + 1.4 * s, my + 1 * s); ctx.fill(); } }
+    const hx = (o.rx || 11) * 0.85 * s * d + lunge * d, hy = -2 * s;
+    ctx.fillStyle = fl ? FLASH : o.head; ctx.strokeStyle = o.line; ctx.beginPath(); ctx.arc(hx, hy, (o.hr || 5.2) * s, 0, TAU); ctx.fill(); ctx.stroke();
+    if (!fl) {
+      ctx.fillStyle = o.ear || o.head; tri(ctx, hx - 3.4 * s, hy - 3 * s, hx - 2.2 * s, hy - 8 * s, hx - 0.2 * s, hy - 4 * s); ctx.fill(); tri(ctx, hx + 3.4 * s, hy - 3 * s, hx + 2.2 * s, hy - 8 * s, hx + 0.2 * s, hy - 4 * s); ctx.fill();
+      ctx.fillStyle = o.snout || o.head; ctx.beginPath(); ctx.ellipse(hx + d * 4 * s, hy + 1.4 * s, 3 * s, 2.2 * s, 0, 0, TAU); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#1a0a0a'; ctx.fillRect(hx + d * 6 * s - 1 * s, hy + 0.2 * s, 2 * s, 1.6 * s);
+      ctx.fillStyle = o.eye || '#ffd84a'; ctx.beginPath(); ctx.arc(hx + d * 1.6 * s, hy - 1.4 * s, 1.3 * s, 0, TAU); ctx.fill();
+      if (o.tusk) { ctx.strokeStyle = '#f4efd8'; ctx.lineWidth = 1.4 * s; ctx.beginPath(); ctx.moveTo(hx + d * 5 * s, hy + 2.6 * s); ctx.quadraticCurveTo(hx + d * 8 * s, hy + 2 * s, hx + d * 8.5 * s, hy - 1.6 * s); ctx.stroke(); }
+      if (o.fang) { ctx.fillStyle = '#fff'; tri(ctx, hx + d * 5.6 * s, hy + 3 * s, hx + d * 6.6 * s, hy + 3 * s, hx + d * 6 * s, hy + 5.2 * s); ctx.fill(); }
+    }
+  }
+  Object.assign(ENEMY, {
+    wolf(ctx, e, s) { beast(ctx, e, s, { body: '#7c828c', belly: '#c8ccd2', head: '#8d939e', ear: '#5d626b', snout: '#aeb3bb', legs: '#4f545c', line: '#23262c', mane: '#5d626b', eye: '#ffd84a', fang: true, rx: 11, ry: 6 }); },
+    boar(ctx, e, s) { beast(ctx, e, s, { body: '#6b4a32', belly: '#8a6446', head: '#7a553a', ear: '#4a3022', snout: '#b08a6a', legs: '#3a2618', line: '#1e120a', mane: '#3a2618', eye: '#ff7a5a', tusk: true, rx: 13, ry: 8, hr: 6 }); },
+    bat(ctx, e, s) {
+      const fl = e.flash > 0, t = performance.now() * 0.03 + e.id, flap = Math.sin(t), y0 = -12 * s + Math.sin(t * 0.4) * 1.5 * s;
+      shadow(ctx, s, 7, 11);
+      ctx.fillStyle = fl ? FLASH : '#3b2f55'; ctx.strokeStyle = '#150f22'; ctx.lineWidth = Math.max(1, s);
+      for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(sd * 2 * s, y0); ctx.quadraticCurveTo(sd * 10 * s, y0 - 9 * s * flap - 3 * s, sd * 16 * s, y0 - 2 * s * flap + 1 * s); ctx.quadraticCurveTo(sd * 12 * s, y0 + 2 * s, sd * 9 * s, y0 + 4 * s); ctx.quadraticCurveTo(sd * 6 * s, y0 + 2 * s, sd * 4 * s, y0 + 5 * s); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+      ctx.fillStyle = fl ? FLASH : '#4d3d6e'; ctx.beginPath(); ctx.ellipse(0, y0 + 1.5 * s, 4.2 * s, 5 * s, 0, 0, TAU); ctx.fill(); ctx.stroke();
+      if (!fl) { ctx.fillStyle = '#4d3d6e'; tri(ctx, -3.6 * s, y0 - 2 * s, -3 * s, y0 - 7.5 * s, -0.8 * s, y0 - 3 * s); ctx.fill(); tri(ctx, 3.6 * s, y0 - 2 * s, 3 * s, y0 - 7.5 * s, 0.8 * s, y0 - 3 * s); ctx.fill(); ctx.fillStyle = '#ff4a5a'; ctx.fillRect(-2.4 * s, y0 - 0.6 * s, 1.5 * s, 1.5 * s); ctx.fillRect(0.9 * s, y0 - 0.6 * s, 1.5 * s, 1.5 * s); ctx.fillStyle = '#fff'; ctx.fillRect(-1.4 * s, y0 + 2.4 * s, 0.9 * s, 1.5 * s); ctx.fillRect(0.5 * s, y0 + 2.4 * s, 0.9 * s, 1.5 * s); }
+    },
+    spider(ctx, e, s) {
+      const fl = e.flash > 0, w = e._walk || 0, mv = e._moving ? 1 : 0; shadow(ctx, s, 11);
+      ctx.strokeStyle = fl ? FLASH : '#2a2233'; ctx.lineWidth = 1.5 * s; ctx.lineCap = 'round';
+      for (let i = 0; i < 4; i++) for (const sd of [-1, 1]) { const ph = mv ? Math.sin(w * 1.8 + i * 1.3 + (sd > 0 ? 1 : 0)) * 2 * s : 0, bx = sd * 4 * s, by = 2 * s + (i - 1.5) * 1.6 * s; ctx.beginPath(); ctx.moveTo(bx * 0.5, by); ctx.lineTo(bx + sd * 5 * s, by - 5 * s + ph); ctx.lineTo(bx + sd * 9 * s, by + 7 * s + ph * 0.5); ctx.stroke(); }
+      ctx.fillStyle = fl ? FLASH : '#3a2f4a'; ctx.strokeStyle = '#120d1a'; ctx.lineWidth = Math.max(1, s);
+      ctx.beginPath(); ctx.ellipse(-d(e) * 3 * s, 3 * s, 6.5 * s, 5.5 * s, 0, 0, TAU); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(d(e) * 5 * s, 1.5 * s, 3.8 * s, 0, TAU); ctx.fill(); ctx.stroke();
+      if (!fl) { ctx.fillStyle = '#7be04a'; ctx.beginPath(); ctx.arc(-d(e) * 3 * s, 3 * s, 2 * s, 0, TAU); ctx.fill(); ctx.fillStyle = '#ff3b4a'; for (const [ox, oy] of [[5.8, 0], [4.4, 0.4], [6.6, 1.8]]) { ctx.beginPath(); ctx.arc(d(e) * ox * s, oy * s + 0.2 * s, 0.9 * s, 0, TAU); ctx.fill(); } }
+    },
+    ghost(ctx, e, s) {
+      const fl = e.flash > 0, t = performance.now() * 0.005 + e.id, bob = Math.sin(t) * 1.6 * s, y0 = -4 * s + bob; shadow(ctx, s, 8, 11);
+      ctx.globalAlpha = 0.88; ctx.fillStyle = fl ? FLASH : '#cfe3f5'; ctx.strokeStyle = '#6f89a8'; ctx.lineWidth = Math.max(1, s);
+      ctx.beginPath(); ctx.arc(0, y0, 7 * s, Math.PI, 0); ctx.lineTo(7 * s, y0 + 9 * s);
+      for (let i = 0; i < 4; i++) { const x = 7 * s - (i + 0.5) * 3.5 * s; ctx.quadraticCurveTo(x + 1.75 * s, y0 + (i % 2 ? 6 : 12) * s + Math.sin(t * 2 + i) * 1.2 * s, x - 1.75 * s + (i === 3 ? 0 : 0), y0 + 9 * s); }
+      ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.globalAlpha = 1;
+      if (!fl) { ctx.fillStyle = '#1b2a44'; ctx.beginPath(); ctx.ellipse(-2.6 * s, y0 - 0.5 * s, 1.3 * s, 2 * s, 0, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.ellipse(2.6 * s, y0 - 0.5 * s, 1.3 * s, 2 * s, 0, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.ellipse(0, y0 + 3.4 * s, 1.5 * s, 1.1 * s, 0, 0, TAU); ctx.fill(); }
+    },
+  });
+  const d = e => e._dir;
+
   // 개체 하나 그리기. unitScale: 판정 반지름 대비 그림 크기 배율
   function draw(ctx, e, now) {
     track(e, now);
@@ -345,14 +400,14 @@
     ctx.restore();
   }
   // 적이 아주 많을 때/멀리서 볼 때 쓰는 간단한 그림: 몸통(네모) + 머리(동그라미)만, 무기·그림자·방향 애니메이션 없음
-  const LITE = { grunt: ['#c8453f', '#c9d99a'], shield: ['#8f2f33', '#d6c79a'], archer: ['#7a3b2a', '#c9d99a'], bomber: ['#e07a2a', '#e6d58a'], shaman: ['#6a3f8f', '#c9d99a'], brute: ['#7a2a2a', '#bcd08a'] };
+  const LITE = { grunt: ['#c8453f', '#c9d99a'], shield: ['#8f2f33', '#d6c79a'], archer: ['#7a3b2a', '#c9d99a'], bomber: ['#e07a2a', '#e6d58a'], shaman: ['#6a3f8f', '#c9d99a'], brute: ['#7a2a2a', '#bcd08a'], wolf: ['#7c828c', '#8d939e'], bat: ['#4d3d6e', '#3b2f55'], boar: ['#6b4a32', '#7a553a'], spider: ['#3a2f4a', '#2a2233'], ghost: ['#cfe3f5', '#b8d0e6'] };
   function drawLite(ctx, e) {
     const s = (e.r / 10) * 1.25, c = LITE[e.kind] || LITE.grunt, fl = e.flash > 0;
     ctx.fillStyle = fl ? '#fff' : c[0]; ctx.fillRect(e.x - 6 * s, e.y - 8 * s, 12 * s, 13 * s);
     ctx.fillStyle = fl ? '#fff' : c[1]; ctx.beginPath(); ctx.arc(e.x, e.y - 11 * s, 5 * s, 0, TAU); ctx.fill();
   }
   // 체력 바 위치 계산용: 그림의 머리 위 높이
-  function headTop(e) { return -(e.r / 10) * 1.25 * (e.kind === 'boss' ? 17 : e.jobTier ? 21 : 16); }
+  function headTop(e) { return -(e.r / 10) * 1.25 * (e.kind === 'boss' ? 17 : e.kind === 'bat' ? 26 : e.jobTier ? 21 : 16); }
 
   window.Figures = { draw, drawLite, headTop };
 })();

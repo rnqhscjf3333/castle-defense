@@ -53,15 +53,20 @@
     },
     enemies: {
       grunt:  { name: '돌격병', hp: 30, dmg: 6,  speed: 70, r: 9,  range: 20, rate: 1.0, gold: 4,   aggro: 110 },
-      shield: { name: '방패병', hp: 90, dmg: 8,  speed: 45, r: 13, range: 22, rate: 1.0, gold: 8,   aggro: 90 },
+      shield: { name: '방패병', hp: 90, dmg: 8,  speed: 45, r: 13, range: 22, rate: 1.0, gold: 8,   aggro: 90, rres: 0.5, desc: '원거리 공격(화살·포탄) 피해를 절반만 받는다' },
       boss:   { name: '보스',   hp: 0,  dmg: 25, speed: 40, r: 30, range: 36, rate: 0.8, gold: 150, aggro: 180 },
-      archer: { name: '사수',   hp: 28, dmg: 6,  speed: 52, r: 9,  range: 200, rate: 0.8, gold: 7,  aggro: 230, ranged: true }, // 멀리서 화살을 쏜다
-      bomber: { name: '폭파병', hp: 22, dmg: 26, speed: 100, r: 9, range: 12, rate: 1.0, gold: 6,  aggro: 170, blast: 60 },  // 닿으면 폭발해 범위 피해
-      shaman: { name: '주술사', hp: 45, dmg: 0,  speed: 50, r: 10, range: 0,  rate: 0,   gold: 12, aggro: 0,   healRange: 140, healPct: 0.05, healRate: 2.4, keep: 260 }, // 뒤에서 아군 적을 치유
-      brute:  { name: '거한',   hp: 240, dmg: 16, speed: 34, r: 17, range: 26, rate: 0.7, gold: 20, aggro: 100 },           // 느리고 단단하다
+      archer: { name: '사수',   hp: 28, dmg: 6,  speed: 52, r: 9,  range: 200, rate: 0.8, gold: 7,  aggro: 230, ranged: true, desc: '멀리서 화살을 쏜다' }, // 멀리서 화살을 쏜다
+      bomber: { name: '폭파병', hp: 22, dmg: 26, speed: 100, r: 9, range: 12, rate: 1.0, gold: 6,  aggro: 170, blast: 60, desc: '아군에게 달려가 폭발 — 범위 피해' },  // 닿으면 폭발해 범위 피해
+      shaman: { name: '주술사', hp: 45, dmg: 0,  speed: 50, r: 10, range: 0,  rate: 0,   gold: 12, aggro: 0,   healRange: 140, healPct: 0.05, healRate: 2.4, keep: 260, desc: '뒤에서 다른 적을 치유한다 — 먼저 처치하자' }, // 뒤에서 아군 적을 치유
+      wolf:   { name: '늑대',   hp: 26, dmg: 7,  speed: 125, r: 9,  range: 18, rate: 1.1, gold: 5,  aggro: 200, desc: '매우 빠르게 달려드는 야수' },
+      bat:    { name: '박쥐',   hp: 22, dmg: 6,  speed: 95,  r: 8,  range: 16, rate: 1.0, gold: 6,  aggro: 240, air: true, desc: '공중형 — 활·석궁(궁수 계열·포탑)으로만 맞출 수 있다' },
+      boar:   { name: '멧돼지', hp: 130, dmg: 13, speed: 62, r: 14, range: 22, rate: 0.9, gold: 12, aggro: 200, rush: 1.9, desc: '멀리서 맹렬히 돌진하는 단단한 야수' },
+      spider: { name: '독거미', hp: 52, dmg: 8,  speed: 60,  r: 10, range: 18, rate: 1.0, gold: 9,  aggro: 150, poison: 5, desc: '물린 아군을 중독시킨다 (초당 체력 감소)' },
+      ghost:  { name: '유령',   hp: 75, dmg: 10, speed: 58,  r: 10, range: 20, rate: 0.9, gold: 11, aggro: 140, mres: 0.5, desc: '근접 공격 피해를 절반만 받는다 — 원거리·성채 공격이 효과적' },
+      brute:  { name: '거한',   hp: 240, dmg: 16, speed: 34, r: 17, range: 26, rate: 0.7, gold: 20, aggro: 100, desc: '느리지만 매우 단단하다' },           // 느리고 단단하다
     },
     // 일반 적 등장표: from 라운드부터 가중치 w로 섞여 나온다 (라운드가 갈수록 종류가 늘어난다)
-    spawn: { grunt: { from: 1, w: 6 }, shield: { from: 3, w: 3 }, archer: { from: 4, w: 2.5 }, bomber: { from: 7, w: 2.2 }, shaman: { from: 10, w: 1.3 }, brute: { from: 13, w: 1.4 } },
+    spawn: { grunt: { from: 1, w: 6 }, shield: { from: 3, w: 3 }, archer: { from: 4, w: 2.5 }, bomber: { from: 7, w: 2.2 }, shaman: { from: 10, w: 1.3 }, brute: { from: 13, w: 1.4 }, wolf: { from: 5, w: 2.2 }, bat: { from: 9, w: 1.6 }, boar: { from: 11, w: 1.4 }, spider: { from: 14, w: 1.5 }, ghost: { from: 18, w: 1.4 } },
     // 보스: 5라운드마다, 라운드 시작과 함께 나온다. 일반 보스 5종은 게임마다 무작위 순서로 5·10·15·20·25라운드에 한 번씩,
     // 2막(35·40·45라운드)에는 다시 섞어서 3종이 나온다. 30라운드는 암흑 기사단장, 50라운드는 마왕 고정. 체력은 라운드별 표(보스가 누구든 같은 라운드면 같은 체력),
     // 패턴 강도는 라운드에 맞춰 조정된다(scaleAbil). 풀 보스의 패턴 수치는 15라운드 기준.
@@ -77,6 +82,14 @@
     act1Boss: { id: 'darkknight', name: '암흑 기사단장', look: { body: '#2b2f3f', head: '#c9ccd6', weapon: 'sword' }, abil: { summon: { cd: 10, n: 2, kind: 'bomber' }, artillery: { cd: 6, dmg: 70, radius: 105, count: 2, flight: 1.5 }, shield: { cd: 16, dur: 3, red: 0.6 }, rage: { at: 0.35, speed: 1.3, rate: 1.4, dmg: 1.4 }, debuff: [{ kind: 'stun', cd: 13, r: 110 }, { kind: 'wound', cd: 15, r: 160 }] } },
     // 최종 보스(50라운드): 마왕
     finalBoss: { id: 'overlord', name: '마왕', r: 38, look: { body: '#4a2a6a', head: '#d9c6e6', weapon: 'sword', crown: true }, abil: { summon: { cd: 7, n: 4, kind: 'bomber' }, artillery: { cd: 5, dmg: 130, radius: 115, count: 2, flight: 1.4 }, shield: { cd: 12, dur: 3.5, red: 0.7 }, rage: { at: 0.4, speed: 1.4, rate: 1.5, dmg: 1.5 }, dash: { cd: 9, dur: 1.2, mul: 2.5 }, debuff: [{ kind: 'stun', cd: 10, r: 120 }, { kind: 'poison', cd: 11, r: 150 }, { kind: 'weak', cd: 13, r: 170 }, { kind: 'wound', cd: 14, r: 170 }] } },
+    // 보스 보상: 전직이 모두 끝난 뒤(35라운드~)에는 보스를 처치하면 이 중 3가지가 제시된다
+    rewards: [
+      { id: 'r_knights', name: '용병 기사단', desc: '강력한 용병 용사 2명이 합류 (스킬 [일섬])', units: ['hero', 'hero'] },
+      { id: 'r_snipers', name: '저격 용병단', desc: '용병 명궁 2명이 합류 (스킬 [일제 사격])', units: ['marksman', 'marksman'] },
+      { id: 'r_golem',   name: '철갑 용병',   desc: '거대한 용병 골렘 + 용병 용사가 합류', units: ['golem', 'hero'] },
+      { id: 'r_army',    name: '전군 강화',   desc: '검사·궁수·사제 모두 체력·공격력 강화 +2단계', up: 2 },
+      { id: 'r_fort',    name: '성채 보강',   desc: '성채 최대 체력 +30%, 체력 완전 회복', fort: 0.3 },
+    ],
     // 전직: 보스를 처치하면 직업(검사/궁수/사제) 하나를 골라 승급시킨다. 1단계에서 갈래를 고르고, 2단계로 한 번 더 강화된다.
     jobs: {
       sword: {
@@ -121,7 +134,7 @@
       bossHp: 1,                                      // 보스 체력에 추가로 곱하는 배율
       // 2막(31라운드~): 적이 강해지는 폭이 더 크다
       countPost: 3,                                   // 2막에서는 라운드마다 적이 이만큼 늘어난다 (1막 말 수 + 이 값 × 경과 라운드)
-      hpSlopePost: 0.16,                              // 2막 체력 증가 기울기 (라운드당)
+      hpSlopePost: 0.36,                              // 2막 체력 증가 기울기 (라운드당)
       postSpeed: 1.08,                                // 2막 적 이동 속도 배율
       meleeHp: 1.25, rangedDmg: 1.25,                  // 근접 적은 체력, 원거리 적은 공격력을 더 높게 (못 잡으면 쌓인다)
       healCap: 0.10,                                  // 한 유닛이 1초 동안 치유로 회복할 수 있는 최대 비율(최대 체력 기준). 사제를 많이 뽑아도 불사가 되지 않게 한다
@@ -380,12 +393,24 @@
     return out;
   }
   function openJobs(S, bossName) {
-    const opts = jobOptions(S); if (!opts.length) return;
+    const opts = jobOptions(S);
+    if (!opts.length) { // 전직이 모두 끝났으면 보상 선택
+      const pool = CFG.rewards.map(r => ({ type: 'reward', reward: true, className: '보스 보상', tier: 0, id: r.id, name: r.name, desc: r.desc }));
+      for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(S.rng() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+      S.jobs.offer = { boss: bossName, reward: true, list: pool.slice(0, 3) }; return;
+    }
     for (let i = opts.length - 1; i > 0; i--) { const j = Math.floor(S.rng() * (i + 1)); [opts[i], opts[j]] = [opts[j], opts[i]]; }
     S.jobs.offer = { boss: bossName, list: opts.slice(0, 3) };
   }
   function pickJob(S, idx) {
     const o = S.jobs.offer && S.jobs.offer.list[idx]; if (!o) return false;
+    if (o.reward) { // 보상: 용병 소환 / 전군 강화 / 성채 보강
+      const d = CFG.rewards.find(r => r.id === o.id); S.jobs.offer = null;
+      if (d.units) for (const t of d.units) { const u = addUnit(S, t); u.x = CX + (S.rng() - 0.5) * 160; u.y = CY + 100 + S.rng() * 60; }
+      if (d.up) { for (const l of ['sword', 'archer', 'priest']) { S.up[l].hp += d.up; S.up[l].atk += d.up; } for (const u of S.units) if (!u.dead) refreshUnit(S, u); }
+      if (d.fort) { S.core.max = Math.round(S.core.max * (1 + d.fort)); S.core.hp = S.core.max; }
+      emit(S, { type: 'reward', name: o.name }); return true;
+    }
     const before = S.jobMods[o.type].revive;
     S.jobs[o.type].ids.push(o.id); S.jobs.offer = null;
     recompute(S); S.reviveLeft += S.jobMods[o.type].revive - before;
@@ -500,7 +525,7 @@
       spawnN: 0, buyCd: { sword: 0, archer: 0, priest: 0 },
       threat: 0, over: false, win: false,
       captureEvents: false, events: [], numQ: [],
-      gU: makeGrid(48), gE: makeGrid(48),
+      gU: makeGrid(48), gE: makeGrid(48), gA: makeGrid(48), seen: {},
       cards: { offer: null, rerolls: CFG.rerolls, taken: {}, boss: false },
       up: { sword: { hp: 0, atk: 0, rate: 0, speed: 0 }, archer: { hp: 0, atk: 0, rate: 0, speed: 0 }, priest: { hp: 0, atk: 0, rate: 0, speed: 0 } },
       aura: null, perks: null, bombCd: 8, reviveLeft: 0, jobMods: null, biasNow: 0.08, coreDmgBy: {},
@@ -627,12 +652,14 @@
       cd: 0, age: 0, flash: 0, swing: 0, dead: false,
       ranged: !!cfg.ranged, blast: cfg.blast || 0, healRange: cfg.healRange || 0, healPct: cfg.healPct || 0, healRate: cfg.healRate || 0, keep: cfg.keep || 0,
       speedMul: 1, rateMul: 1, dmgMul: 1, shieldT: 0, shieldRed: 0, dashT: 0,
+      air: !!cfg.air, rres: cfg.rres || 1, mres: cfg.mres || 1, rush: cfg.rush || 0, poison: cfg.poison || 0,
     };
     if (bd) {
       e.bossName = bd.name; e.look = bd.look; e.abil = (bd === CFG.finalBoss || bd === CFG.act1Boss) ? bd.abil : scaleAbil(bd.abil, r); e.t = {};
       for (const k in e.abil) if (!Array.isArray(e.abil[k])) e.t[k] = (e.abil[k].cd || 0) * 0.6; // 첫 패턴은 조금 일찍
       emit(S, { type: 'bossSpawn', name: bd.name });
     }
+    if (!bd && kind !== 'grunt' && !S.seen[kind]) { S.seen[kind] = 1; emit(S, { type: 'newEnemy', kind }); } // 처음 보는 종류: 소개 팝업
     S.enemies.push(e);
     emit(S, { type: 'espawn', x, y, boss: !!bd }); // 나타나는 순간 효과
     return e;
@@ -722,7 +749,7 @@
       if (Math.hypot(S.core.x - s.t.x, S.core.y - s.t.y) <= s.aoe + S.core.r) hitCore(S, s.dmg * CFG.balance.shellCoreMul, '보스 포격');
       emit(S, { type: 'boom', x: s.t.x, y: s.t.y, r: s.aoe, big: true, enemy: true });
     } else if (s.t === S.core) hitCore(S, s.dmg, '화살(사수)');
-    else { damage(S, s.t, s.dmg, s.crit); onShotHit(S, s); }
+    else { damage(S, s.t, s.dmg * (s.t.rres || 1), s.crit); onShotHit(S, s); }
   }
   // 성채 탄 / 화살의 추가 효과 (폭발, 전이, 관통)
   function onShotHit(S, s) {
@@ -786,6 +813,11 @@
     if (amt > 0) { t.hp += amt; t.hw = (t.hw || 0) + amt; if (S.captureEvents && t.team === 'u') numNote(S, t, amt, 'h'); }
     return amt;
   }
+  function nearestBoth(S, x, y, range) {
+    const a = nearest(S.gE, x, y, range), b = nearest(S.gA, x, y, range);
+    if (!b) return a; if (!a) return b;
+    return Math.hypot(a.x - x, a.y - y) <= Math.hypot(b.x - x, b.y - y) ? a : b;
+  }
   function nearestUnit(S, x, y, range) {
     let best = null, bd = range;
     for (const u of S.units) { if (u.dead) continue; const d = Math.hypot(u.x - x, u.y - y); if (d < bd) { bd = d; best = u; } }
@@ -819,10 +851,10 @@
     const sk = CFG.heroSkill[u.type];
     if (u.type === 'marksman') {
       const seen = new Set(), list = [];
-      for (let i = 0; i < sk.n; i++) { const t = nearestExcl(S.gE, u.x, u.y, sk.r, seen); if (!t) break; seen.add(t); list.push(t); }
-      for (const t of list) { damage(S, t, atk * sk.mul); emit(S, { type: 'heroSkill', kind: u.type, x: u.x, y: u.y, tx: t.x, ty: t.y }); }
+      for (let i = 0; i < sk.n; i++) { const a = nearestExcl(S.gE, u.x, u.y, sk.r, seen), b = nearestExcl(S.gA, u.x, u.y, sk.r, seen), t = !b ? a : !a ? b : (Math.hypot(a.x - u.x, a.y - u.y) <= Math.hypot(b.x - u.x, b.y - u.y) ? a : b); if (!t) break; seen.add(t); list.push(t); }
+      for (const t of list) { damage(S, t, atk * sk.mul * (t.rres || 1)); emit(S, { type: 'heroSkill', kind: u.type, x: u.x, y: u.y, tx: t.x, ty: t.y }); }
     } else {
-      eachNear(S.gE, u.x, u.y, sk.r, o => { damage(S, o, atk * sk.mul); if (sk.slow) o.slowT = sk.slow; });
+      eachNear(S.gE, u.x, u.y, sk.r, o => { damage(S, o, atk * sk.mul * (o.mres || 1)); if (sk.slow) o.slowT = sk.slow; });
       emit(S, { type: 'heroSkill', kind: u.type, x: u.x, y: u.y, r: sk.r });
     }
     u.swing = 0.4;
@@ -834,22 +866,22 @@
     const atk = u.atk * (1 + (u.aura ? S.aura.atk : 0)) * (u.weakT > 0 ? CFG.debuff.weak.mul : 1);
     const fromCore = Math.hypot(u.x - CX, u.y - CY);
     const hs = CFG.heroSkill[u.type];
-    if (hs) { u.skT = (u.skT === undefined ? hs.cd * 0.5 : u.skT) - dt; if (u.skT <= 0 && nearest(S.gE, u.x, u.y, hs.r * 0.9)) { u.skT = hs.cd; castHeroSkill(S, u, atk); } }
+    if (hs) { u.skT = (u.skT === undefined ? hs.cd * 0.5 : u.skT) - dt; if (u.skT <= 0 && (u.type === 'marksman' ? nearestBoth(S, u.x, u.y, hs.r * 0.9) : nearest(S.gE, u.x, u.y, hs.r * 0.9))) { u.skT = hs.cd; castHeroSkill(S, u, atk); } }
     const cfg = CFG.units[u.type], aggro = cfg.aggro;
     const rush = (lineOf(u.type) === 'sword' && S.perks.charge) ? 1 + V().charge * S.perks.charge : 1;
     const stopFor = tgt => (melee ? u.range + u.r + tgt.r - 2 : u.range * 0.85 + tgt.r);
-    let tgt = nearest(S.gE, u.x, u.y, aggro);
+    let tgt = melee ? nearest(S.gE, u.x, u.y, aggro) : nearestBoth(S, u.x, u.y, aggro);
     if (tgt && Math.hypot(tgt.x - CX, tgt.y - CY) > CFG.leash) tgt = null; // 성채에서 너무 먼 적은 쫓지 않는다
     if (tgt && fromCore <= CFG.leash + 40) moveToward(u, tgt.x, tgt.y, dt, stopFor(tgt), spm * rush);
     else moveToward(u, u.hx, u.hy, dt, 6, spm);
     if (u.cd <= 0) {
-      const t = nearest(S.gE, u.x, u.y, u.range + u.r);
+      const t = melee ? nearest(S.gE, u.x, u.y, u.range + u.r) : nearestBoth(S, u.x, u.y, u.range + u.r);
       if (t) {
         const chargeRate = (lineOf(u.type) === 'sword' && S.perks.charge) ? 1 + V().chargeRate * S.perks.charge : 1;
         u.cd = 1 / (u.rate * spm * chargeRate); u.swing = 0.25; u.aim = Math.atan2(t.y - u.y, t.x - u.x);
         if (melee) {
           emit(S, { type: 'melee', x: u.x, y: u.y });
-          damage(S, t, atk);
+          damage(S, t, atk * (t.mres || 1));
           const cl = S.jobMods[lineOf(u.type)] ? S.jobMods[lineOf(u.type)].cleave : 0; // 검성: 주변 적에게 베기 피해
           if (cl) eachNear(S.gE, t.x, t.y, 46, o => { if (o !== t) damage(S, o, atk * cl); });
         } else {
@@ -865,7 +897,7 @@
   function updateStatic(S, u, dt) {
     u.cd -= dt;
     if (u.cd > 0) return;
-    const cfg = CFG.units[u.type], t = nearest(S.gE, u.x, u.y, u.range);
+    const cfg = CFG.units[u.type], t = nearestBoth(S, u.x, u.y, u.range);
     if (!t) return;
     u.cd = 1 / (u.rate * (1 + (u.aura ? S.aura.spd : 0))); u.swing = 0.2; u.aim = Math.atan2(t.y - u.y, t.x - u.x);
     const dmg = u.atk * (1 + (u.aura ? S.aura.atk : 0)) * (u.weakT > 0 ? CFG.debuff.weak.mul : 1);
@@ -968,13 +1000,14 @@
       return;
     }
     const t = tgt || c;
-    moveToward(e, t.x, t.y, dt, e.blast ? e.r + t.r - 4 : e.range + e.r + t.r - 2, spm); // 폭파병은 닿을 때까지 접근
+    const far = e.rush && Math.hypot(t.x - e.x, t.y - e.y) > 110;
+    moveToward(e, t.x, t.y, dt, e.blast ? e.r + t.r - 4 : e.range + e.r + t.r - 2, far ? spm * e.rush : spm); // 폭파병은 닿을 때까지 접근
     const reach = Math.hypot(t.x - e.x, t.y - e.y) - t.r - e.r;
     if (e.blast) { if (reach <= 6) explode(S, e); return; } // 폭파병: 닿으면 터진다
     if (e.cd <= 0 && reach <= e.range + 2) {
       e.cd = cdTime; e.swing = 0.25; e.aim = Math.atan2(t.y - e.y, t.x - e.x);
       if (t === c) { hitCore(S, dmg, e.kind === 'boss' ? '보스 근접' : '근접(' + (CFG.enemies[e.kind] ? CFG.enemies[e.kind].name : e.kind) + ')'); if (S.perks.thorn) damage(S, e, dmg * V().thorn * S.perks.thorn); }
-      else damage(S, t, dmg);
+      else { damage(S, t, dmg); if (e.poison && !t.dead) t.poisonT = Math.max(t.poisonT || 0, e.poison); }
     }
   }
 
@@ -999,7 +1032,7 @@
     }
 
     // 격자 갱신 + 오라 판정 + 소환수 수명
-    S.gU.map.clear(); S.gE.map.clear();
+    S.gU.map.clear(); S.gE.map.clear(); S.gA.map.clear();
     const A = S.aura;
     for (const u of S.units) {
       if (u.dead) continue;
@@ -1007,7 +1040,7 @@
       if (u.aura && A.heal > 0 && u.hp < u.max) u.hp = Math.min(u.max, u.hp + u.max * A.heal * dt);
       gridAdd(S.gU, u);
     }
-    for (const e of S.enemies) if (!e.dead) gridAdd(S.gE, e);
+    for (const e of S.enemies) if (!e.dead) gridAdd(e.air ? S.gA : S.gE, e); // 공중형은 따로: 근접·성채·범위 공격은 닿지 않고 궁수 계열·포탑만 겨눈다
 
     // 위협 방향 (성채에서 가장 가까운 적 쪽, 부드럽게 회전)
     let near = null, nd = 1500;
