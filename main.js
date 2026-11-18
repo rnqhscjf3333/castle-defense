@@ -13,12 +13,17 @@
   let vw = 0, vh = 0, dpr = 1;
   const A2 = window.Audio2;
   const fx = [];             // 화면 효과 (게임 규칙과 무관)
+  // 직업별 공격·치유 색: 전직마다 화살/베기/치유 광선의 색이 달라 구분된다. 치명타는 주황, 엘리트 적은 금·보라.
+  const JOBC = { knight: '#7cc0ff', paladin: '#d6efff', fighter: '#ff9a4a', blademaster: '#ff4a3a', sniper: '#ffe14a', deadeye: '#ffb81a', ranger: '#6bffa3', stormarcher: '#4ae6ff',
+    cleric: '#ffe28a', highcleric: '#fff4b8', bishop: '#8fd0ff', archbishop: '#c8a0ff' };
+  const UNITC = { golem: '#c8a46a', hero: '#ffe14a', marksman: '#ffd23a', repeater: '#cfe3ff' };
+  const atkColor = (job, ut) => (job && JOBC[job]) || UNITC[ut] || '#dfe9ff';
   let eliteToasts = 0, numFont = '', numFx = 0;             // 화면에 떠 있는 피해/치유 숫자 수 (상한을 두어 부하를 막는다)
   const fxPool = [];         // 쓰고 난 효과 객체를 재사용 (GC 부담을 줄인다)
   function addFx(o) {
     if (fx.length >= 300) return;
     const f = fxPool.length ? fxPool.pop() : {};
-    f.k = o.k; f.x = o.x; f.y = o.y; f.tx = o.tx; f.ty = o.ty; f.t = o.t || 0; f.max = o.max; f.c = o.c; f.r = o.r; f.big = o.big; f.enemy = o.enemy; f.small = o.small; f.v = o.v; f.n = o.n;
+    f.k = o.k; f.x = o.x; f.y = o.y; f.tx = o.tx; f.ty = o.ty; f.t = o.t || 0; f.max = o.max; f.c = o.c; f.r = o.r; f.big = o.big; f.enemy = o.enemy; f.small = o.small; f.v = o.v; f.n = o.n; f.a = o.a;
     fx.push(f);
   }
   const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
@@ -165,8 +170,8 @@
     Scenery.setRoadCount(want);
     if (want > have && S.round >= 2) {
       for (let i = have; i < want; i++) { const pts = Scenery.roadPts(i); for (let k = 0; k < pts.length; k += 2) { const p = pts[k]; for (let m = 0; m < 2; m++) addFx({ k: 'dust', x: p[0] + (Math.random() - 0.5) * 40, y: p[1] + (Math.random() - 0.5) * 30, t: -k * 0.05 - Math.random() * 0.25, max: 1.5 + Math.random() * 0.6, r: 20 + Math.random() * 18 }); } }
-      toast('새로운 길이 열렸습니다! (' + have + ' → ' + want + '곳에서 적이 나옵니다)'); A2.play('cine');
-      setTimeout(() => banner('🛤 새로운 길이 열렸습니다 · 적이 ' + want + '곳에서 나옵니다'), 1600); // 라운드 안내 배너 다음에 크게 알린다
+      A2.play('cine');
+      setTimeout(() => banner('새로운 길이 열렸습니다'), 1600); // 라운드 안내 배너 다음에 알린다
     }
   }
   // 새로운 종류의 적이 처음 나오면 왼쪽 위에 모습·이름·능력을 잠깐 보여준다
@@ -193,6 +198,11 @@
   function enrageGlow(e, now, z) { // 40초 넘게 살아 격노한 적: 붉은 불길 고리
     const pu = 0.5 + 0.5 * Math.sin(now * 0.012 + e.id);
     ctx.globalAlpha = 0.25 + 0.2 * pu; ctx.strokeStyle = '#ff3b2a'; ctx.lineWidth = 2.2 / z; ctx.beginPath(); ctx.ellipse(e.x, e.y + e.r * 0.5, e.r * 1.25, e.r * 0.5, 0, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
+  }
+  function legendGlow(e, now, z) { // 전설 유닛: 일렁이는 빛 고리
+    const pu = 0.5 + 0.5 * Math.sin(now * 0.007 + e.id), c = e.type === 'legendsword' ? '255,107,255' : '125,255,232';
+    ctx.globalAlpha = 0.25 + 0.2 * pu; ctx.fillStyle = 'rgb(' + c + ')'; ctx.beginPath(); ctx.ellipse(e.x, e.y + e.r * 0.6, e.r * 1.9, e.r * 0.75, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 0.9; ctx.strokeStyle = 'rgb(' + c + ')'; ctx.lineWidth = 2 / z; ctx.beginPath(); ctx.ellipse(e.x, e.y + e.r * 0.6, e.r * 1.9, e.r * 0.75, 0, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
   }
   function eliteMark(e, z) {
     const y = e.y + Figures.headTop(e) - (e.hp < e.max ? 15 : 6), k = 1 / Math.max(0.7, z), w = 6 * k;
@@ -243,7 +253,7 @@
 
   // ───────────── 업그레이드 선택창 / 강화 목록 ─────────────
   const CAT_NAME = { unit: '유닛 강화', core: '성채 강화', summon: '특수 소환' };
-  const RAR_NAME = { common: '일반', rare: '희귀', epic: '영웅' };
+  const RAR_NAME = { common: '일반', rare: '희귀', epic: '영웅', legend: '전설' };
   let shownOffer = null;
   const currentOffer = () => (S && S.jobs.offer) ? { kind: 'job', list: S.jobs.offer.list, ref: S.jobs.offer } : (S && S.cards.offer) ? { kind: 'card', list: S.cards.offer, ref: S.cards.offer } : null;
   function syncPicker() {
@@ -338,7 +348,7 @@
     for (const ev of C.drainEvents(S)) {
       playEv(ev);
       if (ev.type === 'banner') banner(ev.text, ev.boss);
-      else if (ev.type === 'shot' || ev.type === 'melee') { /* 소리만 있는 이벤트 */ }
+      else if (ev.type === 'shot') { /* 소리만 있는 이벤트 */ }
       else if (ev.type === 'crit') addFx({ k: 'crit', x: ev.x, y: ev.y, t: 0, max: 0.4, c: '#ffd23f' });
       else if (ev.type === 'bossCast') { addFx({ k: 'zone', x: ev.x, y: ev.y, r: ev.r, t: 0, max: ev.warn, c: DBK[ev.kind][1] }); toast('보스가 ' + DBK[ev.kind][0] + ' 광역기를 시전!'); }
       else if (ev.type === 'debuffHit') addFx({ k: 'boom', x: ev.x, y: ev.y, r: ev.r, t: 0, max: 0.4, big: false, enemy: true, c: DBK[ev.kind][1] });
@@ -346,7 +356,7 @@
       else if (ev.type === 'bossWipe') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.9, c: '#ffffff', big: true }); toast('보스 처치! 남은 적이 모두 쓰러졌어요'); }
       else if (ev.type === 'kill') { addFx({ k: 'burst', x: ev.x, y: ev.y, t: 0, max: ev.boss ? 0.8 : 0.3, c: ev.boss ? '#c77dff' : '#ff8a5c', big: ev.boss }); }
       else if (ev.type === 'udead') addFx({ k: 'burst', x: ev.x, y: ev.y, t: 0, max: 0.4, c: '#8fb7ff' });
-      else if (ev.type === 'heal') { addFx({ k: 'beam', x: ev.x, y: ev.y - 11, tx: ev.tx, ty: ev.ty - 7, t: 0, max: ev.aoe ? 0.3 : 0.45, c: ev.enemy ? '#ffb86b' : '#6bffa3', small: !!ev.aoe }); if (!ev.aoe) addFx({ k: 'heal', x: ev.tx, y: ev.ty, t: 0, max: 0.5 }); }
+      else if (ev.type === 'heal') { addFx({ k: 'beam', x: ev.x, y: ev.y - 11, tx: ev.tx, ty: ev.ty - 7, t: 0, max: ev.aoe ? 0.3 : 0.45, c: ev.enemy ? '#ffb86b' : (ev.job && JOBC[ev.job]) || '#6bffa3', small: !!ev.aoe }); if (!ev.aoe) addFx({ k: 'heal', x: ev.tx, y: ev.ty, t: 0, max: 0.5 }); }
       else if (ev.type === 'spawn') { addFx({ k: 'summon', x: ev.x, y: ev.y, t: 0, max: 0.8 }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.55, c: '#8fd0ff', big: true }); }
       else if (ev.type === 'chain') { addFx({ k: 'line', x: ev.x, y: ev.y, tx: ev.tx, ty: ev.ty, t: 0, max: 0.25, c: ev.small ? '#b9f5c8' : '#9ad0ff', small: ev.small }); }
       else if (ev.type === 'boom') { addFx({ k: 'boom', x: ev.x, y: ev.y, r: ev.r, t: 0, max: ev.big ? 0.6 : 0.3, big: ev.big, enemy: ev.enemy }); }
@@ -355,6 +365,9 @@
         if (fx.length >= 300) continue; numFx++; addFx({ k: 'num', x: ev.x + (Math.random() - 0.5) * 14, y: ev.y, t: 0, max: ev.crit ? 0.95 : 0.75, v: Math.round(ev.v), n: ev.heal ? 'h' : ev.crit ? 'c' : ev.team === 'u' ? 'u' : 'e' });
       }
       else if (ev.type === 'newEnemy') showNewEnemy(ev.kind);
+      else if (ev.type === 'melee') { if (fx.length < 220 && cam.zoom > 0.4) addFx({ k: 'slash', x: ev.tx, y: ev.ty, a: Math.atan2(ev.ty - ev.y, ev.tx - ev.x), t: 0, max: 0.2, c: atkColor(ev.job, ev.ut) }); }
+      else if (ev.type === 'emelee') { if (fx.length < 220 && cam.zoom > 0.4) { addFx({ k: 'slash', x: ev.tx, y: ev.ty, a: Math.atan2(ev.ty - ev.y, ev.tx - ev.x), t: 0, max: 0.26, c: '#ff4adf', big: true }); } }
+      else if (ev.type === 'bossSlam') addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.4, c: '#ff5a3a', r: ev.r, big: true });
       else if (ev.type === 'enrage') toast('적이 오래 살아남아 격노합니다! 점점 더 강해져요');
       else if (ev.type === 'elite') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.6, c: '#ffd84a', big: true }); if (eliteToasts < 3) { eliteToasts++; toast('엘리트 ' + CFG.enemies[ev.kind].name + ' 출현! 훨씬 강하고 큽니다'); } }
       else if (ev.type === 'poisonPool') addFx({ k: 'pool', x: ev.x, y: ev.y, r: ev.r, t: 0, max: ev.dur });
@@ -453,6 +466,7 @@
       const e = all[i];
       if (e._tree) { Scenery.drawTree(ctx, e, now); continue; }
       if (e.team === 'e' && e.enr && !lite) enrageGlow(e, now, z);
+      if (e.team === 'u' && e.type && e.type.startsWith('legend')) legendGlow(e, now, z);
       if (e.elite) eliteGlow(e, now, z);
       if (lite && e.team === 'e' && e.kind !== 'boss') { Figures.drawLite(ctx, e); if (e.elite) eliteMark(e, z); continue; }
       if (e.kind === 'boss') bossAura(e, now, z);
@@ -480,7 +494,11 @@
         ctx.globalAlpha = 0.45; ctx.fillStyle = '#ff9f43'; ctx.beginPath(); ctx.arc(px, py, 13, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
         ctx.fillStyle = '#3a2418'; ctx.strokeStyle = '#ff7a2a'; ctx.lineWidth = 1.5 / z; ctx.beginPath(); ctx.arc(px, py, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       } else { // 화살 / 포탑 볼트
-        const len = sh.color === 't' ? 9 : 14, col = sh.color === 'ea' ? '#c0503a' : sh.color === 't' ? '#ffb86b' : '#e8e0cc';
+        const len = sh.color === 't' ? 9 : 14, jc = sh.job && JOBC[sh.job];
+        let col = sh.color === 'ea' ? '#c0503a' : sh.color === 't' ? '#ffb86b' : jc || (sh.color === 'a' && sh.job === null ? '#e8e0cc' : '#e8e0cc');
+        if (sh.color === 'ea' && sh.elite) col = '#ff4adf'; // 엘리트 적의 화살
+        if (sh.crit) col = '#ff8a1a'; // 치명타 화살
+        if (sh.crit || (sh.elite && sh.color === 'ea')) { ctx.globalAlpha = 0.4; ctx.fillStyle = col; ctx.beginPath(); ctx.arc(px, py, sh.crit ? 7 : 6, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
         const hx = px + Math.cos(ang) * len * 0.5, hy = py + Math.sin(ang) * len * 0.5, tx2 = px - Math.cos(ang) * len * 0.5, ty2 = py - Math.sin(ang) * len * 0.5;
         ctx.strokeStyle = col; ctx.lineWidth = 1.8; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(tx2, ty2); ctx.lineTo(hx, hy); ctx.stroke();
         ctx.fillStyle = sh.color === 'ea' ? '#5a1f18' : '#cfd6e4'; ctx.beginPath(); ctx.moveTo(hx + Math.cos(ang) * 4, hy + Math.sin(ang) * 4); ctx.lineTo(hx + Math.cos(ang + 2.5) * 3, hy + Math.sin(ang + 2.5) * 3); ctx.lineTo(hx + Math.cos(ang - 2.5) * 3, hy + Math.sin(ang - 2.5) * 3); ctx.closePath(); ctx.fill();
@@ -492,6 +510,10 @@
       const f = fx[i]; if (f.t < 0) continue; // 시작 지연 중
       const p = f.t / f.max;
       if (f.k === 'burst') { ctx.globalAlpha = 1 - p; ctx.fillStyle = f.c; ctx.beginPath(); ctx.arc(f.x, f.y, (f.big ? 20 : 8) + p * (f.big ? 50 : 16), 0, Math.PI * 2); ctx.fill(); }
+      else if (f.k === 'slash') { // 근접 타격 궤적: 전직·유닛별 색 (엘리트 적은 분홍)
+        const w = f.big ? 4.5 : 3, r0 = f.big ? 20 : 15; ctx.globalAlpha = 1 - p; ctx.strokeStyle = f.c; ctx.lineWidth = w * (1 - p * 0.6) / z * 1.1; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.arc(f.x - Math.cos(f.a) * 6, f.y - Math.sin(f.a) * 6, r0 * (0.7 + p * 0.5), f.a - 0.95, f.a + 0.95); ctx.stroke(); ctx.globalAlpha = 1;
+      }
       else if (f.k === 'pool') { // 독 웅덩이: 남아 있는 동안 초록 독기가 일렁인다
         const fade = Math.min(1, (f.max - f.t) / 1.2, f.t / 0.3 + 0.2), pu = 0.5 + 0.5 * Math.sin(now * 0.006);
         ctx.globalAlpha = (0.2 + 0.08 * pu) * fade; ctx.fillStyle = '#66d63a'; ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill();

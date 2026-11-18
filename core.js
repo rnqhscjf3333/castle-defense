@@ -40,6 +40,8 @@
       // 카드로만 얻는 유닛
       // 카드로 얻는 특수 유닛. line = 어느 직업 계열의 강화·전직을 받는지 (sword·archer·priest = 해당 직업, core = 성채 강화)
       golem:  { name: '골렘', hp: 1500, atk: 52, rate: 0.8, range: 40,  speed: 55,  r: 18, aggro: 220, priceSteps: 0, line: 'sword' }, // priceSteps: 소환하면 모든 유닛 가격이 이만큼 오른다 (직접 뽑는 유닛은 1, 특수 유닛은 모두 0)
+      legendsword:  { name: '검왕',   hp: 2600, atk: 150, rate: 1.4, range: 36,  speed: 105, r: 15, aggro: 320, priceSteps: 0, line: 'sword' },                 // 전설: 압도적인 전사
+      legendarcher: { name: '궁신',   hp: 650,  atk: 180, rate: 0.6, range: 380, speed: 90,  r: 13, aggro: 420, priceSteps: 0, line: 'archer', pierce: 3 },   // 전설: 압도적인 궁수
       hero:   { name: '용사', hp: 560, atk: 62, rate: 1.3, range: 30,  speed: 100, r: 12, aggro: 260, priceSteps: 0, line: 'sword' },
       turret: { name: '포탑', hp: 300, atk: 18, rate: 1.5, range: 240, speed: 0,   r: 11, priceSteps: 0, line: 'core', static: true, shot: 't' },
       marksman: { name: '명궁', hp: 280, atk: 66, rate: 0.7, range: 300, speed: 85, r: 11, aggro: 330, priceSteps: 0, line: 'archer', pierce: 1 },       // 긴 사거리·높은 공격력의 영웅 궁수 (화살이 1명 관통)
@@ -48,6 +50,8 @@
     },
     // 영웅 스킬: 영웅 등급 유닛이 쿨타임마다 자동 시전 (사거리 안에 적이 있을 때)
     heroSkill: {
+      legendsword:  { name: '천검 강림',  cd: 6, r: 180, mul: 9 },                // 주변 적 전체를 크게 벤다
+      legendarcher: { name: '천궁 난사',  cd: 5, r: 420, mul: 5.5, n: 10 },       // 가까운 적 10명을 동시에 저격
       hero:     { name: '일섬',      cd: 5, r: 130, mul: 6.0 },              // 주변 적 전체에 큰 베기 피해
       golem:    { name: '대지 강타',  cd: 7, r: 160, mul: 4.5, slow: 3 },     // 주변 적에게 피해 + 3초간 감속
       marksman: { name: '일제 사격',  cd: 6, r: 340, mul: 4.5, n: 6 },        // 가까운 적 6명을 동시에 저격
@@ -64,10 +68,20 @@
       boar:   { name: '멧돼지', hp: 130, dmg: 13, speed: 62, r: 14, range: 22, rate: 0.9, gold: 12, aggro: 200, rush: 1.9, desc: '멀리서 빠르게 돌진합니다.' },
       spider: { name: '독거미', hp: 52, dmg: 8,  speed: 60,  r: 10, range: 18, rate: 1.0, gold: 9,  aggro: 150, poison: 5, desc: '물린 아군을 중독시킵니다.' },
       ghost:  { name: '유령',   hp: 75, dmg: 10, speed: 58,  r: 10, range: 20, rate: 0.9, gold: 11, aggro: 140, mres: 0.5, desc: '근접 피해를 50%만 입습니다.' },
+      captain:   { name: '정예 돌격병',   hp: 95,  dmg: 12, speed: 82,  r: 11, range: 22, rate: 1.1, gold: 9,  aggro: 130, desc: '더 빠르고 단단한 돌격병입니다.' },
+      ironshield:{ name: '철갑 방패병',   hp: 300, dmg: 12, speed: 42,  r: 15, range: 24, rate: 0.9, gold: 18, aggro: 90,  rres: 0.3, desc: '원거리 피해를 30%만 입습니다.' },
+      crossbow:  { name: '석궁 사수',     hp: 55,  dmg: 14, speed: 50,  r: 10, range: 260, rate: 0.7, gold: 14, aggro: 280, ranged: true, desc: '아주 멀리서 강한 화살을 쏩니다.' },
+      sapper:    { name: '공병',          hp: 70,  dmg: 55, speed: 90,  r: 10, range: 12, rate: 1.0, gold: 13, aggro: 180, blast: 110, desc: '넓은 범위로 폭발합니다.' },
+      warlock:   { name: '흑마법사',      hp: 120, dmg: 0,  speed: 48,  r: 11, range: 0,  rate: 0,   gold: 22, aggro: 0, healRange: 160, healPct: 0.07, healRate: 2.2, keep: 280, desc: '다른 적을 더 강하게 치유합니다.' },
+      ogre:      { name: '오우거',        hp: 800, dmg: 36, speed: 36,  r: 21, range: 30, rate: 0.6, gold: 45, aggro: 100, desc: '거대하고 매우 단단합니다.' },
+      direwolf:  { name: '광포한 늑대',   hp: 90,  dmg: 14, speed: 150, r: 11, range: 20, rate: 1.2, gold: 12, aggro: 220, desc: '늑대보다 훨씬 빠르고 강합니다.' },
+      wyvern:    { name: '와이번',        hp: 160, dmg: 18, speed: 110, r: 12, range: 18, rate: 0.9, gold: 22, aggro: 260, air: true, desc: '강한 공중형이라 궁수 계열과 포탑만 공격할 수 있습니다.' },
+      wraith:    { name: '망령',          hp: 160, dmg: 24, speed: 70,  r: 12, range: 22, rate: 0.9, gold: 20, aggro: 150, mres: 0.3, desc: '근접 피해를 30%만 입습니다.' },
       brute:  { name: '거한',   hp: 240, dmg: 16, speed: 34, r: 17, range: 26, rate: 0.7, gold: 20, aggro: 100, desc: '느리지만 매우 단단합니다.' },           // 느리고 단단하다
     },
     // 일반 적 등장표: from 라운드부터 가중치 w로 섞여 나온다 (라운드가 갈수록 종류가 늘어난다)
-    spawn: { grunt: { from: 1, w: 6 }, shield: { from: 3, w: 3 }, archer: { from: 4, w: 2.5 }, bomber: { from: 7, w: 2.2 }, shaman: { from: 10, w: 1.3 }, brute: { from: 13, w: 1.4 }, wolf: { from: 5, w: 2.2 }, bat: { from: 9, w: 1.6 }, boar: { from: 11, w: 1.4 }, spider: { from: 14, w: 1.5 }, ghost: { from: 18, w: 1.4 } },
+    spawn: { grunt: { from: 1, w: 6 }, shield: { from: 3, w: 3 }, archer: { from: 4, w: 2.5 }, bomber: { from: 7, w: 2.2 }, shaman: { from: 10, w: 1.3 }, brute: { from: 13, w: 1.4 }, wolf: { from: 5, w: 2.2 }, bat: { from: 9, w: 1.6 }, boar: { from: 11, w: 1.4 }, spider: { from: 14, w: 1.5 }, ghost: { from: 18, w: 1.4 },
+      captain: { from: 24, w: 1.8 }, direwolf: { from: 27, w: 1.5 }, crossbow: { from: 26, w: 1.5 }, ironshield: { from: 28, w: 1.3 }, sapper: { from: 30, w: 1.2 }, warlock: { from: 32, w: 1.0 }, ogre: { from: 34, w: 1.1 }, wyvern: { from: 36, w: 1.0 }, wraith: { from: 40, w: 1.0 } },
     // 보스: 5라운드마다, 라운드 시작과 함께 나온다. 일반 보스 5종은 게임마다 무작위 순서로 5·10·15·20·25라운드에 한 번씩,
     // 2막(35·40·45라운드)에는 다시 섞어서 3종이 나온다. 30라운드는 암흑 기사단장, 50라운드는 마왕 고정. 체력은 라운드별 표(보스가 누구든 같은 라운드면 같은 체력),
     // 패턴 강도는 라운드에 맞춰 조정된다(scaleAbil). 풀 보스의 패턴 수치는 15라운드 기준.
@@ -131,13 +145,14 @@
       hpSlope: 0.125, hpSlopeLate: 0.14, lateFrom: 20, // 체력 배율: 선형, lateFrom(대혼란) 이후 기울기 증가
       dmgShare: 0.5,                                  // 공격력은 체력 증가분의 이 비율만 반영
       lateSpeed: 1.1,                                 // 대혼란 이후 적 이동 속도 배율
-      enemyHp: 0.27, enemyDmg: 0.5,                    // 모든 적(보스 포함)의 체력/공격력 배율
+      enemyHp: 0.2, enemyDmg: 0.5,                    // 모든 적(보스 포함)의 체력/공격력 배율
       bossHp: 1,                                      // 보스 체력에 추가로 곱하는 배율
       // 2막(31라운드~): 적이 강해지는 폭이 더 크다
       countPost: 3,                                   // 2막에서는 라운드마다 적이 이만큼 늘어난다 (1막 말 수 + 이 값 × 경과 라운드)
-      hpSlopePost: 0.32,                              // 2막 체력 증가 기울기 (라운드당)
+      hpSlopePost: 0.19,                              // 2막 체력 증가 기울기 (라운드당)
       postSpeed: 1.08,                                // 2막 적 이동 속도 배율
       meleeHp: 1.25, rangedDmg: 1.25,                  // 근접 적은 체력, 원거리 적은 공격력을 더 높게 (못 잡으면 쌓인다)
+      bossSplash: 0.25, bossSplashR: 35,               // 보스 기본 공격의 범위 피해: 주변 아군이 받는 비율, 반경(+보스 크기)
       healCap: 0.10,                                  // 한 유닛이 1초 동안 치유로 회복할 수 있는 최대 비율(최대 체력 기준). 사제를 많이 뽑아도 불사가 되지 않게 한다
       bossGrow: 0.02, bossGrowDelay: 8, bossGrowMax: 2.6, // 보스 기본 공격: 등장 8초 뒤부터 초당 +2%씩 강해진다 (최대 ×2.6)
       summonRange: 600,                               // 보스가 성채에서 이 거리 안에 들어와야 졸개 소환 시간이 흐른다
@@ -166,6 +181,7 @@
     // 엘리트: 일반 몬스터가 일정 확률로 훨씬 강하고 크게 나온다. 확률은 라운드가 갈수록 커져 최대 max
     elite: { from: 3, perRound: 0.0025, max: 0.10, hp: 3, dmg: 1.6, size: 1.35, gold: 4, speed: 1.05 },
     dmgVar: 0.15,                     // 모든 공격 피해에 공격력 ±15% 오차
+    legendChance: 0.007,              // 30라운드 이후, 카드 한 칸마다 전설 카드가 나올 확률 (아주 낮음)
     rarityWeight: { common: 70, rare: 25, epic: 5 },
   };
   const UNIT_TYPES = ['sword', 'archer', 'priest']; // 직접 생산 가능한 유닛
@@ -308,6 +324,8 @@
     { id: 's_golem',  cat: 'summon', rar: 'epic',   max: 1,  name: '골렘 소환',       desc: () => '거대한 탱커 골렘을 영구 소환 · 검사 계열 · 스킬 [대지 강타]: 7초마다 주변 적에게 공격력 ×4.5 피해 + 3초 감속' },
     { id: 's_hero',   cat: 'summon', rar: 'epic',   max: 1,  name: '용사 소환',       desc: () => '강력한 근접 영웅 용사를 영구 소환 · 검사 계열 · 스킬 [일섬]: 5초마다 주변 적 전체에 공격력 ×6 베기' },
     // 궁수 계열 특수 유닛: 궁수 강화 카드와 궁수 전직(저격수·속사수 등)의 효과를 받는다
+    { id: 'l_sword',  cat: 'summon', rar: 'legend', max: 1, name: '전설 · 검왕 강림', desc: () => '압도적인 전사 검왕을 영구 소환 · 검사 계열 · 스킬 [천검 강림]: 6초마다 주변 적 전체에 공격력 ×9' },
+    { id: 'l_archer', cat: 'summon', rar: 'legend', max: 1, name: '전설 · 궁신 강림', desc: () => '압도적인 궁수 궁신을 영구 소환 · 궁수 계열 · 화살이 적 3명 관통 · 스킬 [천궁 난사]: 5초마다 적 10명을 동시에 저격' },
     { id: 's_marksman',  cat: 'summon', rar: 'epic', max: 1, name: '명궁 소환',    desc: () => '사거리 300의 영웅 궁수를 영구 소환 · 궁수 계열 · 스킬 [일제 사격]: 6초마다 가까운 적 6명을 동시에 저격 (공격력 ×4.5)' },
     { id: 's_repeaters', cat: 'summon', rar: 'rare', max: 3, name: '연노병 소환',  desc: l => '연노병 2명을 영구 소환 (' + l + '/3) · 초당 3발 이상 빠르게 쏘는 석궁병 · 궁수 계열 (궁수 강화·전직 효과를 받음)' },
     { id: 's_ballista',  cat: 'summon', rar: 'rare', max: 2, name: '발리스타 설치', desc: l => '대형 석궁 발리스타를 성채 옆에 설치 (' + l + '/2) · 큰 화살이 적 2명을 관통 · 궁수 계열 (궁수 강화·전직 효과를 받음)' },
@@ -337,6 +355,7 @@
     const out = [];
     const owned = UNIT_TYPES.filter(t => S.units.some(u => lineOf(u.type) === t && !u.dead));
     for (const def of CARD_DEFS) {
+      if (def.rar === 'legend') continue; // 전설 카드는 아래 generateOffer에서 따로 (아주 낮은 확률)
       if (def.generic) {
         for (const t of UNIT_TYPES) if (taken(S, def.id + ':' + t) < def.max) out.push({ def, type: t, w: owned.includes(t) ? 3 : 1 });
       } else if (taken(S, def.id) < def.max) {
@@ -367,7 +386,11 @@
       const c = pickFrom(S, cands); used.add(c.def.id + ':' + (c.type || ''));
       return makeCard(S, c.def, c.type);
     };
-    for (let i = 0; i < 3; i++) { const c = take(rollRarity(S)); if (c) offer.push(c); }
+    const legends = S.round > ACT1_END ? CARD_DEFS.filter(d => d.rar === 'legend' && taken(S, d.id) < d.max) : [];
+    for (let i = 0; i < 3; i++) {
+      if (legends.length && !offer.some(o => o.rar === 'legend') && S.rng() < CFG.legendChance) { const d = legends[Math.floor(S.rng() * legends.length)]; offer.push(makeCard(S, d, null)); continue; } // 30라운드 이후 아주 드물게 전설 카드
+      const c = take(rollRarity(S)); if (c) offer.push(c);
+    }
     if (guarantee && offer.length && !offer.some(c => c.rar !== 'common')) {
       const c = take(S.rng() < 0.8 ? 'rare' : 'epic');
       if (c && c.rar !== 'common') offer[0] = c;
@@ -445,7 +468,7 @@
     if (c.id === 'u_range') for (const u of S.units) if (lineOf(u.type) === 'archer' && !u.dead) refreshUnit(S, u); // 사거리 카드는 이미 있는 궁수에게도 바로 적용
     if (S.core.max > oldMax) S.core.hp += S.core.max - oldMax;
     for (const u of S.units) if (lineOf(u.type) === 'core' && !u.dead) refreshUnit(S, u); // 포탑은 성채 강화 카드를 받는다
-    const summon = { s_turret: ['turret'], s_golem: ['golem'], s_hero: ['hero'], s_marksman: ['marksman'], s_repeaters: ['repeater', 'repeater'], s_ballista: ['ballista'] }[c.id];
+    const summon = { s_turret: ['turret'], s_golem: ['golem'], s_hero: ['hero'], s_marksman: ['marksman'], s_repeaters: ['repeater', 'repeater'], s_ballista: ['ballista'], l_sword: ['legendsword'], l_archer: ['legendarcher'] }[c.id];
     if (summon) for (const t of summon) { addUnit(S, t); const steps = CFG.units[t].priceSteps | 0; if (steps > 0) { S.buyCount += steps; emit(S, { type: 'priceUp' }); } } // 특수 유닛(골렘·용사·포탑)은 priceSteps가 0이라 가격을 올리지 않는다
     emit(S, { type: 'picked', name: c.name });
     return true;
@@ -746,7 +769,7 @@
     const T = extra && extra.T ? extra.T : Math.max(cf.minT, d / spd);
     const H = clamp(cf.arc * d + cf.arcMin, cf.arcMin, cf.arcMax);
     const s = S.shotPool.length ? S.shotPool.pop() : {}; // 쓴 투사체 객체를 재사용 (풀링)
-    s.x = sx; s.y = sy; s.sx = sx; s.sy = sy; s.p = 0; s.T = T; s.H = H; s.h = m.h0; s.h0 = m.h0; s.vx = 0; s.vy = 0; s.vh = 0; s.t = tgt; s.dmg = dmg; s.color = color;
+    s.x = sx; s.y = sy; s.sx = sx; s.sy = sy; s.p = 0; s.T = T; s.H = H; s.h = m.h0; s.h0 = m.h0; s.vx = 0; s.vy = 0; s.vh = 0; s.t = tgt; s.dmg = dmg; s.color = color; s.job = from.job || null; s.elite = !!from.elite;
     s.pierce = !!(extra && extra.pierce); s.pc = extra && extra.pc != null ? extra.pc : null; s.aoe = extra && extra.aoe ? extra.aoe : 0; s.crit = !!(extra && extra.crit);
     S.shots.push(s);
     emit(S, { type: 'shot', x: sx, y: sy, c: color });
@@ -849,7 +872,7 @@
       if (t) {
         const amt = u.heal * (1 + (u.aura ? S.aura.atk : 0));
         applyHeal(S, t, amt); u.cd = u.healRate / spm; u.swing = 0.35; u.aim = Math.atan2(t.y - u.y, t.x - u.x);
-        emit(S, { type: 'heal', x: u.x, y: u.y, tx: t.x, ty: t.y });
+        emit(S, { type: 'heal', x: u.x, y: u.y, tx: t.x, ty: t.y, job: u.job });
         if (S.perks.aoeHeal) {
           for (const a of S.units) if (!a.dead && a !== t && Math.hypot(a.x - t.x, a.y - t.y) <= 42) { applyHeal(S, a, amt * 0.35 * S.perks.aoeHeal); emit(S, { type: 'heal', x: t.x, y: t.y, tx: a.x, ty: a.y, aoe: true }); }
         }
@@ -858,7 +881,7 @@
   }
   function castHeroSkill(S, u, atk) {
     const sk = CFG.heroSkill[u.type];
-    if (u.type === 'marksman') {
+    if (sk.n) {
       const seen = new Set(), list = [];
       for (let i = 0; i < sk.n; i++) { const a = nearestExcl(S.gE, u.x, u.y, sk.r, seen), b = nearestExcl(S.gA, u.x, u.y, sk.r, seen), t = !b ? a : !a ? b : (Math.hypot(a.x - u.x, a.y - u.y) <= Math.hypot(b.x - u.x, b.y - u.y) ? a : b); if (!t) break; seen.add(t); list.push(t); }
       for (const t of list) { damage(S, t, atk * sk.mul * (t.rres || 1)); emit(S, { type: 'heroSkill', kind: u.type, x: u.x, y: u.y, tx: t.x, ty: t.y }); }
@@ -875,7 +898,7 @@
     const atk = u.atk * (1 + (u.aura ? S.aura.atk : 0)) * (u.weakT > 0 ? CFG.debuff.weak.mul : 1);
     const fromCore = Math.hypot(u.x - CX, u.y - CY);
     const hs = CFG.heroSkill[u.type];
-    if (hs) { u.skT = (u.skT === undefined ? hs.cd * 0.5 : u.skT) - dt; if (u.skT <= 0 && (u.type === 'marksman' ? nearestBoth(S, u.x, u.y, hs.r * 0.9) : nearest(S.gE, u.x, u.y, hs.r * 0.9))) { u.skT = hs.cd; castHeroSkill(S, u, atk); } }
+    if (hs) { u.skT = (u.skT === undefined ? hs.cd * 0.5 : u.skT) - dt; if (u.skT <= 0 && (hs.n ? nearestBoth(S, u.x, u.y, hs.r * 0.9) : nearest(S.gE, u.x, u.y, hs.r * 0.9))) { u.skT = hs.cd; castHeroSkill(S, u, atk); } }
     const cfg = CFG.units[u.type], aggro = cfg.aggro;
     const rush = (lineOf(u.type) === 'sword' && S.perks.charge) ? 1 + V().charge * S.perks.charge : 1;
     const stopFor = tgt => (melee ? u.range + u.r + tgt.r - 2 : u.range * 0.85 + tgt.r);
@@ -890,7 +913,7 @@
         const chargeRate = (lineOf(u.type) === 'sword' && S.perks.charge) ? 1 + V().chargeRate * S.perks.charge : 1;
         u.cd = 1 / (u.rate * spm * chargeRate); u.swing = 0.25; u.aim = Math.atan2(t.y - u.y, t.x - u.x);
         if (melee) {
-          emit(S, { type: 'melee', x: u.x, y: u.y });
+          emit(S, { type: 'melee', x: u.x, y: u.y, tx: t.x, ty: t.y, job: u.job, ut: u.type });
           damage(S, t, atk * (t.mres || 1));
           const cl = S.jobMods[lineOf(u.type)] ? S.jobMods[lineOf(u.type)].cleave : 0; // 검성: 주변 적에게 베기 피해
           if (cl) eachNear(S.gE, t.x, t.y, 46, o => { if (o !== t) damage(S, o, atk * cl); });
@@ -1018,7 +1041,13 @@
     if (e.cd <= 0 && reach <= e.range + 2) {
       e.cd = cdTime; e.swing = 0.25; e.aim = Math.atan2(t.y - e.y, t.x - e.x);
       if (t === c) { hitCore(S, dmg, e.kind === 'boss' ? '보스 근접' : '근접(' + (CFG.enemies[e.kind] ? CFG.enemies[e.kind].name : e.kind) + ')'); if (S.perks.thorn) damage(S, e, dmg * V().thorn * S.perks.thorn); }
-      else { damage(S, t, dmg); if (e.poison && !t.dead) t.poisonT = Math.max(t.poisonT || 0, e.poison); }
+      else {
+        damage(S, t, dmg); if (e.poison && !t.dead) t.poisonT = Math.max(t.poisonT || 0, e.poison);
+        if (e.kind === 'boss') { // 보스의 기본 공격은 범위 공격: 맞은 대상 주변의 아군도 함께 피해
+          const R = CFG.balance.bossSplashR + e.r * 0.5; eachNear(S.gU, t.x, t.y, R, o => { if (o !== t) damage(S, o, dmg * CFG.balance.bossSplash); });
+          emit(S, { type: 'bossSlam', x: t.x, y: t.y, r: R });
+        } else if (e.elite) emit(S, { type: 'emelee', x: e.x, y: e.y, tx: t.x, ty: t.y });
+      }
     }
   }
 

@@ -131,6 +131,8 @@ table.rank tr.me td { background: rgba(255,204,64,.16); font-weight: 700; }
 .pcard .pk { position: absolute; right: 10px; bottom: 8px; font-size: 11px; color: var(--muted); }
 .pcard.rar-common { border-color: #3a4660; } .pcard.rar-common .rar { color: #9fb0cc; }
 .pcard.rar-rare { border-color: #5aa9ff; box-shadow: 0 0 14px rgba(90,169,255,.25); } .pcard.rar-rare .rar { color: #7cc0ff; }
+.pcard.rar-legend { border-color: #ff6bff; background: linear-gradient(160deg, rgba(120,40,160,.35), rgba(30,160,150,.25)); box-shadow: 0 0 24px rgba(255,107,255,.5); animation: legendGlow 1.6s ease-in-out infinite alternate; } .pcard.rar-legend .rar { color: #ff9bff; font-weight: 900; }
+@keyframes legendGlow { to { box-shadow: 0 0 34px rgba(125,255,232,.6); } }
 .pcard.rar-epic { border-color: #ffd166; box-shadow: 0 0 18px rgba(255,209,102,.35); } .pcard.rar-epic .rar { color: #ffd166; }
 .pcard.job { border-color: #ffd166; box-shadow: 0 0 18px rgba(255,209,102,.3); } .pcard.job .cat { color: #ffd166; } .pcard.job .pn { color: #ffe9a8; } .pcard .from { font-size: 11px; color: #ffb86b; }
 .pcard.cat-unit .cat { color: #6bdc8b; } .pcard.cat-core .cat { color: #ffb86b; } .pcard.cat-summon .cat { color: #c77dff; }

@@ -30,6 +30,7 @@
 
   // 공통 몸: 그림자 + 다리 + 몸통 + 머리. 반환: 손 위치 {hx, hy}와 스케일
   function body(ctx, e, o) {
+    if (e._pal) o = Object.assign({}, o, e._pal);
     const s = o.s, d = e._dir, bob = e._moving ? Math.sin((e._walk || 0)) * 1.0 * s : 0;
     const flash = e.flash > 0;
     // 그림자
@@ -338,6 +339,7 @@
   function shadow(ctx, s, w, y) { ctx.globalAlpha = 0.28; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(0, (y || 10) * s, w * s, 3 * s, 0, 0, TAU); ctx.fill(); ctx.globalAlpha = 1; }
   // 네발 짐승: 몸통 타원 + 머리 + 귀 + 다리 + 꼬리
   function beast(ctx, e, s, o) {
+    if (e._pal) o = Object.assign({}, o, e._pal);
     const d = e._dir, fl = e.flash > 0, w = e._walk || 0, mv = e._moving ? 1 : 0, lunge = e.swing > 0 ? 3 * s : 0;
     shadow(ctx, s, 12);
     ctx.lineCap = 'round'; ctx.strokeStyle = fl ? FLASH : o.legs; ctx.lineWidth = 2.4 * s;
@@ -364,9 +366,9 @@
     bat(ctx, e, s) {
       const fl = e.flash > 0, t = performance.now() * 0.03 + e.id, flap = Math.sin(t), y0 = -12 * s + Math.sin(t * 0.4) * 1.5 * s;
       shadow(ctx, s, 7, 11);
-      ctx.fillStyle = fl ? FLASH : '#3b2f55'; ctx.strokeStyle = '#150f22'; ctx.lineWidth = Math.max(1, s);
+      const P = e._pal || {}; ctx.fillStyle = fl ? FLASH : (P.wing || '#3b2f55'); ctx.strokeStyle = '#150f22'; ctx.lineWidth = Math.max(1, s);
       for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(sd * 2 * s, y0); ctx.quadraticCurveTo(sd * 10 * s, y0 - 9 * s * flap - 3 * s, sd * 16 * s, y0 - 2 * s * flap + 1 * s); ctx.quadraticCurveTo(sd * 12 * s, y0 + 2 * s, sd * 9 * s, y0 + 4 * s); ctx.quadraticCurveTo(sd * 6 * s, y0 + 2 * s, sd * 4 * s, y0 + 5 * s); ctx.closePath(); ctx.fill(); ctx.stroke(); }
-      ctx.fillStyle = fl ? FLASH : '#4d3d6e'; ctx.beginPath(); ctx.ellipse(0, y0 + 1.5 * s, 4.2 * s, 5 * s, 0, 0, TAU); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = fl ? FLASH : (P.body || '#4d3d6e'); ctx.beginPath(); ctx.ellipse(0, y0 + 1.5 * s, 4.2 * s, 5 * s, 0, 0, TAU); ctx.fill(); ctx.stroke();
       if (!fl) { ctx.fillStyle = '#4d3d6e'; tri(ctx, -3.6 * s, y0 - 2 * s, -3 * s, y0 - 7.5 * s, -0.8 * s, y0 - 3 * s); ctx.fill(); tri(ctx, 3.6 * s, y0 - 2 * s, 3 * s, y0 - 7.5 * s, 0.8 * s, y0 - 3 * s); ctx.fill(); ctx.fillStyle = '#ff4a5a'; ctx.fillRect(-2.4 * s, y0 - 0.6 * s, 1.5 * s, 1.5 * s); ctx.fillRect(0.9 * s, y0 - 0.6 * s, 1.5 * s, 1.5 * s); ctx.fillStyle = '#fff'; ctx.fillRect(-1.4 * s, y0 + 2.4 * s, 0.9 * s, 1.5 * s); ctx.fillRect(0.5 * s, y0 + 2.4 * s, 0.9 * s, 1.5 * s); }
     },
     spider(ctx, e, s) {
@@ -380,7 +382,7 @@
     },
     ghost(ctx, e, s) {
       const fl = e.flash > 0, t = performance.now() * 0.005 + e.id, bob = Math.sin(t) * 1.6 * s, y0 = -4 * s + bob; shadow(ctx, s, 8, 11);
-      ctx.globalAlpha = 0.88; ctx.fillStyle = fl ? FLASH : '#cfe3f5'; ctx.strokeStyle = '#6f89a8'; ctx.lineWidth = Math.max(1, s);
+      const P = e._pal || {}; ctx.globalAlpha = 0.88; ctx.fillStyle = fl ? FLASH : (P.body || '#cfe3f5'); ctx.strokeStyle = P.line || '#6f89a8'; ctx.lineWidth = Math.max(1, s);
       ctx.beginPath(); ctx.arc(0, y0, 7 * s, Math.PI, 0); ctx.lineTo(7 * s, y0 + 9 * s);
       for (let i = 0; i < 4; i++) { const x = 7 * s - (i + 0.5) * 3.5 * s; ctx.quadraticCurveTo(x + 1.75 * s, y0 + (i % 2 ? 6 : 12) * s + Math.sin(t * 2 + i) * 1.2 * s, x - 1.75 * s + (i === 3 ? 0 : 0), y0 + 9 * s); }
       ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.globalAlpha = 1;
@@ -389,10 +391,27 @@
   });
   const d = e => e._dir;
 
+  // 강화형 적: 기본 적의 그림에 색만 바꿔서 그린다 (크기는 판정 반지름을 따른다)
+  const BASE = { captain: 'grunt', ironshield: 'shield', crossbow: 'archer', sapper: 'bomber', warlock: 'shaman', ogre: 'brute', direwolf: 'wolf', wyvern: 'bat', wraith: 'ghost' };
+  const PAL = {
+    captain: { body: '#6a1f1f', legs: '#2a0f0e', head: '#d9b98a', belt: '#e1b43a' },
+    ironshield: { body: '#5a6678', legs: '#2b3340', head: '#c9d0da', belt: '#8a94a6' },
+    crossbow: { body: '#2f5a3a', legs: '#14301c', head: '#d9d9a0', belt: '#1c3a24' },
+    sapper: { body: '#2a2a33', legs: '#111116', head: '#e6b98a', belt: '#c0392b' },
+    warlock: { body: '#3a1f5a', legs: '#1a0f2a', head: '#bca0d9', belt: '#c77dff' },
+    ogre: { body: '#5a3a1f', legs: '#2a1a0c', head: '#a5c27a', belt: '#3a2410' },
+    direwolf: { body: '#3a2f3a', belly: '#7a6a7a', head: '#4a3d4a', ear: '#2a1f2a', snout: '#6a5a6a', legs: '#241a24', eye: '#ff3b3b', mane: '#c0392b' },
+    wyvern: { wing: '#2f6a3a', body: '#3d8a4a' },
+    wraith: { body: '#6a7a9a', line: '#2a3550' },
+  };
+  // 전설 유닛: 용사/명궁 그림에 보랏빛·청록 색을 입혀 크게 그린다
+  const UBASE = { legendsword: 'hero', legendarcher: 'marksman' };
+  const UPAL = { legendsword: { body: '#7a1fa8', legs: '#3a0f5a', head: '#f3cfa6', belt: '#ff6bff' }, legendarcher: { body: '#1fa89a', legs: '#0f4a45', head: '#f3cfa6', belt: '#7dffe8' } };
   // 개체 하나 그리기. unitScale: 판정 반지름 대비 그림 크기 배율
   function draw(ctx, e, now) {
     track(e, now);
-    const table = e.team === 'u' ? UNIT : ENEMY, fn = table[e.type || e.kind];
+    const table = e.team === 'u' ? UNIT : ENEMY; e._pal = e.team === 'e' ? PAL[e.kind] : UPAL[e.type];
+    const fn = table[e.type || e.kind] || (e.team === 'e' ? ENEMY[BASE[e.kind]] : UNIT[UBASE[e.type]]);
     if (!fn) return;
     const s = (e.r / 10) * 1.25;
     ctx.save(); ctx.translate(e.x, e.y - 3 * s); // 발이 판정 중심 근처에 오도록
@@ -400,14 +419,14 @@
     ctx.restore();
   }
   // 적이 아주 많을 때/멀리서 볼 때 쓰는 간단한 그림: 몸통(네모) + 머리(동그라미)만, 무기·그림자·방향 애니메이션 없음
-  const LITE = { grunt: ['#c8453f', '#c9d99a'], shield: ['#8f2f33', '#d6c79a'], archer: ['#7a3b2a', '#c9d99a'], bomber: ['#e07a2a', '#e6d58a'], shaman: ['#6a3f8f', '#c9d99a'], brute: ['#7a2a2a', '#bcd08a'], wolf: ['#7c828c', '#8d939e'], bat: ['#4d3d6e', '#3b2f55'], boar: ['#6b4a32', '#7a553a'], spider: ['#3a2f4a', '#2a2233'], ghost: ['#cfe3f5', '#b8d0e6'] };
+  const LITE = { grunt: ['#c8453f', '#c9d99a'], shield: ['#8f2f33', '#d6c79a'], archer: ['#7a3b2a', '#c9d99a'], bomber: ['#e07a2a', '#e6d58a'], shaman: ['#6a3f8f', '#c9d99a'], brute: ['#7a2a2a', '#bcd08a'], captain: ['#6a1f1f', '#d9b98a'], ironshield: ['#5a6678', '#c9d0da'], crossbow: ['#2f5a3a', '#d9d9a0'], sapper: ['#2a2a33', '#e6b98a'], warlock: ['#3a1f5a', '#bca0d9'], ogre: ['#5a3a1f', '#a5c27a'], direwolf: ['#3a2f3a', '#4a3d4a'], wyvern: ['#3d8a4a', '#2f6a3a'], wraith: ['#6a7a9a', '#4a5a7a'], wolf: ['#7c828c', '#8d939e'], bat: ['#4d3d6e', '#3b2f55'], boar: ['#6b4a32', '#7a553a'], spider: ['#3a2f4a', '#2a2233'], ghost: ['#cfe3f5', '#b8d0e6'] };
   function drawLite(ctx, e) {
     const s = (e.r / 10) * 1.25, c = LITE[e.kind] || LITE.grunt, fl = e.flash > 0;
     ctx.fillStyle = fl ? '#fff' : c[0]; ctx.fillRect(e.x - 6 * s, e.y - 8 * s, 12 * s, 13 * s);
     ctx.fillStyle = fl ? '#fff' : c[1]; ctx.beginPath(); ctx.arc(e.x, e.y - 11 * s, 5 * s, 0, TAU); ctx.fill();
   }
   // 체력 바 위치 계산용: 그림의 머리 위 높이
-  function headTop(e) { return -(e.r / 10) * 1.25 * (e.kind === 'boss' ? 17 : e.kind === 'bat' ? 26 : e.jobTier ? 21 : 16); }
+  function headTop(e) { return -(e.r / 10) * 1.25 * (e.kind === 'boss' ? 17 : (e.kind === 'bat' || e.kind === 'wyvern') ? 26 : e.jobTier ? 21 : 16); }
 
   window.Figures = { draw, drawLite, headTop };
 })();

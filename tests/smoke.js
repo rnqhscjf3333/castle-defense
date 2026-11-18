@@ -395,7 +395,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   check('사제의 대기 반경이 성채 원형 밖', C.CFG.ai.homeR.priest * 0.9 > C.CFG.core.blockR + 10); }
 // 25) 방어 자세: 거리 조건 없이 검사 계열이 받는 피해 감소, 문구에도 300 없음
 { const g = arena(3, []); g.gold = 1e6; g.buyCd.sword = 0; const sw = C.buy(g, 'sword').unit; applyById(g, 'u_guard'); sw.x = 1500 + 800; sw.y = 1500; sw.hp = sw.max = 1e6;
-  const e = C.spawnEnemy(g, 'grunt', sw.x + 15, sw.y); e.dmg = 100; e.cd = 0; g.core.atk = 0; const h0 = sw.hp; C.tick(g, DT); C.tick(g, DT);
+  const e = C.spawnEnemy(g, 'grunt', sw.x + 15, sw.y); e.dmg = 100; e.cd = 0; e.hp = e.max = 1e9; g.core.atk = 0; const h0 = sw.hp; C.tick(g, DT); C.tick(g, DT);
   const taken = h0 - sw.hp; const expected = 100 * (1 - C.CFG.cardVals.guard);
   check('방어 자세: 성채에서 멀리 있어도(800px) 검사 피해 감소 적용', taken > 0 && Math.abs(taken - expected) < 1, taken.toFixed(1) + ' (기대 ' + expected.toFixed(1) + ')');
   check('방어 자세 문구에 "성채 주변(300)" 없음', !C.CARD_DEFS.find(d => d.id === 'u_guard').desc(1).includes('300') && !C.CARD_DEFS.some(d => String(d.desc ? d.desc(1) : '').includes('성채 주변(300)'))); }
@@ -529,5 +529,12 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
     const e = C.spawnEnemy(g, 'brute', 1500 + 380, 1500); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; e.aggro = 0; for (let i = 0; i < 30 * 8; i++) C.tick(g, DT); return Math.hypot(u.x - 1500, u.y - 1500); };
   const dn = run('normal'), df = run('free');
   check('기본 모드: 먼 적을 쫓지 않음 / 자유 모드: 쫓아감', dn < 200 && df > 300, `기본 ${dn.toFixed(0)} 자유 ${df.toFixed(0)}`); }
+// 41) 전설 카드: 30라운드 이후에만, 아주 드물게 / 선택하면 전설 유닛 소환
+{ const cnt = r => { let n = 0, tot = 0; for (let i = 0; i < 4000; i++) { const g = C.createGame(1000 + i); g.round = r; C.openCards(g, false); for (const c of g.cards.offer || []) { tot++; if (c.rar === 'legend') n++; } } return [n, tot]; };
+  const [n10] = cnt(10), [n40, t40] = cnt(40);
+  check('전설 카드: 30라운드 이전 0장, 이후 아주 낮은 확률', n10 === 0 && n40 > 0 && n40 / t40 < 0.02, `R10 ${n10}장, R40 ${n40}/${t40} (${(n40 / t40 * 100).toFixed(2)}%)`);
+  const g = C.createGame(5); g.round = 40; g.cards.offer = [C.CARD_DEFS.find(d => d.id === 'l_sword'), C.CARD_DEFS.find(d => d.id === 'l_archer')].map(d => ({ key: d.id, id: d.id, cat: d.cat, rar: d.rar, name: d.name, desc: '', lv: 1 }));
+  C.pickCard(g, 0); C.pickCard(Object.assign(g, { cards: Object.assign(g.cards, { offer: [{ key: 'l_archer', id: 'l_archer', cat: 'summon', rar: 'legend', name: 'x', desc: '', lv: 1 }] }) }), 0);
+  check('전설 선택 → 검왕·궁신 소환 (일반 영웅보다 훨씬 강함)', g.units.some(u => u.type === 'legendsword') && g.units.some(u => u.type === 'legendarcher') && C.CFG.units.legendsword.atk > C.CFG.units.hero.atk * 2 && C.CFG.units.legendarcher.range > C.CFG.units.marksman.range); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);
