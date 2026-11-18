@@ -600,5 +600,8 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
 { const run = p => { C.CFG.units.sword.dbl = p; const g = arena(3, []); g.core.atk = 0; g.captureEvents = true; C.buy(g, 'sword'); const u = g.units[0]; u.x = 1500; u.y = 1400; u.hx = u.x; u.hy = u.y; const e = C.spawnEnemy(g, 'brute', 1500, 1400 - 30); e.hp = e.max = 1e9; e.speed = 0; e.dmg = 0; let n = 0, d = 0; for (let i = 0; i < 30 * 20; i++) { C.tick(g, DT); for (const ev of g.events || []) if (ev.type === 'melee') { n++; if (ev.dbl) d++; } g.events = []; } return [n, d]; };
   const a = run(0), b = run(1); C.CFG.units.sword.dbl = 0;
   check('검사 연속 공격: 확률 0이면 없음, 1이면 매번 한 번 더', a[1] === 0 && b[1] > 5 && b[1] >= b[0] * 0.4, `0%: ${a[1]}/${a[0]}회, 100%: ${b[1]}/${b[0]}회`); }
+// 46) 수비 모드: 자기 자리를 벗어나지 않는다
+{ const run = mode => { const a = C.createGame(1, mode); a.hold = true; a.phase = 'round'; a.round = 10; a.queue = []; C.buy(a, 'sword'); const u = a.units[0]; u.x = u.hx = 1500 + 100; u.y = u.hy = 1500; const e = C.spawnEnemy(a, 'grunt', 1500 + 238, 1500); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; for (let i = 0; i < 150; i++) C.tick(a, DT); return Math.hypot(u.x - u.hx, u.y - u.hy); };
+  const n = run('normal'), h = run('hold'); check('수비 모드: 자리를 지키고, 기본 모드는 적을 쫓아감', h < 7 && n > h + 12, `수비 이동 ${h.toFixed(1)}px / 기본 ${n.toFixed(0)}px`); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

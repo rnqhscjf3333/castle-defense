@@ -36,9 +36,10 @@
     cv.width = Math.round(vw * dpr); cv.height = Math.round(vh * dpr);
     clampCam();
   }
+  let zoomFloor = 1; // 시작 연출 중에만 낮춰서 지도 전체보다 더 멀리서 시작한다
   function minZoom() { return Math.max(0.3, Math.min(vw / W, vh / H) * 0.9); }
   function clampCam() {
-    cam.zoom = Math.max(minZoom(), Math.min(1.8, cam.zoom));
+    cam.zoom = Math.max(minZoom() * zoomFloor, Math.min(1.8, cam.zoom));
     const hw = vw / 2 / cam.zoom, hh = vh / 2 / cam.zoom;
     cam.x = W > hw * 2 ? Math.max(hw, Math.min(W - hw, cam.x)) : W / 2;
     cam.y = H > hh * 2 ? Math.max(hh, Math.min(H - hh, cam.y)) : H / 2;
@@ -734,7 +735,7 @@
   function newGame() {
     openingSeen = true;
     const seed = params.get('seed') ? +params.get('seed') : (Date.now() ^ (Math.random() * 1e9)) >>> 0;
-    const mode = params.get('mode') === 'free' || store.get('cd-mode') === 'free' ? 'free' : 'normal';
+    const mm = params.get('mode') || store.get('cd-mode'), mode = mm === 'free' || mm === 'hold' ? mm : 'normal';
     S = C.createGame(seed, mode); S.captureEvents = true; Net.begin(S); syncModeBar();
     fx.length = 0; numFx = 0; paused = false; speed = 1; shownOffer = null; $('picker').classList.add('hidden'); renderUpgrades();
     $('btnPause').textContent = '일시정지'; $('btnSpeed').textContent = '1×';
@@ -800,15 +801,15 @@
     const r = await Net.top(10); if (!$('rankbox')) return;
     const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     let hit = false;
-    const rows = r.list.map((e, i) => { const me = mine != null && !hit && e.score === mine; if (me) hit = true; return '<tr' + (me ? ' class="me"' : '') + '><td>' + (i + 1) + '</td><td>' + esc(e.name) + (e.mode === 'free' ? ' <span class="mtag">자유</span>' : '') + '</td><td>' + (e.win ? '클리어' : e.round + '라운드') + '</td><td>' + fmtTime(e.time) + '</td></tr>'; }).join('');
+    const rows = r.list.map((e, i) => { const me = mine != null && !hit && e.score === mine; if (me) hit = true; return '<tr' + (me ? ' class="me"' : '') + '><td>' + (i + 1) + '</td><td>' + esc(e.name) + (e.mode === 'free' ? ' <span class="mtag">자유</span>' : e.mode === 'hold' ? ' <span class="mtag">수비</span>' : '') + '</td><td>' + (e.win ? '클리어' : e.round + '라운드') + '</td><td>' + fmtTime(e.time) + '</td></tr>'; }).join('');
     box.innerHTML = '<div class="rankhead">' + (r.server ? '전체 랭킹' : (Net.configured ? '서버에 연결하지 못해 내 기록만 표시' : '내 기록 (서버 미설정)')) + '</div>'
       + (rows ? '<table class="rank"><tr><th>#</th><th>이름</th><th>기록</th><th>시간</th></tr>' + rows + '</table>' : '<p>아직 기록이 없어요.</p>');
   }
   // 모드 전환: 왼쪽 위 라운드 표시 아래에서 언제든 바꿀 수 있다 (기본: 성채 주변 방어 / 자유: 범위 안의 적을 멀리까지 추격)
   function syncModeBar() { if (!S) return; for (const b of document.querySelectorAll('#modeBar button')) b.classList.toggle('on', b.dataset.mode === S.mode); }
   for (const b of document.querySelectorAll('#modeBar button')) b.addEventListener('click', () => {
-    if (!S) return; S.mode = b.dataset.mode === 'free' ? 'free' : 'normal'; store.set('cd-mode', S.mode); syncModeBar();
-    toast(S.mode === 'free' ? '자유 모드: 유닛이 범위 안의 적을 멀리까지 쫓아가 공격합니다' : '기본 모드: 유닛이 성채 주변을 지키며 싸웁니다');
+    if (!S) return; S.mode = ['free', 'hold'].includes(b.dataset.mode) ? b.dataset.mode : 'normal'; store.set('cd-mode', S.mode); syncModeBar();
+    toast(S.mode === 'hold' ? '수비 모드: 유닛이 자기 자리를 지키며 사거리 안의 적만 공격합니다' : S.mode === 'free' ? '자유 모드: 유닛이 범위 안의 적을 멀리까지 쫓아가 공격합니다' : '기본 모드: 유닛이 성채 주변을 지키며 싸웁니다');
   });
   $('btnRank').addEventListener('click', () => { $('ovBody').innerHTML = '<div id="rankbox"></div>'; showRank(null); $('btnRank').classList.add('hidden'); $('go').textContent = '게임 시작'; });
   // 플레이 도중 창을 닫거나 숨길 때도 기록을 남긴다 (개선 자료)
@@ -849,13 +850,13 @@
     const cl = $('clouds'); cl.innerHTML = '';
     for (let i = 0; i < 9; i++) { const a = i / 9 * 6.283 + 0.4, d = i % 2 ? 14 : 26, c = document.createElement('i'); c.style.cssText = '--x:' + (Math.cos(a) * d).toFixed(1) + 'vmax;--y:' + (Math.sin(a) * d * 0.7).toFixed(1) + 'vmax;width:' + (46 + (i * 7) % 24) + 'vmax'; cl.appendChild(c); }
     cl.classList.remove('hidden'); document.body.classList.add('introOn');
-    intro = { t0: performance.now(), z1: Math.max(cam.zoom, 0.9) }; cam.zoom = minZoom(); centerOnCore(); A2.play('horn');
+    intro = { t0: performance.now(), z1: Math.max(cam.zoom, 0.9) }; zoomFloor = 0.5; cam.zoom = minZoom() * 0.5; centerOnCore(); A2.play('horn');
     setTimeout(() => cl.classList.add('hidden'), 3800);
   }
   function stepIntro(now) {
     const t = (now - intro.t0) / 1000, k = Math.min(1, Math.max(0, (t - 0.5) / 3.0)), e = 1 - Math.pow(1 - k, 3);
-    cam.zoom = minZoom() + (intro.z1 - minZoom()) * e; centerOnCore();
-    if (t > 3.7) { intro = null; document.body.classList.remove('introOn'); }
+    { const z0 = minZoom() * 0.5; cam.zoom = z0 + (intro.z1 - z0) * e; } centerOnCore();
+    if (t > 3.7) { intro = null; zoomFloor = 1; clampCam(); document.body.classList.remove('introOn'); }
   }
   const titleEl = $('title');
   function showTitle() { titleEl.classList.remove('hidden', 'out', 'menu'); $('tMsg').textContent = ''; $('tVer').textContent = 'v' + ((window.CD_CONFIG || {}).VERSION || ''); }

@@ -35,7 +35,7 @@
     core: { hp: 1000, atk: 20, rate: 1.0, range: 260, r: 46, blockR: 64 }, // blockR: 성채 원형 안으로 아군이 들어올 수 없다
     units: {
       sword:  { name: '검사', cost: 50, hp: 120, atk: 12, rate: 1.0, range: 30,  speed: 90, r: 10, buyCd: 1.2, aggro: 220, dbl: 0.15 },
-      archer: { name: '궁수', cost: 60, hp: 75,  atk: 11, rate: 1.2, range: 220, speed: 80, r: 9,  buyCd: 1.5, aggro: 260 },
+      archer: { name: '궁수', cost: 60, hp: 67,  atk: 11, rate: 1.2, range: 220, speed: 80, r: 9,  buyCd: 1.5, aggro: 260 },
       priest: { name: '사제', cost: 80, hp: 85,  atk: 0,  rate: 0,   range: 0,   speed: 80, r: 9,  buyCd: 2.5, aggro: 0,
                 heal: 12, healRate: 2.4, healRange: 200 },
       // 카드로만 얻는 유닛
@@ -110,11 +110,11 @@
     jobs: {
       sword: {
         t1: [
-          { id: 'knight', name: '기사', desc: '체력 +80%, 받는 피해 -12%', mods: { hp: 0.8, def: 0.12 } },
+          { id: 'knight', name: '기사', desc: '체력 +80%, 받는 피해 -16%', mods: { hp: 0.8, def: 0.16 } },
           { id: 'fighter', name: '투사', desc: '공격력 +50%, 공격 속도 +20%, 연속 공격 확률 +12%', mods: { atk: 0.5, rate: 0.2, dbl: 0.12 } },
         ],
         t2: {
-          knight: [{ id: 'paladin', name: '성기사', desc: '체력 +50%, 받는 피해 -8%, 초당 체력 2% 회복', mods: { hp: 0.5, def: 0.08, regen: 0.02 } }],
+          knight: [{ id: 'paladin', name: '성기사', desc: '체력 +50%, 받는 피해 -11%, 초당 체력 2% 회복', mods: { hp: 0.5, def: 0.11, regen: 0.02 } }],
           fighter: [{ id: 'blademaster', name: '검성', desc: '공격력 +60%, 주변 적에게 50% 베기 피해, 연속 공격 확률 +10%', mods: { atk: 0.6, cleave: 0.5, dbl: 0.1 } }],
         },
       },
@@ -175,7 +175,7 @@
     cardVals: {                       // 카드 수치 (설명 문구와 효과가 모두 여기서 읽는다)
       coreAtk: 0.40, coreRate: 0.25, coreRange: 45, fortHp: 600, repair: 0.15, thorn: 0.9,
       crit: 0.10, critMul: 2, archerRange: 0.12,
-      guard: 0.18, charge: 0.40, chargeRate: 0.15, revive: 0.70, pierce: 0.40, bomb: 4.0, bombStep: 1.5,
+      guard: 0.24, charge: 0.40, chargeRate: 0.15, revive: 0.70, pierce: 0.40, bomb: 4.0, bombStep: 1.5,
       auraHeal: 0.025, auraAtk: 0.08, auraDef: 0.08, auraDefCap: 0.40, auraSpd: 0.06, auraBoost: 0.15,
     },
     rerolls: 2,
@@ -569,7 +569,7 @@
   // ───────────── 게임 생성 ─────────────
   function createGame(seed, mode) {
     const S = {
-      mode: mode === 'free' ? 'free' : 'normal', // free: 유닛이 성채 주변에 머물지 않고 범위 안의 적을 어디까지든 쫓아간다
+      mode: mode === 'free' ? 'free' : mode === 'hold' ? 'hold' : 'normal', // free: 유닛이 성채 주변에 머물지 않고 범위 안의 적을 어디까지든 쫓아간다
       seed: seed >>> 0, rng: mulberry32(seed >>> 0),
       t: 0, phase: 'prep', prepT: PREP_TIME, round: 0, roundT: 0, clearT: 0, zones: [], pools: [],
       queue: [], spawnT: 0, spawnGap: 1, spawnPts: 2, extraPts: 0, fallen: [], endless: false, castle: { lv: 1 },
@@ -956,9 +956,9 @@
     const find = (x, y) => (melee ? nearest(S.gE, x, y, aggro) : nearestBoth(S, x, y, aggro));
     let tgt = find(u.x, u.y);
     { const th = find(u.hx, u.hy); if (th && th !== tgt) { const sc = e => Math.hypot(e.x - u.x, e.y - u.y) + CFG.ai.homeBias * Math.hypot(e.x - u.hx, e.y - u.hy); if (!tgt || sc(th) < sc(tgt)) tgt = th; } }
-    const free = S.mode === 'free';
+    const free = S.mode === 'free', hold = S.mode === 'hold';
     if (!free && tgt && Math.hypot(tgt.x - CX, tgt.y - CY) > CFG.leash) tgt = null; // (기본 모드) 성채에서 너무 먼 적은 쫓지 않는다
-    if (tgt && (free || fromCore <= CFG.leash + 40)) moveToward(u, tgt.x, tgt.y, dt, stopFor(tgt), spm * rush);
+    if (tgt && !hold && (free || fromCore <= CFG.leash + 40)) moveToward(u, tgt.x, tgt.y, dt, stopFor(tgt), spm * rush);
     else moveToward(u, u.hx, u.hy, dt, 6, spm);
     if (u.cd <= 0) {
       const t = melee ? nearest(S.gE, u.x, u.y, u.range + u.r) : nearestBoth(S, u.x, u.y, u.range + u.r);
