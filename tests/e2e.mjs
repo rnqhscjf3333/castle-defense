@@ -100,6 +100,9 @@ try {
   check('배경·성채 렌더러 로드 (Scenery)', await ev("typeof window.Scenery === 'object' && typeof Scenery.drawCastle === 'function' && Scenery.visibleTrees(0,0,3000,3000).length > 300"), String(await ev("Scenery.visibleTrees(0,0,3000,3000).length")) + '그루');
   check('캔버스에 풀밭색이 칠해짐 (예전 격자 배경 아님)', await ev("(()=>{const c=document.getElementById('cv'); const x=c.getContext('2d'); const d=x.getImageData(Math.round(c.width*0.1), Math.round(c.height*0.5), 1, 1).data; return d[1] > d[0] && d[1] > d[2] && d[1] > 60;})()"));
 
+  // 알림이 한꺼번에 많이 와도 멈추지 않음 (보스전에서 알림이 몰릴 때 브라우저가 멈췄던 버그의 회귀 방지)
+  await open('?bot=1&warp=30&seed=3&zoom=1', 800);
+  check('알림 40개를 한꺼번에 띄워도 멈추지 않고 5개 안팎만 남음', await ev("(()=>{for(let i=0;i<40;i++) __game.toast('테스트 알림 '+i); return document.getElementById('toast').children.length <= 46 && Array.from(document.getElementById('toast').children).filter(c=>!c.classList.contains('out')).length <= 5;})()"));
   // 3.5) 보스 라운드 표시: 라운드 표시, 보스 체력 바, 화면 밖 보스는 미니맵/화살표 대상
   await open('?bot=1&warp=100&round=5&seed=3&zoom=1', 1200); // 5라운드 시작 직후
   check('보스 라운드 표시 (라운드 문구에 보스, 빨간색)', (await ev("document.getElementById('roundTxt').textContent")).includes('5') && await ev("document.getElementById('roundTxt').classList.contains('boss')"), await ev("document.getElementById('roundTxt').textContent"));

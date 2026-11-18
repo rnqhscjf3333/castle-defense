@@ -94,7 +94,8 @@
     for (let k = 1; k < box.children.length; k++) box.children[k].classList.add('old');
     const kill = el => { el.classList.add('out'); setTimeout(() => el.remove(), 400); };
     setTimeout(() => kill(d), 2600);
-    while (box.children.length > 5) kill(box.lastChild);
+    const live = Array.from(box.children).filter(c => !c.classList.contains('out')); // (이미 사라지는 중인 것은 제외 — 예전엔 이것 때문에 무한 반복이 났다)
+    for (let k = live.length - 1; k >= 5; k--) kill(live[k]);
   }
   function banner(t, boss) { const el = $('banner'); el.textContent = t; el.classList.toggle('boss', !!boss); el.classList.add('show'); clearTimeout(bannerT); bannerT = setTimeout(() => el.classList.remove('show'), boss ? 3200 : 1900); }
   const DESC = { sword: '체력 높은 전위', archer: '멀리서 공격', priest: '아군을 치유' };
@@ -772,5 +773,5 @@
   centerOnCore();
   if (params.get('bot')) { $('overlay').classList.add('hidden'); newGame(); const warp = +params.get('warp') || 0; for (let i = 0; i < warp / STEP && !S.over; i++) { botAct(); C.tick(S, STEP); } if (+params.get('round')) { C.jumpToRound(S, +params.get('round')); C.tick(S, STEP); } C.drainEvents(S); if (S.over) showEnd(S.win); cam.zoom = +params.get('zoom') || 0.5; clampCam(); }
   requestAnimationFrame(frame);
-  window.__game = { get S() { return S; }, cam, CastleCore: C, get bossArrows() { return bossArrows; }, get enemyArrows() { return enemyArrows; }, perf, get liteMode() { return liteMode; }, get drawnCount() { return drawnCount; }, get renderScale() { return renderScale; }, get fxPoolSize() { return fxPool.length; }, uiRects, skipCinematic: () => $('cineSkip').click() };
+  window.__game = { toast, get S() { return S; }, cam, CastleCore: C, get bossArrows() { return bossArrows; }, get enemyArrows() { return enemyArrows; }, perf, get liteMode() { return liteMode; }, get drawnCount() { return drawnCount; }, get renderScale() { return renderScale; }, get fxPoolSize() { return fxPool.length; }, uiRects, skipCinematic: () => $('cineSkip').click() };
 })();

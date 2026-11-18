@@ -938,6 +938,7 @@
     if (A.summon) {
       // 보스가 성채 가까이(summonRange) 왔을 때만 소환 시간을 센다 → 화면에 보이는 곳에서 소환한다
       if (Math.hypot(e.x - CX, e.y - CY) <= CFG.balance.summonRange) e.t.summon -= dt;
+      if (e.t.summon <= 0 && S.enemies.length >= 220) e.t.summon = 2; // 화면에 적이 너무 많으면 소환을 잠시 미룬다 (렉·멈춤 방지)
       if (e.t.summon <= 0) {
         e.t.summon = A.summon.cd;
         const toCore = Math.atan2(CY - e.y, CX - e.x); // 졸개는 보스 앞(성채 방향)에 나온다
