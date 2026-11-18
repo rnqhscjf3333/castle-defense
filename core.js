@@ -57,7 +57,7 @@
       boss:   { name: '보스',   hp: 0,  dmg: 25, speed: 40, r: 30, range: 36, rate: 0.8, gold: 150, aggro: 180 },
       archer: { name: '사수',   hp: 28, dmg: 6,  speed: 52, r: 9,  range: 200, rate: 0.8, gold: 7,  aggro: 230, ranged: true }, // 멀리서 화살을 쏜다
       bomber: { name: '폭파병', hp: 22, dmg: 26, speed: 100, r: 9, range: 12, rate: 1.0, gold: 6,  aggro: 170, blast: 60 },  // 닿으면 폭발해 범위 피해
-      shaman: { name: '주술사', hp: 45, dmg: 0,  speed: 50, r: 10, range: 0,  rate: 0,   gold: 12, aggro: 0,   healRange: 140, healPct: 0.12, healRate: 1.6, keep: 260 }, // 뒤에서 아군 적을 치유
+      shaman: { name: '주술사', hp: 45, dmg: 0,  speed: 50, r: 10, range: 0,  rate: 0,   gold: 12, aggro: 0,   healRange: 140, healPct: 0.05, healRate: 2.4, keep: 260 }, // 뒤에서 아군 적을 치유
       brute:  { name: '거한',   hp: 240, dmg: 16, speed: 34, r: 17, range: 26, rate: 0.7, gold: 20, aggro: 100 },           // 느리고 단단하다
     },
     // 일반 적 등장표: from 라운드부터 가중치 w로 섞여 나온다 (라운드가 갈수록 종류가 늘어난다)
@@ -134,7 +134,7 @@
     healAfterRound: 0.30, // 새 라운드 시작 시 생존 유닛 회복 비율
     // 카드/강화 수치
     upPct: { hp: 0.30, atk: 0.15, rate: 0.10, speed: 0.12 },
-    auraBase: 300,
+    auraBase: 170, // 성채 광장(회색 원) 크기
     debuff: {                         // 보스 광역 상태이상 (아군에게 걸린다)
       stun: { name: '기절', dur: 1.2 },                // 행동 불가
       poison: { name: '중독', dur: 7, pct: 0.018 },    // 초당 최대 체력의 1.8% (죽지는 않고 1까지)
@@ -947,7 +947,7 @@
       for (const a of S.enemies) if (!a.dead && a !== e && a.hp < a.max && Math.hypot(a.x - e.x, a.y - e.y) <= e.healRange) hurt.push(a);
       if (hurt.length) {
         hurt.sort((p, q) => p.hp / p.max - q.hp / q.max);
-        for (const a of hurt.slice(0, 3)) { a.hp = Math.min(a.max, a.hp + a.max * e.healPct); emit(S, { type: 'heal', x: e.x, y: e.y, tx: a.x, ty: a.y, enemy: true }); }
+        for (const a of hurt.slice(0, 2)) { a.hp = Math.min(a.max, a.hp + a.max * e.healPct); emit(S, { type: 'heal', x: e.x, y: e.y, tx: a.x, ty: a.y, enemy: true }); }
         e.cd = e.healRate; e.swing = 0.35; e.aim = Math.atan2(hurt[0].y - e.y, hurt[0].x - e.x);
       } else e.cd = 0.4;
     }

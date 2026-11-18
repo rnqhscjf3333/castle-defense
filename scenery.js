@@ -242,12 +242,15 @@
   }
   // 2막의 어둠: 성채 주변만 횃불로 밝고 바깥으로 갈수록 어둡고 푸르스름하다 (월드 위에 한 번 덮는다)
   function drawNight(ctx, vw, vh, sx, sy, zoom, now) {
-    const flick = 1 + Math.sin(now * 0.004) * 0.03 + Math.sin(now * 0.011) * 0.015, r0 = 215 * zoom * flick, r1 = Math.max(vw, vh) * 0.85;
-    ctx.fillStyle = 'rgba(12,14,52,0.22)'; ctx.fillRect(0, 0, vw, vh); // 전체를 푸르스름하게 어둡게
+    const flick = 1 + Math.sin(now * 0.004) * 0.03 + Math.sin(now * 0.011) * 0.015, r0 = 300 * zoom * flick, r1 = Math.max(vw, vh) * 0.85;
+    ctx.fillStyle = 'rgba(12,14,52,0.18)'; ctx.fillRect(0, 0, vw, vh); // 전체를 푸르스름하게 어둡게
     const g = ctx.createRadialGradient(sx, sy, r0 * 0.3, sx, sy, r1);
-    g.addColorStop(0, 'rgba(6,6,28,0)'); g.addColorStop(Math.min(0.85, r0 / r1), 'rgba(6,6,28,0.22)'); g.addColorStop(1, 'rgba(4,4,20,0.68)'); // 성채(횃불) 주변만 밝고 바깥은 깊게 어둡다
+    g.addColorStop(0, 'rgba(6,6,28,0)'); g.addColorStop(Math.min(0.85, r0 / r1), 'rgba(6,6,28,0.12)'); g.addColorStop(1, 'rgba(4,4,20,0.68)'); // 성채(횃불) 주변만 밝고 바깥은 깊게 어둡다
     ctx.fillStyle = g; ctx.fillRect(0, 0, vw, vh);
     ctx.fillStyle = 'rgba(60,30,120,0.05)'; ctx.fillRect(0, 0, vw, vh); // 옅은 보랏빛 기운
+    const gl = ctx.createRadialGradient(sx, sy, 0, sx, sy, 230 * zoom * flick); // 성채 부분은 횃불빛으로 한층 밝게
+    gl.addColorStop(0, 'rgba(255,214,150,0.20)'); gl.addColorStop(0.6, 'rgba(255,200,130,0.10)'); gl.addColorStop(1, 'rgba(255,200,130,0)');
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = gl; ctx.fillRect(sx - 240 * zoom * flick, sy - 240 * zoom * flick, 480 * zoom * flick, 480 * zoom * flick); ctx.restore();
   }
 
   window.Scenery = { init, setAct, drawNight, get act() { return act; }, drawGround, visibleTrees, drawTree, drawPortal, drawCastle, roadsInfo: () => roads.map(r => ({ th: r.th, main: r.main })) };

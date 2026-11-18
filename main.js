@@ -282,14 +282,14 @@
       if (ev.type === 'banner') banner(ev.text, ev.boss);
       else if (ev.type === 'shot' || ev.type === 'melee') { /* 소리만 있는 이벤트 */ }
       else if (ev.type === 'crit') addFx({ k: 'crit', x: ev.x, y: ev.y, t: 0, max: 0.4, c: '#ffd23f' });
-      else if (ev.type === 'bossCast') { addFx({ k: 'zone', x: ev.x, y: ev.y, r: ev.r, t: 0, max: ev.warn, c: DBK[ev.kind][1] }); toast('보스가 ' + DBK[ev.kind][0] + ' 광역기를 시전! 범위를 벗어나게 하세요'); }
+      else if (ev.type === 'bossCast') { addFx({ k: 'zone', x: ev.x, y: ev.y, r: ev.r, t: 0, max: ev.warn, c: DBK[ev.kind][1] }); toast('보스가 ' + DBK[ev.kind][0] + ' 광역기를 시전!'); }
       else if (ev.type === 'debuffHit') addFx({ k: 'boom', x: ev.x, y: ev.y, r: ev.r, t: 0, max: 0.4, big: false, enemy: true, c: DBK[ev.kind][1] });
       else if (ev.type === 'roundClear') banner('라운드 ' + ev.round + ' 클리어!');
       else if (ev.type === 'bossWipe') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.9, c: '#ffffff', big: true }); toast('보스 처치! 남은 적이 모두 쓰러졌어요'); }
       else if (ev.type === 'kill') { addFx({ k: 'burst', x: ev.x, y: ev.y, t: 0, max: ev.boss ? 0.8 : 0.3, c: ev.boss ? '#c77dff' : '#ff8a5c', big: ev.boss }); }
       else if (ev.type === 'udead') addFx({ k: 'burst', x: ev.x, y: ev.y, t: 0, max: 0.4, c: '#8fb7ff' });
       else if (ev.type === 'heal') { addFx({ k: 'beam', x: ev.x, y: ev.y - 11, tx: ev.tx, ty: ev.ty - 7, t: 0, max: ev.aoe ? 0.3 : 0.45, c: ev.enemy ? '#ffb86b' : '#6bffa3', small: !!ev.aoe }); if (!ev.aoe) addFx({ k: 'heal', x: ev.tx, y: ev.ty, t: 0, max: 0.5 }); }
-      else if (ev.type === 'spawn') addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.35, c: '#5aa9ff' });
+      else if (ev.type === 'spawn') { addFx({ k: 'summon', x: ev.x, y: ev.y, t: 0, max: 0.8 }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.55, c: '#8fd0ff', big: true }); }
       else if (ev.type === 'chain') { addFx({ k: 'line', x: ev.x, y: ev.y, tx: ev.tx, ty: ev.ty, t: 0, max: 0.25, c: ev.small ? '#b9f5c8' : '#9ad0ff', small: ev.small }); }
       else if (ev.type === 'boom') { addFx({ k: 'boom', x: ev.x, y: ev.y, r: ev.r, t: 0, max: ev.big ? 0.6 : 0.3, big: ev.big, enemy: ev.enemy }); }
       else if (ev.type === 'num') {
@@ -426,6 +426,13 @@
       const f = fx[i]; if (f.t < 0) continue; // 시작 지연 중
       const p = f.t / f.max;
       if (f.k === 'burst') { ctx.globalAlpha = 1 - p; ctx.fillStyle = f.c; ctx.beginPath(); ctx.arc(f.x, f.y, (f.big ? 20 : 8) + p * (f.big ? 50 : 16), 0, Math.PI * 2); ctx.fill(); }
+      else if (f.k === 'summon') { // 소환: 빛기둥 + 바닥 마법진 + 떠오르는 불꽃
+        const a = 1 - p, h = 70 * Math.min(1, p * 4) * (1 - p * 0.3), w = 11 * (1 - p * 0.6);
+        const g = ctx.createLinearGradient(0, f.y - h, 0, f.y + 4); g.addColorStop(0, 'rgba(140,210,255,0)'); g.addColorStop(1, 'rgba(190,235,255,' + (0.75 * a).toFixed(2) + ')');
+        ctx.fillStyle = g; ctx.fillRect(f.x - w, f.y - h, w * 2, h + 4);
+        ctx.globalAlpha = a * 0.9; ctx.strokeStyle = '#9fdcff'; ctx.lineWidth = 2 / z; ctx.beginPath(); ctx.ellipse(f.x, f.y + 3, 16 * (0.6 + p * 0.6), 7 * (0.6 + p * 0.6), 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = '#e8f7ff'; for (let i = 0; i < 6; i++) { const an = i * 1.047 + p * 2, rx = Math.cos(an) * 12, ry = -p * 46 - (i % 3) * 6; ctx.fillRect(f.x + rx - 1, f.y + ry, 2, 2); }
+      }
       else if (f.k === 'ring') { ctx.globalAlpha = 1 - p; ctx.strokeStyle = f.c; ctx.lineWidth = (f.big ? 4 : 2) / z; ctx.beginPath(); ctx.arc(f.x, f.y, 6 + p * (f.big ? 60 : 24), 0, Math.PI * 2); ctx.stroke(); }
       else if (f.k === 'line') { ctx.globalAlpha = 1 - p; ctx.strokeStyle = f.c; ctx.lineWidth = (f.small ? 1.5 : 3) / z; ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(f.tx, f.ty); ctx.stroke(); }
       else if (f.k === 'beam') { // 사제 치유 광선: 누가 누구를 치유하는지 보이도록 굵은 빛줄기 + 끝점 광채
@@ -511,7 +518,7 @@
         ctx.save(); ctx.translate(px, py); ctx.rotate(a); ctx.scale(pulse, pulse);
         ctx.fillStyle = '#ff3b4a'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.lineJoin = 'round';
         ctx.beginPath(); ctx.moveTo(24, 0); ctx.lineTo(-10, -17); ctx.lineTo(-3, 0); ctx.lineTo(-10, 17); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
-        const dist = Math.round(Math.hypot(e.x - cam.x, e.y - cam.y));
+        const dist = Math.round(Math.hypot(Math.max(0, Math.abs(e.x - cam.x) - vw / 2 / z), Math.max(0, Math.abs(e.y - cam.y) - vh / 2 / z))); // 화면 끝에서 보스까지의 거리
         ctx.font = '700 13px Rubik, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.lineWidth = 4;
         const lx = px - dx * 38, ly = py - dy * 38 + 4, label = e.bossName + ' · ' + dist;
         ctx.strokeText(label, lx, ly); ctx.fillText(label, lx, ly); ctx.textAlign = 'left';
