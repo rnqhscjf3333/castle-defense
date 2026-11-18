@@ -239,7 +239,7 @@
     const lv = S.castle.lv, max = lv >= CFG.castle.max, cost = C.castleCost(S), full = C.popCount(S) >= C.popCap(S);
     const key = lv + '|' + (max ? 0 : cost) + '|' + S.core.cannons + '|' + (S.gold >= cost) + '|' + full;
     if (cb.key === key) return; cb.key = key;
-    cb.lv.textContent = 'Lv.' + lv; cb.ds.textContent = max ? '최대 레벨' : '인구 +' + CFG.castle.popPer + ' · 공격·체력↑' + (CFG.castle.cannonLv.includes(lv + 1) ? ' · 대포 +1' : '');
+    cb.lv.textContent = 'Lv.' + lv; cb.ds.textContent = max ? '최대 레벨' : '인구 +' + C.popGain(lv + 1) + ' · 공격·체력↑' + (CFG.castle.cannonLv.includes(lv + 1) ? ' · 대포 +1' : '');
     cb.cost.textContent = max ? 'MAX' : cost + 'G'; castleBtn.classList.toggle('off', max || S.gold < cost); castleBtn.classList.toggle('need', full && !max);
   }
   function updateHud() {
@@ -252,7 +252,7 @@
     setText('timeTxt', fmtTime(S.t));
     setText('hpTxt', String(Math.ceil(c.hp)));
     setText('gold', String(Math.floor(S.gold)));
-    setText('unitTxt', C.popCount(S) + '/' + C.popCap(S)); // 인구 / 상한 (설치형은 제외)
+    { const sp = C.specialCount(S); setText('unitTxt', C.popCount(S) + '/' + C.popCap(S) + (sp ? ' · 특수 ' + sp : '')); } // 인구/상한 + 특수 유닛은 따로
     setText('killTxt', String(S.kills));
     const pct = Math.max(0, c.hp / c.max * 100);
     const f = $('hpfill'); f.style.width = pct + '%'; f.style.background = pct > 50 ? 'var(--ok)' : pct > 25 ? 'var(--gold)' : 'var(--danger)';

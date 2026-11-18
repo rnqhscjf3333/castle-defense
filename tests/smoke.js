@@ -566,8 +566,10 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   const c0 = { max: g.core.max, atk: g.core.atk, range: g.core.range, cn: g.core.cannons }; g.gold = 0; const r0 = C.upgradeCastle(g);
   check('골드가 부족하면 업그레이드 불가', !r0.ok && r0.reason === 'gold' && g.castle.lv === 1);
   g.gold = 1e9; const r1 = C.upgradeCastle(g); g.buyCd.sword = 0;
-  check('성채 업그레이드: 골드 차감, 인구 상한·체력·공격력·사거리 상승', r1.ok && g.castle.lv === 2 && g.gold === 1e9 - C.CFG.castle.cost[0] && C.popCap(g) === POP0 + C.CFG.castle.popPer && g.core.max > c0.max && g.core.atk > c0.atk && g.core.range > c0.range, `체력 ${c0.max}→${g.core.max} 공격 ${c0.atk.toFixed(1)}→${g.core.atk.toFixed(1)} 사거리 ${c0.range}→${g.core.range}`);
+  check('성채 업그레이드: 골드 차감, 인구 상한·체력·공격력·사거리 상승', r1.ok && g.castle.lv === 2 && g.gold === 1e9 - C.CFG.castle.cost[0] && C.popCap(g) === POP0 + 3 && g.core.max > c0.max && g.core.atk > c0.atk && g.core.range > c0.range, `체력 ${c0.max}→${g.core.max} 공격 ${c0.atk.toFixed(1)}→${g.core.atk.toFixed(1)} 사거리 ${c0.range}→${g.core.range}`);
   check('업그레이드 후 다시 뽑을 수 있음', C.buy(g, 'sword').ok);
+  { const h2 = C.createGame(9); h2.gold = 1e9; const caps = [C.popCap(h2)]; for (let i = 0; i < 3; i++) { C.upgradeCastle(h2); caps.push(C.popCap(h2)); } check('인구 증가량이 레벨마다 +1씩 커짐 (+3, +4, +5)', caps[1] - caps[0] === 3 && caps[2] - caps[1] === 4 && caps[3] - caps[2] === 5, caps.join('→'));
+    const before = C.popCount(h2); C.spawnUnit ? 0 : 0; const u = C.createGame(1); u.units.push({ team: 'u', type: 'golem', dead: false, x: 0, y: 0 }); check('특수 유닛은 인구에 포함되지 않고 따로 셈', C.popCount(u) === 0 && C.specialCount(u) === 1); }
   const cn = lv => { const h = C.createGame(4); h.gold = 1e9; for (let i = 1; i < lv; i++) C.upgradeCastle(h); return h.core.cannons; };
   check('대포: 3레벨 2문, 5레벨 3문, 7레벨 4문', cn(1) === 1 && cn(2) === 1 && cn(3) === 2 && cn(5) === 3 && cn(7) === 4 && cn(8) === 4, [1, 3, 5, 7].map(cn).join('/'));
   const h = arena(10, []); h.gold = 1e9; for (let i = 1; i < 7; i++) C.upgradeCastle(h); h.core.atk = 100; h.core.rate = 1; const es = []; for (let i = 0; i < 4; i++) { const e = C.spawnEnemy(h, 'brute', 1500 + 100 + i * 12, 1500 + i * 25); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; es.push(e); }

@@ -619,8 +619,11 @@
 
   // ───────────── 플레이어 행동 ─────────────
   // 인구: 설치형(포탑·발리스타)을 뺀 유닛 수. 상한은 성채 레벨이 올릴 때마다 늘어난다 (카드·보상으로 얻는 특수 유닛은 상한과 무관하게 합류)
-  const popCap = S => CFG.castle.popBase + CFG.castle.popPer * (S.castle.lv - 1);
-  const popCount = S => { let n = 0; for (const u of S.units) if (!u.dead && !isStatic(u)) n++; return n; };
+  // 성채 레벨업마다 늘어나는 인구가 +1씩 커진다 (2레벨 +3, 3레벨 +4, 4레벨 +5 …)
+  const popCap = S => { const n = S.castle.lv - 1; return CFG.castle.popBase + CFG.castle.popPer * n + n * (n - 1) / 2; };
+  const popGain = lv => CFG.castle.popPer + (lv - 2); // lv 레벨로 올릴 때 늘어나는 인구
+  const popCount = S => { let n = 0; for (const u of S.units) if (!u.dead && UNIT_TYPES.includes(u.type)) n++; return n; }; // 기본 3종만 인구에 포함
+  const specialCount = S => { let n = 0; for (const u of S.units) if (!u.dead && !isStatic(u) && !UNIT_TYPES.includes(u.type)) n++; return n; }; // 특수 유닛(골렘·용사·전설 등)은 따로
   const castleCost = S => S.castle.lv >= CFG.castle.max ? Infinity : CFG.castle.cost[S.castle.lv - 1];
   function upgradeCastle(S, free) {
     if (S.over || S.castle.lv >= CFG.castle.max) return { ok: false, reason: 'max' };
@@ -1239,7 +1242,7 @@
 
   return {
     CFG, MAX_ROUND, ACT1_END, extraAngles, EXTRA_RING, ROUND_TIME, SPAWN_TIME, PREP_TIME, SPAWN_RING, UNIT_TYPES, CARD_DEFS,
-    createGame, tick, buy, upgradeCastle, castleCost, popCap, popCount, endCinematic, jumpToRound, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo, drainEvents, pickCard, reroll, describeTaken, openCards,
+    createGame, tick, buy, upgradeCastle, castleCost, popCap, popGain, popCount, specialCount, endCinematic, jumpToRound, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo, drainEvents, pickCard, reroll, describeTaken, openCards,
     unitCostOf, enemyCount, hpMul, dmgMul, mulberry32, damage,
   };
 });
