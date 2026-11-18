@@ -170,7 +170,7 @@ try {
   check('startRound=31 → 2막, 스폰 지점 8곳, 배경도 2막', await ev("(()=>{const S=__game.S; return S.act===2 && S.spawnPts===8 && Scenery.act===2 && S.round===31;})()"), await ev("JSON.stringify({round:__game.S.round, pts:__game.S.spawnPts, act:__game.S.act})"));
 
   // 4) 한 판 끝까지(디버그 가속) — 종료 화면이 뜨는지
-  await open('?bot=1&warp=2400&seed=5&zoom=0.6', 1500); // 봇이 30라운드 끝까지(승리 또는 패배) 미리 진행한 상태
+  await open('?bot=1&warp=9000&seed=5&zoom=0.6', 3000); // 봇이 30라운드 끝까지(승리 또는 패배) 미리 진행한 상태
   check('종료 화면 표시(빨리감기 중 종료)', (await ev('__game.S.over')) && !(await ev("document.getElementById('overlay').classList.contains('hidden')")), '라운드 ' + await ev('__game.S.round'));
   const title = await ev("document.getElementById('ovTitle').textContent");
   check('결과 문구(승리/패배)', title === '방어 성공!' || title === '성채가 무너졌어요', title);
