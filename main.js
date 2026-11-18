@@ -178,8 +178,11 @@
     biTimer = setTimeout(() => el.classList.add('hidden'), 2200);
   }
   // 길 열기: 라운드가 올라 길이 늘어나면 먼지 구름이 성채에서 바깥으로 퍼지며 새 길이 나타난다
+  let pendingPortal = 0;
+  function syncPortal() { if (!pendingPortal || currentOffer()) return; const n = pendingPortal; pendingPortal = 0; addFx({ k: 'ring', x: CX, y: CY, t: 0, max: 0.8, c: '#ff3b3b', big: true }); setTimeout(() => banner('붉은 포탈이 하나 더 열렸습니다 (' + n + '/8)'), 1600); }
   function syncRoads() {
     const want = S.spawnPts || 2, have = Scenery.roadCount; if (want === have) return;
+    if (want > have && currentOffer()) return; // 선택지를 다 고른 뒤에 새 길을 보여준다
     Scenery.setRoadCount(want);
     if (want > have && S.round >= 2) {
       for (let i = have; i < want; i++) { const pts = Scenery.roadPts(i); for (let k = 0; k < pts.length; k += 2) { const p = pts[k]; for (let m = 0; m < 2; m++) addFx({ k: 'dust', x: p[0] + (Math.random() - 0.5) * 40, y: p[1] + (Math.random() - 0.5) * 30, t: -k * 0.05 - Math.random() * 0.25, max: 1.5 + Math.random() * 0.6, r: 20 + Math.random() * 18 }); } }
@@ -430,7 +433,7 @@
       else if (ev.type === 'bossShock') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.55, c: '#ffcf40', r: ev.r, big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: -0.08, max: 0.5, c: '#ff5a3a', r: ev.r * 0.7 }); for (let i = 0; i < 5; i++) addFx({ k: 'dust', x: ev.x + (Math.random() - 0.5) * ev.r, y: ev.y + (Math.random() - 0.5) * ev.r * 0.6, t: -Math.random() * 0.1, max: 0.9, r: 16 }); }
       else if (ev.type === 'bossBlink') { for (const [x, y] of [[ev.x0, ev.y0], [ev.x1, ev.y1]]) { addFx({ k: 'ring', x, y, t: 0, max: 0.6, c: '#c77dff', big: true }); addFx({ k: 'summon', x, y, t: 0, max: 0.7 }); } toast('보스가 순간이동했습니다!'); }
       else if (ev.type === 'bossLeap') { addFx({ k: 'zone', x: ev.x, y: ev.y, r: ev.r, t: 0, max: ev.air, c: '#ff9a3a' }); toast('보스가 도약합니다!'); }
-      else if (ev.type === 'portalOpen') { addFx({ k: 'ring', x: CX, y: CY, t: 0, max: 0.8, c: '#ff3b3b', big: true }); setTimeout(() => banner('붉은 포탈이 하나 더 열렸습니다 (' + ev.n + '/8)'), 1600); }
+      else if (ev.type === 'portalOpen') pendingPortal = ev.n;
       else if (ev.type === 'bossSlam') addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.4, c: '#ff5a3a', r: ev.r, big: true });
       else if (ev.type === 'enrage') toast('적이 오래 살아남아 격노합니다! 점점 더 강해져요');
       else if (ev.type === 'elite') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.6, c: '#ffd84a', big: true }); if (eliteToasts < 3) { eliteToasts++; toast('엘리트 ' + CFG.enemies[ev.kind].name + ' 출현! 훨씬 강하고 큽니다'); } }
@@ -924,6 +927,7 @@
       if (cine) stepCine(now);
       else if (Scenery.act !== S.act) Scenery.setAct(S.act, true); // 불러오기/재시작/점프 시 막에 맞는 배경으로
       if (!cine && S.act === 1) syncRoads();
+      syncPortal();
       const h0 = performance.now(); Net.sample(S, perf, renderScale); A2.setView({ x: cam.x, y: cam.y, zoom: cam.zoom, vw, vh }); updateMood(); handleEvents(); syncPicker(); updateHud(); const h1 = performance.now(); drawWorld(now); const h2 = performance.now();
       ema('hud', h1 - h0); ema('draw', h2 - h1);
     }

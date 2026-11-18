@@ -23,6 +23,7 @@
   const CFG = {
     world: { w: W, h: H, cx: CX, cy: CY },
     startGold: 210, // 검사·궁수·사제를 한 명씩(어떤 순서로든, 가격 상승 포함 최대 204) 뽑을 수 있는 금액
+    holdRadius: 75,       // 수비 모드: 자리에서 벗어날 수 있는 거리 (원거리는 사거리 절반 추가)
     leash: 240,           // 유닛이 성채로부터 추격할 수 있는 최대 거리
     ai: {
       bias: 0.08,         // 평소(적이 멀 때) 대기 자리가 적 방향으로 쏠리는 정도 (0 = 사방에 고르게, 1 = 전부 적 방향)
@@ -958,7 +959,12 @@
     { const th = find(u.hx, u.hy); if (th && th !== tgt) { const sc = e => Math.hypot(e.x - u.x, e.y - u.y) + CFG.ai.homeBias * Math.hypot(e.x - u.hx, e.y - u.hy); if (!tgt || sc(th) < sc(tgt)) tgt = th; } }
     const free = S.mode === 'free', hold = S.mode === 'hold';
     if (!free && tgt && Math.hypot(tgt.x - CX, tgt.y - CY) > CFG.leash) tgt = null; // (기본 모드) 성채에서 너무 먼 적은 쫓지 않는다
-    if (tgt && !hold && (free || fromCore <= CFG.leash + 40)) moveToward(u, tgt.x, tgt.y, dt, stopFor(tgt), spm * rush);
+    if (hold && tgt) { // (수비 모드) 자리에서 조금만 벗어난다: 자리 근처로 들어온 적만 상대하고, 먼 곳의 적에게 끌려가지 않는다
+      const lim = CFG.holdRadius + (melee ? 0 : u.range * 0.5);
+      tgt = find(u.hx, u.hy);
+      if (tgt && Math.hypot(tgt.x - u.hx, tgt.y - u.hy) > lim + tgt.r) tgt = null;
+    }
+    if (tgt && (free || hold || fromCore <= CFG.leash + 40)) moveToward(u, tgt.x, tgt.y, dt, stopFor(tgt), spm * rush);
     else moveToward(u, u.hx, u.hy, dt, 6, spm);
     if (u.cd <= 0) {
       const t = melee ? nearest(S.gE, u.x, u.y, u.range + u.r) : nearestBoth(S, u.x, u.y, u.range + u.r);
