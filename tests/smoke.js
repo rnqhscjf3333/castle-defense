@@ -1,5 +1,6 @@
 // node tests/smoke.js [판수] — 로직 스모크 테스트 + 봇 플레이 (카드 선택 포함)
 const C = require('../core.js');
+C.CFG.dmgVar = 0; // 기존 테스트는 고정 피해 기준 (오차 테스트는 아래에서 따로)
 const DT = 1 / 30;
 const BUY = ['sword', 'archer', 'sword', 'archer', 'priest'];
 let failed = 0;
@@ -463,5 +464,19 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
     let cast = 0; for (let i = 0; i < 20; i++) { C.tick(g, DT); for (const ev of C.drainEvents(g)) if (ev.type === 'heroSkill') cast++; }
     const hit = en.filter(e => e.hp < e.max).length;
     check(`${type} 스킬 발동 (${C.CFG.heroSkill[type].name})`, cast >= 1 && hit >= (type === 'marksman' ? 6 : 4), `이벤트 ${cast}, 맞은 적 ${hit}/6` + (type === 'golem' ? ` 감속 ${en.filter(e => e.slowT > 0).length}` : '')); } }
+// 36) 피해 오차 ±15% / 피해·치유 숫자 이벤트(합산, 치명타 즉시)
+{ C.CFG.dmgVar = 0.15; const g = arena(3, []); g.core.hp = g.core.max = 1e9; const e = C.spawnEnemy(g, 'brute', 1500, 1300); e.hp = e.max = 1e9; g.core.atk = 0; const vals = [];
+  for (let i = 0; i < 300; i++) { const h = e.hp; C.damage(g, e, 100); vals.push(h - e.hp); }
+  const mn = Math.min(...vals), mx = Math.max(...vals), mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+  check('피해에 ±15% 오차', mn >= 85 - 1e-6 && mx <= 115 + 1e-6 && mx - mn > 20 && Math.abs(mean - 100) < 3, `최소 ${mn.toFixed(1)} 최대 ${mx.toFixed(1)} 평균 ${mean.toFixed(1)}`);
+  C.CFG.dmgVar = 0;
+  for (let i = 0; i < 12; i++) C.tick(g, DT); g.events = []; C.damage(g, e, 10); C.damage(g, e, 15); C.damage(g, e, 50, true);
+  const u = C.buy(Object.assign(g, { gold: 1e6 }), 'sword').unit; C.damage(g, u, 7);
+  for (let i = 0; i < 12; i++) C.tick(g, DT);
+  const nums = C.drainEvents(g).filter(v => v.type === 'num');
+  const en = nums.filter(v => v.team === 'e' && !v.crit), cr = nums.filter(v => v.crit), al = nums.filter(v => v.team === 'u' && !v.heal);
+  check('적 피해 숫자는 합산해서 1개(25), 치명타는 따로, 아군 피해는 team u', en.length === 1 && Math.round(en[0].v) === 25 && cr.length === 1 && cr[0].v === 50 && al.length === 1 && Math.round(al[0].v) === 7, JSON.stringify(nums.map(v => [v.team, Math.round(v.v), v.crit ? 'c' : '', v.heal ? 'h' : ''])));
+  g.events = []; u.max = 1000; u.hp = 500; g.buyCd.priest = 0; const pr = C.buy(g, 'priest').unit; pr.x = u.x + 20; pr.y = u.y; for (let i = 0; i < 60; i++) C.tick(g, DT);
+  check('치유 숫자(heal) 이벤트 발생', C.drainEvents(g).some(v => v.type === 'num' && v.heal)); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

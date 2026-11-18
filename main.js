@@ -13,11 +13,12 @@
   let vw = 0, vh = 0, dpr = 1;
   const A2 = window.Audio2;
   const fx = [];             // 화면 효과 (게임 규칙과 무관)
+  let numFont = '', numFx = 0;             // 화면에 떠 있는 피해/치유 숫자 수 (상한을 두어 부하를 막는다)
   const fxPool = [];         // 쓰고 난 효과 객체를 재사용 (GC 부담을 줄인다)
   function addFx(o) {
     if (fx.length >= 300) return;
     const f = fxPool.length ? fxPool.pop() : {};
-    f.k = o.k; f.x = o.x; f.y = o.y; f.tx = o.tx; f.ty = o.ty; f.t = o.t || 0; f.max = o.max; f.c = o.c; f.r = o.r; f.big = o.big; f.enemy = o.enemy; f.small = o.small;
+    f.k = o.k; f.x = o.x; f.y = o.y; f.tx = o.tx; f.ty = o.ty; f.t = o.t || 0; f.max = o.max; f.c = o.c; f.r = o.r; f.big = o.big; f.enemy = o.enemy; f.small = o.small; f.v = o.v; f.n = o.n;
     fx.push(f);
   }
   const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
@@ -291,6 +292,10 @@
       else if (ev.type === 'spawn') addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.35, c: '#5aa9ff' });
       else if (ev.type === 'chain') { addFx({ k: 'line', x: ev.x, y: ev.y, tx: ev.tx, ty: ev.ty, t: 0, max: 0.25, c: ev.small ? '#b9f5c8' : '#9ad0ff', small: ev.small }); }
       else if (ev.type === 'boom') { addFx({ k: 'boom', x: ev.x, y: ev.y, r: ev.r, t: 0, max: ev.big ? 0.6 : 0.3, big: ev.big, enemy: ev.enemy }); }
+      else if (ev.type === 'num') {
+        const zz = cam.zoom; if (numFx >= 70 || (zz < 0.45 && !ev.crit) || Math.abs(ev.x - cam.x) > vw / 2 / zz + 40 || Math.abs(ev.y - cam.y) > vh / 2 / zz + 40) continue;
+        if (fx.length >= 300) continue; numFx++; addFx({ k: 'num', x: ev.x + (Math.random() - 0.5) * 14, y: ev.y, t: 0, max: ev.crit ? 0.95 : 0.75, v: Math.round(ev.v), n: ev.heal ? 'h' : ev.crit ? 'c' : ev.team === 'u' ? 'u' : 'e' });
+      }
       else if (ev.type === 'heroSkill') {
         if (ev.kind === 'marksman') addFx({ k: 'beam', x: ev.x, y: ev.y - 11, tx: ev.tx, ty: ev.ty - 7, t: 0, max: 0.4, c: '#ffe14a' });
         else { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.55, c: ev.kind === 'hero' ? '#ffe14a' : '#c8a46a', big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: -0.08, max: 0.5, c: '#ffffff' }); }
@@ -416,6 +421,7 @@
       }
     }
     // 화면 효과
+    numFont = '';
     for (let i = fx.length - 1; i >= 0; i--) {
       const f = fx[i]; if (f.t < 0) continue; // 시작 지연 중
       const p = f.t / f.max;
@@ -432,6 +438,14 @@
         const pu = 0.5 + 0.5 * Math.sin(now * 0.02); ctx.globalAlpha = 0.16 + 0.14 * pu; ctx.fillStyle = f.c; ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill();
         ctx.globalAlpha = 0.9; ctx.strokeStyle = f.c; ctx.lineWidth = 3 / z; ctx.setLineDash([10 / z, 7 / z]); ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
         ctx.globalAlpha = 0.5; ctx.lineWidth = 2 / z; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (1 - p), 0, Math.PI * 2); ctx.stroke();
+      }
+      else if (f.k === 'num') { // 피해/치유 숫자: 적 피해(노랑) · 치명타(주황, 크게) · 아군 피해(빨강) · 치유(초록)
+        const crit = f.n === 'c', big = crit ? 18 : 12, pop = crit ? 1 + 0.5 * Math.max(0, 1 - p * 6) : 1;
+        ctx.globalAlpha = p > 0.6 ? 1 - (p - 0.6) / 0.4 : 1; const fs = Math.round(big * pop / z * 10) / 10;
+        if (numFont !== fs + f.n) { ctx.font = (crit ? '900 ' : '700 ') + fs + 'px system-ui, sans-serif'; numFont = fs + f.n; }
+        ctx.textAlign = 'center'; const yy = f.y - 8 / z - p * (crit ? 34 : 24) / z, txt = (f.n === 'h' ? '+' : '') + f.v + (crit ? '!' : '');
+        if (numFx < 40) { ctx.lineWidth = 3 / z; ctx.strokeStyle = 'rgba(20,10,10,.85)'; ctx.lineJoin = 'round'; ctx.strokeText(txt, f.x, yy); }
+        ctx.fillStyle = f.n === 'c' ? '#ff9a1f' : f.n === 'e' ? '#fff0a8' : f.n === 'u' ? '#ff5a5a' : '#6bff9a'; ctx.fillText(txt, f.x, yy);
       }
       else if (f.k === 'crit') { ctx.globalAlpha = 1 - p; ctx.strokeStyle = f.c; ctx.lineWidth = 2.5 / z; const rr = (6 + p * 16) / z * 1.2; ctx.beginPath(); for (let i = 0; i < 4; i++) { const an = i * Math.PI / 2 + Math.PI / 4; ctx.moveTo(f.x + Math.cos(an) * rr * 0.4, f.y - 10 + Math.sin(an) * rr * 0.4); ctx.lineTo(f.x + Math.cos(an) * rr, f.y - 10 + Math.sin(an) * rr); } ctx.stroke(); }
       else if (f.k === 'boom') { ctx.globalAlpha = (1 - p) * 0.5; ctx.fillStyle = f.enemy ? '#ff5a3a' : f.big ? '#ff9f43' : '#ffd166'; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (0.4 + 0.6 * p), 0, Math.PI * 2); ctx.fill(); }
@@ -544,7 +558,7 @@
   function newGame() {
     const seed = params.get('seed') ? +params.get('seed') : (Date.now() ^ (Math.random() * 1e9)) >>> 0;
     S = C.createGame(seed); S.captureEvents = true; Net.begin(S);
-    fx.length = 0; paused = false; speed = 1; shownOffer = null; $('picker').classList.add('hidden'); renderUpgrades();
+    fx.length = 0; numFx = 0; paused = false; speed = 1; shownOffer = null; $('picker').classList.add('hidden'); renderUpgrades();
     $('btnPause').textContent = '일시정지'; $('btnSpeed').textContent = '1×';
     for (const k in last) delete last[k];
     for (const t of C.UNIT_TYPES) ucards[t].last = undefined;
@@ -633,7 +647,7 @@
       while (acc >= STEP && n < 8 * speed) { if (window.__bot) botAct(); C.tick(S, STEP); acc -= STEP; n++; if (S.over) break; }
       ema('tick', performance.now() - k0);
       if (acc > STEP * 8) acc = 0;
-      for (let i = fx.length - 1; i >= 0; i--) { const f = fx[i]; f.t += dt * speed; if (f.t >= f.max) { fx[i] = fx[fx.length - 1]; fx.pop(); fxPool.push(f); } } // 끝난 효과는 풀로 돌려보낸다
+      for (let i = fx.length - 1; i >= 0; i--) { const f = fx[i]; f.t += dt * speed; if (f.t >= f.max) { if (f.k === 'num') numFx--; fx[i] = fx[fx.length - 1]; fx.pop(); fxPool.push(f); } } // 끝난 효과는 풀로 돌려보낸다
     }
     if (S) {
       if (S.cinematic && !cine) startCine(S.cinematic.name);

@@ -149,6 +149,7 @@
       auraHeal: 0.025, auraAtk: 0.08, auraDef: 0.08, auraDefCap: 0.40, auraSpd: 0.06, auraBoost: 0.15,
     },
     rerolls: 2,
+    dmgVar: 0.15,                     // 모든 공격 피해에 공격력 ±15% 오차
     rarityWeight: { common: 70, rare: 25, epic: 5 },
   };
   const UNIT_TYPES = ['sword', 'archer', 'priest']; // 직접 생산 가능한 유닛
@@ -498,7 +499,7 @@
       kills: 0, nextId: 1,
       spawnN: 0, buyCd: { sword: 0, archer: 0, priest: 0 },
       threat: 0, over: false, win: false,
-      captureEvents: false, events: [],
+      captureEvents: false, events: [], numQ: [],
       gU: makeGrid(48), gE: makeGrid(48),
       cards: { offer: null, rerolls: CFG.rerolls, taken: {}, boss: false },
       up: { sword: { hp: 0, atk: 0, rate: 0, speed: 0 }, archer: { hp: 0, atk: 0, rate: 0, speed: 0 }, priest: { hp: 0, atk: 0, rate: 0, speed: 0 } },
@@ -643,8 +644,27 @@
     const by = S.coreDmgBy; const k = src || '기타'; by[k] = (by[k] || 0) + dmg; // 어떤 공격에 성채가 많이 맞는지 (밸런스 진단용)
     if (c.hp <= 0 && !S.over) { c.hp = 0; S.over = true; S.win = false; emit(S, { type: 'over', win: false }); }
   }
-  function damage(S, tgt, dmg) {
+  // 피해/치유 숫자: 같은 대상에게 짧은 시간 들어온 양은 합쳐서 한 번에 표시 (이벤트 수를 줄인다). 치명타는 즉시 따로 표시.
+  function numNote(S, t, v, kind) {
+    if (kind === 'c') { emit(S, { type: 'num', x: t.x, y: t.y - t.r, v, team: t.team, crit: true }); return; }
+    if (kind === 'h') t.nh = (t.nh || 0) + v; else t.nd = (t.nd || 0) + v;
+    if (!t.nq) { t.nq = true; t.nT = S.t + 0.3; S.numQ.push(t); }
+  }
+  function flushNums(S) {
+    const q = S.numQ; if (!q.length) return;
+    let w = 0;
+    for (let i = 0; i < q.length; i++) {
+      const t = q[i];
+      if (S.t < t.nT && !t.dead) { q[w++] = t; continue; }
+      if (t.nd >= 1) emit(S, { type: 'num', x: t.x, y: t.y - t.r, v: t.nd, team: t.team });
+      if (t.nh >= 1) emit(S, { type: 'num', x: t.x, y: t.y - t.r, v: t.nh, team: t.team, heal: true });
+      t.nd = 0; t.nh = 0; t.nq = false;
+    }
+    q.length = w;
+  }
+  function damage(S, tgt, dmg, crit) {
     if (tgt.dead) return;
+    if (CFG.dmgVar) dmg *= 1 + (S.rng() * 2 - 1) * CFG.dmgVar; // 공격력 ±N% 오차
     if (tgt.team === 'e' && tgt.shieldT > 0) dmg *= 1 - tgt.shieldRed; // 보스 방어막 동안 피해 감소
     if (tgt.team === 'u') {
       let red = 0;
@@ -654,6 +674,7 @@
       dmg *= 1 - Math.min(0.7, red);
     }
     tgt.hp -= dmg; tgt.flash = 0.1;
+    if (S.captureEvents) numNote(S, tgt, dmg, crit ? 'c' : 'd');
     if (tgt.hp > 0) return;
     if (tgt.team === 'u' && S.reviveLeft > 0 && !isStatic(tgt) && S.units.some(p => p.type === 'priest' && !p.dead && p !== tgt)) {
       S.reviveLeft--; tgt.hp = tgt.max * V().revive; emit(S, { type: 'revive', x: tgt.x, y: tgt.y }); return;
@@ -690,7 +711,7 @@
     const H = clamp(cf.arc * d + cf.arcMin, cf.arcMin, cf.arcMax);
     const s = S.shotPool.length ? S.shotPool.pop() : {}; // 쓴 투사체 객체를 재사용 (풀링)
     s.x = sx; s.y = sy; s.sx = sx; s.sy = sy; s.p = 0; s.T = T; s.H = H; s.h = m.h0; s.h0 = m.h0; s.vx = 0; s.vy = 0; s.vh = 0; s.t = tgt; s.dmg = dmg; s.color = color;
-    s.pierce = !!(extra && extra.pierce); s.pc = extra && extra.pc != null ? extra.pc : null; s.aoe = extra && extra.aoe ? extra.aoe : 0;
+    s.pierce = !!(extra && extra.pierce); s.pc = extra && extra.pc != null ? extra.pc : null; s.aoe = extra && extra.aoe ? extra.aoe : 0; s.crit = !!(extra && extra.crit);
     S.shots.push(s);
     emit(S, { type: 'shot', x: sx, y: sy, c: color });
   }
@@ -701,7 +722,7 @@
       if (Math.hypot(S.core.x - s.t.x, S.core.y - s.t.y) <= s.aoe + S.core.r) hitCore(S, s.dmg * CFG.balance.shellCoreMul, '보스 포격');
       emit(S, { type: 'boom', x: s.t.x, y: s.t.y, r: s.aoe, big: true, enemy: true });
     } else if (s.t === S.core) hitCore(S, s.dmg, '화살(사수)');
-    else { damage(S, s.t, s.dmg); onShotHit(S, s); }
+    else { damage(S, s.t, s.dmg, s.crit); onShotHit(S, s); }
   }
   // 성채 탄 / 화살의 추가 효과 (폭발, 전이, 관통)
   function onShotHit(S, s) {
@@ -762,7 +783,7 @@
     if (t.woundT > 0) amt *= CFG.debuff.wound.mul;
     t.hwT = (t.hwT || 0); if (S.t - t.hwT >= 1) { t.hwT = S.t; t.hw = 0; }
     const room = Math.max(0, t.max * CFG.balance.healCap - (t.hw || 0)); amt = Math.min(amt, room, t.max - t.hp);
-    if (amt > 0) { t.hp += amt; t.hw = (t.hw || 0) + amt; }
+    if (amt > 0) { t.hp += amt; t.hw = (t.hw || 0) + amt; if (S.captureEvents && t.team === 'u') numNote(S, t, amt, 'h'); }
     return amt;
   }
   function nearestUnit(S, x, y, range) {
@@ -834,8 +855,8 @@
         } else {
           const line = lineOf(u.type), pc = (line === 'archer' ? pierceCount(S) : 0) + (CFG.units[u.type].pierce | 0), arrow = pc > 0 ? { pierce: true, pc } : null;
           const cc = line === 'archer' ? V().crit * S.perks.crit + S.jobMods.archer.crit : 0;
-          let dm = atk; if (cc > 0 && S.rng() < cc) { dm *= V().critMul; emit(S, { type: 'crit', x: t.x, y: t.y }); }
-          fire(S, u, t, dm, CFG.arrowSpeed, 'a', arrow);
+          let dm = atk, isCrit = false; if (cc > 0 && S.rng() < cc) { dm *= V().critMul; isCrit = true; emit(S, { type: 'crit', x: t.x, y: t.y }); }
+          fire(S, u, t, dm, CFG.arrowSpeed, 'a', isCrit ? Object.assign({ crit: true }, arrow) : arrow);
         }
       }
     }
@@ -1050,6 +1071,7 @@
       if (s.p >= 1) { resolveShot(S, s); s.t = null; S.shotPool.push(s); S.shots.splice(i, 1); }
     }
 
+    if (S.captureEvents) flushNums(S);
     // 정리
     if (S.units.some(u => u.dead)) S.units = S.units.filter(u => !u.dead);
     if (S.enemies.some(e => e.dead)) S.enemies = S.enemies.filter(e => !e.dead);
