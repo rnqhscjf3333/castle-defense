@@ -770,7 +770,7 @@
   function playOpening(done) {
     const el = $('comic'), imgs = Array.from(el.querySelectorAll('.cp')); let idx = 0, over = false; comicOn = true;
     const wait = Promise.all(imgs.map(im => im.complete ? 1 : new Promise(r => { im.onload = im.onerror = r; })));
-    imgs.forEach(im => im.classList.remove('in')); el.classList.remove('hidden', 'out', 'shake', 'rumble'); $('comicHint').textContent = '화면을 터치하면 다음 컷 ▶';
+    document.body.classList.add('comicOn'); imgs.forEach(im => im.classList.remove('in')); el.classList.remove('hidden', 'out', 'shake', 'rumble'); $('comicHint').textContent = '화면을 터치하면 다음 컷 ▶';
     const flash = (c) => { const f = $('comicFlash'); f.className = ''; void f.offsetWidth; f.className = c; };
     const fxOf = [null,
       () => { A2.play('page'); },
@@ -779,7 +779,7 @@
       () => { A2.play('horn'); el.classList.add('shake'); flash('go'); const l = $('comicLines'); l.className = ''; void l.offsetWidth; l.className = 'go'; setTimeout(() => el.classList.remove('shake'), 600); $('comicHint').textContent = '화면을 터치하면 시작 ▶'; },
     ];
     const show = () => { idx++; const im = imgs[idx - 1]; im.classList.add('in'); fxOf[idx] && fxOf[idx](); if (matchMedia('(max-aspect-ratio: 1/1)').matches) setTimeout(() => el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' }), 80); };
-    const finish = () => { if (over) return; over = true; comicOn = false; el.classList.add('out'); setTimeout(() => { el.classList.add('hidden'); el.classList.remove('out'); }, 600); el.removeEventListener('click', advance); window.removeEventListener('keydown', key, true); done(); };
+    const finish = () => { if (over) return; over = true; comicOn = false; document.body.classList.remove('comicOn'); el.classList.add('out'); setTimeout(() => { el.classList.add('hidden'); el.classList.remove('out'); }, 600); el.removeEventListener('click', advance); window.removeEventListener('keydown', key, true); done(); };
     const advance = e => { if (e && e.target && e.target.id === 'comicSkip') return; if (idx < 4) show(); else finish(); };
     const key = e => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); advance(); } else if (e.key === 'Escape') { e.stopPropagation(); finish(); } };
     el.addEventListener('click', advance); window.addEventListener('keydown', key, true);

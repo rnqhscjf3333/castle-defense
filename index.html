@@ -149,7 +149,9 @@ table.rank tr.me td { background: rgba(255,204,64,.16); font-weight: 700; }
 
 table.rank .mtag { font-size: 10px; color: #ffd166; border: 1px solid #ffd16688; border-radius: 4px; padding: 0 3px; margin-left: 3px; }
 /* 오프닝 만화 컷신: 가로 화면은 4컷 페이지, 세로(모바일)는 컷이 위에서 아래로 쌓인다 */
-#comic { position: fixed; inset: 0; z-index: 60; padding-bottom: 0; background: radial-gradient(circle at 50% 40%, #fbf6e6, #efe4c4); display: flex; align-items: center; justify-content: center; overflow: hidden; touch-action: manipulation; cursor: pointer; transition: opacity .6s; }
+#comic { position: fixed; top: 0; left: 0; width: 100%; height: 100%; height: 100dvh; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; z-index: 60; padding-bottom: 0; background: radial-gradient(circle at 50% 40%, #fbf6e6, #efe4c4); display: flex; align-items: center; justify-content: center; overflow: hidden; touch-action: manipulation; cursor: pointer; transition: opacity .6s; }
+#comic::before { content: ''; position: fixed; inset: -60vh -60vw; background: #efe4c4; z-index: -1; } /* 스크롤·주소창 변화로 가장자리가 드러나도 게임 화면이 비치지 않게 */
+body.comicOn { overflow: hidden; }
 #comic.hidden { display: none; } #comic.out { opacity: 0; }
 #comicStage { position: relative; width: min(97vw, calc((100vh - 62px) * 1.5988)); aspect-ratio: 1586 / 992; margin-bottom: 40px; } /* 아래 40px은 안내 문구 자리 */
 .cp { position: absolute; height: auto; opacity: 0; pointer-events: none; filter: drop-shadow(0 4px 8px rgba(40,30,10,.35)); will-change: transform, opacity; }
