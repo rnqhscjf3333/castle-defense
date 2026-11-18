@@ -516,5 +516,13 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   pz.pools.push({ x: pu.x, y: pu.y, r: 80, t: 8 }); for (let i = 0; i < 30 * 3; i++) { C.tick(pz, DT); pu.x = 1900; pu.y = 1900; }
   const pAfter = pu.poisonT > 0; for (let i = 0; i < 30 * 8; i++) { C.tick(pz, DT); pu.x = 1900; pu.y = 1900; }
   check('독 웅덩이: 안에 있는 동안 계속 중독, 시간이 지나면 사라짐', pAfter && pz.pools.length === 0 && pu.hp < 1e6, `중독 ${pAfter} 웅덩이 ${pz.pools.length}`); }
+// 39) 공중형만 남아도 라운드가 안 넘어감 / 오래 산 적은 점점 강해짐
+{ const g = arena(10, []); g.hold = false; g.core.hp = g.core.max = 1e9; g.core.atk = 0; const b = C.spawnEnemy(g, 'bat', 1500, 1500 - 900); b.speed = 0; b.dmg = 0; b.hp = b.max = 1e9;
+  for (let i = 0; i < 30 * 60; i++) C.tick(g, DT); check('공중형만 남고 궁수가 없어도 라운드가 그대로', g.round === 10, 'round ' + g.round);
+  const h = arena(10, []); h.core.hp = h.core.max = 1e9; h.core.atk = 0; h.gold = 1e6; h.buyCd.sword = 0; const u = C.buy(h, 'sword').unit; u.max = u.hp = 1e9; u.x = 1500; u.y = 1500 - 100; u.hx = u.x; u.hy = u.y; u.atk = 0;
+  const e = C.spawnEnemy(h, 'grunt', 1500, 1500 - 106); e.speed = 0; e.hp = e.max = 1e9;
+  const dmgIn = sec => { const a0 = u.hp; for (let i = 0; i < 30 * sec; i++) { C.tick(h, DT); u.x = 1500; u.y = 1500 - 100; } return a0 - u.hp; };
+  const early = dmgIn(10); e.age = 100; const late = dmgIn(10);
+  check('40초가 지난 적은 공격력이 점점 증가 (age 100에서 약 2.8배)', late > early * 2.2 && e.enr, `${early.toFixed(0)} → ${late.toFixed(0)}`); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

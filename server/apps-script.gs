@@ -24,6 +24,8 @@ function sheet_(name, header) {
 function scores_() { return sheet_('scores', ['시각', '이름', '점수', '라운드', '승리', '처치', '시간(초)', '버전', 'pid', 'run', 'seed']); }
 function logs_() { return sheet_('logs', ['시각', '상태', '버전', 'pid', 'run', 'seed', '라운드', '막', '승리', '처치', '게임시간(초)', '실제시간(초)', '성채HP', '골드', '구매수', '유닛', '강화', '전직', '성채피해원인', '렉(횟수/ms)', '환경', '라운드별기록(JSON)']); }
 
+function errors_() { return sheet_('errors', ['시각', '버전', 'pid', 'run', '위치', '메시지', '스택', '라운드', '게임시간', 'seed', '유닛', '적', '성채HP', '강화', '화면', '브라우저', '실제시간']); }
+
 function valid_(o) {
   return o && typeof o.score === 'number' && o.round >= 1 && o.round <= MAX_ROUND && o.kills >= 0 && o.kills < 100000 &&
     o.score <= (MAX_ROUND + 1) * 100000 + 99999 && o.time >= (o.round - 1) * 8; // 라운드는 40초마다 넘어가므로, 라운드 수에 비해 게임 시간이 너무 짧으면 거부
@@ -38,6 +40,9 @@ function doPost(e) {
         scores_().appendRow([now, String(o.name || '').slice(0, 12), o.score, o.round, o.win ? 'Y' : 'N', o.kills, o.time, o.v, o.pid, o.run, o.seed]);
         out.ok = true;
       } else out.error = 'invalid';
+    } else if (o.type === 'error') { // 게임 중 발생한 오류 (멈춤 원인 추적용)
+      errors_().appendRow([now, o.v, o.pid, o.run, o.where, o.msg, o.stack, o.round, o.t, o.seed, o.units, o.enemies, o.coreHp, JSON.stringify(o.cards), o.w + 'x' + o.h, o.ua, o.real]);
+      out.ok = true;
     } else if (o.type === 'log') {
       logs_().appendRow([now, o.status, o.v, o.pid, o.run, o.seed, o.round, o.act, o.win ? 'Y' : 'N', o.kills, o.time, o.real, o.coreHp, o.gold, o.buys,
         JSON.stringify(o.units), JSON.stringify(o.cards), JSON.stringify(o.jobs), JSON.stringify(o.coreDmgBy), o.lag ? o.lag.n + '/' + o.lag.ms : '', JSON.stringify(o.env), JSON.stringify(o.timeline).slice(0, 45000)]);

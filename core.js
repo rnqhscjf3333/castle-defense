@@ -17,7 +17,8 @@
   const SPAWN_TIME = 25;   // 라운드 시작 후 이 시간 동안 적이 나뉘어 나온다.
   const PREP_TIME = 0;     // 라운드는 시작하자마자 자동으로 진행된다 (준비 시간 없음)
   const SPAWN_RING = 700;  // 중앙에서 스폰 지점까지 거리 (맵 끝에서 오래 걸어오지 않고 화면 바로 밖에서 나타난다)
-  const ENRAGE_AFTER = 60; // 한 적이 이 시간(초) 이상 살아 있으면 점점 강해진다.
+  const ENRAGE_AFTER = 40; // 한 적이 이 시간(초)보다 오래 살아 있으면 점점 강해진다 (공격력·이동 속도).
+  const enrageMul = age => Math.min(4, 1 + 0.03 * Math.max(0, age - ENRAGE_AFTER)); // 40초 뒤부터 초당 +3%, 최대 4배
 
   const CFG = {
     world: { w: W, h: H, cx: CX, cy: CY },
@@ -993,12 +994,12 @@
   }
   function updateEnemy(S, e, dt) {
     e.cd -= dt; e.age += dt;
-    let boost = 1;
-    if (e.age > ENRAGE_AFTER) boost += 0.1 * Math.ceil((e.age - ENRAGE_AFTER) / 10);
+    const boost = enrageMul(e.age);
+    if (e.age > ENRAGE_AFTER && !e.enr) { e.enr = true; if (S.enrageSaid !== S.round) { S.enrageSaid = S.round; emit(S, { type: 'enrage' }); } }
     if (e.abil) bossTick(S, e, dt);
     if (e.kind === 'shaman') return updateShaman(S, e, dt);
     if (e.slowT > 0) e.slowT -= dt;
-    const c = S.core, spm = e.speedMul * (e.slowT > 0 ? 0.45 : 1), dmg = e.dmg * boost * e.dmgMul, cdTime = 1 / (e.rate * e.rateMul || 1);
+    const c = S.core, spm = e.speedMul * (e.slowT > 0 ? 0.45 : 1) * (boost > 1 ? Math.min(1.5, 1 + (boost - 1) * 0.2) : 1), dmg = e.dmg * boost * e.dmgMul, cdTime = 1 / (e.rate * e.rateMul || 1);
     const tgt = nearest(S.gU, e.x, e.y, e.aggro);
     if (e.ranged) { // 사수: 사거리 끝에서 멈춰 포물선 화살을 쏜다
       const t = tgt || c, d = Math.hypot(t.x - e.x, t.y - e.y) - t.r - e.r;
@@ -1033,12 +1034,8 @@
         while (S.spawnT <= 0 && S.queue.length) { spawnEnemy(S, S.queue.shift()); S.spawnT += S.spawnGap; }
       }
       const gate = S.round === ACT1_END && S.act === 1; // 30라운드는 보스를 처치해야(2막 연출) 다음 라운드로 넘어간다
-      // 라운드는 적을 모두 처치하거나 보스를 처치해야 끝난다. (공중형만 남았는데 궁수 계열·포탑이 하나도 없으면 잡을 방법이 없으므로 넘어간다)
-      if (!gate && !S.hold && S.roundT >= 1 && !S.queue.length) {
-        let left = false, aa = null;
-        for (const e of S.enemies) { if (e.dead) continue; if (!e.air) { left = true; break; } if (aa === null) aa = S.units.some(u => !u.dead && (lineOf(u.type) === 'archer' || u.type === 'turret')); if (aa) { left = true; break; } }
-        if (!left) startRound(S);
-      }
+      // 라운드는 적을 모두 처치하거나 보스를 처치해야 끝난다 (공중형이 남아 있어도 마찬가지)
+      if (!gate && !S.hold && S.roundT >= 1 && !S.queue.length && !S.enemies.some(e => !e.dead)) startRound(S);
       if (S.cards.offer) return; // 방금 새 라운드가 열리며 카드창이 떴다
     }
 

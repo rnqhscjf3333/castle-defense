@@ -2,6 +2,6 @@
 // 비워두면 이 브라우저에만 저장되는 개인 랭킹으로 동작하고, 서버 전송은 하지 않습니다.
 window.CD_CONFIG = {
   API_URL: (/^(localhost|127\.0\.0\.1)$|^$/.test(location.hostname) && new URLSearchParams(location.search).get('api')) || '', // 테스트용: 로컬에서만 ?api= 로 덮어쓸 수 있다
-  VERSION: '2026.11.17',
+  VERSION: '2026.11.18',
   SEND_LOG: true,       // 게임이 끝나면(또는 도중에 나가면) 플레이 기록을 서버로 보낼지
 };

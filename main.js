@@ -151,12 +151,12 @@
     el.classList.remove('hidden'); clearTimeout(biTimer); cancelAnimationFrame(biRaf);
     const fake = { team: 'e', kind: 'boss', id: 7, x: 0, y: 0, r: ev.r || 30, look: ev.look, flash: 0, swing: 0 }, t0 = performance.now();
     (function loop() {
-      const now = performance.now(); if (now - t0 > 3600) return;
+      const now = performance.now(); if (now - t0 > 2300) return;
       fake.x += 0.35; fake.swing = ((now - t0) % 1400) < 220 ? 0.2 : 0; fake.aim = 0;
       c2.setTransform(1, 0, 0, 1, 0, 0); c2.clearRect(0, 0, 240, 240); const k = 44 / (ev.r || 30);
       c2.translate(120 - fake.x * k, 160); c2.scale(k, k); Figures.draw(c2, fake, now); biRaf = requestAnimationFrame(loop);
     })();
-    biTimer = setTimeout(() => el.classList.add('hidden'), 3800);
+    biTimer = setTimeout(() => el.classList.add('hidden'), 2200);
   }
   // 길 열기: 라운드가 올라 길이 늘어나면 먼지 구름이 성채에서 바깥으로 퍼지며 새 길이 나타난다
   function syncRoads() {
@@ -187,6 +187,10 @@
     const pu = 0.5 + 0.5 * Math.sin(now * 0.008 + e.id);
     ctx.globalAlpha = 0.22 + 0.14 * pu; ctx.fillStyle = '#ffb21a'; ctx.beginPath(); ctx.ellipse(e.x, e.y + e.r * 0.5, e.r * 1.5, e.r * 0.62, 0, 0, Math.PI * 2); ctx.fill();
     ctx.globalAlpha = 0.8; ctx.strokeStyle = '#ffd84a'; ctx.lineWidth = 2 / z; ctx.beginPath(); ctx.ellipse(e.x, e.y + e.r * 0.5, e.r * 1.5, e.r * 0.62, 0, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
+  }
+  function enrageGlow(e, now, z) { // 40초 넘게 살아 격노한 적: 붉은 불길 고리
+    const pu = 0.5 + 0.5 * Math.sin(now * 0.012 + e.id);
+    ctx.globalAlpha = 0.25 + 0.2 * pu; ctx.strokeStyle = '#ff3b2a'; ctx.lineWidth = 2.2 / z; ctx.beginPath(); ctx.ellipse(e.x, e.y + e.r * 0.5, e.r * 1.25, e.r * 0.5, 0, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
   }
   function eliteMark(e, z) {
     const y = e.y + Figures.headTop(e) - (e.hp < e.max ? 15 : 6), k = 1 / Math.max(0.7, z), w = 6 * k;
@@ -349,6 +353,7 @@
         if (fx.length >= 300) continue; numFx++; addFx({ k: 'num', x: ev.x + (Math.random() - 0.5) * 14, y: ev.y, t: 0, max: ev.crit ? 0.95 : 0.75, v: Math.round(ev.v), n: ev.heal ? 'h' : ev.crit ? 'c' : ev.team === 'u' ? 'u' : 'e' });
       }
       else if (ev.type === 'newEnemy') showNewEnemy(ev.kind);
+      else if (ev.type === 'enrage') toast('적이 오래 살아남아 격노합니다! 점점 더 강해져요');
       else if (ev.type === 'elite') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.6, c: '#ffd84a', big: true }); if (eliteToasts < 3) { eliteToasts++; toast('엘리트 ' + CFG.enemies[ev.kind].name + ' 출현! 훨씬 강하고 큽니다'); } }
       else if (ev.type === 'poisonPool') addFx({ k: 'pool', x: ev.x, y: ev.y, r: ev.r, t: 0, max: ev.dur });
       else if (ev.type === 'reward') toast('보상 획득: ' + ev.name);
@@ -445,6 +450,7 @@
     for (let i = 0; i < all.length; i++) {
       const e = all[i];
       if (e._tree) { Scenery.drawTree(ctx, e, now); continue; }
+      if (e.team === 'e' && e.enr && !lite) enrageGlow(e, now, z);
       if (e.elite) eliteGlow(e, now, z);
       if (lite && e.team === 'e' && e.kind !== 'boss') { Figures.drawLite(ctx, e); if (e.elite) eliteMark(e, z); continue; }
       if (e.kind === 'boss') bossAura(e, now, z);
@@ -712,7 +718,21 @@
     const boss = S.enemies.some(e => e.kind === 'boss');
     A2.setMood(S.act === 2 || S.round > C.MAX_ROUND ? (boss ? 'dark2' : 'dark') : (boss ? 'boss' : 'calm'));
   }
+  // 프레임 하나에서 오류가 나도 게임 루프가 멈추지 않게 하고, 오류는 서버로 보낸다
+  let errStreak = 0;
   function frame(now) {
+    requestAnimationFrame(frame);
+    try { frameBody(now); errStreak = 0; }
+    catch (err) {
+      Net.sendError(err && err.message, err && err.stack, 'frame');
+      if (++errStreak === 1) toast('오류가 발생했어요. 기록을 보냈습니다');
+      if (errStreak >= 90 && running) { // 계속 같은 오류면 멈추고 안내
+        running = false; $('ovTitle').textContent = '오류가 발생했어요';
+        $('ovBody').innerHTML = '<p>죄송해요, 게임에 문제가 생겼어요. 오류 기록은 개발자에게 전송했습니다.<br>다시 시작해 주세요.</p>'; $('overlay').classList.remove('hidden'); errStreak = 0;
+      }
+    }
+  }
+  function frameBody(now) {
     const f0 = performance.now();
     if (running && !paused && document.visibilityState === 'visible' && now - prev < 1000) Net.lag(now - prev);
     adaptResolution(now - prev);
@@ -736,13 +756,13 @@
     }
     ema('frame', performance.now() - f0);
     if (perfEl && now - perfT > 500) { perfT = now; perfEl.textContent = '프레임 ' + perf.dt.toFixed(1) + 'ms (' + (1000 / Math.max(1, perf.dt)).toFixed(0) + 'fps)\n작업 ' + perf.frame.toFixed(1) + 'ms = 틱 ' + perf.tick.toFixed(1) + ' + 그리기 ' + perf.draw.toFixed(1) + '\n적 ' + (S ? S.enemies.length : 0) + ' 아군 ' + (S ? S.units.length : 0) + ' 투사체 ' + (S ? S.shots.length : 0) + '\n그린 개체 ' + drawnCount + (liteMode ? ' (간단 모드)' : '') + '\n해상도 ' + Math.round(renderScale * 100) + '%'; }
-    requestAnimationFrame(frame);
   }
 
   if (params.get('perf')) { perfEl = $('perf'); perfEl.hidden = false; }
   window.addEventListener('keydown', e => { if (e.key === 'F3') { e.preventDefault(); perfEl = perfEl ? null : $('perf'); $('perf').hidden = !perfEl; } });
   window.addEventListener('resize', () => { uiAge = 999; });
   window.addEventListener('resize', resize);
+  Net.setSource(() => S);
   Scenery.init(C);
   resize();
   S = C.createGame(1); // 시작 화면 뒤에 보일 빈 맵

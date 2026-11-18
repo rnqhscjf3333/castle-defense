@@ -53,6 +53,22 @@
     enqueue(o);
   }
 
+  // ── 오류 보고: 게임이 멈추거나 예외가 나면 상태와 함께 서버로 보낸다 (같은 오류는 한 번만, 한 판에 최대 8건) ──
+  let getS = () => null; const seenErr = {}; let errN = 0;
+  function sendError(msg, stack, where) {
+    try {
+      msg = String(msg || 'unknown').slice(0, 300); stack = String(stack || '').slice(0, 900);
+      const key = msg + '|' + stack.split('\n')[1]; if (seenErr[key] || errN >= 8) return; seenErr[key] = 1; errN++;
+      if (new URLSearchParams(location.search).get('bot')) return;
+      const S = getS(), o = { type: 'error', v: CFG.VERSION, pid, run: run.id, where: where || '', msg, stack, ua: navigator.userAgent.slice(0, 140), w: innerWidth, h: innerHeight, real: run.start ? Math.round((Date.now() - run.start) / 1000) : 0 };
+      if (S) { o.round = S.round; o.t = Math.round(S.t); o.seed = S.seed; o.units = S.units.length; o.enemies = S.enemies.length; o.coreHp = Math.round(S.core.hp); o.cards = Object.assign({}, S.cards.taken); o.phase = S.phase; }
+      const l = JSON.parse(ls.get('cd-errors') || '[]'); l.push({ at: Date.now(), msg, round: o.round }); ls.set('cd-errors', JSON.stringify(l.slice(-10))); // 서버가 없어도 이 브라우저에 남긴다
+      enqueue(o);
+    } catch (e) {}
+  }
+  window.addEventListener('error', e => sendError(e.message, e.error && e.error.stack, 'window ' + (e.filename || '').split('/').pop() + ':' + e.lineno));
+  window.addEventListener('unhandledrejection', e => sendError(e.reason && e.reason.message || String(e.reason), e.reason && e.reason.stack, 'promise'));
+
   // ── 랭킹 ──
   function localTop() { try { return JSON.parse(ls.get(LKEY) || '[]'); } catch (e) { return []; } }
   function addLocal(e) { const l = localTop(); l.push(e); l.sort((a, b) => b.score - a.score); ls.set(LKEY, JSON.stringify(l.slice(0, 20))); return l; }
@@ -73,5 +89,5 @@
   }
 
   window.addEventListener('online', flush); setTimeout(flush, 2000);
-  window.Net = { configured: !!API, pid, begin, sample, lag, sendLog, top, submit, scoreOf, name: () => ls.get('cd-name') || '', localTop };
+  window.Net = { configured: !!API, pid, sendError, setSource: f => { getS = f; }, begin, sample, lag, sendLog, top, submit, scoreOf, name: () => ls.get('cd-name') || '', localTop };
 })();
