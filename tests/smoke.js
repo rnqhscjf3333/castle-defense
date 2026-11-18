@@ -53,14 +53,14 @@ S.gold = 1000;
 const base = { sword: C.unitCostOf(S, 'sword'), archer: C.unitCostOf(S, 'archer'), priest: C.unitCostOf(S, 'priest') };
 const r1 = C.buy(S, 'sword'), r2 = C.buy(S, 'sword');
 check('구매 쿨다운', r1.ok && !r2.ok && r2.reason === 'cooldown');
-check('한 유닛을 뽑으면 모든 유닛 종류의 가격이 오름', ['sword', 'archer', 'priest'].every(t => C.unitCostOf(S, t) > base[t]), JSON.stringify(base) + '→' + ['sword', 'archer', 'priest'].map(t => C.unitCostOf(S, t)));
-check('가격 = 기본가 × 상승배율^뽑은 수', C.unitCostOf(S, 'archer') === Math.round(C.CFG.units.archer.cost * Math.pow(C.CFG.economy.costGrowth, 1)));
+check('한 유닛을 뽑으면 모든 유닛 종류의 가격이 조금 오르고, 같은 종류는 더 오름', ['sword', 'archer', 'priest'].every(t => C.unitCostOf(S, t) > base[t]) && C.unitCostOf(S, 'sword') / base.sword > C.unitCostOf(S, 'archer') / base.archer, JSON.stringify(base) + '→' + ['sword', 'archer', 'priest'].map(t => C.unitCostOf(S, t)));
+check('가격 = 기본가 × 전체인구 배율 × 같은 종류 인구 배율', C.unitCostOf(S, 'archer') === Math.round(C.CFG.units.archer.cost * C.CFG.economy.costAll) && C.unitCostOf(S, 'sword') === Math.round(C.CFG.units.sword.cost * C.CFG.economy.costAll * (1 + C.CFG.economy.costType)));
 S.buyCd.sword = 0; S.buyCd.archer = 0;
 const g0 = S.gold; C.buy(S, 'archer');
-check('골드 차감과 구매 횟수 증가', S.gold === g0 - Math.round(C.CFG.units.archer.cost * C.CFG.economy.costGrowth) && S.buyCount === 2, 'buyCount=' + S.buyCount);
+check('골드 차감과 구매 횟수 증가', S.gold === g0 - Math.round(C.CFG.units.archer.cost * C.CFG.economy.costAll) && S.buyCount === 2, 'buyCount=' + S.buyCount);
 let many = C.createGame(2); many.gold = 1e9; let cnt = 0; for (let i = 0; i < 200; i++) { many.buyCd.sword = 0; if (C.buy(many, 'sword').ok) cnt++; }
 check('(테스트 설정) 인구 상한을 크게 하면 200명도 뽑힘', cnt === 200 && many.units.length === 200, cnt + '명');
-check('가격은 계속 오름 (사라져도 내려가지 않음)', C.unitCostOf(many, 'sword') > 100 * C.CFG.units.sword.cost);
+{ const hi = C.unitCostOf(many, 'sword'); for (let i = 0; i < 150; i++) many.units.pop(); check('가격은 병력이 많을수록 비싸고, 병력을 잃으면 내려감', hi > 100 * C.CFG.units.sword.cost && C.unitCostOf(many, 'sword') < hi / 10, hi + ' → ' + C.unitCostOf(many, 'sword')); }
 
 // 4) 카드 규칙
 S = C.createGame(5);
@@ -537,13 +537,13 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   const g = C.createGame(5); g.round = 40; g.cards.offer = [C.CARD_DEFS.find(d => d.id === 'l_sword'), C.CARD_DEFS.find(d => d.id === 'l_archer')].map(d => ({ key: d.id, id: d.id, cat: d.cat, rar: d.rar, name: d.name, desc: '', lv: 1 }));
   C.pickCard(g, 0); C.pickCard(Object.assign(g, { cards: Object.assign(g.cards, { offer: [{ key: 'l_archer', id: 'l_archer', cat: 'summon', rar: 'legend', name: 'x', desc: '', lv: 1 }] }) }), 0);
   check('전설 선택 → 검왕·궁신 소환 (일반 영웅보다 훨씬 강함)', g.units.some(u => u.type === 'legendsword') && g.units.some(u => u.type === 'legendarcher') && C.CFG.units.legendsword.atk > C.CFG.units.hero.atk * 2 && C.CFG.units.legendarcher.range > C.CFG.units.marksman.range); }
-// 42) 마왕 처치 시 쓰러진 병사 전원 부활 / 무한 모드 추가 포탈 / 보스 개성 패턴
+// 42) 마왕 처치 시 부활 없음 / 무한 모드 추가 포탈 / 보스 개성 패턴
 { const g = arena(50, [['boss', 1500, 1500 - 220]]); g.act = 2; g.round = 50; g.queue = []; g.gold = 1e7; g.core.hp = g.core.max;
   for (let i = 0; i < 3; i++) { g.buyCd.sword = 0; C.buy(g, 'sword'); g.buyCd.archer = 0; C.buy(g, 'archer'); }
   const before = g.units.length; for (let i = 0; i < 4; i++) { const u = g.units[i]; C.damage(g, u, 1e9); } for (let i = 0; i < 3; i++) C.tick(g, DT);
   const alive0 = g.units.filter(u => !u.dead).length, fallen = g.fallen.length;
   const b = g.enemies.find(e => e.kind === 'boss'); g.core.atk = 1e6; C.damage(g, b, 1e12);
-  check('마왕 처치 → 쓰러진 병사가 전원 부활, 체력 가득', alive0 < before && g.units.filter(u => !u.dead).length === before && g.units.every(u => u.hp >= u.max - 1e-6) && fallen >= 4, `전 ${alive0} → 후 ${g.units.length} / 원래 ${before}, 전사 기록 ${fallen}`);
+  check('마왕 처치 → 쓰러진 병사는 부활하지 않음 (무한 모드만 시작)', alive0 < before && g.units.filter(u => !u.dead).length === alive0 && g.endless && fallen >= 4, `전 ${alive0} → 후 ${g.units.length} / 원래 ${before}, 전사 기록 ${fallen}`);
   check('연출 종류 endless', g.cinematic && g.cinematic.kind === 'endless');
   check('포탈: 51~55라운드 1개, 56라운드 2개 … 86라운드 이후 8개(총 16)', C.extraAngles(1).length === 1 && C.extraAngles(8).length === 8 && C.extraAngles(8).every(a => isFinite(a)));
   const h = C.createGame(9); h.captureEvents = true; for (const [r, want] of [[50, 0], [51, 1], [55, 1], [56, 2], [61, 3], [85, 7], [86, 8], [120, 8]]) { h.round = r - 1; h.phase = 'round'; h.queue = []; h.roundT = C.ROUND_TIME; h.enemies.length = 0; h.cards.offer = null; C.tick(h, DT); h.cards.offer = null; if (h.extraPts !== want) check('포탈 수 R' + r, false, `기대 ${want} 실제 ${h.extraPts}`); }
@@ -606,5 +606,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
 // 47) 자유 모드: 사거리 밖이어도 나를 공격한 적에게 가서 반격한다
 { const run = mode => { const a = C.createGame(1, mode); a.hold = true; a.phase = 'round'; a.round = 10; a.queue = []; C.buy(a, 'sword'); const u = a.units[0]; const e = C.spawnEnemy(a, 'grunt', 1500 + 600, 1500); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; for (let i = 0; i < 3; i++) C.tick(a, DT); const x0 = u.x; C.damage(a, u, 1, false, e); for (let i = 0; i < 200; i++) C.tick(a, DT); return Math.hypot(u.x - e.x, u.y - e.y); };
   const f = run('free'), n = run('normal'); check('자유 모드: 멀리서 나를 때린 적에게 반격하러 감', f < n - 150, `적과의 거리 자유 ${f.toFixed(0)}px / 기본 ${n.toFixed(0)}px`); }
+// 48) 성채 최대 레벨이면 인구 제한 없음
+{ const g = C.createGame(3); g.gold = 1e9; const cap1 = C.popCap(g); for (let i = 1; i < C.CFG.castle.max; i++) C.upgradeCastle(g); check('성채 최대 레벨이면 인구 제한이 풀림', C.popCap(g) > 1e6 && cap1 < 1e6); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

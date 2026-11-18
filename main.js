@@ -247,7 +247,7 @@
     const lv = S.castle.lv, max = lv >= CFG.castle.max, cost = C.castleCost(S), full = C.popCount(S) >= C.popCap(S);
     const key = lv + '|' + (max ? 0 : cost) + '|' + S.core.cannons + '|' + (S.gold >= cost) + '|' + full;
     if (cb.key === key) return; cb.key = key;
-    cb.lv.textContent = 'Lv.' + lv; cb.ds.textContent = max ? '최대 레벨' : '인구 +' + C.popGain(lv + 1) + ' · 공격·체력↑' + (CFG.castle.cannonLv.includes(lv + 1) ? ' · 대포 +1' : '');
+    cb.lv.textContent = 'Lv.' + lv; cb.ds.textContent = max ? '최대 레벨 · 인구 제한 없음' : '인구 +' + C.popGain(lv + 1) + ' · 공격·체력↑' + (CFG.castle.cannonLv.includes(lv + 1) ? ' · 대포 +1' : '');
     cb.cost.textContent = max ? 'MAX' : cost + 'G'; castleBtn.classList.toggle('off', max || S.gold < cost); castleBtn.classList.toggle('need', full && !max);
   }
   function updateHud() {
@@ -259,7 +259,7 @@
     setText('timeTxt', fmtTime(S.t));
     setText('hpTxt', String(Math.ceil(c.hp)));
     setText('gold', String(Math.floor(S.gold)));
-    { const sp = C.specialCount(S); setText('unitTxt', C.popCount(S) + '/' + C.popCap(S) + (sp ? ' · 특수 ' + sp : '')); } // 인구/상한 + 특수 유닛은 따로
+    { const sp = C.specialCount(S); setText('unitTxt', C.popCount(S) + (C.popCap(S) < 1e8 ? '/' + C.popCap(S) : '') + (sp ? ' · 특수 ' + sp : '')); } // 인구/상한 + 특수 유닛은 따로
     setText('killTxt', String(S.kills));
     const pct = Math.max(0, c.hp / c.max * 100);
     const f = $('hpfill'); f.style.width = pct + '%'; f.style.background = pct > 50 ? 'var(--ok)' : pct > 25 ? 'var(--gold)' : 'var(--danger)';
@@ -427,7 +427,7 @@
         if (fx.length >= 300) continue; numFx++; addFx({ k: 'num', x: ev.x + (Math.random() - 0.5) * 14, y: ev.y, t: 0, max: ev.crit ? 0.95 : 0.75, v: Math.round(ev.v), n: ev.heal ? 'h' : ev.crit ? 'c' : ev.team === 'u' ? 'u' : 'e' });
       }
       else if (ev.type === 'newEnemy') showNewEnemy(ev.kind);
-      else if (ev.type === 'castleUp') { addFx({ k: 'ring', x: CX, y: CY, t: 0, max: 0.9, c: '#ffd166', big: true, r: 150 }); addFx({ k: 'ring', x: CX, y: CY, t: -0.15, max: 0.8, c: '#ffffff', r: 110 }); addFx({ k: 'summon', x: CX, y: CY + 30, t: 0, max: 0.9 }); toast('성채 Lv.' + ev.lv + ' — 인구 상한 ' + ev.pop + (ev.cannons > 1 ? ' · 대포 ' + ev.cannons + '문' : '')); }
+      else if (ev.type === 'castleUp') { addFx({ k: 'ring', x: CX, y: CY, t: 0, max: 0.9, c: '#ffd166', big: true, r: 150 }); addFx({ k: 'ring', x: CX, y: CY, t: -0.15, max: 0.8, c: '#ffffff', r: 110 }); addFx({ k: 'summon', x: CX, y: CY + 30, t: 0, max: 0.9 }); toast('성채 Lv.' + ev.lv + (ev.pop < 1e8 ? ' — 인구 상한 ' + ev.pop : ' — 최대 레벨: 인구 제한 없음') + (ev.cannons > 1 ? ' · 대포 ' + ev.cannons + '문' : '')); }
       else if (ev.type === 'melee') { if (fx.length < 220 && cam.zoom > 0.4) addFx({ k: 'slash', x: ev.tx, y: ev.ty, a: Math.atan2(ev.ty - ev.y, ev.tx - ev.x), t: 0, max: 0.2, c: atkColor(ev.job, ev.ut) }); }
       else if (ev.type === 'emelee') { if (fx.length < 220 && cam.zoom > 0.4) { addFx({ k: 'slash', x: ev.tx, y: ev.ty, a: Math.atan2(ev.ty - ev.y, ev.tx - ev.x), t: 0, max: 0.26, c: '#ff4adf', big: true }); } }
       else if (ev.type === 'bossShock') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.55, c: '#ffcf40', r: ev.r, big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: -0.08, max: 0.5, c: '#ff5a3a', r: ev.r * 0.7 }); for (let i = 0; i < 5; i++) addFx({ k: 'dust', x: ev.x + (Math.random() - 0.5) * ev.r, y: ev.y + (Math.random() - 0.5) * ev.r * 0.6, t: -Math.random() * 0.1, max: 0.9, r: 16 }); }
@@ -704,7 +704,7 @@
   // 1막 마지막 보스를 쓰러뜨리면: 화면이 어두워지고 → 길이 늘어나고(바닥을 새로 그림) → 마왕의 군세가 온다는 문구 → 2막 시작. 건너뛰기 가능.
   let cine = null;
   const CINES = { endless: { end: 10.6, title: '마왕 처치!', steps: [
-    { t: 1.6, text: '마왕을 물리쳤다!\n마왕에게 당한 병사들이 모두 정신을 되찾았다' },
+    { t: 1.6, text: '마왕을 물리쳤다!\n쓰러진 병사들은 돌아오지 않지만…' },
     { t: 4.8, text: '하지만 마왕의 몸에서 나온 붉은 기운이\n더 강한 적들을 부르고 있다' },
     { t: 8.0, text: '끝없는 적들에게서\n최대한 오래 살아남자' } ] } };
   const CINE_STEPS = [

@@ -147,7 +147,7 @@
       hpSlope: 0.125, hpSlopeLate: 0.14, lateFrom: 20, // 체력 배율: 선형, lateFrom(대혼란) 이후 기울기 증가
       dmgShare: 0.5,                                  // 공격력은 체력 증가분의 이 비율만 반영
       lateSpeed: 1.1,                                 // 대혼란 이후 적 이동 속도 배율
-      enemyHp: 0.185, enemyDmg: 0.5,                    // 모든 적(보스 포함)의 체력/공격력 배율
+      enemyHp: 0.27, enemyDmg: 0.5,                    // 모든 적(보스 포함)의 체력/공격력 배율
       bossHp: 1,                                      // 보스 체력에 추가로 곱하는 배율
       // 2막(31라운드~): 적이 강해지는 폭이 더 크다
       countPost: 3,                                   // 2막에서는 라운드마다 적이 이만큼 늘어난다 (1막 말 수 + 이 값 × 경과 라운드)
@@ -161,7 +161,7 @@
       shellCoreMul: 0.4,                              // 보스 포격이 성채에 주는 피해 비율 (성벽이 튼튼하다)
       coreRepair: 0.04,                               // 라운드가 바뀔 때마다 성채가 기본으로 복구하는 비율 (최대 체력 기준)
     },
-    economy: { costGrowth: 1.06 }, // (임시값: 1.05는 너무 쉽고 1.08은 어려웠음 — 밸런스는 나중에 재조정) // 유닛을 하나 뽑을 때마다 모든 유닛의 비용이 이 배율만큼 오른다 (인구 제한은 없다)
+    economy: { costAll: 1.02, costType: 0.04 }, // (임시값: 1.05는 너무 쉽고 1.08은 어려웠음 — 밸런스는 나중에 재조정) // 유닛을 하나 뽑을 때마다 모든 유닛의 비용이 이 배율만큼 오른다 (인구 제한은 없다)
     healAfterRound: 0.30, // 새 라운드 시작 시 생존 유닛 회복 비율
     // 카드/강화 수치
     upPct: { hp: 0.30, atk: 0.15, rate: 0.10, speed: 0.12 },
@@ -292,7 +292,8 @@
   const spawnAngles = pts => { const b = 0.4, P = Math.PI; return [b, b + P, b + P / 2, b + 1.5 * P, b + P / 4, b + 1.25 * P, b + 0.75 * P, b + 1.75 * P].slice(0, pts); };
   const enemySpeedMul = r => (r >= CFG.balance.lateFrom ? CFG.balance.lateSpeed : 1) * (r > ACT1_END ? CFG.balance.postSpeed : 1) * Math.min(1.5, 1 + 0.012 * endE(r));
   // 비용 = 기본 비용 × 배율^(지금까지 뽑은 유닛 수). 모든 유닛 종류가 함께 오른다.
-  const unitCostOf = (S, type) => Math.round(CFG.units[type].cost * Math.pow(CFG.economy.costGrowth, S.buyCount));
+  // 가격 = 기본가 × (전체 인구 × 2%) × (같은 종류 인구 × 4%): 한 종류만 계속 뽑으면 예전(6%씩)과 비슷하고, 병력을 잃으면 가격도 같이 내려가 복구하기 쉽다
+  const unitCostOf = (S, type) => { let all = 0, same = 0; for (const u of S.units) if (!u.dead && UNIT_TYPES.includes(u.type)) { all++; if (u.type === type) same++; } return Math.round(CFG.units[type].cost * Math.pow(CFG.economy.costAll, all) * Math.pow(1 + CFG.economy.costType, same)); };
 
   // ───────────── 카드 정의 ─────────────
   const TN = { sword: '검사', archer: '궁수', priest: '사제' };
@@ -466,8 +467,7 @@
   // 마왕 처치: 마왕에게 당한 병사들이 정신을 되찾는다 — 지금까지 쓰러진 유닛이 모두 돌아오고 전원 체력이 가득 찬다
   function reviveForEndless(S, boss) {
     S.endless = true; S.cinematic = { name: boss.bossName, kind: 'endless' };
-    const n = S.fallen.length; for (const t of S.fallen) { const u = addUnit(S, t); u.hp = u.max; } S.fallen = [];
-    for (const u of S.units) if (!u.dead) u.hp = u.max;
+    const n = 0; // (병사 부활·전원 회복은 없다)
     S.core.hp = Math.max(S.core.hp, S.core.max * 0.7);
     emit(S, { type: 'endlessStart', n });
   }
@@ -623,7 +623,7 @@
   // ───────────── 플레이어 행동 ─────────────
   // 인구: 설치형(포탑·발리스타)을 뺀 유닛 수. 상한은 성채 레벨이 올릴 때마다 늘어난다 (카드·보상으로 얻는 특수 유닛은 상한과 무관하게 합류)
   // 성채 레벨업마다 늘어나는 인구가 +1씩 커진다 (2레벨 +3, 3레벨 +4, 4레벨 +5 …)
-  const popCap = S => { const n = S.castle.lv - 1; return CFG.castle.popBase + CFG.castle.popPer * n + n * (n - 1) / 2; };
+  const popCap = S => { if (S.castle.lv >= CFG.castle.max) return 1e9; const n = S.castle.lv - 1; return CFG.castle.popBase + CFG.castle.popPer * n + n * (n - 1) / 2; };
   const popGain = lv => CFG.castle.popPer + (lv - 2); // lv 레벨로 올릴 때 늘어나는 인구
   const popCount = S => { let n = 0; for (const u of S.units) if (!u.dead && UNIT_TYPES.includes(u.type)) n++; return n; }; // 기본 3종만 인구에 포함
   const specialCount = S => { let n = 0; for (const u of S.units) if (!u.dead && !isStatic(u) && !UNIT_TYPES.includes(u.type)) n++; return n; }; // 특수 유닛(골렘·용사·전설 등)은 따로
