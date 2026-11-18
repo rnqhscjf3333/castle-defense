@@ -104,12 +104,12 @@
   C.UNIT_TYPES.forEach((t, i) => {
     const b = document.createElement('button');
     b.className = 'btn panel ucard';
-    b.innerHTML = '<div class="nm"></div><div class="ds"></div><div class="cost"></div><span class="delta"></span><div class="cdfill"></div><span class="key">' + KEYS[i] + '</span>';
-    b.querySelector('.nm').textContent = CFG.units[t].name;
+    b.innerHTML = '<div class="nm"><span class="nmt"></span><span class="cnt"></span></div><div class="ds"></div><div class="cost"></div><span class="delta"></span><div class="cdfill"></div><span class="key">' + KEYS[i] + '</span>';
+    b.querySelector('.nmt').textContent = CFG.units[t].name;
     b.querySelector('.ds').textContent = DESC[t];
     b.addEventListener('click', () => doBuy(t));
     $('units').appendChild(b);
-    ucards[t] = { el: b, cost: b.querySelector('.cost'), cd: b.querySelector('.cdfill'), delta: b.querySelector('.delta') };
+    ucards[t] = { el: b, cnt: b.querySelector('.cnt'), cost: b.querySelector('.cost'), cd: b.querySelector('.cdfill'), delta: b.querySelector('.delta') };
   });
   function doBuy(t) {
     if (!S || !running || paused) return;
@@ -143,6 +143,30 @@
   // 보스 체력 바 (화면 위 가운데): 이름, 체력 숫자, 현재 상태, 가진 패턴
   const PAT = { dash: '돌진', summon: '소환', artillery: '포격', shield: '방어막', rage: '분노' };
   const DBK = { stun: ['기절', '#ffe14a'], poison: ['중독', '#7be04a'], weak: ['공격력 감소', '#ff6b6b'], wound: ['치유 감소', '#c77dff'] };
+  // 보스 등장 컷신: 모습·이름·대사가 잠깐 나왔다가 사라진다 (게임은 멈추지 않는다)
+  let biTimer = 0, biRaf = 0;
+  function showBossIntro(ev) {
+    const el = $('bossIntro'), c2 = $('biCv').getContext('2d'); setText('biName', ev.name);
+    $('biLine').textContent = ev.line ? '“' + ev.line + '”' : '';
+    el.classList.remove('hidden'); clearTimeout(biTimer); cancelAnimationFrame(biRaf);
+    const fake = { team: 'e', kind: 'boss', id: 7, x: 0, y: 0, r: ev.r || 30, look: ev.look, flash: 0, swing: 0 }, t0 = performance.now();
+    (function loop() {
+      const now = performance.now(); if (now - t0 > 3600) return;
+      fake.x += 0.35; fake.swing = ((now - t0) % 1400) < 220 ? 0.2 : 0; fake.aim = 0;
+      c2.setTransform(1, 0, 0, 1, 0, 0); c2.clearRect(0, 0, 240, 240); const k = 44 / (ev.r || 30);
+      c2.translate(120 - fake.x * k, 160); c2.scale(k, k); Figures.draw(c2, fake, now); biRaf = requestAnimationFrame(loop);
+    })();
+    biTimer = setTimeout(() => el.classList.add('hidden'), 3800);
+  }
+  // 길 열기: 라운드가 올라 길이 늘어나면 먼지 구름이 성채에서 바깥으로 퍼지며 새 길이 나타난다
+  function syncRoads() {
+    const want = S.spawnPts || 2, have = Scenery.roadCount; if (want === have) return;
+    Scenery.setRoadCount(want);
+    if (want > have && S.round >= 2) {
+      for (let i = have; i < want; i++) { const pts = Scenery.roadPts(i); for (let k = 0; k < pts.length; k += 2) { const p = pts[k]; for (let m = 0; m < 2; m++) addFx({ k: 'dust', x: p[0] + (Math.random() - 0.5) * 40, y: p[1] + (Math.random() - 0.5) * 30, t: -k * 0.05 - Math.random() * 0.25, max: 1.5 + Math.random() * 0.6, r: 20 + Math.random() * 18 }); } }
+      toast('새로운 길이 열렸습니다! (' + have + ' → ' + want + '곳에서 적이 나옵니다)'); A2.play('cine');
+    }
+  }
   // 새로운 종류의 적이 처음 나오면 왼쪽 위에 모습·이름·능력을 잠깐 보여준다
   const neQ = []; let neBusy = false;
   function showNewEnemy(kind) { if (CFG.enemies[kind]) neQ.push(kind); if (!neBusy) nextNewEnemy(); }
@@ -175,7 +199,7 @@
   function updateHud() {
     const c = S.core;
     const bi = C.bossInfo(S, S.round), nb = C.bossInfo(S, S.round + 1), rt = $('roundTxt');
-    setText('roundTxt', '라운드 ' + Math.max(1, S.round) + (S.round > C.MAX_ROUND ? ' · 무한' : ' / ' + C.MAX_ROUND) + (bi ? ' · 보스' : nb ? ' · 다음 보스' : S.act === 2 ? ' · 2막' : '') + (S.phase === 'round' ? ' · 남은 적 ' + (S.enemies.length + S.queue.length) : ''));
+    setText('roundTxt', '라운드 ' + Math.max(1, S.round) + (S.round > C.MAX_ROUND ? ' · 무한' : ' / ' + C.MAX_ROUND));
     rt.classList.toggle('boss', !!bi); rt.classList.toggle('nextboss', !bi && !!nb); rt.classList.toggle('act2', S.act === 2 && !bi && !nb);
     updateBossBar();
     setText('timeTxt', fmtTime(S.t));
@@ -192,6 +216,7 @@
         u.delta.textContent = '+' + (cost - u.last); u.delta.classList.remove('show'); void u.delta.offsetWidth; u.delta.classList.add('show');
       }
       u.last = cost;
+      let n = 0; for (const x of S.units) if (!x.dead && x.type === t) n++; if (u.n !== n) { u.n = n; u.cnt.textContent = '×' + n; }
       u.cost.textContent = cost + 'G';
       u.cd.style.height = (cd * 100) + '%';
       const cant = S.gold < cost;
@@ -278,7 +303,7 @@
       case 'boom': A2.play(ev.big ? 'bigBoom' : 'boom', ev.x, ev.y); break;
       case 'picked': A2.play('card'); break;
       case 'promote': A2.play('job'); break;
-      case 'bossSpawn': A2.alarm(); break;
+      case 'bossSpawn': A2.alarm(); showBossIntro(ev); break;
       case 'bossDash': A2.play('dash', ev.x, ev.y); break;
       case 'bossShield': A2.play('shield', ev.x, ev.y); break;
       case 'bossSummon': A2.play('summon', ev.x, ev.y); break;
@@ -380,7 +405,7 @@
     const p0 = performance.now();
     Scenery.drawGround(ctx, x0, y0, x1, y1);
     // 적 출현 포탈: 길 위의 붉은 룬 원 (화면 바로 밖에서 적이 나타난다)
-    const angs = C.spawnAngles(S.spawnPts || 4);
+    const angs = C.spawnAngles(S.spawnPts || 2);
     for (const a of angs) { const px = CX + Math.cos(a) * C.SPAWN_RING, py = CY + Math.sin(a) * C.SPAWN_RING; if (px > x0 - 60 && px < x1 + 60 && py > y0 - 40 && py < y1 + 40) Scenery.drawPortal(ctx, px, py, now); }
 
     const c = S.core;
@@ -444,6 +469,11 @@
       const f = fx[i]; if (f.t < 0) continue; // 시작 지연 중
       const p = f.t / f.max;
       if (f.k === 'burst') { ctx.globalAlpha = 1 - p; ctx.fillStyle = f.c; ctx.beginPath(); ctx.arc(f.x, f.y, (f.big ? 20 : 8) + p * (f.big ? 50 : 16), 0, Math.PI * 2); ctx.fill(); }
+      else if (f.k === 'dust') { // 먼지 구름: 퍼지며 떠오르다 사라진다
+        const a = (p < 0.2 ? p / 0.2 : 1 - (p - 0.2) / 0.8) * 0.5, rr = f.r * (0.6 + p * 1.4);
+        ctx.globalAlpha = a; ctx.fillStyle = '#b79b72'; ctx.beginPath(); ctx.arc(f.x, f.y - p * 22, rr, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = a * 0.7; ctx.fillStyle = '#d8c3a0'; ctx.beginPath(); ctx.arc(f.x - rr * 0.25, f.y - p * 26 - rr * 0.2, rr * 0.65, 0, Math.PI * 2); ctx.fill();
+      }
       else if (f.k === 'summon') { // 소환: 빛기둥 + 바닥 마법진 + 떠오르는 불꽃
         const a = 1 - p, h = 70 * Math.min(1, p * 4) * (1 - p * 0.3), w = 11 * (1 - p * 0.6);
         const g = ctx.createLinearGradient(0, f.y - h, 0, f.y + 4); g.addColorStop(0, 'rgba(140,210,255,0)'); g.addColorStop(1, 'rgba(190,235,255,' + (0.75 * a).toFixed(2) + ')');
@@ -586,7 +616,7 @@
     fx.length = 0; numFx = 0; paused = false; speed = 1; shownOffer = null; $('picker').classList.add('hidden'); renderUpgrades();
     $('btnPause').textContent = '일시정지'; $('btnSpeed').textContent = '1×';
     for (const k in last) delete last[k];
-    for (const t of C.UNIT_TYPES) ucards[t].last = undefined;
+    for (const t of C.UNIT_TYPES) { ucards[t].last = undefined; ucards[t].n = undefined; }
     cine = null; $('cine').classList.add('hidden'); $('cine').classList.remove('on'); Scenery.setAct(1, false);
     const sr = +params.get('startRound'); if (sr > 1) C.jumpToRound(S, sr); // 디버그: 해당 라운드로 바로 시작
     centerOnCore();
@@ -678,6 +708,7 @@
       if (S.cinematic && !cine) startCine(S.cinematic.name);
       if (cine) stepCine(now);
       else if (Scenery.act !== S.act) Scenery.setAct(S.act, true); // 불러오기/재시작/점프 시 막에 맞는 배경으로
+      if (!cine && S.act === 1) syncRoads();
       const h0 = performance.now(); Net.sample(S, perf, renderScale); A2.setView({ x: cam.x, y: cam.y, zoom: cam.zoom, vw, vh }); updateMood(); handleEvents(); syncPicker(); updateHud(); const h1 = performance.now(); drawWorld(now); const h2 = performance.now();
       ema('hud', h1 - h0); ema('draw', h2 - h1);
     }

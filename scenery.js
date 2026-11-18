@@ -20,6 +20,7 @@
   // ───────────── 길 (성채에서 바깥으로 뻗는 흙길) ─────────────
   let act = 1, roads = [], trees = [], deco = { bushes: [], rocks: [], flowers: [], tufts: [] }, inited = false;
   const chunks = new Map();
+  let openCount = 2; // 열려 있는 길 수 (2 → 4 → 6 → 8)
 
   function roadPoint(theta, d, phase) {
     const taper = Math.min(1, Math.max(0, (d - 120) / 320));
@@ -38,7 +39,7 @@
     roads = angs.map((th, i) => {
       const phase = i * 1.9 + 0.5, pts = [];
       for (let d = 110; d <= 2300; d += 30) { const p = roadPoint(th, d, phase); if (p[0] < -60 || p[0] > W + 60 || p[1] < -60 || p[1] > H + 60) break; pts.push(p); }
-      return { th, phase, pts, main: i < 4, act2: i >= 6 }; // 2막에서 새로 열리는 길 2개
+      return { th, phase, pts, main: i < 4, idx: i };
     });
     const r = rng(2026);
     // 나무: 성채 주변과 길은 비우고, 바깥으로 갈수록/가장자리일수록 빽빽하게. 군데군데 숲과 빈터.
@@ -84,7 +85,7 @@
     }
     // 흙길 (가장자리 → 본체 → 중앙 결)
     for (const road of roads) {
-      if (road.act2 && act < 2) continue; // 새 길은 2막에서만
+      if (road.idx >= openCount) continue; // 아직 열리지 않은 길
       const pts = road.pts; if (pts.length < 2) continue;
       const near = pts.some(p => inChunk(p[0], p[1], 60)); if (!near) continue;
       const stroke = (w, col) => { g.strokeStyle = col; g.lineWidth = w; g.lineJoin = 'round'; g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.stroke(); };
@@ -237,9 +238,17 @@
 
   // 2막 전환: 새 길을 그리도록 바닥 조각을 다시 만든다 (연출으로 화면이 가려진 동안 한꺼번에 만든다)
   function setAct(n, prebuild) {
-    if (n === act) return; act = n; chunks.clear();
+    if (n === act) return; act = n; chunks.clear(); openCount = n === 2 ? 8 : 2;
     if (prebuild) for (let iy = 0; iy < Math.ceil(H / CHK); iy++) for (let ix = 0; ix < Math.ceil(W / CHK); ix++) chunks.set(ix + ',' + iy, makeChunk(ix, iy));
   }
+  // 길 열기: 새로 열리는 길이 지나는 바닥 조각만 다시 만든다 (2 → 4 → 6개)
+  function setRoadCount(n) {
+    if (n === openCount || act === 2) return;
+    const old = openCount; openCount = n; const keys = new Set(), lo = Math.min(old, n), hi = Math.max(old, n);
+    for (const r of roads) if (r.idx >= lo && r.idx < hi) for (const p of r.pts) for (const dx of [-60, 0, 60]) for (const dy of [-60, 0, 60]) keys.add(Math.floor((p[0] + dx) / CHK) + ',' + Math.floor((p[1] + dy) / CHK));
+    for (const k of keys) if (chunks.has(k)) { const [ix, iy] = k.split(',').map(Number); chunks.set(k, makeChunk(ix, iy)); }
+  }
+  function roadPts(i) { return roads[i] ? roads[i].pts : []; }
   // 2막의 어둠: 성채 주변만 횃불로 밝고 바깥으로 갈수록 어둡고 푸르스름하다 (월드 위에 한 번 덮는다)
   function drawNight(ctx, vw, vh, sx, sy, zoom, now) {
     const flick = 1 + Math.sin(now * 0.004) * 0.03 + Math.sin(now * 0.011) * 0.015, r0 = 300 * zoom * flick, r1 = Math.max(vw, vh) * 0.85;
@@ -253,5 +262,5 @@
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = gl; ctx.fillRect(sx - 240 * zoom * flick, sy - 240 * zoom * flick, 480 * zoom * flick, 480 * zoom * flick); ctx.restore();
   }
 
-  window.Scenery = { init, setAct, drawNight, get act() { return act; }, drawGround, visibleTrees, drawTree, drawPortal, drawCastle, roadsInfo: () => roads.map(r => ({ th: r.th, main: r.main })) };
+  window.Scenery = { init, setAct, setRoadCount, roadPts, get roadCount() { return openCount; }, drawNight, get act() { return act; }, drawGround, visibleTrees, drawTree, drawPortal, drawCastle, roadsInfo: () => roads.map(r => ({ th: r.th, main: r.main })) };
 })();

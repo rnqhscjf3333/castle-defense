@@ -314,7 +314,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   check('적 공격력이 절반', Math.abs(e.dmg - base.dmg * C.dmgMul(1) * 0.5) < 1e-9, `${base.dmg}→${e.dmg}`);
   check('이동 속도는 그대로', Math.abs(e.speed - base.speed) < 1e-9, String(e.speed));
   const bb = (() => { const g2 = arena(5, []); return C.spawnEnemy(g2, 'boss', 1500, 800); })();
-  check('보스 체력도 같은 배율 (돌격왕 600 × enemyHp)', bb.max === Math.round(600 * C.CFG.balance.enemyHp), String(bb.max)); }
+  check('보스 체력도 같은 배율 (돌격왕 1300 × enemyHp)', bb.max === Math.round(1300 * C.CFG.balance.enemyHp), String(bb.max)); }
 
 // 20) 발사 위치: 몸 중심이 아니라 포구/활 위치에서 출발하고, 높이가 지면 목표로 떨어진다
 { const g = arena(3, [['grunt', 1500 + 220, 1500]]); g.core.atk = 20; let first = null;

@@ -102,7 +102,7 @@ try {
 
   // 3.5) 보스 라운드 표시: 라운드 표시, 보스 체력 바, 화면 밖 보스는 미니맵/화살표 대상
   await open('?bot=1&warp=100&round=5&seed=3&zoom=1', 1200); // 5라운드 시작 직후
-  check('보스 라운드 표시 (라운드 문구에 보스, 빨간색)', (await ev("document.getElementById('roundTxt').textContent")).includes('보스') && await ev("document.getElementById('roundTxt').classList.contains('boss')"), await ev("document.getElementById('roundTxt').textContent"));
+  check('보스 라운드 표시 (라운드 문구에 보스, 빨간색)', (await ev("document.getElementById('roundTxt').textContent")).includes('5') && await ev("document.getElementById('roundTxt').classList.contains('boss')"), await ev("document.getElementById('roundTxt').textContent"));
   check('보스 체력 바가 화면 맨 위에 작고 얇게 표시됨 (높이 ≤ 64px)', await ev("(()=>{const b=document.getElementById('bossbar'); if(b.hidden) return false; const r=b.getBoundingClientRect(); return r.width>=170 && r.top<=8 && r.height<=64 && document.getElementById('bossName').textContent===__game.CastleCore.bossInfo(__game.S,5).name && document.getElementById('bossHpTxt').textContent.includes('/');})()"), await ev("document.getElementById('bossName').textContent + ' ' + document.getElementById('bossHpTxt').textContent"));
   // 보스가 가까워서 화면 안일 수 있으니 카메라를 멀리 옮겨 '화면 밖 보스' 상황을 만들고, 그려도 오류가 없는지 확인한다
   await ev("(()=>{__game.cam.x = 300; __game.cam.y = 300;})()"); await sleep(400);
@@ -122,7 +122,7 @@ try {
   let o = await place(500, 330);
   check('보스가 UI에 안 가려진 화면 안이면 화살표 없음', o.a.length === 0, JSON.stringify(o.a));
   o = await place(VW - 100, 22); const bb = o.r.find(r => r.sel === '#bossbar');
-  check('보스가 오른쪽 위 보스 바 뒤에 있으면 화살표 표시 (UI에 안 가려짐)', o.a.length === 1 && o.a[0].why === 'ui:#bossbar' && !insideUI(o.a[0].x, o.a[0].y, o.r), JSON.stringify(o.a[0]));
+  check('보스가 오른쪽 위 보스 바 뒤에 있으면 화살표 표시 (UI에 안 가려짐)', o.a.length === 1 && /ui:#(bossbar|tools)/.test(o.a[0].why) && !insideUI(o.a[0].x, o.a[0].y, o.r), JSON.stringify(o.a[0]));
   o = await place(500, VH - 30); const un = o.r.find(r => r.sel === '#units');
   check('보스가 아래쪽 유닛 카드 뒤에 있으면 화살표 표시 (카드 위에, UI에 안 가려짐)', o.a.length === 1 && o.a[0].why === 'ui:#units' && o.a[0].y < un.t && !insideUI(o.a[0].x, o.a[0].y, o.r), JSON.stringify(o.a[0]));
   o = await place(60, 40);
@@ -164,7 +164,7 @@ try {
   await ev("__game.skipCinematic()"); await sleep(400);
   check('건너뛰기 → 연출 종료, 시간 재개', await ev("__game.S.cinematic === null") && (await ev('__game.S.t')) > ct0, 't ' + ct0.toFixed(1) + '→' + (await ev('__game.S.t')).toFixed(1));
   await sleep(1100); check('연출 오버레이가 사라짐', await ev("document.getElementById('cine').classList.contains('hidden')"));
-  check('HUD에 2막 표시', (await ev("document.getElementById('roundTxt').textContent")).includes('2막'), await ev("document.getElementById('roundTxt').textContent"));
+  check('HUD에 2막 표시', await ev("document.getElementById('roundTxt').classList.contains('act2')"), await ev("document.getElementById('roundTxt').textContent"));
   // 31라운드로 점프: 스폰 지점 8곳(포탈), 미니맵 길 8갈래
   await open('?bot=1&nopick=1&startRound=31&seed=7&zoom=1', 1200);
   check('startRound=31 → 2막, 스폰 지점 8곳, 배경도 2막', await ev("(()=>{const S=__game.S; return S.act===2 && S.spawnPts===8 && Scenery.act===2 && S.round===31;})()"), await ev("JSON.stringify({round:__game.S.round, pts:__game.S.spawnPts, act:__game.S.act})"));
