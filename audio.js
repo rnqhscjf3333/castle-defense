@@ -81,6 +81,9 @@
     stun(t, v, p) { tone('square', 800, 200, t, 0.3, 0.4, v, p); noise(t, 0.2, 0.5, v, p, 2000, 300, 1); },
     debuff(t, v, p) { tone('sawtooth', 300, 90, t, 0.45, 0.4, v, p); noise(t, 0.3, 0.3, v, p, 900, 200, 1); },
     clear(t, v, p) { [523, 784, 1047].forEach((f, i) => tone('triangle', f, f, t + i * 0.09, 0.2, 0.22, v, 0)); },
+    page(t, v, p) { noise(t, 0.28, 0.5, v, p, 2400, 500, 1.2); tone('triangle', 420, 760, t, 0.12, 0.18, v, p); },   // 컷이 나타나는 소리
+    rumble(t, v, p) { tone('sine', 58, 38, t, 1.3, 0.9, v, 0); noise(t, 1.2, 0.45, v, 0, 260, 70, 0.8, 'lowpass'); },  // 적이 몰려오는 진동
+    horn(t, v, p) { tone('sawtooth', 196, 196, t, 0.55, 0.35, v, 0); tone('sawtooth', 294, 294, t + 0.14, 0.7, 0.35, v, 0); noise(t + 0.2, 0.3, 0.3, v, 0, 3000, 800, 1); }, // 전투 나팔
     cine(t, v, p) { tone('sawtooth', 60, 45, t, 2.4, 0.5, v, 0); noise(t, 2.2, 0.3, v, 0, 200, 80, 0.7, 'lowpass'); },
   };
   // 위험 신호음: 두 음이 번갈아 울리는 사이렌 3회 (보스 등장)
