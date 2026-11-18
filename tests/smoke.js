@@ -603,5 +603,8 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
 // 46) 수비 모드: 자기 자리를 벗어나지 않는다
 { const run = mode => { const a = C.createGame(1, mode); a.hold = true; a.phase = 'round'; a.round = 10; a.queue = []; C.buy(a, 'sword'); const u = a.units[0]; u.x = u.hx = 1500 + 100; u.y = u.hy = 1500; const e = C.spawnEnemy(a, 'grunt', 1500 + 238, 1500); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; for (let i = 0; i < 150; i++) C.tick(a, DT); return Math.hypot(u.x - u.hx, u.y - u.hy); };
   C.CFG.holdRadius = 40; const n = run('normal'), h = run('hold'); C.CFG.holdRadius = 75; check('수비 모드: 자리를 지키고, 기본 모드는 적을 쫓아감', h < 7 && n > h + 12, `수비 이동 ${h.toFixed(1)}px / 기본 ${n.toFixed(0)}px`); }
+// 47) 자유 모드: 사거리 밖이어도 나를 공격한 적에게 가서 반격한다
+{ const run = mode => { const a = C.createGame(1, mode); a.hold = true; a.phase = 'round'; a.round = 10; a.queue = []; C.buy(a, 'sword'); const u = a.units[0]; const e = C.spawnEnemy(a, 'grunt', 1500 + 600, 1500); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; for (let i = 0; i < 3; i++) C.tick(a, DT); const x0 = u.x; C.damage(a, u, 1, false, e); for (let i = 0; i < 200; i++) C.tick(a, DT); return Math.hypot(u.x - e.x, u.y - e.y); };
+  const f = run('free'), n = run('normal'); check('자유 모드: 멀리서 나를 때린 적에게 반격하러 감', f < n - 150, `적과의 거리 자유 ${f.toFixed(0)}px / 기본 ${n.toFixed(0)}px`); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

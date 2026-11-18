@@ -771,8 +771,9 @@
     }
     q.length = w;
   }
-  function damage(S, tgt, dmg, crit) {
+  function damage(S, tgt, dmg, crit, src) {
     if (tgt.dead) return;
+    if (src && tgt.team === 'u' && !src.dead) { tgt.rv = src; tgt.rvT = 6; } // 맞은 유닛이 때린 적을 기억 (자유 모드 반격용)
     if (CFG.dmgVar) dmg *= 1 + (S.rng() * 2 - 1) * CFG.dmgVar; // 공격력 ±N% 오차
     if (tgt.team === 'e' && tgt.shieldT > 0) dmg *= 1 - tgt.shieldRed; // 보스 방어막 동안 피해 감소
     if (tgt.team === 'u') {
@@ -820,7 +821,7 @@
     const T = extra && extra.T ? extra.T : Math.max(cf.minT, d / spd);
     const H = clamp(cf.arc * d + cf.arcMin, cf.arcMin, cf.arcMax);
     const s = S.shotPool.length ? S.shotPool.pop() : {}; // 쓴 투사체 객체를 재사용 (풀링)
-    s.x = sx; s.y = sy; s.sx = sx; s.sy = sy; s.p = 0; s.T = T; s.H = H; s.h = m.h0; s.h0 = m.h0; s.vx = 0; s.vy = 0; s.vh = 0; s.t = tgt; s.dmg = dmg; s.color = color; s.job = from.job || null; s.elite = !!from.elite;
+    s.x = sx; s.y = sy; s.sx = sx; s.sy = sy; s.p = 0; s.T = T; s.H = H; s.h = m.h0; s.h0 = m.h0; s.vx = 0; s.vy = 0; s.vh = 0; s.t = tgt; s.from = from; s.dmg = dmg; s.color = color; s.job = from.job || null; s.elite = !!from.elite;
     s.pierce = !!(extra && extra.pierce); s.pc = extra && extra.pc != null ? extra.pc : null; s.aoe = extra && extra.aoe ? extra.aoe : 0; s.crit = !!(extra && extra.crit);
     S.shots.push(s);
     emit(S, { type: 'shot', x: sx, y: sy, c: color });
@@ -832,7 +833,7 @@
       if (Math.hypot(S.core.x - s.t.x, S.core.y - s.t.y) <= s.aoe + S.core.r) hitCore(S, s.dmg * CFG.balance.shellCoreMul, '보스 포격');
       emit(S, { type: 'boom', x: s.t.x, y: s.t.y, r: s.aoe, big: true, enemy: true });
     } else if (s.t === S.core) hitCore(S, s.dmg, '화살(사수)');
-    else { damage(S, s.t, s.dmg * (s.t.rres || 1), s.crit); onShotHit(S, s); }
+    else { damage(S, s.t, s.dmg * (s.t.rres || 1), s.crit, s.from); onShotHit(S, s); }
   }
   // 성채 탄 / 화살의 추가 효과 (폭발, 전이, 관통)
   function onShotHit(S, s) {
@@ -958,6 +959,8 @@
     let tgt = find(u.x, u.y);
     { const th = find(u.hx, u.hy); if (th && th !== tgt) { const sc = e => Math.hypot(e.x - u.x, e.y - u.y) + CFG.ai.homeBias * Math.hypot(e.x - u.hx, e.y - u.hy); if (!tgt || sc(th) < sc(tgt)) tgt = th; } }
     const free = S.mode === 'free', hold = S.mode === 'hold';
+    if (u.rvT > 0) { u.rvT -= dt; if (u.rvT <= 0) u.rv = null; }
+    if (free && u.rv && !u.rv.dead && u.rv.hp > 0) tgt = u.rv; // (자유 모드) 사거리 밖이어도 나를 공격한 적에게 가서 반격한다
     if (!free && tgt && Math.hypot(tgt.x - CX, tgt.y - CY) > CFG.leash) tgt = null; // (기본 모드) 성채에서 너무 먼 적은 쫓지 않는다
     if (hold && tgt) { // (수비 모드) 자리에서 조금만 벗어난다: 자리 근처로 들어온 적만 상대하고, 먼 곳의 적에게 끌려가지 않는다
       const lim = CFG.holdRadius + (melee ? 0 : u.range * 0.5);
@@ -1143,7 +1146,7 @@
       e.cd = cdTime; e.swing = 0.25; e.aim = Math.atan2(t.y - e.y, t.x - e.x);
       if (t === c) { hitCore(S, dmg, e.kind === 'boss' ? '보스 근접' : '근접(' + (CFG.enemies[e.kind] ? CFG.enemies[e.kind].name : e.kind) + ')'); if (S.perks.thorn) damage(S, e, dmg * V().thorn * S.perks.thorn); }
       else {
-        damage(S, t, dmg); if (e.poison && !t.dead) t.poisonT = Math.max(t.poisonT || 0, e.poison);
+        damage(S, t, dmg, false, e); if (e.poison && !t.dead) t.poisonT = Math.max(t.poisonT || 0, e.poison);
         if (e.kind === 'boss') { // 보스의 기본 공격은 범위 공격: 맞은 대상 주변의 아군도 함께 피해
           const R = CFG.balance.bossSplashR + e.r * 0.5; eachNear(S.gU, t.x, t.y, R, o => { if (o !== t) damage(S, o, dmg * CFG.balance.bossSplash); });
           emit(S, { type: 'bossSlam', x: t.x, y: t.y, r: R });
