@@ -13,7 +13,7 @@
   let vw = 0, vh = 0, dpr = 1;
   const A2 = window.Audio2;
   const fx = [];             // 화면 효과 (게임 규칙과 무관)
-  let numFont = '', numFx = 0;             // 화면에 떠 있는 피해/치유 숫자 수 (상한을 두어 부하를 막는다)
+  let eliteToasts = 0, numFont = '', numFx = 0;             // 화면에 떠 있는 피해/치유 숫자 수 (상한을 두어 부하를 막는다)
   const fxPool = [];         // 쓰고 난 효과 객체를 재사용 (GC 부담을 줄인다)
   function addFx(o) {
     if (fx.length >= 300) return;
@@ -182,6 +182,17 @@
       requestAnimationFrame(loop);
     })();
   }
+  // 엘리트: 발밑의 금빛 불꽃 고리 + 머리 위 왕관 표시
+  function eliteGlow(e, now, z) {
+    const pu = 0.5 + 0.5 * Math.sin(now * 0.008 + e.id);
+    ctx.globalAlpha = 0.22 + 0.14 * pu; ctx.fillStyle = '#ffb21a'; ctx.beginPath(); ctx.ellipse(e.x, e.y + e.r * 0.5, e.r * 1.5, e.r * 0.62, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 0.8; ctx.strokeStyle = '#ffd84a'; ctx.lineWidth = 2 / z; ctx.beginPath(); ctx.ellipse(e.x, e.y + e.r * 0.5, e.r * 1.5, e.r * 0.62, 0, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
+  }
+  function eliteMark(e, z) {
+    const y = e.y + Figures.headTop(e) - (e.hp < e.max ? 15 : 6), k = 1 / Math.max(0.7, z), w = 6 * k;
+    ctx.fillStyle = '#ffd84a'; ctx.strokeStyle = '#7a4a00'; ctx.lineWidth = 1 * k; ctx.beginPath();
+    ctx.moveTo(e.x - w, y); ctx.lineTo(e.x - w, y - 5 * k); ctx.lineTo(e.x - w / 2, y - 2.5 * k); ctx.lineTo(e.x, y - 6.5 * k); ctx.lineTo(e.x + w / 2, y - 2.5 * k); ctx.lineTo(e.x + w, y - 5 * k); ctx.lineTo(e.x + w, y); ctx.closePath(); ctx.fill(); ctx.stroke();
+  }
   function updateBossBar() {
     const b = S.enemies.find(e => e.kind === 'boss'), el = $('bossbar');
     if (!b) { if (!el.hidden) el.hidden = true; return; }
@@ -338,6 +349,8 @@
         if (fx.length >= 300) continue; numFx++; addFx({ k: 'num', x: ev.x + (Math.random() - 0.5) * 14, y: ev.y, t: 0, max: ev.crit ? 0.95 : 0.75, v: Math.round(ev.v), n: ev.heal ? 'h' : ev.crit ? 'c' : ev.team === 'u' ? 'u' : 'e' });
       }
       else if (ev.type === 'newEnemy') showNewEnemy(ev.kind);
+      else if (ev.type === 'elite') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.6, c: '#ffd84a', big: true }); if (eliteToasts < 3) { eliteToasts++; toast('엘리트 ' + CFG.enemies[ev.kind].name + ' 출현! 훨씬 강하고 큽니다'); } }
+      else if (ev.type === 'poisonPool') addFx({ k: 'pool', x: ev.x, y: ev.y, r: ev.r, t: 0, max: ev.dur });
       else if (ev.type === 'reward') toast('보상 획득: ' + ev.name);
       else if (ev.type === 'heroSkill') {
         if (ev.kind === 'marksman') addFx({ k: 'beam', x: ev.x, y: ev.y - 11, tx: ev.tx, ty: ev.ty - 7, t: 0, max: 0.4, c: '#ffe14a' });
@@ -432,9 +445,11 @@
     for (let i = 0; i < all.length; i++) {
       const e = all[i];
       if (e._tree) { Scenery.drawTree(ctx, e, now); continue; }
-      if (lite && e.team === 'e' && e.kind !== 'boss') { Figures.drawLite(ctx, e); continue; }
+      if (e.elite) eliteGlow(e, now, z);
+      if (lite && e.team === 'e' && e.kind !== 'boss') { Figures.drawLite(ctx, e); if (e.elite) eliteMark(e, z); continue; }
       if (e.kind === 'boss') bossAura(e, now, z);
       Figures.draw(ctx, e, now);
+      if (e.elite) eliteMark(e, z);
       if (e.team === 'u' && (e.stunT > 0 || e.poisonT > 0 || e.weakT > 0 || e.woundT > 0)) statusMarks(e, now, z);
       if (e.kind === 'boss' && e.shieldT > 0) { ctx.globalAlpha = 0.28 + 0.12 * Math.sin(now * 0.012); ctx.fillStyle = '#8fd8ff'; ctx.beginPath(); ctx.arc(e.x, e.y - 6, e.r * 1.7, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 0.9; ctx.strokeStyle = '#d8f2ff'; ctx.lineWidth = 2.5 / z; ctx.stroke(); ctx.globalAlpha = 1; }
       if (e.hp < e.max || e.kind === 'boss') hpBar(e);
@@ -469,6 +484,13 @@
       const f = fx[i]; if (f.t < 0) continue; // 시작 지연 중
       const p = f.t / f.max;
       if (f.k === 'burst') { ctx.globalAlpha = 1 - p; ctx.fillStyle = f.c; ctx.beginPath(); ctx.arc(f.x, f.y, (f.big ? 20 : 8) + p * (f.big ? 50 : 16), 0, Math.PI * 2); ctx.fill(); }
+      else if (f.k === 'pool') { // 독 웅덩이: 남아 있는 동안 초록 독기가 일렁인다
+        const fade = Math.min(1, (f.max - f.t) / 1.2, f.t / 0.3 + 0.2), pu = 0.5 + 0.5 * Math.sin(now * 0.006);
+        ctx.globalAlpha = (0.2 + 0.08 * pu) * fade; ctx.fillStyle = '#66d63a'; ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 0.6 * fade; ctx.strokeStyle = '#8dff5a'; ctx.lineWidth = 2 / z; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (0.97 + 0.03 * pu), 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = '#b8ff8a'; for (let i = 0; i < 6; i++) { const a = i * 1.047 + now * 0.0004, rr = f.r * (0.3 + 0.5 * ((i * 0.37 + f.t * 0.3) % 1)), by = (f.t * 18 + i * 9) % 30; ctx.globalAlpha = 0.55 * fade * (1 - by / 30); ctx.beginPath(); ctx.arc(f.x + Math.cos(a) * rr, f.y + Math.sin(a) * rr - by, 2.2, 0, Math.PI * 2); ctx.fill(); }
+        ctx.globalAlpha = 1;
+      }
       else if (f.k === 'dust') { // 먼지 구름: 퍼지며 떠오르다 사라진다
         const a = (p < 0.2 ? p / 0.2 : 1 - (p - 0.2) / 0.8) * 0.5, rr = f.r * (0.6 + p * 1.4);
         ctx.globalAlpha = a; ctx.fillStyle = '#b79b72'; ctx.beginPath(); ctx.arc(f.x, f.y - p * 22, rr, 0, Math.PI * 2); ctx.fill();

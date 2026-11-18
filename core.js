@@ -130,11 +130,11 @@
       hpSlope: 0.125, hpSlopeLate: 0.14, lateFrom: 20, // 체력 배율: 선형, lateFrom(대혼란) 이후 기울기 증가
       dmgShare: 0.5,                                  // 공격력은 체력 증가분의 이 비율만 반영
       lateSpeed: 1.1,                                 // 대혼란 이후 적 이동 속도 배율
-      enemyHp: 0.31, enemyDmg: 0.5,                    // 모든 적(보스 포함)의 체력/공격력 배율
+      enemyHp: 0.28, enemyDmg: 0.5,                    // 모든 적(보스 포함)의 체력/공격력 배율
       bossHp: 1,                                      // 보스 체력에 추가로 곱하는 배율
       // 2막(31라운드~): 적이 강해지는 폭이 더 크다
       countPost: 3,                                   // 2막에서는 라운드마다 적이 이만큼 늘어난다 (1막 말 수 + 이 값 × 경과 라운드)
-      hpSlopePost: 0.36,                              // 2막 체력 증가 기울기 (라운드당)
+      hpSlopePost: 0.32,                              // 2막 체력 증가 기울기 (라운드당)
       postSpeed: 1.08,                                // 2막 적 이동 속도 배율
       meleeHp: 1.25, rangedDmg: 1.25,                  // 근접 적은 체력, 원거리 적은 공격력을 더 높게 (못 잡으면 쌓인다)
       healCap: 0.10,                                  // 한 유닛이 1초 동안 치유로 회복할 수 있는 최대 비율(최대 체력 기준). 사제를 많이 뽑아도 불사가 되지 않게 한다
@@ -150,7 +150,7 @@
     auraBase: 170, // 성채 광장(회색 원) 크기
     debuff: {                         // 보스 광역 상태이상 (아군에게 걸린다)
       stun: { name: '기절', dur: 1.2 },                // 행동 불가
-      poison: { name: '중독', dur: 7, pct: 0.018 },    // 초당 최대 체력의 1.8% (죽지는 않고 1까지)
+      poison: { name: '중독', dur: 7, pct: 0.018, pool: 8 }, // pool: 독 웅덩이가 남아 있는 시간(초)    // 초당 최대 체력의 1.8% (죽지는 않고 1까지)
       weak: { name: '공격력 감소', dur: 7, mul: 0.75 }, // 공격력 ×0.75
       wound: { name: '치유 감소', dur: 8, mul: 0.5 },  // 받는 치유량 ×0.5
       warn: 1.1,                                      // 시전 후 효과가 터지기까지(예고 시간)
@@ -162,6 +162,8 @@
       auraHeal: 0.025, auraAtk: 0.08, auraDef: 0.08, auraDefCap: 0.40, auraSpd: 0.06, auraBoost: 0.15,
     },
     rerolls: 2,
+    // 엘리트: 일반 몬스터가 일정 확률로 훨씬 강하고 크게 나온다. 확률은 라운드가 갈수록 커져 최대 max
+    elite: { from: 3, perRound: 0.0025, max: 0.10, hp: 3, dmg: 1.6, size: 1.35, gold: 4, speed: 1.05 },
     dmgVar: 0.15,                     // 모든 공격 피해에 공격력 ±15% 오차
     rarityWeight: { common: 70, rare: 25, epic: 5 },
   };
@@ -421,7 +423,7 @@
   function endCinematic(S) { if (S.cinematic) { S.cinematic = null; emit(S, { type: 'act2start' }); } }
   // (테스트/디버그) r라운드가 다음 틱에 시작되도록 점프한다
   function jumpToRound(S, r) {
-    S.round = r - 1; S.phase = 'round'; S.roundT = ROUND_TIME; S.queue = []; S.enemies.length = 0; S.shots.length = 0; S.zones.length = 0;
+    S.round = r - 1; S.phase = 'round'; S.roundT = ROUND_TIME; S.pools.length = 0; S.queue = []; S.enemies.length = 0; S.shots.length = 0; S.zones.length = 0;
     if (r > ACT1_END) S.act = 2;
     return S;
   }
@@ -516,7 +518,7 @@
   function createGame(seed) {
     const S = {
       seed: seed >>> 0, rng: mulberry32(seed >>> 0),
-      t: 0, phase: 'prep', prepT: PREP_TIME, round: 0, roundT: 0, clearT: 0, zones: [],
+      t: 0, phase: 'prep', prepT: PREP_TIME, round: 0, roundT: 0, clearT: 0, zones: [], pools: [],
       queue: [], spawnT: 0, spawnGap: 1, spawnPts: 2,
       gold: CFG.startGold, buyCount: 0,
       core: { x: CX, y: CY, hp: CFG.core.hp, max: CFG.core.hp, r: CFG.core.r, atk: CFG.core.atk, rate: CFG.core.rate, range: CFG.core.range, cd: 0, flash: 0, aim: -Math.PI / 2, swing: 0 },
@@ -646,6 +648,7 @@
     }
     const bd = kind === 'boss' ? (bossDefFor(S, r) || CFG.bossPool[0]) : null;
     const hp = Math.max(1, Math.round((bd ? bossBaseHp(r) * CFG.balance.bossHp : cfg.hp * hpMul(r)) * CFG.balance.enemyHp * (!bd && !cfg.ranged && !cfg.healRange ? CFG.balance.meleeHp : 1)));
+    const E = CFG.elite, elite = !bd && E.max > 0 && r >= E.from && S.rng() < Math.min(E.max, (r - E.from + 1) * E.perRound);
     const e = {
       id: S.nextId++, kind, team: 'e', x, y, hp, max: hp, dmg: cfg.dmg * dmgMul(r) * CFG.balance.enemyDmg * (!bd && cfg.ranged ? CFG.balance.rangedDmg : 1), rate: cfg.rate, range: cfg.range,
       speed: cfg.speed * enemySpeedMul(r), r: (bd && bd.r) || cfg.r, gold: cfg.gold, aggro: cfg.aggro,
@@ -654,6 +657,10 @@
       speedMul: 1, rateMul: 1, dmgMul: 1, shieldT: 0, shieldRed: 0, dashT: 0,
       air: !!cfg.air, rres: cfg.rres || 1, mres: cfg.mres || 1, rush: cfg.rush || 0, poison: cfg.poison || 0,
     };
+    if (elite) { // 엘리트: 체력·공격·크기·보상 상향
+      e.elite = true; e.max = e.hp = Math.round(e.hp * E.hp); e.dmg *= E.dmg; e.r = Math.round(e.r * E.size * 10) / 10; e.gold = Math.round(e.gold * E.gold); e.speed *= E.speed;
+      emit(S, { type: 'elite', x, y, kind });
+    }
     if (bd) {
       e.bossName = bd.name; e.look = bd.look; e.abil = (bd === CFG.finalBoss || bd === CFG.act1Boss) ? bd.abil : scaleAbil(bd.abil, r); e.t = {};
       for (const k in e.abil) if (!Array.isArray(e.abil[k])) e.t[k] = (e.abil[k].cd || 0) * 0.6; // 첫 패턴은 조금 일찍
@@ -710,7 +717,7 @@
     if (tgt.team === 'e') {
       S.gold += tgt.gold; S.kills++; emit(S, { type: 'kill', x: tgt.x, y: tgt.y, boss: tgt.kind === 'boss' });
       if (tgt.kind === 'boss') { // 보스를 처치하면 남은 졸개도 모두 쓰러지고 라운드가 끝난다
-        S.queue.length = 0; S.zones.length = 0;
+        S.queue.length = 0; S.zones.length = 0; S.pools.length = 0;
         for (const o of S.enemies) if (!o.dead && o !== tgt) { o.dead = true; emit(S, { type: 'kill', x: o.x, y: o.y, boss: false, wipe: true }); }
         emit(S, { type: 'bossWipe', x: tgt.x, y: tgt.y });
       }
@@ -1026,8 +1033,12 @@
         while (S.spawnT <= 0 && S.queue.length) { spawnEnemy(S, S.queue.shift()); S.spawnT += S.spawnGap; }
       }
       const gate = S.round === ACT1_END && S.act === 1; // 30라운드는 보스를 처치해야(2막 연출) 다음 라운드로 넘어간다
-      if (S.roundT >= ROUND_TIME && !gate && !S.hold) startRound(S); // 라운드는 시간제: 적이 남아도 다음 라운드가 시작되어 쌓인다
-      else if (!gate && !S.hold && S.roundT >= 1 && !S.queue.length && !S.enemies.some(e => !e.dead)) startRound(S); // 적을 모두 처치하면(보스 처치 포함) 즉시 다음 라운드
+      // 라운드는 적을 모두 처치하거나 보스를 처치해야 끝난다. (공중형만 남았는데 궁수 계열·포탑이 하나도 없으면 잡을 방법이 없으므로 넘어간다)
+      if (!gate && !S.hold && S.roundT >= 1 && !S.queue.length) {
+        let left = false, aa = null;
+        for (const e of S.enemies) { if (e.dead) continue; if (!e.air) { left = true; break; } if (aa === null) aa = S.units.some(u => !u.dead && (lineOf(u.type) === 'archer' || u.type === 'turret')); if (aa) { left = true; break; } }
+        if (!left) startRound(S);
+      }
       if (S.cards.offer) return; // 방금 새 라운드가 열리며 카드창이 떴다
     }
 
@@ -1088,6 +1099,11 @@
         else if (z.kind === 'weak') u.weakT = Math.max(u.weakT || 0, dd.dur); else if (z.kind === 'wound') u.woundT = Math.max(u.woundT || 0, dd.dur);
       }
       emit(S, { type: 'debuffHit', x: z.x, y: z.y, r: z.r, kind: z.kind, hit }); S.zones.splice(i, 1);
+      if (z.kind === 'poison') { S.pools.push({ x: z.x, y: z.y, r: z.r, t: dd.pool }); emit(S, { type: 'poisonPool', x: z.x, y: z.y, r: z.r, dur: dd.pool }); } // 독 웅덩이: 일정 시간 계속 중독
+    }
+    for (let i = S.pools.length - 1; i >= 0; i--) {
+      const pl = S.pools[i]; pl.t -= dt; if (pl.t <= 0) { S.pools.splice(i, 1); continue; }
+      for (const u of S.units) if (!u.dead && Math.hypot(u.x - pl.x, u.y - pl.y) <= pl.r + u.r * 0.5) u.poisonT = Math.max(u.poisonT || 0, 1.5);
     }
     for (const e of S.enemies) { if (e.dead) continue; e.flash = Math.max(0, e.flash - dt); e.swing = Math.max(0, e.swing - dt); updateEnemy(S, e, dt); }
     separate(S.units, S.gU); separate(S.enemies, S.gE);

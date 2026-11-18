@@ -1,5 +1,6 @@
 // node tests/smoke.js [판수] — 로직 스모크 테스트 + 봇 플레이 (카드 선택 포함)
 const C = require('../core.js');
+C.CFG.elite.max = 0; // 엘리트는 기존 테스트에서 끔 (아래 전용 테스트에서 켬)
 C.CFG.dmgVar = 0; // 기존 테스트는 고정 피해 기준 (오차 테스트는 아래에서 따로)
 const DT = 1 / 30;
 const BUY = ['sword', 'archer', 'sword', 'archer', 'priest'];
@@ -501,5 +502,19 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   check('전직이 끝난 뒤 보스 처치 → 보상 선택(3개)', h.jobs.offer && h.jobs.offer.reward && h.jobs.offer.list.length === 3, JSON.stringify(h.jobs.offer && h.jobs.offer.list.map(o => o.name)));
   const idx = h.jobs.offer.list.findIndex(o => o.id === 'r_knights'); h.jobs.offer.list[0] = { type: 'reward', reward: true, id: 'r_knights', name: 'x', desc: '', className: '', tier: 0 };
   const n0 = h.units.length; C.pickJob(h, 0); check('용병 기사단 보상: 용사 2명 합류', h.units.length === n0 + 2 && h.units.filter(u => u.type === 'hero').length === 2); }
+// 38) 엘리트 확률(라운드↑, 최대 10%) / 라운드 종료 규칙(시간제 없음) / 독 웅덩이
+{ C.CFG.elite.max = 0.10; const rate = r => { const g = arena(r, []); g.core.hp = g.core.max = 1e9; let n = 0, el = 0; for (let i = 0; i < 2500; i++) { const e = C.spawnEnemy(g, 'grunt', 1500, 1500 - 900); n++; if (e.elite) el++; } return el / n; };
+  const r2 = rate(2), r10 = rate(10), r30 = rate(30), r50 = rate(50);
+  check('엘리트: 초반 0%, 라운드가 갈수록 증가, 최대 10%', r2 === 0 && r10 > 0.01 && r30 > r10 && r50 > 0.08 && r50 < 0.125, `R2 ${(r2 * 100).toFixed(1)}% R10 ${(r10 * 100).toFixed(1)}% R30 ${(r30 * 100).toFixed(1)}% R50 ${(r50 * 100).toFixed(1)}%`);
+  const g = arena(40, []); let el = null, nm = null; for (let i = 0; i < 400 && !(el && nm); i++) { const e = C.spawnEnemy(g, 'grunt', 1500, 1500 - 900); if (e.elite) el = el || e; else nm = nm || e; }
+  check('엘리트는 체력 3배·크기 1.35배·공격 1.6배', el && nm && Math.abs(el.max / nm.max - 3) < 0.05 && el.r > nm.r * 1.3 && el.dmg > nm.dmg * 1.5, el ? `hp ×${(el.max / nm.max).toFixed(2)} r ${el.r}/${nm.r}` : '엘리트 없음');
+  C.CFG.elite.max = 0;
+  const h = arena(10, [['grunt', 1500, 1500 - 600]]); h.hold = false; h.core.hp = h.core.max = 1e9; h.core.atk = 0; const gr = h.enemies[0]; gr.speed = 0; gr.dmg = 0; gr.hp = gr.max = 1e9;
+  for (let i = 0; i < 30 * 120; i++) C.tick(h, DT); check('적이 남아 있으면 시간이 지나도 라운드가 안 끝남 (120초)', h.round === 10, 'round ' + h.round);
+  gr.hp = 0; C.damage(h, gr, 1); for (let i = 0; i < 5; i++) C.tick(h, DT); check('모두 처치하면 다음 라운드', h.round === 11);
+  const pz = arena(10, []); pz.core.atk = 0; pz.core.hp = pz.core.max = 1e9; pz.gold = 1e6; pz.buyCd.sword = 0; const pu = C.buy(pz, 'sword').unit; pu.x = 1500 + 400; pu.y = 1500 + 400; pu.hx = pu.x; pu.hy = pu.y; pu.max = pu.hp = 1e6;
+  pz.pools.push({ x: pu.x, y: pu.y, r: 80, t: 8 }); for (let i = 0; i < 30 * 3; i++) { C.tick(pz, DT); pu.x = 1900; pu.y = 1900; }
+  const pAfter = pu.poisonT > 0; for (let i = 0; i < 30 * 8; i++) { C.tick(pz, DT); pu.x = 1900; pu.y = 1900; }
+  check('독 웅덩이: 안에 있는 동안 계속 중독, 시간이 지나면 사라짐', pAfter && pz.pools.length === 0 && pu.hp < 1e6, `중독 ${pAfter} 웅덩이 ${pz.pools.length}`); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);
