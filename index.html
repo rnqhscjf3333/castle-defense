@@ -153,8 +153,8 @@ table.rank .mtag { font-size: 10px; color: #ffd166; border: 1px solid #ffd16688;
 #comic.hidden { display: none; } #comic.out { opacity: 0; }
 #comicStage { position: relative; width: min(97vw, calc((100vh - 62px) * 1.5988)); aspect-ratio: 1586 / 992; margin-bottom: 40px; } /* 아래 40px은 안내 문구 자리 */
 .cp { position: absolute; height: auto; opacity: 0; pointer-events: none; filter: drop-shadow(0 4px 8px rgba(40,30,10,.35)); will-change: transform, opacity; }
-.cp[data-i="1"] { left: .5%; top: 1.1%; width: 60.6%; } .cp[data-i="2"] { left: 56.7%; top: .9%; width: 42.8%; }
-.cp[data-i="3"] { left: .7%; top: 48.8%; width: 49.2%; } .cp[data-i="4"] { left: 45.3%; top: 48.9%; width: 54.2%; }
+.cp[data-i="1"] { left: .57%; top: 1.31%; width: 59.9%; } .cp[data-i="2"] { left: 56.94%; top: 1.11%; width: 42.56%; }
+.cp[data-i="3"] { left: .63%; top: 48.39%; width: 48.23%; } .cp[data-i="4"] { left: 44.14%; top: 48.49%; width: 55.36%; }
 .cp.in { opacity: 1; }
 .cp[data-i="1"].in { animation: cpFade 1s ease-out both; }
 .cp[data-i="2"].in { animation: cpRight .5s cubic-bezier(.2,1.3,.4,1) both; }
@@ -227,7 +227,7 @@ table.rank .mtag { font-size: 10px; color: #ffd166; border: 1px solid #ffd16688;
   <div class="bb-track"><div id="bossFill"></div></div>
   <div id="bossState"></div>
 </div>
-<div id="comic" class="hidden"><div id="comicStage"><img class="cp" data-i="1" src="assets/comic1.webp" alt=""><img class="cp" data-i="2" src="assets/comic2.webp" alt=""><img class="cp" data-i="3" src="assets/comic3.webp" alt=""><img class="cp" data-i="4" src="assets/comic4.webp" alt=""></div><div id="comicFlash"></div><div id="comicLines"></div><div id="comicHint">화면을 터치하면 다음 컷 ▶</div><button class="btn" id="comicSkip">건너뛰기</button></div>
+<div id="comic" class="hidden"><div id="comicStage"><img class="cp" data-i="1" src="assets/comic1.webp?v=2" alt=""><img class="cp" data-i="2" src="assets/comic2.webp?v=2" alt=""><img class="cp" data-i="3" src="assets/comic3.webp?v=2" alt=""><img class="cp" data-i="4" src="assets/comic4.webp?v=2" alt=""></div><div id="comicFlash"></div><div id="comicLines"></div><div id="comicHint">화면을 터치하면 다음 컷 ▶</div><button class="btn" id="comicSkip">건너뛰기</button></div>
 <div id="modeBar" class="panel"><button data-mode="normal" class="on">기본</button><button data-mode="free">자유</button></div>
 <div id="bossIntro" class="hidden"><canvas id="biCv" width="240" height="240"></canvas><div><div class="bi-tag">BOSS</div><div id="biName"></div><div id="biLine"></div></div></div>
 <div id="newEnemy" class="hidden"><canvas id="neCv" width="88" height="88"></canvas><div class="ne-txt"><div class="ne-tag">새로운 적</div><div id="neName"></div><div id="neDesc"></div></div></div>
