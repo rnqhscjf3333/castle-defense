@@ -59,7 +59,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #bossbar.rage #bossFill { background: linear-gradient(90deg, #ff3b1a, #ffb21a); }
 #bossState { font-size: 10.5px; color: #d8b8c0; min-height: 13px; line-height: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #bossbar.shielded #bossState { color: #8fd8ff; font-weight: 700; } #bossbar.rage #bossState { color: #ffb21a; font-weight: 700; }
-#newEnemy { position: fixed; left: 5px; top: calc(max(5px, env(safe-area-inset-top)) + 96px); width: 250px; display: flex; gap: 8px; align-items: center; padding: 6px 10px 6px 6px; border-radius: 10px;
+#newEnemy { position: fixed; left: 5px; top: calc(max(5px, env(safe-area-inset-top)) + 122px); width: 250px; display: flex; gap: 8px; align-items: center; padding: 6px 10px 6px 6px; border-radius: 10px;
   background: rgba(24, 12, 16, .9); border: 1.5px solid #a33a4a; box-shadow: 0 0 14px rgba(255,70,90,.25); pointer-events: none; z-index: 25; transition: opacity .5s, transform .5s; }
 #newEnemy.hidden { opacity: 0; transform: translateX(-30px); }
 #newEnemy canvas { width: 66px; height: 66px; flex: none; background: rgba(255,255,255,.05); border-radius: 8px; }
@@ -145,15 +145,12 @@ table.rank tr.me td { background: rgba(255,204,64,.16); font-weight: 700; }
 @media (max-width: 520px) { .pcard { width: 100%; min-height: 0; flex-direction: column; } #pickCards { flex-direction: column; } }
 @media (max-width: 520px) { #units .ucard { width: 80px; } #tools { top: calc(max(5px, env(safe-area-inset-top)) + 90px); } #hud { min-width: 128px; } #hud .row { font-size: 11px; } }
 
-#modes { display: flex; gap: 8px; justify-content: center; margin: 10px 0 12px; flex-wrap: wrap; }
-.mode { display: flex; gap: 6px; align-items: flex-start; text-align: left; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 10px; cursor: pointer; font-size: 12px; line-height: 1.4; width: 200px; background: rgba(255,255,255,.03); }
-.mode:has(input:checked) { border-color: #ffd166; background: rgba(255,209,102,.08); }
-.mode input { margin-top: 3px; accent-color: #ffd166; }
-.mode b { font-size: 13px; }
 table.rank .mtag { font-size: 10px; color: #ffd166; border: 1px solid #ffd16688; border-radius: 4px; padding: 0 3px; margin-left: 3px; }
-#modes.hidden { display: none; }
 /* UI를 전체적으로 작게 */
-#hud, #units, #tools, #bossbar, #newEnemy, #pickBox { zoom: .84; }
+#hud, #units, #tools, #bossbar, #newEnemy, #pickBox, #modeBar { zoom: .84; }
+#modeBar { position: fixed; left: 5px; top: calc(max(5px, env(safe-area-inset-top)) + 82px); display: flex; padding: 2px; gap: 2px; border-radius: 9px; z-index: 6; }
+#modeBar button { padding: 3px 11px; font-size: 12px; border-radius: 7px; background: transparent; border: 0; color: var(--muted); font-weight: 700; }
+#modeBar button.on { background: rgba(255,209,102,.18); color: #ffd166; }
 .ucard .cnt { font-weight: 800; color: #9fd8ff; font-size: 11px; margin-left: 3px; }
 #bossIntro { position: fixed; left: 0; right: 0; top: 27%; height: 128px; display: flex; align-items: center; justify-content: center; gap: 18px; z-index: 24; pointer-events: none;
   background: linear-gradient(90deg, rgba(20,4,8,0), rgba(20,4,8,.88) 18%, rgba(20,4,8,.88) 82%, rgba(20,4,8,0)); border-top: 1px solid rgba(255,90,90,.35); border-bottom: 1px solid rgba(255,90,90,.35);
@@ -194,6 +191,7 @@ table.rank .mtag { font-size: 10px; color: #ffd166; border: 1px solid #ffd16688;
   <div class="bb-track"><div id="bossFill"></div></div>
   <div id="bossState"></div>
 </div>
+<div id="modeBar" class="panel"><button data-mode="normal" class="on">기본</button><button data-mode="free">자유</button></div>
 <div id="bossIntro" class="hidden"><canvas id="biCv" width="240" height="240"></canvas><div><div class="bi-tag">BOSS</div><div id="biName"></div><div id="biLine"></div></div></div>
 <div id="newEnemy" class="hidden"><canvas id="neCv" width="88" height="88"></canvas><div class="ne-txt"><div class="ne-tag">새로운 적</div><div id="neName"></div><div id="neDesc"></div></div></div>
 <div id="toast"></div>
@@ -227,10 +225,6 @@ table.rank .mtag { font-size: 10px; color: #ffd166; border: 1px solid #ffd16688;
         <li><b>유닛</b>은 성채 주변에 퍼져서 스스로 싸워요</li>
         <li><b>업그레이드</b>: 라운드를 넘길 때마다 3장 중 1장을 골라요</li>
       </ul>
-    </div>
-    <div id="modes">
-      <label class="mode"><input type="radio" name="mode" value="normal" checked><span><b>기본 모드</b><br>유닛이 성채 주변을 지키며 싸웁니다</span></label>
-      <label class="mode"><input type="radio" name="mode" value="free"><span><b>자유 모드</b><br>유닛이 범위 안의 적을 멀리까지 쫓아가 공격합니다</span></label>
     </div>
     <button id="go">시작</button> <button id="btnRank">랭킹</button>
   </div>

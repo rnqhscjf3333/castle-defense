@@ -557,7 +557,7 @@
   function uiRects(force) {
     if (!force && uiAge < 4) { uiAge++; return uiCache; }
     uiAge = 0; const out = [];
-    for (const sel of ['#hud', '#tools', '#bossbar', '#units']) {
+    for (const sel of ['#hud', '#modeBar', '#tools', '#bossbar', '#units']) {
       const el = document.querySelector(sel); if (!el || el.hidden) continue;
       const r = el.getBoundingClientRect(); if (r.width > 0 && r.height > 0) out.push({ sel, l: r.left, t: r.top, r: r.right, b: r.bottom });
     }
@@ -642,8 +642,8 @@
   // ───────────── 시작/종료 ─────────────
   function newGame() {
     const seed = params.get('seed') ? +params.get('seed') : (Date.now() ^ (Math.random() * 1e9)) >>> 0;
-    const mode = (document.querySelector('input[name=mode]:checked') || {}).value === 'free' || params.get('mode') === 'free' ? 'free' : 'normal'; store.set('cd-mode', mode);
-    S = C.createGame(seed, mode); S.captureEvents = true; Net.begin(S);
+    const mode = params.get('mode') === 'free' || store.get('cd-mode') === 'free' ? 'free' : 'normal';
+    S = C.createGame(seed, mode); S.captureEvents = true; Net.begin(S); syncModeBar();
     fx.length = 0; numFx = 0; paused = false; speed = 1; shownOffer = null; $('picker').classList.add('hidden'); renderUpgrades();
     $('btnPause').textContent = '일시정지'; $('btnSpeed').textContent = '1×';
     for (const k in last) delete last[k];
@@ -697,7 +697,12 @@
     box.innerHTML = '<div class="rankhead">' + (r.server ? '전체 랭킹' : (Net.configured ? '서버에 연결하지 못해 내 기록만 표시' : '내 기록 (서버 미설정)')) + '</div>'
       + (rows ? '<table class="rank"><tr><th>#</th><th>이름</th><th>기록</th><th>시간</th></tr>' + rows + '</table>' : '<p>아직 기록이 없어요.</p>');
   }
-  { const m = store.get('cd-mode'); const el = document.querySelector('input[name=mode][value=' + (m === 'free' ? 'free' : 'normal') + ']'); if (el) el.checked = true; }
+  // 모드 전환: 왼쪽 위 라운드 표시 아래에서 언제든 바꿀 수 있다 (기본: 성채 주변 방어 / 자유: 범위 안의 적을 멀리까지 추격)
+  function syncModeBar() { if (!S) return; for (const b of document.querySelectorAll('#modeBar button')) b.classList.toggle('on', b.dataset.mode === S.mode); }
+  for (const b of document.querySelectorAll('#modeBar button')) b.addEventListener('click', () => {
+    if (!S) return; S.mode = b.dataset.mode === 'free' ? 'free' : 'normal'; store.set('cd-mode', S.mode); syncModeBar();
+    toast(S.mode === 'free' ? '자유 모드: 유닛이 범위 안의 적을 멀리까지 쫓아가 공격합니다' : '기본 모드: 유닛이 성채 주변을 지키며 싸웁니다');
+  });
   $('btnRank').addEventListener('click', () => { $('ovBody').innerHTML = '<div id="rankbox"></div>'; showRank(null); $('btnRank').classList.add('hidden'); $('go').textContent = '게임 시작'; });
   // 플레이 도중 창을 닫거나 숨길 때도 기록을 남긴다 (개선 자료)
   const abandon = () => { if (S && running && !S.over) Net.sendLog(S, 'abandon', true); };
