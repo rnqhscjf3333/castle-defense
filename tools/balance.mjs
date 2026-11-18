@@ -47,7 +47,8 @@ function runOne(task) {
       const cnt = { sword: 0, archer: 0, priest: 0 };
       for (const u of S.units) if (cnt[u.type] !== undefined) cnt[u.type]++;
       const order = Object.keys(ratio).sort((a, b) => cnt[a] / ratio[a] - cnt[b] / ratio[b]);
-      for (const t of order) { const r = C.buy(S, t); if (r.ok || r.reason === 'gold') break; }
+      for (const t of order) { const r = C.buy(S, t); if (r.ok || r.reason === 'gold') break; if (r.reason === 'pop') { C.upgradeCastle(S); break; } }
+      if (S.gold > C.castleCost(S) * 1.6) C.upgradeCastle(S); // 골드가 넉넉하면 성채도 올린다
     }
     C.tick(S, DT); step++;
   }
@@ -175,6 +176,14 @@ async function main() {
   } else if (cmd === 'smart') {
     const n = +a1 || 60, W = loadWeights();
     console.log('smart', fmt(summarize(await runPolicy({ weights: W, reroll: 1.2 }, n))));
+  } else if (cmd === 'endhist') { // 무한 모드에서 죽은 라운드 분포
+    const n = +a1 || 60, W = loadWeights(), rs = await runPolicy({ weights: W, reroll: 1.2, endless: true }, n), h = {};
+    for (const r of rs) if (r.round > 50) h[r.round] = (h[r.round] || 0) + 1;
+    console.log('51라운드 이후 사망 라운드:', JSON.stringify(h), '/', rs.filter(r => r.round > 50).length, '명');
+  } else if (cmd === 'endless') { // node tools/balance.mjs endless [N] — 무한 모드까지 진행: 라운드별 생존율 (50·55·60·65·70라운드를 넘긴 비율)
+    const n = +a1 || 60, W = loadWeights(), rs = await runPolicy({ weights: W, reroll: 1.2, endless: true }, n);
+    const row = [30, 50, 55, 60, 65, 70, 80].map(r => `R${r} 돌파 ${(rs.filter(x => x.round > r).length / rs.length * 100).toFixed(0)}%`);
+    console.log('endless', row.join(' · '), '| 평균 도달', (rs.reduce((t, x) => t + x.round, 0) / rs.length).toFixed(1));
   } else console.log('사용법: baseline|cards|sweep|smart (파일 상단 주석 참고)');
   console.log(`\n(${((Date.now() - t0) / 1000).toFixed(0)}초, 워커 ${Math.min(cpus().length - 1, 99)}개)`);
 }

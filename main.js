@@ -121,7 +121,18 @@
     if (!S || !running || paused) return;
     const r = C.buy(S, t);
     if (!r.ok) A2.play('deny');
-    if (!r.ok) toast({ gold: '골드가 부족해요', cooldown: '잠시 후 다시 생산할 수 있어요' }[r.reason] || '생산할 수 없어요');
+    if (!r.ok) toast({ gold: '골드가 부족해요', cooldown: '잠시 후 다시 생산할 수 있어요', pop: '인구가 가득 찼어요 — 성채를 업그레이드하면 늘어납니다' }[r.reason] || '생산할 수 없어요');
+  }
+  // 성채 업그레이드 버튼 (소환 버튼 옆): 골드로 성채를 올리면 인구 상한·체력·공격력·사거리가 오르고 특정 레벨마다 대포가 늘어난다
+  const castleBtn = document.createElement('button'); castleBtn.className = 'btn panel ucard castlecard';
+  castleBtn.innerHTML = '<div class="nm"><span class="nmt">성채</span><span class="cnt"></span></div><div class="ds"></div><div class="cost"></div><span class="key">4</span>';
+  castleBtn.addEventListener('click', () => doCastle());
+  $('units').appendChild(castleBtn);
+  const cb = { lv: castleBtn.querySelector('.cnt'), ds: castleBtn.querySelector('.ds'), cost: castleBtn.querySelector('.cost') };
+  function doCastle() {
+    if (!S || !running || paused) return;
+    const r = C.upgradeCastle(S);
+    if (!r.ok) { A2.play('deny'); toast(r.reason === 'max' ? '성채가 최대 레벨입니다' : '골드가 부족해요'); }
   }
   $('btnCenter').addEventListener('click', centerOnCore);
   const soundLabel = () => { $('btnSound').textContent = A2.state.muted ? '소리 끔' : '소리 켬'; };
@@ -137,6 +148,7 @@
       return;
     }
     if (e.key === '1' || e.key === '2' || e.key === '3') doBuy(C.UNIT_TYPES[+e.key - 1]);
+    if (e.key === '4') doCastle();
     else if (e.key === 'u' || e.key === 'U') $('btnUp').click();
     else if (e.key === ' ') { e.preventDefault(); $('btnPause').click(); }
     else if (e.key === 'h' || e.key === 'H') centerOnCore();
@@ -147,7 +159,7 @@
   function setText(id, v) { if (last[id] !== v) { last[id] = v; $(id).textContent = v; } }
   const fmtTime = t => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
   // 보스 체력 바 (화면 위 가운데): 이름, 체력 숫자, 현재 상태, 가진 패턴
-  const PAT = { dash: '돌진', summon: '소환', artillery: '포격', shield: '방어막', rage: '분노' };
+  const PAT = { dash: '돌진', summon: '소환', artillery: '포격', shield: '방어막', rage: '분노', rush: '강습', blink: '순간이동', leap: '도약', siege: '원거리 포격' };
   const DBK = { stun: ['기절', '#ffe14a'], poison: ['중독', '#7be04a'], weak: ['공격력 감소', '#ff6b6b'], wound: ['치유 감소', '#c77dff'] };
   // 보스 등장 컷신: 모습·이름·대사가 잠깐 나왔다가 사라진다 (게임은 멈추지 않는다)
   let biTimer = 0, biRaf = 0;
@@ -223,16 +235,24 @@
     if (b.grow > 1.04) st += '  |  공격력 ×' + b.grow.toFixed(1) + (b.grow >= CFG.balance.bossGrowMax - 0.01 ? ' (최대)' : ' ↑');
     setText('bossState', st);
   }
+  function updateCastleBtn() {
+    const lv = S.castle.lv, max = lv >= CFG.castle.max, cost = C.castleCost(S), full = C.popCount(S) >= C.popCap(S);
+    const key = lv + '|' + (max ? 0 : cost) + '|' + S.core.cannons + '|' + (S.gold >= cost) + '|' + full;
+    if (cb.key === key) return; cb.key = key;
+    cb.lv.textContent = 'Lv.' + lv; cb.ds.textContent = max ? '최대 레벨' : '인구 +' + CFG.castle.popPer + ' · 공격·체력↑' + (CFG.castle.cannonLv.includes(lv + 1) ? ' · 대포 +1' : '');
+    cb.cost.textContent = max ? 'MAX' : cost + 'G'; castleBtn.classList.toggle('off', max || S.gold < cost); castleBtn.classList.toggle('need', full && !max);
+  }
   function updateHud() {
+    for (const a of C.extraAngles(S.extraPts || 0)) { const px = CX + Math.cos(a) * C.EXTRA_RING, py = CY + Math.sin(a) * C.EXTRA_RING; if (px > x0 - 60 && px < x1 + 60 && py > y0 - 40 && py < y1 + 40) Scenery.drawPortal(ctx, px, py, now); }
     const c = S.core;
     const bi = C.bossInfo(S, S.round), nb = C.bossInfo(S, S.round + 1), rt = $('roundTxt');
     setText('roundTxt', '라운드 ' + Math.max(1, S.round) + (S.round > C.MAX_ROUND ? ' · 무한' : ' / ' + C.MAX_ROUND));
     rt.classList.toggle('boss', !!bi); rt.classList.toggle('nextboss', !bi && !!nb); rt.classList.toggle('act2', S.act === 2 && !bi && !nb);
-    updateBossBar();
+    updateBossBar(); updateCastleBtn();
     setText('timeTxt', fmtTime(S.t));
     setText('hpTxt', String(Math.ceil(c.hp)));
     setText('gold', String(Math.floor(S.gold)));
-    setText('unitTxt', String(S.units.filter(u => !CFG.units[u.type].static).length)); // 설치형(포탑·발리스타)은 제외
+    setText('unitTxt', C.popCount(S) + '/' + C.popCap(S)); // 인구 / 상한 (설치형은 제외)
     setText('killTxt', String(S.kills));
     const pct = Math.max(0, c.hp / c.max * 100);
     const f = $('hpfill'); f.style.width = pct + '%'; f.style.background = pct > 50 ? 'var(--ok)' : pct > 25 ? 'var(--gold)' : 'var(--danger)';
@@ -246,7 +266,7 @@
       let n = 0; for (const x of S.units) if (!x.dead && x.type === t) n++; if (u.n !== n) { u.n = n; u.cnt.textContent = '×' + n; }
       u.cost.textContent = cost + 'G';
       u.cd.style.height = (cd * 100) + '%';
-      const cant = S.gold < cost;
+      const cant = S.gold < cost || C.popCount(S) >= C.popCap(S);
       u.el.classList.toggle('off', cant);
     }
   }
@@ -323,6 +343,8 @@
       case 'melee': A2.play('sword', ev.x, ev.y); break;
       case 'kill': A2.play(ev.boss ? 'bigBoom' : 'kill', ev.x, ev.y); break;
       case 'udead': A2.play('udead', ev.x, ev.y); break;
+      case 'bossShock': A2.play('bigBoom', ev.x, ev.y); break;
+      case 'bossBlink': A2.play('cast', ev.x1, ev.y1); break;
       case 'heroSkill': A2.play(ev.kind === 'marksman' ? 'shotB' : 'bigBoom', ev.x, ev.y); break;
       case 'heal': A2.play('heal', ev.tx, ev.ty); break;
       case 'spawn': A2.play('spawn', ev.x, ev.y); break;
@@ -341,6 +363,8 @@
       case 'debuffHit': A2.play(ev.kind === 'stun' ? 'stun' : 'debuff', ev.x, ev.y); break;
       case 'roundClear': A2.play('clear'); break;
       case 'act2': A2.play('cine'); break;
+      case 'endlessStart': A2.play('cine'); break;
+      case 'castleUp': A2.play('cine'); break;
       case 'over': A2.play(ev.win ? 'win' : 'lose'); break;
     }
   }
@@ -365,8 +389,13 @@
         if (fx.length >= 300) continue; numFx++; addFx({ k: 'num', x: ev.x + (Math.random() - 0.5) * 14, y: ev.y, t: 0, max: ev.crit ? 0.95 : 0.75, v: Math.round(ev.v), n: ev.heal ? 'h' : ev.crit ? 'c' : ev.team === 'u' ? 'u' : 'e' });
       }
       else if (ev.type === 'newEnemy') showNewEnemy(ev.kind);
+      else if (ev.type === 'castleUp') { addFx({ k: 'ring', x: CX, y: CY, t: 0, max: 0.9, c: '#ffd166', big: true, r: 150 }); addFx({ k: 'ring', x: CX, y: CY, t: -0.15, max: 0.8, c: '#ffffff', r: 110 }); addFx({ k: 'summon', x: CX, y: CY + 30, t: 0, max: 0.9 }); toast('성채 Lv.' + ev.lv + ' — 인구 상한 ' + ev.pop + (ev.cannons > 1 ? ' · 대포 ' + ev.cannons + '문' : '')); }
       else if (ev.type === 'melee') { if (fx.length < 220 && cam.zoom > 0.4) addFx({ k: 'slash', x: ev.tx, y: ev.ty, a: Math.atan2(ev.ty - ev.y, ev.tx - ev.x), t: 0, max: 0.2, c: atkColor(ev.job, ev.ut) }); }
       else if (ev.type === 'emelee') { if (fx.length < 220 && cam.zoom > 0.4) { addFx({ k: 'slash', x: ev.tx, y: ev.ty, a: Math.atan2(ev.ty - ev.y, ev.tx - ev.x), t: 0, max: 0.26, c: '#ff4adf', big: true }); } }
+      else if (ev.type === 'bossShock') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.55, c: '#ffcf40', r: ev.r, big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: -0.08, max: 0.5, c: '#ff5a3a', r: ev.r * 0.7 }); for (let i = 0; i < 5; i++) addFx({ k: 'dust', x: ev.x + (Math.random() - 0.5) * ev.r, y: ev.y + (Math.random() - 0.5) * ev.r * 0.6, t: -Math.random() * 0.1, max: 0.9, r: 16 }); }
+      else if (ev.type === 'bossBlink') { for (const [x, y] of [[ev.x0, ev.y0], [ev.x1, ev.y1]]) { addFx({ k: 'ring', x, y, t: 0, max: 0.6, c: '#c77dff', big: true }); addFx({ k: 'summon', x, y, t: 0, max: 0.7 }); } toast('보스가 순간이동했습니다!'); }
+      else if (ev.type === 'bossLeap') { addFx({ k: 'zone', x: ev.x, y: ev.y, r: ev.r, t: 0, max: ev.air, c: '#ff9a3a' }); toast('보스가 도약합니다!'); }
+      else if (ev.type === 'portalOpen') { addFx({ k: 'ring', x: CX, y: CY, t: 0, max: 0.8, c: '#ff3b3b', big: true }); setTimeout(() => banner('붉은 포탈이 하나 더 열렸습니다 (' + ev.n + '/8)'), 1600); }
       else if (ev.type === 'bossSlam') addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.4, c: '#ff5a3a', r: ev.r, big: true });
       else if (ev.type === 'enrage') toast('적이 오래 살아남아 격노합니다! 점점 더 강해져요');
       else if (ev.type === 'elite') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.6, c: '#ffd84a', big: true }); if (eliteToasts < 3) { eliteToasts++; toast('엘리트 ' + CFG.enemies[ev.kind].name + ' 출현! 훨씬 강하고 큽니다'); } }
@@ -635,22 +664,27 @@
   // ───────────── 2막 전환 연출 ─────────────
   // 1막 마지막 보스를 쓰러뜨리면: 화면이 어두워지고 → 길이 늘어나고(바닥을 새로 그림) → 마왕의 군세가 온다는 문구 → 2막 시작. 건너뛰기 가능.
   let cine = null;
+  const CINES = { endless: { end: 10.6, title: '마왕 처치!', steps: [
+    { t: 1.6, text: '마왕을 물리쳤다!\n마왕에게 당한 병사들이 모두 정신을 되찾았다' },
+    { t: 4.8, text: '하지만 마왕의 몸에서 나온 붉은 기운이\n더 강한 적들을 부르고 있다' },
+    { t: 8.0, text: '끝없는 적들에게서\n최대한 오래 살아남자' } ] } };
   const CINE_STEPS = [
     { t: 1.6, text: '하늘이 어두워진다…' },
     { t: 3.7, text: '숨겨진 길이 열렸다' },
     { t: 5.8, text: '마왕의 군세가 몰려온다\n50라운드까지 버텨라' },
   ];
   function cineSetText(txt) { const el = $('cineText'); el.classList.remove('show'); setTimeout(() => { if (!cine) return; el.textContent = txt; el.classList.add('show'); }, 380); }
-  function startCine(name) {
-    cine = { t0: performance.now(), step: -1, swapped: false };
+  function startCine(name, kind) {
+    cine = { t0: performance.now(), step: -1, swapped: kind === 'endless', kind };
     $('cineTitle').textContent = name + ' 처치!'; $('cineText').textContent = ''; $('cineText').classList.remove('show'); $('cineTitle').classList.remove('show');
     $('cine').classList.remove('hidden'); requestAnimationFrame(() => { $('cine').classList.add('on'); $('cineTitle').classList.add('show'); });
   }
   function stepCine(now) {
     const t = (now - cine.t0) / 1000;
     if (!cine.swapped && t > 1.3) { cine.swapped = true; Scenery.setAct(2, true); } // 화면이 완전히 가려진 뒤 길/바닥을 새로 만든다
-    while (cine.step + 1 < CINE_STEPS.length && t >= CINE_STEPS[cine.step + 1].t) { cine.step++; cineSetText(CINE_STEPS[cine.step].text); }
-    if (t > 7.9) endCine();
+    const steps = cine.kind === 'endless' ? CINES.endless.steps : CINE_STEPS;
+    while (cine.step + 1 < steps.length && t >= steps[cine.step + 1].t) { cine.step++; cineSetText(steps[cine.step].text); }
+    if (t > (cine.kind === 'endless' ? CINES.endless.end : 7.9)) endCine();
   }
   function endCine() {
     if (!cine) return;
@@ -684,7 +718,7 @@
     if (S.jobs.offer && !params.get('nopick')) C.pickJob(S, 0);
     if (S.cards.offer && !params.get('nopick')) C.pickCard(S, 0);
     botT += STEP; if (botT < 0.4) return; botT = 0;
-    for (const t of ['sword', 'archer', 'sword', 'archer', 'priest']) C.buy(S, t);
+    for (const t of ['sword', 'archer', 'sword', 'archer', 'priest']) { const r = C.buy(S, t); if (r.reason === 'pop') { C.upgradeCastle(S); break; } }
   }
   function showEnd(win) {
     running = false;
@@ -778,7 +812,7 @@
       for (let i = fx.length - 1; i >= 0; i--) { const f = fx[i]; f.t += dt * speed; if (f.t >= f.max) { if (f.k === 'num') numFx--; fx[i] = fx[fx.length - 1]; fx.pop(); fxPool.push(f); } } // 끝난 효과는 풀로 돌려보낸다
     }
     if (S) {
-      if (S.cinematic && !cine) startCine(S.cinematic.name);
+      if (S.cinematic && !cine) startCine(S.cinematic.name, S.cinematic.kind);
       if (cine) stepCine(now);
       else if (Scenery.act !== S.act) Scenery.setAct(S.act, true); // 불러오기/재시작/점프 시 막에 맞는 배경으로
       if (!cine && S.act === 1) syncRoads();
