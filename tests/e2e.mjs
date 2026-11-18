@@ -179,6 +179,12 @@ try {
   check('결과 문구(승리/패배)', title === '방어 성공!' || title === '성채가 무너졌어요', title);
   await ev("document.getElementById('go').click()"); await sleep(500);
   check('다시 시작 → 새 게임', (await ev('__game.S.t')) < 2 && (await ev("document.getElementById('overlay').classList.contains('hidden')")), 't=' + await ev('__game.S.t'));
+
+  // 5) 무한 모드(51라운드~)에서 프레임 오류가 없는지 (추가 포탈 그리기 등) — 예전에 51라운드부터 매 프레임 예외가 났다
+  await open('?bot=1&nopick=1&nointro=1&seed=7&zoom=1&startRound=50', 1200);
+  await ev(`(()=>{ window.__fe = []; Net.sendError = (m, s, w) => window.__fe.push(w + ': ' + m); const S = __game.S; S.core.hp = S.core.max = 1e7; })()`);
+  for (const r of [51, 56, 61]) { await ev(`__game.CastleCore.jumpToRound(__game.S, ${r})`); for (let k = 0; k < 4; k++) { await sleep(400); await ev(`(()=>{const S=__game.S,C=__game.CastleCore; S.core.hp=S.core.max; if(S.cinematic) C.endCinematic(S); if(S.jobs.offer) C.pickJob(S,0); if(S.cards.offer) C.pickCard(S,0);})()`); } }
+  check('무한 모드 51~61라운드에서 프레임 오류 없음', (await ev('window.__fe.length')) === 0, await ev('JSON.stringify(window.__fe.slice(0,2))'));
 } catch (e) {
   failed++; console.log('FAIL 예외 ' + e.message);
 } finally {

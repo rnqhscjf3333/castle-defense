@@ -29,13 +29,14 @@
       biasAlert: 0.6,     // 적이 alertRange 안으로 들어오면 이만큼까지 서서히 쏠린다
       alertRange: 420,    // 성채에서 이 거리 안에 적이 있으면 경계 상태
       sway: 6,            // 대기 중 살짝 흔들리는 폭(px) — 가만히 서 있는 느낌을 줄인다
+      homeBias: 0.9, // 목표를 고를 때 '원래 자리에서의 거리'를 반영하는 정도 (0이면 가장 가까운 적만 쫓음)
       homeR: { sword: 170, archer: 110, priest: 100, golem: 150, hero: 140, marksman: 125, repeater: 100 }, // 역할별 대기 반경
     },
     core: { hp: 1000, atk: 20, rate: 1.0, range: 260, r: 46, blockR: 64 }, // blockR: 성채 원형 안으로 아군이 들어올 수 없다
     units: {
-      sword:  { name: '검사', cost: 50, hp: 120, atk: 12, rate: 1.0, range: 30,  speed: 90, r: 10, buyCd: 1.2, aggro: 220 },
-      archer: { name: '궁수', cost: 60, hp: 60,  atk: 10, rate: 1.2, range: 220, speed: 80, r: 9,  buyCd: 1.5, aggro: 260 },
-      priest: { name: '사제', cost: 80, hp: 70,  atk: 0,  rate: 0,   range: 0,   speed: 80, r: 9,  buyCd: 2.5, aggro: 0,
+      sword:  { name: '검사', cost: 50, hp: 120, atk: 12, rate: 1.0, range: 30,  speed: 90, r: 10, buyCd: 1.2, aggro: 220, dbl: 0.15 },
+      archer: { name: '궁수', cost: 60, hp: 75,  atk: 11, rate: 1.2, range: 220, speed: 80, r: 9,  buyCd: 1.5, aggro: 260 },
+      priest: { name: '사제', cost: 80, hp: 85,  atk: 0,  rate: 0,   range: 0,   speed: 80, r: 9,  buyCd: 2.5, aggro: 0,
                 heal: 12, healRate: 2.4, healRange: 200 },
       // 카드로만 얻는 유닛
       // 카드로 얻는 특수 유닛. line = 어느 직업 계열의 강화·전직을 받는지 (sword·archer·priest = 해당 직업, core = 성채 강화)
@@ -109,12 +110,12 @@
     jobs: {
       sword: {
         t1: [
-          { id: 'knight', name: '기사', desc: '체력 +80%, 받는 피해 -20%', mods: { hp: 0.8, def: 0.2 } },
-          { id: 'fighter', name: '투사', desc: '공격력 +50%, 공격 속도 +20%', mods: { atk: 0.5, rate: 0.2 } },
+          { id: 'knight', name: '기사', desc: '체력 +80%, 받는 피해 -12%', mods: { hp: 0.8, def: 0.12 } },
+          { id: 'fighter', name: '투사', desc: '공격력 +50%, 공격 속도 +20%, 연속 공격 확률 +12%', mods: { atk: 0.5, rate: 0.2, dbl: 0.12 } },
         ],
         t2: {
-          knight: [{ id: 'paladin', name: '성기사', desc: '체력 +50%, 받는 피해 -15%, 초당 체력 2% 회복', mods: { hp: 0.5, def: 0.15, regen: 0.02 } }],
-          fighter: [{ id: 'blademaster', name: '검성', desc: '공격력 +60%, 주변 적에게 50% 베기 피해', mods: { atk: 0.6, cleave: 0.5 } }],
+          knight: [{ id: 'paladin', name: '성기사', desc: '체력 +50%, 받는 피해 -8%, 초당 체력 2% 회복', mods: { hp: 0.5, def: 0.08, regen: 0.02 } }],
+          fighter: [{ id: 'blademaster', name: '검성', desc: '공격력 +60%, 주변 적에게 50% 베기 피해, 연속 공격 확률 +10%', mods: { atk: 0.6, cleave: 0.5, dbl: 0.1 } }],
         },
       },
       archer: {
@@ -145,7 +146,7 @@
       hpSlope: 0.125, hpSlopeLate: 0.14, lateFrom: 20, // 체력 배율: 선형, lateFrom(대혼란) 이후 기울기 증가
       dmgShare: 0.5,                                  // 공격력은 체력 증가분의 이 비율만 반영
       lateSpeed: 1.1,                                 // 대혼란 이후 적 이동 속도 배율
-      enemyHp: 0.235, enemyDmg: 0.5,                    // 모든 적(보스 포함)의 체력/공격력 배율
+      enemyHp: 0.185, enemyDmg: 0.5,                    // 모든 적(보스 포함)의 체력/공격력 배율
       bossHp: 1,                                      // 보스 체력에 추가로 곱하는 배율
       // 2막(31라운드~): 적이 강해지는 폭이 더 크다
       countPost: 3,                                   // 2막에서는 라운드마다 적이 이만큼 늘어난다 (1막 말 수 + 이 값 × 경과 라운드)
@@ -174,7 +175,7 @@
     cardVals: {                       // 카드 수치 (설명 문구와 효과가 모두 여기서 읽는다)
       coreAtk: 0.40, coreRate: 0.25, coreRange: 45, fortHp: 600, repair: 0.15, thorn: 0.9,
       crit: 0.10, critMul: 2, archerRange: 0.12,
-      guard: 0.30, charge: 0.40, chargeRate: 0.15, revive: 0.70, pierce: 0.40, bomb: 4.0, bombStep: 1.5,
+      guard: 0.18, charge: 0.40, chargeRate: 0.15, revive: 0.70, pierce: 0.40, bomb: 4.0, bombStep: 1.5,
       auraHeal: 0.025, auraAtk: 0.08, auraDef: 0.08, auraDefCap: 0.40, auraSpd: 0.06, auraBoost: 0.15,
     },
     rerolls: 2,
@@ -182,7 +183,7 @@
     castle: { max: 8, cost: [220, 380, 640, 1000, 1550, 2350, 3500], popBase: 8, popPer: 3, hp: 350, atk: 0.16, range: 22, rate: 0.06, cannonLv: [3, 5, 7] },
     // 엘리트: 일반 몬스터가 일정 확률로 훨씬 강하고 크게 나온다. 확률은 라운드가 갈수록 커져 최대 max
     elite: { from: 3, perRound: 0.0025, max: 0.10, hp: 3, dmg: 1.6, size: 1.35, gold: 4, speed: 1.05 },
-    endless: { hpLin: 0.08, hpQuad: 0.0015, cnt: 0.022, bossBase: 60000, bossExp: 0.6, marMul: 0.9 }, // 무한 모드(51라운드~) 난이도 곡선: 체력 배율 1+lin·n+quad·n², 적 수 +cnt·n (n = 50라운드 이후 지난 라운드)
+    endless: { hpLin: 0.12, hpQuad: 0.0008, cnt: 0.022, bossBase: 60000, bossExp: 0.6, marMul: 0.9 }, // 무한 모드(51라운드~) 난이도 곡선: 체력 배율 1+lin·n+quad·n², 적 수 +cnt·n (n = 50라운드 이후 지난 라운드)
     dmgVar: 0.15,                     // 모든 공격 피해에 공격력 ±15% 오차
     legendChance: 0.007,              // 30라운드 이후, 카드 한 칸마다 전설 카드가 나올 확률 (아주 낮음)
     rarityWeight: { common: 70, rare: 25, epic: 5 },
@@ -437,7 +438,8 @@
   function openJobs(S, bossName) {
     const opts = jobOptions(S);
     if (!opts.length) { // 전직이 모두 끝났으면 보상 선택
-      const pool = CFG.rewards.map(r => ({ type: 'reward', reward: true, className: '보스 보상', tier: 0, id: r.id, name: r.name, desc: r.desc }));
+      const left = CFG.castle.max - S.castle.lv; // 성채가 이미 최대면 대개수는 제시하지 않고, 1레벨만 남았으면 1레벨로 안내한다
+      const pool = CFG.rewards.filter(r => !r.castle || left > 0).map(r => ({ type: 'reward', reward: true, className: '보스 보상', tier: 0, id: r.id, name: r.name, desc: r.castle && left < r.castle ? r.desc.replace('2레벨', left + '레벨') + ' (최대 레벨 도달)' : r.desc }));
       for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(S.rng() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
       S.jobs.offer = { boss: bossName, reward: true, list: pool.slice(0, 3) }; return;
     }
@@ -515,7 +517,7 @@
                 splash: L('c_splash'), chain: L('c_chain'), bomb: L('c_bomb'), thorn: L('f_thorn'), repair: L('f_repair') };
   }
   // 전직 효과 합산 (유닛 종류별)
-  const zeroMods = () => ({ hp: 0, atk: 0, rate: 0, speed: 0, def: 0, regen: 0, cleave: 0, range: 0, pierce: 0, crit: 0, heal: 0, healRange: 0, healRate: 0, revive: 0 });
+  const zeroMods = () => ({ hp: 0, atk: 0, rate: 0, speed: 0, def: 0, regen: 0, cleave: 0, range: 0, pierce: 0, crit: 0, heal: 0, healRange: 0, healRate: 0, revive: 0, dbl: 0 });
   function jobDef(type, id) {
     const j = CFG.jobs[type]; if (!j) return null;
     for (const d of j.t1) if (d.id === id) return d;
@@ -659,6 +661,8 @@
   const bossBaseHp = r => CFG.bossHp[r] || (r > MAX_ROUND ? CFG.endless.bossBase * Math.pow(endF(r), CFG.endless.bossExp) * (r % 10 === 0 ? CFG.endless.marMul : 1) : CFG.bossHp[MAX_ROUND]);
   const bossInfo = (S, r) => { const d = bossDefFor(S, r); return d ? Object.assign({ hp: bossBaseHp(r) }, d) : null; };
   // 풀 보스의 패턴 수치를 라운드에 맞춰 조정 (15라운드 = 기준). 일찍 나오면 약하게, 늦게 나오면 강하게.
+  const SUMMON_UP = { grunt: 'captain', shield: 'ironshield', archer: 'crossbow', bomber: 'sapper', shaman: 'warlock' }; // 소환 졸개의 강화형
+  const BLINK_MAX = 310; // 보스 순간이동 1회 최대 이동 거리
   function scaleAbil(abil, r) {
     const s = clamp(r / 15, 0.5, 2.2), out = {};
     for (const k in abil) {
@@ -948,7 +952,10 @@
     const cfg = CFG.units[u.type], aggro = cfg.aggro;
     const rush = (lineOf(u.type) === 'sword' && S.perks.charge) ? 1 + V().charge * S.perks.charge : 1;
     const stopFor = tgt => (melee ? u.range + u.r + tgt.r - 2 : u.range * 0.85 + tgt.r);
-    let tgt = melee ? nearest(S.gE, u.x, u.y, aggro) : nearestBoth(S, u.x, u.y, aggro);
+    // 목표 선택: 내 위치에서 가까운 적과 '원래 자리(홈)' 근처의 적 중, 둘을 합친 거리가 짧은 쪽을 쫓는다 → 한쪽 입구로 우르르 몰리지 않고 각자 맡은 방향도 지킨다
+    const find = (x, y) => (melee ? nearest(S.gE, x, y, aggro) : nearestBoth(S, x, y, aggro));
+    let tgt = find(u.x, u.y);
+    { const th = find(u.hx, u.hy); if (th && th !== tgt) { const sc = e => Math.hypot(e.x - u.x, e.y - u.y) + CFG.ai.homeBias * Math.hypot(e.x - u.hx, e.y - u.hy); if (!tgt || sc(th) < sc(tgt)) tgt = th; } }
     const free = S.mode === 'free';
     if (!free && tgt && Math.hypot(tgt.x - CX, tgt.y - CY) > CFG.leash) tgt = null; // (기본 모드) 성채에서 너무 먼 적은 쫓지 않는다
     if (tgt && (free || fromCore <= CFG.leash + 40)) moveToward(u, tgt.x, tgt.y, dt, stopFor(tgt), spm * rush);
@@ -961,6 +968,9 @@
         if (melee) {
           emit(S, { type: 'melee', x: u.x, y: u.y, tx: t.x, ty: t.y, job: u.job, ut: u.type });
           damage(S, t, atk * (t.mres || 1));
+          if (lineOf(u.type) === 'sword' && S.rng() < (cfg.dbl !== undefined ? cfg.dbl : 0.1) + S.jobMods.sword.dbl) { // 일정 확률로 한 번 더 벤다
+            const t2 = t.dead ? nearest(S.gE, u.x, u.y, u.range + u.r) : t; emit(S, { type: 'melee', x: u.x, y: u.y, tx: (t2 || t).x, ty: (t2 || t).y, job: u.job, ut: u.type, dbl: true }); if (t2) damage(S, t2, atk * (t2.mres || 1)); u.cd *= 0.5;
+          }
           const cl = S.jobMods[lineOf(u.type)] ? S.jobMods[lineOf(u.type)].cleave : 0; // 검성: 주변 적에게 베기 피해
           if (cl) eachNear(S.gE, t.x, t.y, 46, o => { if (o !== t) damage(S, o, atk * cl); });
         } else {
@@ -1007,7 +1017,9 @@
     if (A.blink) { // 순간이동: 성채를 기준으로 지금 있는 곳의 반대편 쪽으로 옮겨 간다
       e.t.blink -= dt;
       if (e.t.blink <= 0 && e.life > 2) {
-        e.t.blink = A.blink.cd; const x0 = e.x, y0 = e.y, cur = Math.atan2(e.y - CY, e.x - CX), ang = cur + Math.PI + (S.rng() - 0.5) * 1.5, d = A.blink.minR + S.rng() * (A.blink.maxR - A.blink.minR);
+        e.t.blink = A.blink.cd; const x0 = e.x, y0 = e.y, cur = Math.atan2(e.y - CY, e.x - CX), dc = Math.hypot(e.x - CX, e.y - CY);
+        // 지금 있는 곳과 비슷한 거리의 옆자리로만 옮겨 간다 (너무 멀리 날아가지 않도록 이동 거리를 BLINK_MAX 이하로 제한)
+        const d = clamp(dc + (S.rng() - 0.5) * 120, 160, Math.max(A.blink.maxR, dc)), maxArc = 2 * Math.asin(Math.min(1, BLINK_MAX / (2 * d))), arc = Math.min(maxArc, 0.7 + S.rng() * 0.6), ang = cur + (S.rng() < 0.5 ? -arc : arc);
         e.x = clamp(CX + Math.cos(ang) * d, 30, W - 30); e.y = clamp(CY + Math.sin(ang) * d, 30, H - 30);
         if (e.t.summon !== undefined) e.t.summon = Math.min(e.t.summon, 1.2); // 도착하자마자 졸개 소환
         emit(S, { type: 'bossBlink', x0, y0, x1: e.x, y1: e.y });
@@ -1045,8 +1057,9 @@
       if (e.t.summon <= 0) {
         e.t.summon = A.summon.cd;
         const toCore = Math.atan2(CY - e.y, CX - e.x); // 졸개는 보스 앞(성채 방향)에 나온다
-        for (let i = 0; i < A.summon.n; i++) { const a = toCore + (S.rng() - 0.5) * 1.9, d = 75 + S.rng() * 55; spawnEnemy(S, A.summon.kind, clamp(e.x + Math.cos(a) * d, 20, W - 20), clamp(e.y + Math.sin(a) * d, 20, H - 20)); }
-        emit(S, { type: 'bossSummon', x: e.x, y: e.y, n: A.summon.n, kind: A.summon.kind });
+        const r = S.round, cnt = Math.min(Math.round(A.summon.n * clamp(1 + 0.035 * (r - 5), 1, 3.2)), 18), pUp = clamp((r - 15) / 45, 0, 0.75), nu = SUMMON_UP[A.summon.kind]; // 라운드가 지날수록 더 많이, 더 강한 졸개가 나온다
+        for (let i = 0; i < cnt; i++) { const a = toCore + (S.rng() - 0.5) * 1.9, d = 75 + S.rng() * 55, kind = nu && S.rng() < pUp ? nu : A.summon.kind; spawnEnemy(S, kind, clamp(e.x + Math.cos(a) * d, 20, W - 20), clamp(e.y + Math.sin(a) * d, 20, H - 20)); }
+        emit(S, { type: 'bossSummon', x: e.x, y: e.y, n: cnt, kind: A.summon.kind });
       }
     }
     if (A.debuff) {

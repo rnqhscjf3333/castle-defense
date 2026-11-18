@@ -187,6 +187,9 @@
     }
   }
   // 새로운 종류의 적이 처음 나오면 왼쪽 위에 모습·이름·능력을 잠깐 보여준다
+  // 새 적 소개 창에서 보여줄 얼굴 위치 [가운데 x, 가운데 y, 얼굴 반지름] (그림 기준 좌표, 발 기준 위쪽이 -)
+  const NE_FACE = { grunt: [0, -13, 7.5], shield: [-1, -19, 10], archer: [0, -13, 7.5], bomber: [0, -13, 7.5], shaman: [0, -16, 9.5], wolf: [-6, -6, 10], bat: [0, -12, 5.5], boar: [-6, -8, 15],
+    spider: [0, -3, 11], ghost: [0, -8, 9], captain: [0, -17, 9], ironshield: [0, -25, 12.5], crossbow: [0, -17, 8], sapper: [0, -15, 8], warlock: [0, -17, 9.5], ogre: [0, -32, 16.5], direwolf: [-10, -5, 11], wyvern: [0, -18, 9], wraith: [0, -10, 10.5], brute: [0, -25, 13.5], boss: [0, -47, 25] };
   const neQ = []; let neBusy = false;
   function showNewEnemy(kind) { if (CFG.enemies[kind]) neQ.push(kind); if (!neBusy) nextNewEnemy(); }
   function nextNewEnemy() {
@@ -197,7 +200,8 @@
     (function loop() {
       const now = performance.now(), el2 = now - t0; if (el2 > 5200) { el.classList.add('hidden'); setTimeout(nextNewEnemy, 600); return; }
       fake.x += 0.5; fake.y = 0; c2.setTransform(1, 0, 0, 1, 0, 0); c2.clearRect(0, 0, 88, 88);
-      c2.translate(44 - fake.x * 2.2, 54); c2.scale(2.2, 2.2); Figures.draw(c2, fake, now);
+      const f = NE_FACE[kind] || [0, -14, 8], k = Math.min(6, 28 / f[2]); // 몸 전체가 아니라 얼굴이 가운데 오도록 맞춘다
+      c2.translate(44 - (fake.x + f[0]) * k, 46 - f[1] * k); c2.scale(k, k); Figures.draw(c2, fake, now);
       requestAnimationFrame(loop);
     })();
   }
@@ -243,7 +247,6 @@
     cb.cost.textContent = max ? 'MAX' : cost + 'G'; castleBtn.classList.toggle('off', max || S.gold < cost); castleBtn.classList.toggle('need', full && !max);
   }
   function updateHud() {
-    for (const a of C.extraAngles(S.extraPts || 0)) { const px = CX + Math.cos(a) * C.EXTRA_RING, py = CY + Math.sin(a) * C.EXTRA_RING; if (px > x0 - 60 && px < x1 + 60 && py > y0 - 40 && py < y1 + 40) Scenery.drawPortal(ctx, px, py, now); }
     const c = S.core;
     const bi = C.bossInfo(S, S.round), nb = C.bossInfo(S, S.round + 1), rt = $('roundTxt');
     setText('roundTxt', '라운드 ' + Math.max(1, S.round) + (S.round > C.MAX_ROUND ? ' · 무한' : ' / ' + C.MAX_ROUND));
@@ -274,12 +277,41 @@
   // ───────────── 업그레이드 선택창 / 강화 목록 ─────────────
   const CAT_NAME = { unit: '유닛 강화', core: '성채 강화', summon: '특수 소환' };
   const RAR_NAME = { common: '일반', rare: '희귀', epic: '영웅', legend: '전설' };
-  let shownOffer = null;
+  let shownOffer = null, shownKind = null;
+  // ── 선택창 이펙트 (등급: common 0 · rare 1 · epic 2 · legend 3) ──
+  const RANK = { common: 0, rare: 1, epic: 2, legend: 3 }, RCOL = ['#9fb0cc', '#7cc0ff', '#ffd166', '#ff9bff'];
+  const rankOf = (c, job) => job ? 2 : RANK[c.rar] || 0;
+  function sparks(x, y, n, color, dist, dur) {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * 6.283, d = dist * (0.4 + Math.random() * 0.8), s = document.createElement('i'); s.className = 'pspark';
+      s.style.cssText = 'left:' + x + 'px;top:' + y + 'px;--c:' + (i % 3 === 2 && color === RCOL[3] ? '#7dffe8' : color) + ';--dx:' + Math.cos(a) * d + 'px;--dy:' + Math.sin(a) * d + 'px;--d:' + (dur * (0.7 + Math.random() * 0.6)) + 's';
+      document.body.appendChild(s); setTimeout(() => s.remove(), dur * 1400);
+    }
+  }
+  function flash(color, a) { const f = document.createElement('div'); f.className = 'pflash'; f.style.cssText = '--c:' + color + ';--a:' + a; document.body.appendChild(f); setTimeout(() => f.remove(), 800); }
+  function ring(x, y, color, s) { const r = document.createElement('div'); r.className = 'pring'; r.style.cssText = 'left:' + x + 'px;top:' + y + 'px;--c:' + color + ';--s:' + s; document.body.appendChild(r); setTimeout(() => r.remove(), 800); }
+  function revealFx(box, list, job, reroll) {
+    let top = 0;
+    [...box.children].forEach((b, i) => {
+      const rk = rankOf(list[i], job); top = Math.max(top, rk);
+      if (rk >= 1) setTimeout(() => { const r = b.getBoundingClientRect(); sparks(r.left + r.width / 2, r.top + r.height / 2, [0, 6, 12, 26][rk], RCOL[rk], 40 + rk * 35, 0.8); if (rk >= 2) ring(r.left + r.width / 2, r.top + r.height / 2, RCOL[rk], 8 + rk * 3); }, 200 + i * (reroll ? 70 : 90));
+    });
+    if (reroll) A2.play('reroll'); if (top >= 1) setTimeout(() => A2.play('reveal' + top), 260);
+    if (top >= 2) flash(RCOL[top], top === 3 ? 0.5 : 0.22);
+  }
+  function pickFx(i, job) {
+    const b = $('pickCards').children[i]; if (!b) return;
+    const list = job ? S.jobs.offer && S.jobs.offer.list : S.cards.offer, rk = rankOf(list && list[i] || {}, job), r = b.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, Z = 0.84; // #pickBox는 zoom .84
+    const g = b.cloneNode(true); g.classList.remove('enter', 'flip'); g.classList.add('picked'); g.style.cssText = 'zoom:' + Z + ';left:' + r.left / Z + 'px;top:' + r.top / Z + 'px;width:' + r.width / Z + 'px;height:' + r.height / Z + 'px';
+    document.body.appendChild(g); setTimeout(() => g.remove(), 800);
+    ring(cx, cy, RCOL[rk], 6 + rk * 4); sparks(cx, cy, [10, 18, 30, 52][rk], RCOL[rk], 70 + rk * 40, 0.75);
+    if (rk >= 1) flash(RCOL[rk], [0, 0.12, 0.25, 0.5][rk]);
+  }
   const currentOffer = () => (S && S.jobs.offer) ? { kind: 'job', list: S.jobs.offer.list, ref: S.jobs.offer } : (S && S.cards.offer) ? { kind: 'card', list: S.cards.offer, ref: S.cards.offer } : null;
   function syncPicker() {
     const cur = S && S.cinematic ? null : currentOffer(), ref = cur ? cur.ref : null;
     if (ref === shownOffer) { if (cur && cur.kind === 'card') updateReroll(); return; }
-    shownOffer = ref;
+    const wasCard = shownKind === 'card'; shownOffer = ref; shownKind = cur ? cur.kind : null;
     const el = $('picker');
     if (!cur) { el.classList.add('hidden'); return; }
     const job = cur.kind === 'job', box = $('pickCards'); box.innerHTML = '';
@@ -309,14 +341,16 @@
       const pd = document.createElement('div'); pd.className = 'pd'; pd.textContent = c.desc;
       const pk = document.createElement('span'); pk.className = 'pk'; pk.textContent = String(i + 1);
       b.append(pn, pd, pk);
+      b.style.setProperty('--i', i); b.classList.add(!job && wasCard && !el.classList.contains('hidden') ? 'flip' : 'enter');
       b.addEventListener('click', () => choose(i));
       box.appendChild(b);
     });
+    revealFx(box, cur.list, job, !job && wasCard && !el.classList.contains('hidden'));
     if (!job) updateReroll();
     el.classList.remove('hidden');
   }
   function updateReroll() { const b = $('btnReroll'), n = S.cards.rerolls; b.textContent = '다시 뽑기 (' + n + ')'; b.disabled = n <= 0; }
-  function choose(i) { if (!S) return; if (S.jobs.offer) C.pickJob(S, i); else if (S.cards.offer) C.pickCard(S, i); }
+  function choose(i) { if (!S) return; if (currentOffer() && !$('picker').classList.contains('hidden')) pickFx(i, !!S.jobs.offer); if (S.jobs.offer) C.pickJob(S, i); else if (S.cards.offer) C.pickCard(S, i); }
   $('btnReroll').addEventListener('click', () => { if (S) C.reroll(S); });
 
   function renderUpgrades() {
@@ -469,6 +503,7 @@
     // 적 출현 포탈: 길 위의 붉은 룬 원 (화면 바로 밖에서 적이 나타난다)
     const angs = C.spawnAngles(S.spawnPts || 2);
     for (const a of angs) { const px = CX + Math.cos(a) * C.SPAWN_RING, py = CY + Math.sin(a) * C.SPAWN_RING; if (px > x0 - 60 && px < x1 + 60 && py > y0 - 40 && py < y1 + 40) Scenery.drawPortal(ctx, px, py, now); }
+    for (const a of C.extraAngles(S.extraPts || 0)) { const px = CX + Math.cos(a) * C.EXTRA_RING, py = CY + Math.sin(a) * C.EXTRA_RING; if (px > x0 - 60 && px < x1 + 60 && py > y0 - 40 && py < y1 + 40) Scenery.drawPortal(ctx, px, py, now); }
 
     const c = S.core;
     // 성채 사거리

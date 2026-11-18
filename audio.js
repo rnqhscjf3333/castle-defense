@@ -68,6 +68,10 @@
     deny(t, v, p) { tone('square', 160, 120, t, 0.14, 0.25, v, 0); },
     ui(t, v, p) { tone('triangle', 700, 900, t, 0.05, 0.2, v, 0); },
     card(t, v, p) { [523, 659, 784, 1047].forEach((f, i) => tone('triangle', f, f, t + i * 0.07, 0.22, 0.25, v, 0)); },
+    reveal1(t, v, p) { tone('sine', 880, 1320, t, 0.18, 0.18, v, 0); },                                               // 희귀 카드 등장
+    reveal2(t, v, p) { [660, 880, 1320].forEach((f, i) => tone('triangle', f, f * 1.01, t + i * 0.06, 0.25, 0.22, v, 0)); },
+    reveal3(t, v, p) { [523, 784, 1047, 1568, 2093].forEach((f, i) => tone('sine', f, f, t + i * 0.07, 0.5, 0.25, v, 0)); noise(t, 0.5, 0.2, v, 0, 3000, 8000, 1.5, 'highpass'); },
+    reroll(t, v, p) { noise(t, 0.28, 0.35, v, 0, 400, 3000, 1.5); tone('triangle', 300, 700, t, 0.2, 0.18, v, 0); },
     job(t, v, p) { [392, 523, 659, 784, 1047].forEach((f, i) => tone('square', f, f, t + i * 0.08, 0.24, 0.18, v, 0)); },
     round(t, v, p) { tone('sawtooth', 220, 220, t, 0.18, 0.3, v, 0); tone('sawtooth', 330, 330, t + 0.16, 0.3, 0.3, v, 0); },
     summon(t, v, p) { tone('sawtooth', 120, 300, t, 0.5, 0.5, v, p); noise(t, 0.5, 0.3, v, p, 300, 1500, 2); },

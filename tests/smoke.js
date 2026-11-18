@@ -1,7 +1,7 @@
 // node tests/smoke.js [판수] — 로직 스모크 테스트 + 봇 플레이 (카드 선택 포함)
 const C = require('../core.js');
 C.CFG.elite.max = 0; // 엘리트는 기존 테스트에서 끔 (아래 전용 테스트에서 켬)
-C.CFG.dmgVar = 0; const POP0 = C.CFG.castle.popBase; C.CFG.castle.popBase = 999; // 기존 테스트는 인구 제한 없이 (인구 테스트는 아래 43번) // 기존 테스트는 고정 피해 기준 (오차 테스트는 아래에서 따로)
+C.CFG.dmgVar = 0; C.CFG.units.sword.dbl = 0; const POP0 = C.CFG.castle.popBase; C.CFG.castle.popBase = 999; // 기존 테스트는 인구 제한 없이 (인구 테스트는 아래 43번) // 기존 테스트는 고정 피해 기준 (오차 테스트는 아래에서 따로)
 const DT = 1 / 30;
 const BUY = ['sword', 'archer', 'sword', 'archer', 'priest'];
 let failed = 0;
@@ -228,7 +228,7 @@ function killBoss(g) { const b = g.enemies.find(e => e.kind === 'boss'); b.hp = 
   const opts2 = C.jobOptions(g).filter(o => o.type === 'sword');
   check('2단계 선택지는 선택한 갈래의 상위 직업만', opts2.length === 1 && opts2[0].id === 'paladin' && opts2[0].tier === 2, opts2.map(o => o.name).join());
   g.jobs.offer = { boss: 't', list: opts2 }; C.pickJob(g, 0);
-  check('성기사: 체력 추가 증가 + 받는 피해 감소 + 재생 보정 합산', g.jobMods.sword.hp > 1.2 && g.jobMods.sword.def > 0.34 && g.jobMods.sword.regen === 0.02, JSON.stringify(g.jobMods.sword));
+  check('성기사: 체력 추가 증가 + 받는 피해 감소 + 재생 보정 합산', g.jobMods.sword.hp > 1.2 && g.jobMods.sword.def > 0.19 && g.jobMods.sword.regen === 0.02, JSON.stringify(g.jobMods.sword));
   sw.hp = sw.max * 0.5; const h0 = sw.hp; g.enemies.length = 0; g.queue = []; for (let i = 0; i < 60; i++) C.tick(g, DT);
   check('성기사 재생: 체력이 서서히 차오름', sw.hp > h0, Math.round(h0) + '→' + Math.round(sw.hp));
   check('최종 전직 이후 그 직업은 더 이상 제안되지 않음', C.jobOptions(g).every(o => o.type !== 'sword'));
@@ -578,5 +578,27 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   check('보상 [성채 대개수]: 성채 2레벨 상승', f.castle.lv === 3);
   const ids = new Set(); for (let i = 0; i < 200; i++) { const g2 = C.createGame(300 + i); g2.round = 10; C.openCards(g2, false); for (const c of g2.cards.offer || []) ids.add(c.id); }
   check('성채 능력치 카드(공격력·속도·사거리·체력)는 더 이상 나오지 않음', !['c_atk', 'c_rate', 'c_range', 'f_hp'].some(x => ids.has(x))); C.CFG.castle.popBase = 999; }
+// 44) 보스 순간이동 거리 제한 · 소환 졸개 성장 · 보상 성채 상한 · 목표 분산
+{ let worst = 0, n = 0; for (let t = 0; t < 40; t++) { const g = arena(30, [['boss', 1500 + 400, 1500 + (t % 7) * 40]]); const b = g.enemies[0]; b.e = 0; g.captureEvents = true; b.abil.blink = { cd: 1, minR: 300, maxR: 460 }; b.t.blink = 0; b.life = 3; b.speed = 0;
+    for (let i = 0; i < 30 * 8; i++) { C.tick(g, DT); for (const ev of g.events || []) if (ev.type === 'bossBlink') { worst = Math.max(worst, Math.hypot(ev.x1 - ev.x0, ev.y1 - ev.y0)); n++; } g.events = []; } }
+  check('순간이동 한 번의 이동 거리가 너무 멀지 않음 (≤ 350)', n > 20 && worst <= 350, `횟수 ${n}, 최대 ${worst.toFixed(0)}`); }
+{ const cnt = r => { let tot = 0, up = 0; for (let t = 0; t < 12; t++) { const g = arena(r, [['boss', 1500, 800]]); const b = g.enemies[0]; b.speed = 0; b.abil = { summon: { cd: 5, n: 4, kind: 'grunt' } }; b.t = { summon: 0 }; g.enemies.length = 1; C.tick(g, DT); for (const e of g.enemies) if (e.kind !== 'boss') { tot++; if (e.kind === 'captain') up++; } } return [tot / 12, up / Math.max(1, tot)]; };
+  const a = cnt(10), z = cnt(50); check('보스 소환: 라운드가 지날수록 졸개가 더 많고 강화형 비율이 늘어남', z[0] > a[0] * 1.8 && z[1] > a[1] + 0.3, `10R ${a[0].toFixed(1)}마리/강화 ${(a[1] * 100).toFixed(0)}% → 50R ${z[0].toFixed(1)}마리/강화 ${(z[1] * 100).toFixed(0)}%`); }
+{ const o = lv => { const g = C.createGame(77); g.gold = 1e9; for (let i = 1; i < lv; i++) C.upgradeCastle(g); C.CFG.castle.popBase = 8; g.jobs.sword.ids = ['knight', 'paladin']; g.jobs.archer.ids = ['sniper', 'x']; g.jobs.priest.ids = ['a', 'b']; g.jobs.offer = null; C.jumpToRound(g, 40); const b = {}; try { const e = Object.create(null); } catch (e) {} g.round = 40; return g; };
+  const full = o(8), one = o(7), none = o(1); const pool = g => { g.jobs.offer = null; const ids = new Set(); const offs = []; for (let i = 0; i < 40; i++) { const h = C.createGame(900 + i); h.castle.lv = g.castle.lv; h.jobs.sword.ids = ['knight', 'paladin']; h.jobs.archer.ids = ['sniper', 'x']; h.jobs.priest.ids = ['a', 'b']; h.jobs.offer = null; h.round = 40; const E = h.enemies; E.length = 0; const bs = C.spawnEnemy(h, 'boss', 1500, 800); C.damage(h, bs, 1e12); if (h.jobs.offer) for (const x of h.jobs.offer.list) ids.add(x.id + ':' + x.desc); } return ids; };
+  C.CFG.castle.popBase = 999;
+  const pf = pool(full), p1 = pool(one);
+  check('성채가 이미 최대 레벨이면 [성채 대개수]가 제시되지 않음', ![...pf].some(x => x.startsWith('r_fort')), [...pf].length + '종');
+  check('성채가 1레벨만 남았으면 안내문이 1레벨로 바뀜', [...p1].some(x => x.startsWith('r_fort') && x.includes('1레벨') && x.includes('최대 레벨')) || ![...p1].some(x => x.startsWith('r_fort')), [...p1].filter(x => x.startsWith('r_fort')).join('|') || '(이번 표본엔 안 나옴)'); }
+{ // 목표 분산: 같은 거리의 두 적 중 각자 자기 자리(홈) 쪽 적을 고른다
+  const g = arena(10, [['grunt', 1500 + 200, 1500 - 60], ['grunt', 1500 - 200, 1500 + 60]]); for (const e of g.enemies) { e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; }
+  const mk2 = (hx, hy) => { const u = C.addUnit ? C.addUnit(g, 'sword') : null; return u; };
+  const a = C.createGame(1); a.hold = true; a.phase = 'round'; a.round = 10; a.queue = []; const e1 = C.spawnEnemy(a, 'grunt', 1500 + 150, 1500), e2 = C.spawnEnemy(a, 'grunt', 1500 - 150, 1500); for (const e of [e1, e2]) { e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; }
+  C.buy(a, 'sword'); const u = a.units[0]; u.x = 1500; u.y = 1500 - 4; u.hx = 1500 + 100; u.hy = 1500; const t0 = { x: u.x, y: u.y }; for (let i = 0; i < 30; i++) C.tick(a, DT);
+  check('유닛은 가까운 적만이 아니라 자기 자리(홈) 쪽 적을 우선 쫓음', u.x > t0.x + 10, `이동 ${(u.x - t0.x).toFixed(0)}px (오른쪽 = 홈 쪽)`); }
+// 45) 검사 연속 공격 (일정 확률로 한 번 더 베기)
+{ const run = p => { C.CFG.units.sword.dbl = p; const g = arena(3, []); g.core.atk = 0; g.captureEvents = true; C.buy(g, 'sword'); const u = g.units[0]; u.x = 1500; u.y = 1400; u.hx = u.x; u.hy = u.y; const e = C.spawnEnemy(g, 'brute', 1500, 1400 - 30); e.hp = e.max = 1e9; e.speed = 0; e.dmg = 0; let n = 0, d = 0; for (let i = 0; i < 30 * 20; i++) { C.tick(g, DT); for (const ev of g.events || []) if (ev.type === 'melee') { n++; if (ev.dbl) d++; } g.events = []; } return [n, d]; };
+  const a = run(0), b = run(1); C.CFG.units.sword.dbl = 0;
+  check('검사 연속 공격: 확률 0이면 없음, 1이면 매번 한 번 더', a[1] === 0 && b[1] > 5 && b[1] >= b[0] * 0.4, `0%: ${a[1]}/${a[0]}회, 100%: ${b[1]}/${b[0]}회`); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

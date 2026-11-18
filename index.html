@@ -136,6 +136,31 @@ table.rank tr.me td { background: rgba(255,204,64,.16); font-weight: 700; }
 .pcard.rar-epic { border-color: #ffd166; box-shadow: 0 0 18px rgba(255,209,102,.35); } .pcard.rar-epic .rar { color: #ffd166; }
 .pcard.job { border-color: #ffd166; box-shadow: 0 0 18px rgba(255,209,102,.3); } .pcard.job .cat { color: #ffd166; } .pcard.job .pn { color: #ffe9a8; } .pcard .from { font-size: 11px; color: #ffb86b; }
 .pcard.cat-unit .cat { color: #6bdc8b; } .pcard.cat-core .cat { color: #ffb86b; } .pcard.cat-summon .cat { color: #c77dff; }
+
+/* 선택창 이펙트: 등장 · 다시 뽑기 · 선택 (등급이 높을수록 화려하게) */
+#pickCards { perspective: 900px; }
+.pcard { overflow: hidden; }
+.pcard::after { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; opacity: 0; background: linear-gradient(105deg, transparent 38%, rgba(255,255,255,.55) 50%, transparent 62%); transform: translateX(-130%); }
+.pcard.enter { animation: cardIn .5s cubic-bezier(.2,.9,.3,1.25) both; animation-delay: calc(var(--i) * 90ms); }
+.pcard.flip { animation: cardFlip .5s cubic-bezier(.2,.8,.3,1.1) both; animation-delay: calc(var(--i) * 70ms); }
+.pcard.rar-legend.enter { animation: cardInBig .75s cubic-bezier(.2,.9,.3,1.3) both, legendGlow 1.6s ease-in-out .8s infinite alternate; animation-delay: calc(var(--i) * 90ms), 0s; }
+.pcard.rar-legend.flip { animation: cardFlip .5s cubic-bezier(.2,.8,.3,1.1) both, legendGlow 1.6s ease-in-out .6s infinite alternate; animation-delay: calc(var(--i) * 70ms), 0s; }
+.pcard.rar-rare.enter::after, .pcard.rar-rare.flip::after { animation: shine .8s ease-out calc(var(--i) * 90ms + .35s) 1 both; }
+.pcard.rar-epic.enter::after, .pcard.rar-epic.flip::after, .pcard.job.enter::after { animation: shine .9s ease-out calc(var(--i) * 90ms + .3s) 2 both; }
+.pcard.rar-legend.enter::after, .pcard.rar-legend.flip::after { animation: shine 1.1s ease-out calc(var(--i) * 90ms + .3s) infinite both; animation-duration: 2.4s; }
+.pcard.rar-epic.enter, .pcard.job.enter { animation-name: cardInBig; }
+@keyframes cardIn { from { opacity: 0; transform: translateY(46px) scale(.82); } to { opacity: 1; transform: none; } }
+@keyframes cardInBig { 0% { opacity: 0; transform: translateY(60px) scale(.7) rotate(-4deg); } 60% { opacity: 1; transform: translateY(-8px) scale(1.06) rotate(1deg); } 100% { opacity: 1; transform: none; } }
+@keyframes cardFlip { from { opacity: 0; transform: rotateY(88deg) scale(.88); } to { opacity: 1; transform: none; } }
+@keyframes shine { 0% { opacity: 1; transform: translateX(-130%); } 55%,100% { opacity: 1; transform: translateX(130%); } }
+.pspark { position: fixed; z-index: 7; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%; pointer-events: none; background: var(--c); box-shadow: 0 0 8px 2px var(--c); animation: sparkOut var(--d) cubic-bezier(.15,.7,.3,1) forwards; }
+@keyframes sparkOut { from { opacity: 1; transform: translate(0,0) scale(1); } to { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(.2); } }
+.pflash { position: fixed; inset: 0; z-index: 6; pointer-events: none; background: radial-gradient(circle at 50% 50%, var(--c), transparent 70%); animation: pFlash .7s ease-out forwards; }
+@keyframes pFlash { from { opacity: var(--a); } to { opacity: 0; } }
+.pcard.picked { position: fixed; z-index: 8; margin: 0; pointer-events: none; animation: cardPicked .7s ease-in forwards; }
+@keyframes cardPicked { 0% { transform: scale(1); opacity: 1; } 25% { transform: scale(1.14); opacity: 1; } 100% { transform: scale(1.3) translateY(-40px); opacity: 0; } }
+.pring { position: fixed; z-index: 7; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%; border: 3px solid var(--c); pointer-events: none; animation: pRing .7s ease-out forwards; }
+@keyframes pRing { to { transform: scale(var(--s)); opacity: 0; } }
 #pickFoot { margin-top: 12px; display: flex; gap: 12px; align-items: center; justify-content: center; font-size: 12px; color: var(--muted); }
 #btnReroll { padding: 8px 14px; border-radius: 10px; }
 #btnReroll:disabled { opacity: .4; cursor: default; }
