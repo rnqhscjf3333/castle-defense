@@ -452,7 +452,7 @@
       else if (ev.type === 'bossShield') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.6, c: '#8fd8ff' }); toast('보스가 방어막을 둘렀어요'); }
       else if (ev.type === 'bossSummon') { for (let k = 0; k < 3; k++) addFx({ k: 'ring', x: ev.x, y: ev.y, t: -k * 0.12, max: 0.7, c: '#ff6b6b', big: true }); toast('보스가 ' + (CFG.enemies[ev.kind] ? CFG.enemies[ev.kind].name : '졸개') + ' ' + ev.n + '마리를 불렀어요!'); }
       else if (ev.type === 'bossRage') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#ff3b1a' }); banner(ev.name + ' 분노!'); }
-      else if (ev.type === 'over') showEnd(ev.win);
+      else if (ev.type === 'over') { if (ev.win) showEnd(true); else startDefeat(); }
     }
   }
 
@@ -755,6 +755,21 @@
     if (S.cards.offer && !params.get('nopick')) C.pickCard(S, 0);
     botT += STEP; if (botT < 0.4) return; botT = 0;
     for (const t of ['sword', 'archer', 'sword', 'archer', 'priest']) { const r = C.buy(S, t); if (r.reason === 'pop') { C.upgradeCastle(S); break; } }
+  }
+
+  // ───────────── 패배 연출 ─────────────
+  let defeating = false;
+  function startDefeat() {
+    if (defeating) return; defeating = true; running = true; // 효과가 계속 흘러가도록
+    const d = $('defeat'); d.classList.remove('hidden'); requestAnimationFrame(() => d.classList.add('on'));
+    $('cv').classList.add('defeating'); document.body.classList.add('defeating'); A2.play('bigBoom'); A2.play('rage');
+    for (let i = 0; i < 9; i++) setTimeout(() => {
+      const a = Math.random() * 6.283, r = Math.random() * 70, x = CX + Math.cos(a) * r, y = CY + Math.sin(a) * r;
+      addFx({ k: 'ring', x, y, t: 0, max: 0.7, c: i % 2 ? '#ffb347' : '#ff4a2a', r: 70 + Math.random() * 60, big: true }); addFx({ k: 'ring', x, y, t: -0.08, max: 0.55, c: '#ffffff', r: 40 });
+      for (let k = 0; k < 6; k++) addFx({ k: 'dust', x: x + (Math.random() - 0.5) * 40, y: y + (Math.random() - 0.5) * 30, t: 0, max: 1.2, r: 16 + Math.random() * 16 });
+      A2.play(i % 3 ? 'boom' : 'bigBoom');
+    }, 150 + i * 260);
+    setTimeout(() => { const d2 = $('defeat'); d2.classList.remove('on'); setTimeout(() => d2.classList.add('hidden'), 400); $('cv').classList.remove('defeating'); document.body.classList.remove('defeating'); defeating = false; showEnd(false); }, 3600);
   }
   function showEnd(win) {
     running = false;
