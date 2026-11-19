@@ -115,8 +115,8 @@
       lv: [4, 7, 10],
       roots: [
         { id: 'arcane', name: '마탑', kind: '마법', desc: '성이 9초마다 가장 밀집한 적 무리에 마법 폭발(성 공격력 ×3, 범위 90)을 일으킵니다.', par: { blast: { cd: 9, mul: 3, r: 90, n: 1, zone: 0, zmul: 0, slow: 0, freeze: 0 } } },
-        { id: 'guardian', name: '수호', kind: '지원', desc: '성이 6초마다 주변 아군(범위 230)을 최대 체력의 10%만큼 치유합니다.', par: { pulse: { cd: 6, heal: 0.10, r: 230, shield: 0, dmg: 0 } } },
-        { id: 'necro', name: '사령', kind: '소환', desc: '적이 죽으면 7% 확률로 그 자리에서 아군 병사(망자)로 부활시킵니다. 망자는 7초 동안 싸우고 사라지며, 사제의 부활 대상이 아닙니다 (최대 6명).', par: { raise: { chance: 0.07, dur: 7, max: 6, hp: 0.6, atk: 0.5, elite: 0, bounty: 0 } } },
+        { id: 'guardian', name: '수호', kind: '지원', desc: '성이 5초마다 주변 아군(범위 230)을 최대 체력의 12%만큼 치유합니다.', par: { pulse: { cd: 5, heal: 0.12, r: 230, shield: 0, dmg: 0 } } },
+        { id: 'necro', name: '사령', kind: '소환', desc: '적이 죽으면 10% 확률로 그 자리에서 아군 병사(망자)로 부활시킵니다. 망자는 9초 동안 싸우고 사라지며, 사제의 부활 대상이 아닙니다 (최대 7명).', par: { raise: { chance: 0.10, dur: 9, max: 7, hp: 0.8, atk: 0.7, elite: 0, bounty: 0 } } },
       ],
       t2: {
         arcane: [
@@ -124,12 +124,12 @@
           { id: 'frost', name: '빙결 결계', kind: '방어형', desc: '폭발이 적을 3.5초 감속시키고, 성이 받는 피해 -10%.', par: { blast: { slow: 3.5 }, cdef: 0.1 } },
         ],
         guardian: [
-          { id: 'judge', name: '성스러운 심판', kind: '공격형', desc: '치유 파동이 범위 안의 적에게도 피해(성 공격력 ×2.5)를 줍니다.', par: { pulse: { dmg: 2.5 } } },
-          { id: 'aegis', name: '수호 방벽', kind: '방어형', desc: '파동이 아군에게 최대 체력 12%의 보호막도 씌우고, 성이 받는 피해 -10%.', par: { pulse: { shield: 0.12 }, cdef: 0.1 } },
+          { id: 'judge', name: '성스러운 심판', kind: '공격형', desc: '치유 파동이 범위 안의 적에게도 피해(성 공격력 ×3)를 줍니다.', par: { pulse: { dmg: 3 } } },
+          { id: 'aegis', name: '수호 방벽', kind: '방어형', desc: '파동이 아군에게 최대 체력 15%의 보호막도 씌우고, 성이 받는 피해 -10%.', par: { pulse: { shield: 0.15 }, cdef: 0.1 } },
         ],
         necro: [
-          { id: 'horde', name: '망자의 군세', kind: '공격형', desc: '적을 병사로 부활시킬 확률 12%, 최대 10명, 망자 공격력 +60%.', par: { raise: { chance: 0.05, max: 4, atk: 0.3 } } },
-          { id: 'bind', name: '영혼 결속', kind: '방어형', desc: '망자 지속 12초, 체력 +67%, 성이 받는 피해 -10%.', par: { raise: { dur: 5, hp: 0.4 }, cdef: 0.1 } },
+          { id: 'horde', name: '망자의 군세', kind: '공격형', desc: '부활 확률 +5%, 최대 +4명, 망자 공격력 +30%.', par: { raise: { chance: 0.05, max: 4, atk: 0.3 } } },
+          { id: 'bind', name: '영혼 결속', kind: '방어형', desc: '망자 지속 +5초, 체력 +40%, 성이 받는 피해 -10%.', par: { raise: { dur: 5, hp: 0.4 }, cdef: 0.1 } },
         ],
       },
       t3: {
@@ -142,7 +142,7 @@
           { id: 'shatter', name: '빙하 파쇄', kind: '공격형', desc: '폭발 피해 ×1.7, 감속 5초.', par: { blast: { mul: 2.1, slow: 1.5 } } },
         ],
         judge: [
-          { id: 'wrath', name: '천벌', kind: '극딜형', desc: '심판 피해가 성 공격력 ×5로 강해지고 더 자주 내려옵니다.', par: { pulse: { dmg: 2.5, cd: -1 } } },
+          { id: 'wrath', name: '천벌', kind: '극딜형', desc: '심판 피해가 성 공격력 ×5.5로 강해지고 더 자주 내려옵니다.', par: { pulse: { dmg: 2.5, cd: -1 } } },
           { id: 'radiance', name: '성광 폭발', kind: '광역형', desc: '파동 범위 +100, 치유 +5%, 피해 +1.', par: { pulse: { r: 100, heal: 0.05, dmg: 1 } } },
         ],
         aegis: [
@@ -169,7 +169,7 @@
         ],
         t2: {
           knight: [
-            { id: 'paladin', name: '팔라딘', desc: '성스러운 갑옷과 철퇴. 체력 +50%, 피해 7% 방어, 초당 체력 2% 회복', mods: { hp: 0.5, def: 0.07, regen: 0.02 } },
+            { id: 'paladin', name: '팔라딘', desc: '성스러운 갑옷과 철퇴. 체력 +50%, 피해 7% 방어, 초당 체력 3% 회복', mods: { hp: 0.5, def: 0.07, regen: 0.03 } },
             { id: 'warlord', name: '워로드', desc: '뿔 투구에 가시 방패. 체력 +40%, 공격력 +30%, 받은 피해의 30%를 때린 적에게 되돌림', mods: { hp: 0.4, atk: 0.3, reflect: 0.3 } },
           ],
           blade: [
@@ -190,19 +190,19 @@
           ],
           ranger: [
             { id: 'stormarcher', name: '폭풍사수', desc: '세 갈래 질풍 화살. 공격 속도 +40%, 치명타 확률 +15%', mods: { rate: 0.4, crit: 0.15 } },
-            { id: 'hunter', name: '사냥꾼', desc: '표식 석궁. 맞은 적이 4초간 받는 피해 +30%, 공격력 +20%, 이동 속도 +20%', mods: { atk: 0.2, speed: 0.2, mark: 0.3 } },
+            { id: 'hunter', name: '사냥꾼', desc: '표식 석궁. 맞은 적이 4초간 받는 피해 +30%, 공격력 +30%, 이동 속도 +20%', mods: { atk: 0.3, speed: 0.2, mark: 0.3 } },
           ],
         },
       },
       priest: {
         t1: [
-          { id: 'cleric', name: '성직자', desc: '광륜의 치유사. 치유량 +35%, 치유 범위 +40', mods: { heal: 0.35, healRange: 40 } },
+          { id: 'cleric', name: '성직자', desc: '광륜의 치유사. 치유량 +45%, 치유 범위 +50', mods: { heal: 0.45, healRange: 50 } },
           { id: 'bishop', name: '주교', desc: '주교관과 지팡이. 치유량 +12%, 쓰러진 아군을 라운드당 1회 부활', mods: { heal: 0.12, revive: 1 } },
         ],
         t2: {
           cleric: [
             { id: 'highcleric', name: '대성직자', desc: '거대한 광륜. 치유량 +30%, 치유 속도 +15%', mods: { heal: 0.3, healRate: 0.15 } },
-            { id: 'warden', name: '수호사제', desc: '푸른 등불의 수호자. 치유량 +15%, 치유한 아군에게 치유량의 60%만큼 보호막 (최대 체력의 30%까지)', mods: { heal: 0.15, ward: 0.6 } },
+            { id: 'warden', name: '수호사제', desc: '푸른 등불의 수호자. 치유량 +20%, 치유한 아군에게 치유량의 80%만큼 보호막 (최대 체력의 30%까지)', mods: { heal: 0.2, ward: 0.8 } },
           ],
           bishop: [
             { id: 'archbishop', name: '대주교', desc: '황금 십자 지팡이. 치유량 +18%, 부활 +1회', mods: { heal: 0.18, revive: 1 } },
@@ -519,7 +519,7 @@
   function openJobs(S, bossName) {
     const tier = promoTier(S), lines = tier ? UNIT_TYPES.filter(t => S.jobs[t].ids.length === tier - 1 && classOptions(S, t).length) : [];
     if (lines.length) {
-      const list = lines.map(t => { const ids = S.jobs[t].ids; return { type: t, className: CFG.units[t].name, tier, stage: 'line', id: 'line_' + t, name: CFG.units[t].name, desc: tier === 1 ? '1차 전직 — 두 갈래 중 하나를 고릅니다.' : jobDef(t, ids[0]).name + ' 계열 2차 전직 — 두 갈래 중 하나를 고릅니다.' }; });
+      const list = lines.map(t => { const ids = S.jobs[t].ids; return { type: t, className: CFG.units[t].name, tier, stage: 'line', id: 'line_' + t, name: CFG.units[t].name, desc: tier === 1 ? '1차 전직 — 두 가지 중 하나를 고릅니다.' : jobDef(t, ids[0]).name + ' 계열 2차 전직 — 두 가지 중 하나를 고릅니다.' }; });
       S.jobs.offer = { boss: bossName, tier, stage: 'line', list }; return;
     }
     const left = CFG.castle.max - S.castle.lv; // 성이 이미 최대면 대개수는 제시하지 않고, 1레벨만 남았으면 1레벨로 안내한다
@@ -1110,6 +1110,7 @@
   function autoCastle(S, pick) { // (개발자 모드·테스트) 성 갈래 선택을 자동으로 처리한다
     for (let i = 0; i < 3; i++) { checkCastleChoice(S); if (!S.cOffer) break; pickCastle(S, pick === undefined ? (S.cnodes.length + 1) % S.cOffer.list.length : Math.min(pick, S.cOffer.list.length - 1)); }
   }
+  function runSummary(S) { return { jobs: describeJobs(S).map(j => [j.className, j.names.join(' › ')]), cn: S.cnodes.map(id => { const n = ctNode(id); return n ? n.name : id; }), pop: popCount(S), castle: S.castle.lv, earned: Math.round(S.stats.earned), spent: Math.round(S.stats.spent), log: S.log }; }
   function describeCastle(S) { return S.cnodes.map(id => ctNode(id)).filter(Boolean).map(n => ({ id: n.id, name: n.name, kind: n.kind, desc: n.desc })); }
   function raiseUndead(S, e) { // 사령: 처치한 일반 적이 일정 확률로 망자가 되어 잠시 아군으로 싸운다
     const R = S.cpar.raise; if (!R || e.kind === 'boss' || (e.elite && !R.elite) || e.blast || S.rng() >= R.chance) return;
@@ -1324,9 +1325,9 @@
       if (!e.enraged) { e.enraged = true; emit(S, { type: 'bossRage', name: e.bossName, x: e.x, y: e.y }); }
       e.speedMul *= A.rage.speed; e.rateMul = A.rage.rate; e.dmgMul *= A.rage.dmg;
     }
-    if (A.rush && !e.rushDone) { // 등장하자마자 성 한복판으로 돌진, 도착하면 충격파로 주변 아군을 기절시킨다
-      e.speedMul *= A.rush.mul;
-      if (Math.hypot(e.x - CX, e.y - CY) <= A.rush.until || e.life > 7) {
+    if (A.rush && !e.rushDone) { // 등장하자마자 가장 가까운 아군에게 돌진, 닿으면 충격파로 주변 아군을 기절시킨다 (아군이 없으면 성)
+      e.speedMul *= A.rush.mul; const rt = nearest(S.gU, e.x, e.y, 1500);
+      if ((rt ? Math.hypot(rt.x - e.x, rt.y - e.y) - rt.r - e.r <= 24 : Math.hypot(e.x - CX, e.y - CY) <= A.rush.until) || e.life > 7) {
         e.rushDone = true;
         for (const u of S.units) if (!u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= A.rush.r + u.r) u.stunT = Math.max(u.stunT || 0, A.rush.stun);
         emit(S, { type: 'bossShock', x: e.x, y: e.y, r: A.rush.r });
@@ -1438,7 +1439,7 @@
     if (e.kind === 'shaman') return updateShaman(S, e, dt);
     if (e.slowT > 0) e.slowT -= dt;
     const c = S.core, spm = e.speedMul * (e.slowT > 0 ? 0.45 : 1) * (boost > 1 ? Math.min(1.5, 1 + (boost - 1) * 0.2) : 1), dmg = e.dmg * boost * e.dmgMul, cdTime = 1 / (e.rate * e.rateMul || 1);
-    const tgt = nearest(S.gU, e.x, e.y, e.aggro);
+    const tgt = nearest(S.gU, e.x, e.y, e.abil && e.abil.rush && !e.rushDone ? 1500 : e.aggro); // 등장 돌진 중에는 거리와 상관없이 가장 가까운 아군
     if (e.leapT > 0) return; // 도약 중
     if (e.abil && e.abil.siege && !(tgt && Math.hypot(tgt.x - e.x, tgt.y - e.y) < 110)) { moveToward(e, c.x, c.y, dt, e.abil.siege.dist, spm); return; } // 멀리서 포격만 하는 보스
     if (e.ranged) { // 사수: 사거리 끝에서 멈춰 포물선 화살을 쏜다
@@ -1585,7 +1586,7 @@
 
   return {
     CFG, MAX_ROUND, ACT1_END, extraAngles, EXTRA_RING, ROUND_TIME, SPAWN_TIME, PREP_TIME, SPAWN_RING, UNIT_TYPES, CARD_DEFS,
-    createGame, tick, buy, devSetup, coreGuard, hitCore, pickCastle, autoCastle, castleOptions, describeCastle, jobBack, classOptions, enqueue, cancelProd, goldBound, checkRun, upgradeCastle, castleCost, popCap, popGain, popCount, specialCount, endCinematic, jumpToRound, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo, drainEvents, pickCard, reroll, describeTaken, openCards,
+    createGame, tick, buy, devSetup, runSummary, ctNode, jobDef, coreGuard, hitCore, pickCastle, autoCastle, castleOptions, describeCastle, jobBack, classOptions, enqueue, cancelProd, goldBound, checkRun, upgradeCastle, castleCost, popCap, popGain, popCount, specialCount, endCinematic, jumpToRound, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo, drainEvents, pickCard, reroll, describeTaken, openCards,
     unitCostOf, enemyCount, hpMul, dmgMul, mulberry32, damage,
   };
 });

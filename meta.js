@@ -96,7 +96,7 @@
     if (!run) begin();
     M.tot.games++; M.tot.time += Math.round(S.t);
     sync(S, C);
-    M.games.unshift({ at: Date.now(), mode: S.mode, round: S.round, win: !!S.win, kills: S.kills, time: Math.round(S.t), earned: Math.round(S.stats.earned), spent: Math.round(S.stats.spent), score: score || 0, pop: C.popCount(S), castle: S.castle.lv, log: S.log });
+    M.games.unshift({ at: Date.now(), mode: S.mode, round: S.round, win: !!S.win, kills: S.kills, time: Math.round(S.t), earned: Math.round(S.stats.earned), spent: Math.round(S.stats.spent), score: score || 0, pop: C.popCount(S), castle: S.castle.lv, log: S.log, jobs: C.runSummary(S).jobs, cn: C.runSummary(S).cn });
     M.games.length = Math.min(M.games.length, 100); for (let i = 40; i < M.games.length; i++) delete M.games[i].log; // 자세한 기록은 최근 40판만 보관 (저장 공간)
     run = null; check(); save();
   }

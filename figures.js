@@ -542,7 +542,7 @@
   };
   // 전설 유닛: 용사/명궁 그림에 보랏빛·청록 색을 입혀 크게 그린다
   const UBASE = { legendsword: 'hero', legendarcher: 'marksman', undead: 'sword' };
-  const UPAL = { undead: { body: '#4a8a5a', legs: '#254a30', head: '#a9d6b0', belt: '#7dffb0' }, legendsword: { body: '#7a1fa8', legs: '#3a0f5a', head: '#f3cfa6', belt: '#ff6bff' }, legendarcher: { body: '#1fa89a', legs: '#0f4a45', head: '#f3cfa6', belt: '#7dffe8' } };
+  const UPAL = { undead: { body: '#4a8a5a', legs: '#254a30', head: '#a9d6b0', belt: '#7dffb0' }, legendsword: { body: '#7a1fa8', legs: '#3a0f5a', head: '#f3cfa6', belt: '#ff6bff' }, legendarcher: { body: '#9b3fe8', legs: '#2d1a78', head: '#f3cfa6', belt: '#e0b0ff' } };
   // 개체 하나 그리기. unitScale: 판정 반지름 대비 그림 크기 배율
   function draw(ctx, e, now) {
     track(e, now);

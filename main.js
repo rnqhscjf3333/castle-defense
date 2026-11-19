@@ -357,7 +357,7 @@
   // 성 선택지 미리보기: 고른 갈래를 반영한 성 그림 (선택지 카드 안에 들어간다)
   function castlePortrait(c) {
     const cv2 = document.createElement('canvas'); cv2.width = 220; cv2.height = 190; const c2 = cv2.getContext('2d');
-    const fake = { x: 0, y: 0, lv: S.castle.lv, cannons: S.core.cannons, max: 1, hp: 1, flash: 0, swing: 0, cpath: c.cpath, cvar: c.cvar, cfin: c.cfin };
+    const fake = { x: 0, y: 0, lv: S ? S.castle.lv : 10, cannons: S ? S.core.cannons : 3, max: 1, hp: 1, flash: 0, swing: 0, cpath: c.cpath, cvar: c.cvar, cfin: c.cfin };
     c2.translate(110, 108); c2.scale(0.98, 0.98); Scenery.drawCastle(c2, fake, performance.now() * 0.9);
     return cv2.toDataURL();
   }
@@ -389,14 +389,14 @@
     $('pickBack').style.display = stage === 'class' ? '' : 'none';
     if (castle) {
       const n = S.cOffer.tier;
-      $('pickTitle').textContent = '성 Lv.' + S.castle.lv + ' · ' + ['성의 갈래 선택', '성의 강화 방향 선택', '성의 최종 형태 선택'][n];
+      $('pickTitle').textContent = '성 Lv.' + S.castle.lv + ' · ' + ['성의 능력 선택', '성의 강화 방향 선택', '성의 최종 형태 선택'][n];
       $('pickSub').textContent = ['마탑·수호·사령 중 하나를 고르세요 — 이후 성의 모습과 공격이 달라져요', '공격형과 방어형 중 하나를 고르세요', '마지막 선택이에요 — 성이 완성돼요'][n];
     } else if (job) {
       const rw = JO.reward;
       if (rw) { $('pickTitle').textContent = JO.boss + ' 처치! 보스 보상'; $('pickSub').textContent = '강력한 용병이나 강화 효과 중 하나를 고르세요'; }
-      else if (stage === 'line') { $('pickTitle').textContent = JO.boss + ' 처치! ' + JO.tier + '차 승급'; $('pickSub').textContent = '승급시킬 캐릭터를 고르세요 — 다음 화면에서 갈래를 정해요'; }
+      else if (stage === 'line') { $('pickTitle').textContent = JO.boss + ' 처치! ' + JO.tier + '차 승급'; $('pickSub').textContent = '승급시킬 캐릭터를 고르세요 — 다음 화면에서 두 가지 중 하나를 골라요'; }
       else if (stage !== 'class') { $('pickTitle').textContent = JO.boss + ' 처치! 전직'; $('pickSub').textContent = '직업 하나를 골라 강화해요'; }
-      else { $('pickTitle').textContent = CFG.units[JO.line].name + ' ' + JO.tier + '차 전직'; $('pickSub').textContent = '두 갈래 중 하나를 고르세요 — 외형과 공격 방식이 달라져요'; }
+      else { $('pickTitle').textContent = CFG.units[JO.line].name + ' ' + JO.tier + '차 전직'; $('pickSub').textContent = '두 가지 중 하나를 고르세요 — 외형과 공격 방식이 달라져요'; }
     } else {
       $('pickTitle').textContent = '라운드 ' + (S.round - 1) + ' 돌파 · 업그레이드 선택';
       $('pickSub').textContent = S.cards.boss ? '보스 격파 보상 — 희귀 이상 카드가 한 장 이상 나와요' : '카드를 한 장 고르세요';
@@ -407,7 +407,7 @@
       const b = document.createElement('button');
       b.className = job ? 'pcard job' + (castle ? ' castle' : '') : 'pcard hasimg rar-' + c.rar + ' cat-' + c.cat;
       const tags = document.createElement('div'); tags.className = 'tags';
-      const cat = document.createElement('span'); cat.className = 'cat'; cat.textContent = castle ? ['갈래', '강화 방향', '최종 형태'][S.cOffer.tier] : job ? (c.reward ? '보스 보상' : c.stage === 'line' ? c.tier + '차 승급' : c.tier + '차 전직') : CAT_NAME[c.cat];
+      const cat = document.createElement('span'); cat.className = 'cat'; cat.textContent = castle ? ['능력 선택', '강화 방향', '최종 형태'][S.cOffer.tier] : job ? (c.reward ? '보스 보상' : c.stage === 'line' ? c.tier + '차 승급' : c.tier + '차 전직') : CAT_NAME[c.cat];
       const rar = document.createElement('span'); rar.className = 'rar'; rar.textContent = castle ? c.kind : job ? (c.reward ? '영웅' : c.className) : RAR_NAME[c.rar];
       tags.append(cat, rar);
       b.append(tags);
@@ -489,7 +489,7 @@
       let cimg = ''; try { cimg = '<img class="uimg" alt="" style="width:118px;height:104px;object-fit:contain" src="' + castlePortrait({ cpath: S.core.cpath, cvar: S.core.cvar, cfin: S.core.cfin }) + '">'; } catch (e) {}
       h += '<h3>성</h3>' + irow('성 Lv.' + S.castle.lv + (S.castle.lv >= CFG.castle.max ? ' (최대)' : ''), '<div class="uwrap">' + cimg + '<div>체력 ' + Math.round(S.core.hp) + '/' + Math.round(S.core.max) + ' · 공격력 ' + f1(S.core.atk) + ' · 사거리 ' + Math.round(S.core.range) + (S.core.cpath ? '' : ' · 대포 ' + S.core.cannons + '문') + '<br>인구 ' + C.popCount(S) + (C.popCap(S) < 1e8 ? '/' + C.popCap(S) : ' (제한 없음)') + '<br>병사 보호: 성이 받는 피해 -' + Math.round(C.coreGuard(S) * 100) + '% (병사 1명당 -' + CFG.balance.guardPerUnit * 100 + '%, 최대 -' + CFG.balance.guardMax * 100 + '%)</div></div>');
       { const cd = C.describeCastle(S), nxt = CFG.castleTree.lv[S.cnodes.length];
-        h += '<h3>성 갈래</h3>' + (cd.length ? cd.map((n, i) => irow(n.name, n.desc, i === 2 ? 'epic' : 'rare', n.kind)).join('') : '<div class="d">성 Lv.' + CFG.castleTree.lv[0] + '에서 마탑·수호·사령 중 갈래를 고릅니다.</div>') + (nxt && cd.length ? '<div class="d" style="margin:2px 0 6px">다음 선택: 성 Lv.' + nxt + '</div>' : ''); }
+        h += '<h3>성 능력</h3>' + (cd.length ? cd.map((n, i) => irow(n.name, n.desc, i === 2 ? 'epic' : 'rare', n.kind)).join('') : '<div class="d">성 Lv.' + CFG.castleTree.lv[0] + '에서 마탑·수호·사령 중 한 가지를 고릅니다.</div>') + (nxt && cd.length ? '<div class="d" style="margin:2px 0 6px">다음 선택: 성 Lv.' + nxt + '</div>' : ''); }
       h += '<h3>전직</h3>' + (jobs.length ? jobs.map(j => irow(j.className, j.names.join(' › '), 'epic')).join('') : '<div class="d">아직 전직한 직업이 없어요 (보스를 처치하면 전직)</div>');
       for (const cat of ['unit', 'core', 'summon']) { const l = taken.filter(t => t.cat === cat); if (l.length) h += '<h3>' + CAT_NAME[cat] + '</h3>' + l.map(t => irow(t.name, t.desc, t.rar, 'Lv ' + t.lv + (t.max ? '/' + t.max : ''))).join(''); }
       if (S.bossUp && S.bossUp.hp) h += '<h3>보스 보상</h3>' + irow('전군 강화', '검사·궁수·사제 체력·공격력 강화 (일반 강화와 별개로 적용)', 'epic', 'Lv ' + S.bossUp.hp);
@@ -518,7 +518,34 @@
     else { const k = Math.min(5, 52 / (r * (look ? 2.2 : 2.6))) * 2; c2.translate(72, 92 - r * 0.2 * k / 2); c2.scale(k, k); }
     try { Figures.draw(c2, fake, 0); } catch (e) {} return cv2;
   }
-  let metaTab = 'codex';
+  let metaTab = 'codex', codexSel = null;
+  const SKILL_TXT = { dash: '적진으로 돌진하며 지나가는 길의 적 모두를 벤다', rain: '적 위에 화살비 지대를 만들어 범위 안 적에게 계속 피해' };
+  function codexDetail(key) {
+    const [k, a, b] = key.split(':'); let img = '', name = '', desc = '', rows = [], extra = '';
+    const back = '<button class="backbtn" id="codexBack">← 도감으로</button>';
+    if (k === 'u') {
+      const c = CFG.units[a]; name = c.name; desc = UNIT_TEXT[a] || '';
+      try { img = portrait('u', a, c, null, null, true).toDataURL(); } catch (e) {}
+      rows = [['기본 체력', c.hp], ['기본 공격력', c.atk || c.heal || 0], ['공격 속도', f1(c.rate || c.healRate || 0) + '/초'], ['사거리', c.range || c.healRange || 0], ['이동 속도', c.speed || '설치형']];
+      if (c.cost) rows.unshift(['기본 가격', c.cost + ' 골드']); if (c.pierce) rows.push(['관통', '적 ' + c.pierce + '명']); if (c.heal) rows.splice(1, 2, ['치유량', c.heal], ['치유 속도', f1(c.healRate) + '/초']);
+      const hs = CFG.heroSkill[a]; if (hs) rows.push(['스킬', hs.name + ' (' + hs.cd + '초마다)']);
+      const cd = C.CARD_DEFS.find(d => SUMMON_UNIT[d.id] === a); let sk = '';
+      if (cd) { try { sk = String(cd.desc(1)); } catch (e) {} }
+      if (hs && !sk) sk = hs.name + ': ' + (SKILL_TXT[hs.kind] || '');
+      if (sk) extra += '<div class="d" style="margin:6px 0">' + sk + '</div>';
+      const J = CFG.jobs[a]; if (J) extra += '<h3>전직</h3>' + J.t1.map(d => irow(d.name + ' (1차)', d.desc, 'rare') + (J.t2[d.id] || []).map(x => irow('└ ' + x.name + ' (2차)', x.desc, 'epic')).join('')).join('');
+    } else if (k === 'j') {
+      const d = C.jobDef(a, b), c = CFG.units[a], t2 = !CFG.jobs[a].t1.some(x => x.id === b); name = d.name; desc = d.desc;
+      try { img = portrait('u', a, c, null, { job: b, jobTier: t2 ? 2 : 1 }, true).toDataURL(); } catch (e) {}
+      rows = [['직업', c.name + ' ' + (t2 ? '2차' : '1차') + ' 전직'], ['기본 체력', c.hp], ['기본 공격력', c.atk || c.heal || 0], ['사거리', c.range || 0]];
+    } else {
+      const n = C.ctNode(a), T = CFG.castleTree; name = n.name; desc = n.desc; let path = a, vr = null, fin = null;
+      if (T.t2[a]) { path = a; } else for (const r in T.t2) { if (T.t2[r].some(x => x.id === a)) { path = r; vr = a; } else for (const v of T.t2[r]) if ((T.t3[v.id] || []).some(x => x.id === a)) { path = r; vr = v.id; fin = a; } }
+      try { img = castlePortrait({ cpath: path, cvar: vr, cfin: fin }); } catch (e) {}
+      rows = [['종류', n.kind || ''], ['선택 시점', '성 Lv.' + CFG.castleTree.lv[fin ? 2 : vr ? 1 : 0]]];
+    }
+    return back + '<div class="uwrap" style="margin-top:8px">' + (img ? '<img class="uimg" alt="" src="' + img + '" style="width:118px;height:104px;object-fit:contain">' : '') + '<div><h3 style="margin:0 0 4px">' + name + '</h3><div class="d">' + desc + '</div>' + statTable(rows) + '</div></div>' + extra;
+  }
   function renderMeta() {
     const M = Meta.data(), body = $('metaBody'); for (const b of document.querySelectorAll('#metaTabs button')) b.classList.toggle('on', b.dataset.t === metaTab);
     $('metaTitle').textContent = '컬렉션'; body.innerHTML = '';
@@ -526,10 +553,14 @@
       const sect = (title, items) => {
         const seen = items.filter(i => i.seen).length, h3 = document.createElement('h3'); h3.textContent = title + ' ' + seen + '/' + items.length; body.appendChild(h3);
         const g = document.createElement('div'); g.className = 'cgrid';
-        for (const it of items) { const c = document.createElement('div'); c.className = 'cc' + (it.seen ? '' : ' lock'); c.appendChild(portrait(it.team, it.kind, it.cfg, it.look, null, true)); const n = document.createElement('div'); n.className = 'n'; n.textContent = it.seen ? it.name : '???'; const s = document.createElement('div'); s.className = 's'; s.textContent = it.seen ? it.desc : '아직 만나지 못했어요'; c.append(n, s); g.appendChild(c); }
+        for (const it of items) { const c = document.createElement('div'); c.className = 'cc' + (it.seen ? '' : ' lock') + (it.det ? ' clk' : ''); if (it.det) c.dataset.det = it.det; if (it.img) { const im = document.createElement('img'); im.alt = ''; im.src = it.img; c.appendChild(im); } else c.appendChild(portrait(it.team, it.kind, it.cfg, it.look, it.ext || null, true)); const n = document.createElement('div'); n.className = 'n'; n.textContent = it.seen ? it.name : '???'; const s = document.createElement('div'); s.className = 's'; s.textContent = it.seen ? it.desc : '아직 만나지 못했어요'; c.append(n, s); g.appendChild(c); }
         body.appendChild(g);
       };
-      sect('유닛', C.UNIT_TYPES.concat(SPECIALS).map(t => ({ team: 'u', kind: t, cfg: CFG.units[t], name: CFG.units[t].name, desc: UNIT_TEXT[t] || '', seen: !!M.codex.units[t] })));
+      if (codexSel) { body.innerHTML = codexDetail(codexSel); return; }
+      sect('유닛', C.UNIT_TYPES.concat(SPECIALS).map(t => ({ team: 'u', kind: t, cfg: CFG.units[t], name: CFG.units[t].name, desc: UNIT_TEXT[t] || '', seen: !!M.codex.units[t], det: 'u:' + t })));
+      { const items = []; for (const t of ['sword', 'archer', 'priest']) { const J = CFG.jobs[t]; J.t1.forEach(d => items.push({ team: 'u', kind: t, cfg: CFG.units[t], ext: { job: d.id, jobTier: 1 }, name: d.name, desc: '1차 · ' + CFG.units[t].name, seen: true, det: 'j:' + t + ':' + d.id })); for (const k in J.t2) J.t2[k].forEach(d => items.push({ team: 'u', kind: t, cfg: CFG.units[t], ext: { job: d.id, jobTier: 2 }, name: d.name, desc: '2차 · ' + (J.t1.find(x => x.id === k) || {}).name, seen: true, det: 'j:' + t + ':' + d.id })); } sect('전직', items); }
+      { const T = CFG.castleTree, items = [], add = (n, tier, path, vr, fin, parent) => items.push({ name: n.name, desc: (tier === 1 ? '1단계' : tier === 2 ? '2단계 · ' : '최종 · ') + (tier === 1 ? '' : parent), img: castlePortrait({ cpath: path, cvar: vr, cfin: fin }), seen: true, det: 'c:' + n.id });
+        for (const r of T.roots) { add(r, 1, r.id, null, null, ''); for (const a of T.t2[r.id]) { add(a, 2, r.id, a.id, null, r.name); for (const f of T.t3[a.id]) add(f, 3, r.id, a.id, f.id, a.name); } } sect('성', items); }
       sect('몬스터', Object.keys(CFG.enemies).filter(k => k !== 'boss').map(k => ({ team: 'e', kind: k, cfg: CFG.enemies[k], name: CFG.enemies[k].name, desc: CFG.enemies[k].desc || '', seen: !!M.codex.enemies[k] })));
       sect('보스', CFG.bossPool.concat([CFG.act1Boss, CFG.finalBoss]).map(b => ({ team: 'e', kind: 'boss', cfg: CFG.enemies.boss, look: Object.assign({ r: b.r || 30 }, b.look), name: b.name, desc: b.line ? '“' + b.line + '”' : '', seen: !!M.codex.bosses[b.id] })));
     } else if (metaTab === 'rank') {
@@ -539,7 +570,7 @@
     } else if (metaTab === 'stats') {
       const t = M.tot, h = Math.floor(t.time / 3600), mi = Math.floor(t.time % 3600 / 60);
       body.innerHTML = '<div class="sumrow"><div><b>' + t.games + '</b>플레이</div><div><b>' + t.kills.toLocaleString() + '</b>처치</div><div><b>' + M.best.round + '</b>최고 라운드</div><div><b>' + Math.round(t.spent).toLocaleString() + '</b>사용 골드</div><div><b>' + t.bossKills + '</b>보스 처치</div><div><b>' + h + '시간 ' + mi + '분</b>총 플레이</div></div>'
-        + (M.games.length ? '<div class="mhint" style="margin:0 0 6px">기록을 누르면 자세히 볼 수 있어요</div><table class="gtable"><tr><th>날짜</th><th>모드</th><th>라운드</th><th>처치</th><th>시간</th><th>번 골드</th></tr>' + M.games.map((g, gi) => '<tr class="clk" data-gi="' + gi + '"><td>' + dfmt(g.at) + '</td><td>' + (MODE_NAME[g.mode] || '') + '</td><td' + (g.round > C.MAX_ROUND ? ' class="win"' : '') + '>' + g.round + '</td><td>' + g.kills + '</td><td>' + fmtTime(g.time) + '</td><td>' + g.earned.toLocaleString() + '</td></tr>').join('') + '</table>' : '<div class="d">아직 끝난 게임이 없어요.</div>');
+        + (M.games.length ? '<div class="mhint" style="margin:0 0 6px">기록을 누르면 자세히 볼 수 있어요</div><table class="gtable"><tr><th>날짜</th><th>성</th><th>라운드</th><th>처치</th><th>시간</th><th>번 골드</th></tr>' + M.games.map((g, gi) => '<tr class="clk" data-gi="' + gi + '"><td>' + dfmt(g.at) + '</td><td>' + (g.cn && g.cn.length ? g.cn[g.cn.length - 1] : '-') + '</td><td' + (g.round > C.MAX_ROUND ? ' class="win"' : '') + '>' + g.round + '</td><td>' + g.kills + '</td><td>' + fmtTime(g.time) + '</td><td>' + g.earned.toLocaleString() + '</td></tr>').join('') + '</table>' : '<div class="d">아직 끝난 게임이 없어요.</div>');
     } else {
       const done = Meta.ACH.filter(a => M.ach[a.id]).length; body.innerHTML = '<h3>달성 ' + done + '/' + Meta.ACH.length + '</h3>';
       for (const a of Meta.ACH) { const v = Math.min(a.goal, a.val()), ok = !!M.ach[a.id]; body.insertAdjacentHTML('beforeend', '<div class="arow' + (ok ? ' done' : '') + '"><div class="ic">' + (ok ? '★' : '☆') + '</div><div class="tx"><div class="nm">' + a.name + '</div><div class="ds">' + a.desc + '</div><div class="bar"><i style="width:' + (v / a.goal * 100) + '%"></i></div></div><div class="pc">' + Math.round(v).toLocaleString() + '/' + a.goal.toLocaleString() + '</div></div>'); }
@@ -547,17 +578,18 @@
   }
   let statDetail = null;
   // 한 판의 상세: 라운드별로 고른 강화 카드·전직·성 업그레이드·뽑은 유닛, 그리고 그때 있었던 다른 선택지
-  function gameDetail(g) {
+  function gameDetail(g, backId) {
     const esc = t => String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-    let h = '<button class="backbtn" id="statBack">← 목록으로</button><h3 style="margin-top:8px">' + dfmt(g.at) + ' · ' + (MODE_NAME[g.mode] || '') + ' 모드' + (g.win ? ' · 마왕 토벌' : '') + '</h3>'
-      + '<div class="sumrow"><div><b>' + g.round + '</b>도달 라운드</div><div><b>' + g.kills.toLocaleString() + '</b>처치</div><div><b>' + fmtTime(g.time) + '</b>플레이 시간</div><div><b>' + g.earned.toLocaleString() + '</b>번 골드</div><div><b>' + (g.spent || 0).toLocaleString() + '</b>쓴 골드</div><div><b>Lv.' + (g.castle || 1) + ' · ' + (g.pop || 0) + '명</b>마지막 성 · 유닛</div></div>';
-    if (!g.log) return h + '<div class="d">이 판의 자세한 기록은 저장되어 있지 않아요 (최근 40판까지만 보관해요).</div>';
+    let h = '<button class="backbtn" id="' + (backId || 'statBack') + '">← 목록으로</button><h3 style="margin-top:8px">' + (g.name ? esc(g.name) + ' · ' : '') + dfmt(g.at) + (g.win ? ' · 마왕 토벌' : '') + '</h3>'
+      + '<div class="pickrow"><div><b>전직</b> ' + (g.jobs ? (g.jobs.length ? g.jobs.map(j => esc(j[0]) + ': ' + esc(j[1])).join(' / ') : '없음') : '기록 없음') + '</div><div><b>성</b> ' + (g.cn ? (g.cn.length ? g.cn.map(esc).join(' › ') : '선택 없음') : '기록 없음') + '</div></div>'
+      + '<div class="sumrow"><div><b>' + g.round + '</b>도달 라운드</div><div><b>' + g.kills.toLocaleString() + '</b>처치</div><div><b>' + fmtTime(g.time) + '</b>플레이 시간</div>' + (g.earned === undefined ? '' : '<div><b>' + g.earned.toLocaleString() + '</b>번 골드</div><div><b>' + (g.spent || 0).toLocaleString() + '</b>쓴 골드</div><div><b>Lv.' + (g.castle || 1) + ' · ' + (g.pop || 0) + '명</b>마지막 성 · 유닛</div>') + '</div>';
+    if (!g.log) return h + '<div class="d">이 판의 자세한 라운드별 기록은 저장되어 있지 않아요.</div>';
     const rounds = new Map(), get = r => { if (!rounds.has(r)) rounds.set(r, []); return rounds.get(r); };
     for (const e of g.log) {
       const r = e[1], row = get(r);
       if (e[0] === 'c') row.push('<div>🃏 <b>' + esc(e[2]) + '</b> Lv ' + e[3] + '<span class="alt">선택지: ' + e[4].map((n, i) => n === e[2] ? '<u>' + esc(n) + '</u>' : esc(n)).join(' / ') + '</span></div>');
       else if (e[0] === 'j') row.push('<div>🎖 <b>' + esc(e[2]) + '</b><span class="alt">선택지: ' + e[3].map(n => n === e[2] ? '<u>' + esc(n) + '</u>' : esc(n)).join(' / ') + '</span></div>');
-      else if (e[0] === 'n') row.push('<div>🏯 성 갈래 <b>' + esc(e[2]) + '</b><span class="alt">선택지: ' + e[3].map(n => n === e[2] ? '<u>' + esc(n) + '</u>' : esc(n)).join(' / ') + '</span></div>');
+      else if (e[0] === 'n') row.push('<div>🏯 성 능력 <b>' + esc(e[2]) + '</b><span class="alt">선택지: ' + e[3].map(n => n === e[2] ? '<u>' + esc(n) + '</u>' : esc(n)).join(' / ') + '</span></div>');
       else if (e[0] === 'k') row.push('<div>🏰 성 <b>Lv ' + e[2] + '</b> 업그레이드</div>');
       else if (e[0] === 'u') { const last = row[row.length - 1]; const t = (CFG.units[e[2]] || {}).name + ' ×' + e[3]; if (last && last.startsWith('<div class="us">')) row[row.length - 1] = last.replace('</div>', ' · ' + t + '</div>'); else row.push('<div class="us">⚔️ 뽑은 유닛: ' + t + '</div>'); }
     }
@@ -565,9 +597,14 @@
     for (const [r, row] of [...rounds.entries()].sort((a, b) => a[0] - b[0])) h += '<div class="lrow"><div class="lr">R' + r + '</div><div class="lb">' + row.join('') + '</div></div>';
     return h + (rounds.size ? '' : '<div class="d">기록이 없어요.</div>');
   }
-  $('metaBody').addEventListener('click', e => { if (e.target.closest('#statBack')) { statDetail = null; renderMeta(); return; } const tr = e.target.closest('tr[data-gi]'); if (tr) { statDetail = +tr.dataset.gi; renderMeta(); $('metaBody').scrollTop = 0; } });
-  function openMeta(tab) { metaTab = tab; statDetail = null; openModal('metaPanel'); renderMeta(); }
-  $('metaTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { metaTab = b.dataset.t; statDetail = null; renderMeta(); $('metaBody').scrollTop = 0; } });
+  $('metaBody').addEventListener('click', e => {
+    if (e.target.closest('#codexBack')) { codexSel = null; renderMeta(); return; }
+    const cc = e.target.closest('.cc[data-det]'); if (cc) { if (cc.classList.contains('lock')) { toast('아직 만나지 못했어요'); return; } codexSel = cc.dataset.det; renderMeta(); $('metaBody').scrollTop = 0; return; }
+    if (e.target.closest('#rankBack')) { renderMeta(); return; }
+    const rr = e.target.closest('tr[data-ri]'); if (rr) { const g = rankList[+rr.dataset.ri]; if (g) { const d = g.d || g.detail || {}; $('metaBody').innerHTML = gameDetail(Object.assign({}, g, d, { name: g.name, at: g.at || Date.now() }), 'rankBack'); $('metaBody').scrollTop = 0; } return; }
+    if (e.target.closest('#statBack')) { statDetail = null; renderMeta(); return; } const tr = e.target.closest('tr[data-gi]'); if (tr) { statDetail = +tr.dataset.gi; renderMeta(); $('metaBody').scrollTop = 0; } });
+  function openMeta(tab) { metaTab = tab; statDetail = null; codexSel = null; openModal('metaPanel'); renderMeta(); }
+  $('metaTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { metaTab = b.dataset.t; statDetail = null; codexSel = null; renderMeta(); $('metaBody').scrollTop = 0; } });
   Meta.onUnlock(list => { for (const a of list) { toast('🏆 업적 달성: ' + a.name); } A2.play('ui'); });
   let lastSyncRound = 0, auraSec = 0;
 
@@ -637,7 +674,7 @@
       else if (ev.type === 'fireTick') { for (let i = 0; i < 2; i++) { const a = Math.random() * 6.283, rr = Math.sqrt(Math.random()) * ev.r; addFx({ k: 'burst', x: ev.x + Math.cos(a) * rr, y: ev.y + Math.sin(a) * rr, t: 0, max: 0.4, c: i ? '#ffd23a' : '#ff7a1a' }); } }
       else if (ev.type === 'castlePick') banner('성: ' + ev.name, true);
       else if (ev.type === 'lastStand') banner('불사 결계 발동! 성이 되살아났다', true);
-      else if (ev.type === 'bossRevive') { banner(ev.name + '… 다시 일어선다!', true); for (let i = 0; i < 3; i++) addFx({ k: 'ring', x: ev.x, y: ev.y, t: -i * 0.35, max: 1.1, c: i % 2 ? '#ff7a3a' : '#ff2a4a', r: ev.r * 3, big: true }); }
+      else if (ev.type === 'bossRevive') { banner('더이상!! 참지!! 않겠다!!', true); for (let i = 0; i < 3; i++) addFx({ k: 'ring', x: ev.x, y: ev.y, t: -i * 0.35, max: 1.1, c: i % 2 ? '#ff7a3a' : '#ff2a4a', r: ev.r * 3, big: true }); }
       else if (ev.type === 'bossRevived') { banner('최후의 결전!', true); addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#ffffff', big: true }); }
       else if (ev.type === 'bossGone') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.9, c: '#ffffff', r: ev.r * 3.5, big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: -0.1, max: 1, c: '#ffd166', r: ev.r * 2.5, big: true }); for (let k = 0; k < 14; k++) addFx({ k: 'dust', x: ev.x + (Math.random() - 0.5) * ev.r * 2.4, y: ev.y + (Math.random() - 0.5) * ev.r * 1.6, t: 0, max: 1.3, r: 14 + Math.random() * 18 }); }
       else if (ev.type === 'bossWipe') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.9, c: '#ffffff', big: true }); toast('보스 처치! 남은 적이 모두 쓰러졌어요'); }
@@ -1125,12 +1162,13 @@
     showRank(null);
   }
   // 랭킹 표: 서버가 있으면 서버 순위, 없으면 이 브라우저의 개인 기록
+  let rankList = [];
   async function showRank(mine) {
     const box = $('rankbox'); if (!box) return; box.innerHTML = '<p>랭킹 불러오는 중…</p>';
     const r = await Net.top(10); if (!$('rankbox')) return;
     const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    let hit = false;
-    const rows = r.list.map((e, i) => { const me = mine != null && !hit && e.score === mine; if (me) hit = true; return '<tr' + (me ? ' class="me"' : '') + '><td>' + (i + 1) + '</td><td>' + esc(e.name) + (e.mode === 'free' ? ' <span class="mtag">자유</span>' : e.mode === 'hold' ? ' <span class="mtag">수비</span>' : '') + '</td><td>' + (e.win ? '클리어' : e.round + '라운드') + '</td><td>' + fmtTime(e.time) + '</td></tr>'; }).join('');
+    let hit = false; rankList = r.list;
+    const rows = r.list.map((e, i) => { const me = mine != null && !hit && e.score === mine; if (me) hit = true; return '<tr class="clk' + (me ? ' me' : '') + '" data-ri="' + i + '"><td>' + (i + 1) + '</td><td>' + esc(e.name) + '' + '</td><td>' + (e.win ? '클리어' : e.round + '라운드') + '</td><td>' + fmtTime(e.time) + '</td></tr>'; }).join('');
     box.innerHTML = '<div class="rankhead">' + (r.server ? '전체 랭킹' : (Net.configured ? '서버에 연결하지 못해 내 기록만 표시' : '내 기록 (서버 미설정)')) + '</div>'
       + (rows ? '<table class="rank"><tr><th>#</th><th>이름</th><th>기록</th><th>시간</th></tr>' + rows + '</table>' : '<p>아직 기록이 없어요.</p>');
   }

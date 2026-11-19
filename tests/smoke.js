@@ -230,7 +230,7 @@ function killBoss(g) { const b = g.enemies.find(e => e.kind === 'boss'); b.hp = 
   const opts2 = C.jobOptions(g).filter(o => o.type === 'sword');
   check('2단계 선택지는 선택한 갈래의 2차 직업 2개', opts2.length === 2 && opts2.map(o => o.id).sort().join() === 'paladin,warlord' && opts2.every(o => o.tier === 2), opts2.map(o => o.name).join());
   g.jobs.offer = { boss: 't', list: opts2 }; C.pickJob(g, opts2.findIndex(o => o.id === 'paladin'));
-  check('팔라딘: 체력 추가 증가 + 받는 피해 감소 + 재생 보정 합산', g.jobMods.sword.hp > 1.2 && g.jobMods.sword.def > 0.16 && g.jobMods.sword.regen === 0.02, JSON.stringify(g.jobMods.sword));
+  check('팔라딘: 체력 추가 증가 + 받는 피해 감소 + 재생 보정 합산', g.jobMods.sword.hp > 1.2 && g.jobMods.sword.def > 0.16 && g.jobMods.sword.regen === 0.03, JSON.stringify(g.jobMods.sword));
   sw.hp = sw.max * 0.5; const h0 = sw.hp; g.enemies.length = 0; g.queue = []; for (let i = 0; i < 60; i++) C.tick(g, DT);
   check('팔라딘 재생: 체력이 서서히 차오름', sw.hp > h0, Math.round(h0) + '→' + Math.round(sw.hp));
   check('최종 전직 이후 그 직업은 더 이상 제안되지 않음', C.jobOptions(g).every(o => o.type !== 'sword'));
@@ -245,7 +245,7 @@ function killBoss(g) { const b = g.enemies.find(e => e.kind === 'boss'); b.hp = 
   give('archbishop'); check('대주교: 부활 +1 더 (라운드당 2회)', g.jobMods.priest.revive === 2);
   const pr2 = g.units.find(u => u.type === 'priest'); check('주교 계열: 치유량 증가', pr2.heal > heal0, `${heal0}→${pr2.heal.toFixed(1)}`);
   const g2 = C.createGame(42); g2.gold = 1e7; g2.buyCd.priest = 0; C.buy(g2, 'priest'); const p2 = g2.units[0], hr = p2.healRange;
-  g2.jobs.offer = { boss: 't', list: [C.jobOptions(g2).find(x => x.id === 'cleric')] }; C.pickJob(g2, 0); check('성직자: 치유 범위 +40', p2.healRange === hr + 40, `${hr}→${p2.healRange}`);
+  g2.jobs.offer = { boss: 't', list: [C.jobOptions(g2).find(x => x.id === 'cleric')] }; C.pickJob(g2, 0); check('성직자: 치유 범위 +50', p2.healRange === hr + 50, `${hr}→${p2.healRange}`);
   const g3 = C.createGame(43); g3.gold = 1e7; g3.buyCd.sword = 0; C.buy(g3, 'sword'); const s3 = g3.units[0], a0 = s3.atk;
   g3.jobs.offer = { boss: 't', list: [C.jobOptions(g3).find(x => x.id === 'blade')] }; C.pickJob(g3, 0); check('블레이드: 공격력 +50%, 공격 속도 +20%', Math.abs(s3.atk / a0 - 1.5) < 1e-9 && Math.abs(s3.rate / C.CFG.units.sword.rate - 1.2) < 1e-9);
   g3.jobs.offer = { boss: 't', list: [C.jobOptions(g3).find(x => x.id === 'blademaster')] }; C.pickJob(g3, 0);
@@ -680,7 +680,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   // 사령: 처치한 적이 망자로 되살아남, 시간이 지나면 사라짐
   const n = mk('necro'); n.cpar = JSON.parse(JSON.stringify(C.CFG.castleTree.roots[2].par)); n.cpar.raise.chance = 1; const e0 = C.spawnEnemy(n, 'grunt', 1500 + 200, 1500); e0.speed = 0; e0.dmg = 0; C.damage(n, e0, 1e9);
   const ud = n.units.find(x => x.undead); check('사령: 처치한 적이 망자(아군)로 되살아남', !!ud && !ud.dead && C.popCount(n) === 0 && ud.team === 'u', ud && ud.type);
-  for (let i = 0; i < 30 * 9; i++) C.tick(n, DT); check('망자는 지속시간(7초)이 지나면 사라짐', ud.dead);
+  for (let i = 0; i < 30 * 11; i++) C.tick(n, DT); check('망자는 지속시간(9초)이 지나면 사라짐', ud.dead);
   const bs = C.spawnEnemy(n, 'grunt', 1700, 1500); bs.elite = true; n.cpar.raise.elite = 0; const cnt = n.units.filter(x => !x.dead && x.undead).length; C.damage(n, bs, 1e9); check('엘리트는 기본적으로 되살리지 않음', n.units.filter(x => !x.dead && x.undead).length === cnt); }
 // 57) 새 전직 효과
 { const mk = (type, ids) => { const g = C.createGame(83); g.gold = 1e9; g.phase = 'round'; g.hold = true; g.queue = []; g.core.hp = g.core.max = 1e9; g.core.atk = 0; g.buyCd[type] = 0; const u = C.buy(g, type).unit; g.jobs[type].ids.push(...ids); g.jobMods = null; C.devSetup && 0; return g; };
