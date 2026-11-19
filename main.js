@@ -103,6 +103,31 @@
     const live = Array.from(box.children).filter(c => !c.classList.contains('out')); // (이미 사라지는 중인 것은 제외 — 예전엔 이것 때문에 무한 반복이 났다)
     for (let k = live.length - 1; k >= 5; k--) kill(live[k]);
   }
+  // ───────────── 사망·부활 알림 (왼쪽): 누가 누구에게 쓰러졌는지 얼굴로 보여준다 ─────────────
+  const faceCache = {};
+  function faceURL(d) { // d: { team, kind(적) | type(아군), job, jt, look, r }
+    const key = d.team + (d.kind || d.type) + (d.job || '') + (d.jt || 0) + (d.look ? d.look.body : ''); if (faceCache[key]) return faceCache[key];
+    const cv2 = document.createElement('canvas'); cv2.width = cv2.height = 72; const c2 = cv2.getContext('2d');
+    const cfg = d.team === 'u' ? CFG.units[d.type] : (CFG.enemies[d.kind] || CFG.enemies.grunt), r = d.r || (d.look && d.look.r) || cfg.r || 10;
+    const e = d.team === 'u' ? { team: 'u', type: d.type, id: 1, x: 0, y: 0, r, flash: 0, swing: 0, aim: 0, hp: 1, max: 1, job: d.job || null, jobTier: d.jt || 0 }
+      : { team: 'e', kind: d.look ? 'boss' : d.kind, type: d.kind, id: 3, x: 0, y: 0, r, flash: 0, swing: 0, look: d.look || undefined };
+    const s = (r / 10) * 1.25, yc = Figures.headTop(e) + 5.5 * s, k = 72 / (19 * s);
+    c2.translate(36, 36 - (yc - 3 * s) * k); c2.scale(k, k);
+    try { Figures.draw(c2, e, 0); } catch (err) {}
+    return (faceCache[key] = cv2.toDataURL());
+  }
+  function feedAdd(left, mid, right, text, cls) { // 얼굴 · 표시 · 얼굴 한 줄. 새 줄이 위에 들어오고 오래된 줄은 흐려지며 사라진다
+    const box = $('feed'), d = document.createElement('div'); d.className = 'fe ' + (cls || '');
+    const face = f => f ? '<img alt="" src="' + faceURL(f) + '">' : '<span class="ic">☠️</span>';
+    d.innerHTML = face(left) + '<span class="ic">' + mid + '</span>' + face(right) + '<span class="nm"></span>'; d.lastChild.textContent = text;
+    box.insertBefore(d, box.firstChild);
+    requestAnimationFrame(() => d.classList.add('in'));
+    for (let k = 1; k < box.children.length; k++) box.children[k].classList.add('old');
+    const kill = el => { el.classList.add('out'); setTimeout(() => el.remove(), 450); };
+    setTimeout(() => kill(d), 4800);
+    const live = Array.from(box.children).filter(c => !c.classList.contains('out'));
+    for (let k = live.length - 1; k >= 5; k--) kill(live[k]);
+  }
   function banner(t, boss) { const el = $('banner'); el.textContent = t; el.classList.toggle('boss', !!boss); el.classList.add('show'); clearTimeout(bannerT); bannerT = setTimeout(() => el.classList.remove('show'), boss ? 3200 : 1900); }
   const DESC = { sword: '체력 높은 전위', archer: '멀리서 공격', priest: '아군을 치유' };
   const KEYS = ['1', '2', '3'];
@@ -144,8 +169,6 @@
     const r = C.upgradeCastle(S);
     if (!r.ok) { A2.play('deny'); toast(r.reason === 'max' ? '성이 최대 레벨입니다' : '골드가 부족해요'); }
   }
-  const soundLabel = () => { $('btnSound').textContent = A2.state.muted ? '소리 끔' : '소리 켬'; };
-  $('btnSound').addEventListener('click', () => { A2.init(); A2.toggleMute(); soundLabel(); }); soundLabel();
   $('btnPause').addEventListener('click', () => { if (!running && !S) return; toggleModal('setMenu'); });
   $('btnInfo').addEventListener('click', () => { if (!S) return; toggleModal('infoPanel'); if (!$('infoPanel').classList.contains('hidden')) renderInfo(); });
   $('btnSpeed').addEventListener('click', () => { speed = speed === 1 ? 2 : speed === 2 ? 3 : 1; $('btnSpeed').textContent = speed + '×'; });
@@ -160,12 +183,11 @@
     }
     if (e.key === '1' || e.key === '2' || e.key === '3') doBuy(C.UNIT_TYPES[+e.key - 1]);
     if (e.key === '4') doCastle();
-    else if (e.key === 'u' || e.key === 'U') $('btnUp').click();
     else if (e.key === 'i' || e.key === 'I') $('btnInfo').click();
     else if (e.key === 'Escape') toggleModal('setMenu');
     else if (e.key === ' ') { e.preventDefault(); $('btnPause').click(); }
     else if (e.key === 'h' || e.key === 'H') centerOnCore();
-    else if (e.key === 'm' || e.key === 'M') { A2.init(); A2.toggleMute(); soundLabel(); }
+    else if (e.key === 'm' || e.key === 'M') { A2.init(); A2.toggleMute(); toast(A2.state.muted ? '소리 끔 (M)' : '소리 켬 (M)'); }
   });
 
   const last = {};
@@ -251,7 +273,7 @@
     setText('bossHpTxt', Math.ceil(b.hp).toLocaleString() + ' / ' + b.max.toLocaleString() + '  (' + Math.ceil(pct) + '%)');
     const shielded = b.shieldT > 0, rage = !!b.enraged;
     el.classList.toggle('shielded', shielded); el.classList.toggle('rage', rage && !shielded);
-    let st = b.dying ? (S.bossDeath && S.bossDeath.stage === 'revive' ? '부활 중…' : '쓰러지는 중…') : shielded ? '방어막 — 받는 피해 ' + Math.round(b.shieldRed * 100) + '% 감소' : b.dashT > 0 ? '돌진 중!' : rage ? '분노 — 더 빠르고 강해졌다' : '패턴: ' + Object.keys(b.abil).map(k => k === 'debuff' ? b.abil.debuff.map(d => DBK[d.kind][0]).join('·') : PAT[k]).join(' · ');
+    let st = b.dying ? (S.bossDeath && S.bossDeath.stage === 'revive' ? '부활 중…' : '쓰러지는 중…') : shielded ? '방어막 — 피해를 ' + Math.round(b.shieldRed * 100) + '% 방어' : b.dashT > 0 ? '돌진 중!' : rage ? '분노 — 더 빠르고 강해졌다' : '패턴: ' + Object.keys(b.abil).map(k => k === 'debuff' ? b.abil.debuff.map(d => DBK[d.kind][0]).join('·') : PAT[k]).join(' · ');
     if (b.grow > 1.04) st += '  |  공격력 ×' + b.grow.toFixed(1) + (b.grow >= CFG.balance.bossGrowMax - 0.01 ? ' (최대)' : ' ↑');
     setText('bossState', st);
   }
@@ -270,7 +292,7 @@
     updateBossBar(); updateCastleBtn();
     setText('timeTxt', fmtTime(S.t));
     setText('hpTxt', String(Math.ceil(c.hp)));
-    setText('gold', String(Math.floor(S.gold)));
+    setText('gold', S.dev ? '∞' : String(Math.floor(S.gold)));
     { const sp = C.specialCount(S); setText('unitTxt', C.popCount(S) + (C.popCap(S) < 1e8 ? '/' + C.popCap(S) : '') + (sp ? ' · 특수 ' + sp : '')); } // 인구/상한 + 특수 유닛은 따로
     setText('killTxt', String(S.kills));
     const pct = Math.max(0, c.hp / c.max * 100);
@@ -370,33 +392,20 @@
   function choose(i) { if (!S) return; if (currentOffer() && !$('picker').classList.contains('hidden')) pickFx(i, !!S.jobs.offer); if (S.jobs.offer) C.pickJob(S, i); else if (S.cards.offer) C.pickCard(S, i); }
   $('btnReroll').addEventListener('click', () => { if (S) C.reroll(S); });
 
-  function renderUpgrades() {
-    const el = $('upl'); if (!S) return;
-    const list = C.describeTaken(S), jobs = C.describeJobs(S);
-    el.innerHTML = '';
-    const bu = S.bossUp || { hp: 0, atk: 0 };
-    if (!list.length && !jobs.length && !bu.hp) { el.textContent = '아직 선택한 강화가 없어요'; return; }
-    for (const j of jobs) { const row = document.createElement('div'); row.className = 'it epic'; const a = document.createElement('span'); a.textContent = j.className + ' 전직'; const b = document.createElement('b'); b.textContent = j.names.join(' › '); row.append(a, b); el.appendChild(row); }
-    if (bu.hp) { const row = document.createElement('div'); row.className = 'it epic'; row.title = '보스 보상: 검사·궁수·사제 체력·공격력 강화 (일반 강화와 별개)'; const a = document.createElement('span'); a.textContent = '보스 보상 · 전군 강화'; const b = document.createElement('b'); b.textContent = 'Lv ' + bu.hp; row.append(a, b); el.appendChild(row); }
-    for (const it of list) {
-      const row = document.createElement('div'); row.className = 'it ' + it.rar;
-      const a = document.createElement('span'); a.textContent = it.name; row.title = it.desc || '';
-      const b = document.createElement('b'); b.textContent = 'Lv ' + it.lv;
-      row.append(a, b); el.appendChild(row);
-    }
-  }
-  $('btnUp').addEventListener('click', () => { const el = $('upl'); el.hidden = !el.hidden; $('btnUp').textContent = el.hidden ? '강화 목록 ▾' : '강화 목록 ▴'; if (!el.hidden) renderUpgrades(); });
-  // ───────────── 설정 · 정보 · 도감/통계/업적 창 ─────────────
-  const MODALS = ['setMenu', 'infoPanel', 'metaPanel'];
+  const MODALS = ['setMenu', 'infoPanel', 'metaPanel', 'devPanel'];
   const anyModal = () => MODALS.some(id => !$(id).classList.contains('hidden'));
-  function openModal(id) { $(id).classList.remove('hidden'); if (S && running) paused = true; if (id === 'setMenu') $('sSound').textContent = A2.state.muted ? '소리 켜기' : '소리 끄기'; }
+  function openModal(id) { $(id).classList.remove('hidden'); if (S && running) paused = true; if (id === 'setMenu') syncVol(); }
   function closeModals() { for (const id of MODALS) $(id).classList.add('hidden'); paused = false; }
   function toggleModal(id) { if (!$(id).classList.contains('hidden')) closeModals(); else if (!anyModal()) openModal(id); }
   for (const b of document.querySelectorAll('[data-close]')) b.addEventListener('click', () => closeModals());
   for (const id of MODALS) $(id).addEventListener('click', e => { if (e.target === $(id)) closeModals(); });
   $('sResume').addEventListener('click', closeModals);
-  $('sSound').addEventListener('click', () => { A2.init(); A2.toggleMute(); soundLabel(); $('sSound').textContent = A2.state.muted ? '소리 켜기' : '소리 끄기'; });
-  function recordAbandon() { if (S && running && !S.over && S.round >= 2) { Meta.finish(S, C, 0); Net.sendLog(S, 'abandon', true); } }
+  // 소리: 배경음악·효과음 따로 슬라이더로 조절
+  function syncVol() { const st = A2.state; $('sMus').value = Math.round(st.music * 100); $('sSfx').value = Math.round(st.sfx * 100); $('sMusV').textContent = $('sMus').value; $('sSfxV').textContent = $('sSfx').value; }
+  const volInput = (id, set) => { const el = $(id); el.addEventListener('input', () => { A2.init(); if (A2.state.muted) A2.setMuted(false); set(+el.value / 100); $(id + 'V').textContent = el.value; }); };
+  volInput('sMus', v => A2.setMusic(v)); volInput('sSfx', v => A2.setSfx(v));
+  $('sSfx').addEventListener('change', () => A2.play('kill')); // 놓았을 때 효과음 미리듣기
+  function recordAbandon() { if (S && running && !S.over && S.round >= 2 && !S.dev) { Meta.finish(S, C, 0); Net.sendLog(S, 'abandon', true); } }
   $('sRestart').addEventListener('click', () => { closeModals(); recordAbandon(); newGame(); });
   $('sMenu').addEventListener('click', () => { closeModals(); recordAbandon(); running = false; showTitle(); });
   $('btnToMenu').addEventListener('click', () => { $('overlay').classList.add('hidden'); running = false; showTitle(); openMenu(); });
@@ -414,7 +423,8 @@
     if (type === 'priest' && n) { rows.splice(2, 2, ['치유량', f1(avg('heal'))], ['치유 속도', f1(avg('healRate')) + '/초']); }
     const hs = CFG.heroSkill && CFG.heroSkill[type]; if (hs) rows.push(['스킬', hs.name + ' (' + hs.cd + '초마다)']);
     const job = n && list[0].job ? ' · ' + (C.describeJobs(S).find(j => CFG.units[j.type] === cfg) || { names: [] }).names.join(' › ') : '';
-    return irow(cfg.name + job, (UNIT_TEXT[type] || '') + statTable(rows), '');
+    let img = ''; try { img = '<img class="uimg" alt="" src="' + portrait('u', type, cfg, null, n && list[0].job ? { job: list[0].job, jobTier: list[0].jobTier } : null).toDataURL() + '">'; } catch (e) {}
+    return irow(cfg.name + job, '<div class="uwrap">' + img + '<div>' + (UNIT_TEXT[type] || '') + statTable(rows) + '</div></div>', '');
   }
   let infoTab = 'up';
   function renderInfo() {
@@ -442,9 +452,10 @@
   // 도감 / 통계 / 업적
   const dfmt = t => { const d = new Date(t), p = n => String(n).padStart(2, '0'); return p(d.getMonth() + 1) + '/' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()); };
   const MODE_NAME = { normal: '기본', free: '자유', hold: '수비' };
-  function portrait(team, kind, cfg, look) { // 도감 그림 한 칸
+  function portrait(team, kind, cfg, look, ext) { // 도감 그림 한 칸
     const cv2 = document.createElement('canvas'); cv2.width = cv2.height = 144; const c2 = cv2.getContext('2d');
     const r = (look && look.r) || cfg.r || 10, fake = team === 'u' ? { team: 'u', type: kind, id: 1, x: 0, y: 0, r, flash: 0, swing: 0, aim: 0, hp: 1, max: 1, job: null, jobTier: 0 } : { team: 'e', kind: look ? 'boss' : kind, type: kind, id: 3, x: 0, y: 0, r, flash: 0, swing: 0, look: look || undefined };
+    if (ext) Object.assign(fake, ext);
     const k = Math.min(5, 52 / (r * (look ? 2.2 : 2.6))) * 2; c2.translate(72, 92 - r * 0.2 * k / 2); c2.scale(k, k);
     try { Figures.draw(c2, fake, 0); } catch (e) {} return cv2;
   }
@@ -528,7 +539,10 @@
       else if (ev.type === 'bossGone') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.9, c: '#ffffff', r: ev.r * 3.5, big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: -0.1, max: 1, c: '#ffd166', r: ev.r * 2.5, big: true }); for (let k = 0; k < 14; k++) addFx({ k: 'dust', x: ev.x + (Math.random() - 0.5) * ev.r * 2.4, y: ev.y + (Math.random() - 0.5) * ev.r * 1.6, t: 0, max: 1.3, r: 14 + Math.random() * 18 }); }
       else if (ev.type === 'bossWipe') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.9, c: '#ffffff', big: true }); toast('보스 처치! 남은 적이 모두 쓰러졌어요'); }
       else if (ev.type === 'kill') { addFx({ k: 'burst', x: ev.x, y: ev.y, t: 0, max: ev.boss ? 0.8 : 0.3, c: ev.boss ? '#c77dff' : '#ff8a5c', big: ev.boss }); }
-      else if (ev.type === 'udead') addFx({ k: 'burst', x: ev.x, y: ev.y, t: 0, max: 0.4, c: '#8fb7ff' });
+      else if (ev.type === 'udead') {
+        addFx({ k: 'burst', x: ev.x, y: ev.y, t: 0, max: 0.4, c: '#8fb7ff' });
+        if (ev.ut) feedAdd(ev.by ? { team: 'e', kind: ev.by.kind, look: ev.by.look, r: ev.by.r } : null, '⚔️', { team: 'u', type: ev.ut, job: ev.job, jt: ev.jt }, (CFG.units[ev.ut] || {}).name + ' 쓰러짐', '');
+      }
       else if (ev.type === 'heal') { addFx({ k: 'beam', x: ev.x, y: ev.y - 11, tx: ev.tx, ty: ev.ty - 7, t: 0, max: ev.aoe ? 0.3 : 0.45, c: ev.enemy ? '#ffb86b' : (ev.job && JOBC[ev.job]) || '#6bffa3', small: !!ev.aoe }); if (!ev.aoe) addFx({ k: 'heal', x: ev.tx, y: ev.ty, t: 0, max: 0.5 }); }
       else if (ev.type === 'spawn') { addFx({ k: 'summon', x: ev.x, y: ev.y, t: 0, max: 0.8 }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.55, c: '#8fd0ff', big: true }); }
       else if (ev.type === 'chain') { addFx({ k: 'line', x: ev.x, y: ev.y, tx: ev.tx, ty: ev.ty, t: 0, max: 0.25, c: ev.small ? '#b9f5c8' : '#9ad0ff', small: ev.small }); }
@@ -557,13 +571,17 @@
         if (ev.kind === 'marksman') addFx({ k: 'beam', x: ev.x, y: ev.y - 11, tx: ev.tx, ty: ev.ty - 7, t: 0, max: 0.4, c: '#ffe14a' });
         else { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.55, c: ev.kind === 'hero' ? '#ffe14a' : '#c8a46a', big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: -0.08, max: 0.5, c: '#ffffff' }); }
       }
-      else if (ev.type === 'revive') { addFx({ k: 'heal', x: ev.x, y: ev.y, t: 0, max: 0.8 }); toast('아군이 부활했어요'); }
-      else if (ev.type === 'picked') { toast(ev.name + ' 획득'); renderUpgrades(); }
+      else if (ev.type === 'revive') {
+        addFx({ k: 'heal', x: ev.x, y: ev.y, t: 0, max: 0.8 });
+        const pr = S.units.find(u => u.type === 'priest' && !u.dead);
+        if (ev.ut) feedAdd({ team: 'u', type: 'priest', job: pr && pr.job, jt: pr && pr.jobTier }, '✚', { team: 'u', type: ev.ut, job: ev.job, jt: ev.jt }, (CFG.units[ev.ut] || {}).name + ' 부활', 'rv'); else toast('아군이 부활했어요');
+      }
+      else if (ev.type === 'picked') { toast(ev.name + ' 획득'); }
       else if (ev.type === 'notice') toast(ev.text);
       else if (ev.type === 'espawn') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: ev.boss ? 0.9 : 0.45, c: '#ff5a5a', big: ev.boss }); }
       else if (ev.type === 'priceUp') toast('소환으로 모든 유닛 가격이 올랐어요');
       else if (ev.type === 'promote') {
-        banner(ev.className + ' → ' + ev.name + ' 전직!'); renderUpgrades();
+        banner(ev.className + ' → ' + ev.name + ' 전직!');
         for (const u of S.units) if (u.type === ev.unitType && fx.length < 300) addFx({ k: 'ring', x: u.x, y: u.y, t: 0, max: 0.7, c: '#ffd166' });
       }
       else if (ev.type === 'bossDash') addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.5, c: '#ffb21a' });
@@ -885,17 +903,18 @@
   $('cine').addEventListener('click', e => { if (e.target === $('cine')) endCine(); });
 
   // ───────────── 시작/종료 ─────────────
-  function newGame() {
+  function newGame(devRound) {
     openingSeen = true;
     const seed = params.get('seed') ? +params.get('seed') : (Date.now() ^ (Math.random() * 1e9)) >>> 0;
     const mm = params.get('mode') || store.get('cd-mode'), mode = mm === 'free' || mm === 'hold' ? mm : 'normal';
     S = C.createGame(seed, mode); S.captureEvents = true; Net.begin(S); syncModeBar();
-    fx.length = 0; numFx = 0; paused = false; speed = 1; shownOffer = null; $('picker').classList.add('hidden'); renderUpgrades();
+    fx.length = 0; numFx = 0; paused = false; speed = 1; shownOffer = null; $('picker').classList.add('hidden');
     $('btnSpeed').textContent = '1×'; closeModals(); Meta.begin(); lastSyncRound = 0; $('btnToMenu').classList.add('hidden');
     for (const k in last) delete last[k];
     for (const t of C.UNIT_TYPES) { ucards[t].last = undefined; ucards[t].n = undefined; }
     cine = null; $('cine').classList.add('hidden'); $('cine').classList.remove('on'); Scenery.setAct(1, false);
     const sr = +params.get('startRound'); if (sr > 1) C.jumpToRound(S, sr); // 디버그: 해당 라운드로 바로 시작
+    const dr = devRound || +params.get('dev'); if (dr > 1) C.devSetup(S, dr); // 개발자 모드: 라운드에 맞게 갖춰 시작 (골드 무한, 기록 제외)
     centerOnCore();
     // 디버그: ?warp=초 → 봇이 미리 진행 (스크린샷/점검용)
     if (params.get('bot')) startBot();
@@ -936,10 +955,11 @@
       + '<div id="regbox"><input id="nameIn" maxlength="12" placeholder="닉네임 (최대 12자)" autocomplete="off"><button id="regBtn">랭킹 등록</button></div><div id="rankbox"></div>';
     $('go').textContent = '다시 시작'; $('btnRank').classList.add('hidden'); $('btnToMenu').classList.remove('hidden');
     $('overlay').classList.remove('hidden');
-    const chk = C.checkRun(S); Meta.finish(S, C, Net.scoreOf(S.win, S.round, S.kills, S.t));
+    if (!S.dev) Meta.finish(S, C, Net.scoreOf(S.win, S.round, S.kills, S.t));
     Net.sendLog(S, 'end');
     const ended = S, myScore = Net.scoreOf(S.win, S.round, S.kills, S.t);
     $('nameIn').value = Net.name();
+    if (S.dev) { $('regbox').remove(); $('ovBody').insertAdjacentHTML('beforeend', '<p style="color:#9fd8ff">개발자 모드로 한 판이라 기록·랭킹에 올리지 않아요.</p>'); showRank(null); return; }
     const reg = async () => {
       const name = $('nameIn').value; $('regBtn').disabled = true; $('regBtn').textContent = '등록 중…';
       const res = await Net.submit(ended, name); $('regbox').remove(); if (res && res.rejected) { $('ovBody').insertAdjacentHTML('beforeend', '<p style="color:#ff9a9a">기록이 비정상적이라 랭킹에 올리지 않았어요.</p>'); } showRank(res && res.rejected ? null : myScore);
@@ -1015,13 +1035,19 @@
   const titleEl = $('title');
   function showTitle() { titleEl.classList.remove('hidden', 'out', 'menu'); $('tMsg').textContent = ''; $('tVer').textContent = 'v' + ((window.CD_CONFIG || {}).VERSION || ''); }
   function openMenu() { if (titleEl.classList.contains('menu')) return; titleEl.classList.add('menu'); A2.init(); A2.play('ui'); }
-  function startFromTitle() {
+  function startFromTitle(devRound) {
     A2.init(); titleEl.classList.add('out'); setTimeout(() => titleEl.classList.add('hidden'), 520);
-    if (!openingSeen && !params.get('nointro')) { openingSeen = true; playOpening(() => { newGame(); startIntro(); }); } else { newGame(); startIntro(); }
+    if (!openingSeen && !params.get('nointro') && !devRound) { openingSeen = true; playOpening(() => { newGame(); startIntro(); }); } else { newGame(devRound); startIntro(); }
   }
   titleEl.addEventListener('click', e => { if (!titleEl.classList.contains('menu')) openMenu(); });
   window.addEventListener('keydown', e => { if (!titleEl.classList.contains('hidden') && !titleEl.classList.contains('out')) { if (anyModal()) { if (e.key === 'Escape') closeModals(); e.stopPropagation(); return; } if (!titleEl.classList.contains('menu')) { e.preventDefault(); e.stopPropagation(); openMenu(); } else if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); startFromTitle(); } } }, true);
   $('mStart').addEventListener('click', e => { e.stopPropagation(); startFromTitle(); });
+  // 개발자 모드: 라운드를 골라 그 라운드에 맞는 구성으로 시작 (골드 무한, 기록·랭킹 제외)
+  const devRoundSet = v => { v = Math.max(2, Math.min(100, Math.round(+v || 2))); $('devRound').value = v; $('devRoundV').textContent = v + '라운드'; return v; };
+  $('mDev').addEventListener('click', e => { e.stopPropagation(); devRoundSet(+store.get('cd-devround') || 30); openModal('devPanel'); });
+  $('devRound').addEventListener('input', () => devRoundSet($('devRound').value));
+  for (const b of document.querySelectorAll('#devPresets button')) b.addEventListener('click', () => devRoundSet(b.dataset.r));
+  $('devGo').addEventListener('click', e => { e.stopPropagation(); const r = devRoundSet($('devRound').value); store.set('cd-devround', String(r)); closeModals(); startFromTitle(r); });
   $('mCodex').addEventListener('click', e => { e.stopPropagation(); openMeta('codex'); });
   $('mStats').addEventListener('click', e => { e.stopPropagation(); openMeta('stats'); });
   $('mAch').addEventListener('click', e => { e.stopPropagation(); openMeta('ach'); });
@@ -1083,7 +1109,7 @@
       else if (Scenery.act !== S.act) Scenery.setAct(S.act, true); // 불러오기/재시작/점프 시 막에 맞는 배경으로
       if (!cine && S.act === 1) syncRoads();
       syncPortal();
-      const h0 = performance.now(); if (S.round !== lastSyncRound) { lastSyncRound = S.round; Meta.sync(S, C); } Net.sample(S, perf, renderScale); A2.setView({ x: cam.x, y: cam.y, zoom: cam.zoom, vw, vh }); updateMood(); handleEvents(); syncPicker(); updateHud(); const h1 = performance.now(); drawWorld(now); const h2 = performance.now();
+      const h0 = performance.now(); if (S.round !== lastSyncRound) { lastSyncRound = S.round; if (!S.dev) Meta.sync(S, C); } Net.sample(S, perf, renderScale); A2.setView({ x: cam.x, y: cam.y, zoom: cam.zoom, vw, vh }); updateMood(); handleEvents(); syncPicker(); updateHud(); const h1 = performance.now(); drawWorld(now); const h2 = performance.now();
       ema('hud', h1 - h0); ema('draw', h2 - h1);
     }
     ema('frame', performance.now() - f0);

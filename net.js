@@ -28,7 +28,8 @@
   // ── 플레이 기록 ──
   const run = { id: null, start: 0, tl: [], lagMs: 0, lagN: 0, sent: false };
   function begin(S) { run.id = 'r' + Math.random().toString(36).slice(2, 9); run.start = Date.now(); run.tl = []; run.lagMs = 0; run.lagN = 0; run.sent = false; run.seed = S.seed; run.lastRound = 0; }
-  function sample(S, perf, scale) { // 라운드가 바뀔 때마다 한 줄씩 남긴다
+  function sample(S, perf, scale) {
+    if (S.dev) return; // 라운드가 바뀔 때마다 한 줄씩 남긴다
     if (!run.id || S.round === run.lastRound) return; run.lastRound = S.round;
     run.tl.push({ r: S.round, t: Math.round(S.t), hp: Math.round(S.core.hp), g: Math.round(S.gold), u: S.units.length, e: S.enemies.length, ms: +(perf.dt || 0).toFixed(1), sc: scale });
     if (run.tl.length > 60) run.tl.shift();
@@ -46,6 +47,7 @@
     };
   }
   function sendLog(S, status, beacon) {
+    if (S.dev) return;
     if (!CFG.SEND_LOG || !API || !run.id || run.sent || new URLSearchParams(location.search).get('bot')) return;
     if (S.round < 2 && status !== 'end') return; // 시작하자마자 나간 것은 기록하지 않는다
     run.sent = true; const o = summary(S, status);
@@ -81,6 +83,7 @@
     return { server: false, list: localTop().slice(0, n), failed: true };
   }
   async function submit(S, name) {
+    if (S.dev) return { rejected: true, dev: true }; // 개발자 모드는 랭킹에 올리지 않는다
     name = String(name || '').replace(/[<>&"'`]/g, '').trim().slice(0, 12) || '이름없음'; ls.set('cd-name', name);
     const chk = window.CastleCore.checkRun(S); if (!chk.ok) { enqueue({ type: 'flag', v: CFG.VERSION, pid, run: run.id, seed: S.seed, name, round: S.round, kills: S.kills, earned: Math.round(S.stats.earned), bound: chk.bound, why: chk.why }); return { rejected: true, why: chk.why }; } // 골드 수입이 그 라운드까지 벌 수 있는 양을 넘으면 등록하지 않는다
     const e = { name, mode: S.mode, score: scoreOf(S.win, S.round, S.kills, S.t), round: S.round, win: !!S.win, kills: S.kills, time: Math.round(S.t), at: Date.now() };

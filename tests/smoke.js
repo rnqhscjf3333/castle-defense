@@ -654,5 +654,20 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
 { const run = mode => { const g = C.createGame(7, mode); g.gold = 1e7; g.stats.earned += 1e7; C.CFG.castle.popBase = 99; for (let i = 0; i < 24; i++) { g.buyCd.sword = g.buyCd.archer = 0; C.buy(g, i % 2 ? 'archer' : 'sword'); } g.phase = 'round'; g.round = 12; g.hold = true; g.queue = [];
     let north = 0, n = 0; for (let i = 0; i < 700; i++) { if (i % 20 === 0) for (let k = 0; k < 3; k++) C.spawnEnemy(g, 'grunt', 1500 + (k - 1) * 40, 700); for (const e of g.enemies) e.dmg = 0; g.core.hp = g.core.max = 1e9; C.tick(g, DT); if (i > 200) for (const u of g.units) if (!u.dead) { n++; if (u.y < 1500) north++; } } return north / n; };
   const nh = run('hold'), nn = run('normal'); check('수비 모드는 한쪽에서만 적이 와도 유닛이 사방 자리에 남는다 (북쪽 비율 ~50%)', nh < 0.65 && nn > nh, '수비 ' + nh.toFixed(2) + ' / 기본 ' + nn.toFixed(2)); }
+// 54) 개발자 모드: 라운드에 맞게 자동 구성 + 골드 무한 + 기록 제외
+{ const mkDev = r => { const g = C.createGame(51); C.devSetup(g, r); return g; };
+  const a = mkDev(10), b = mkDev(40), c = mkDev(60);
+  check('개발자 모드: 라운드가 높을수록 성·유닛·강화가 더 갖춰짐', b.castle.lv > a.castle.lv && C.popCount(b) > C.popCount(a) && Object.keys(b.cards.taken).length > Object.keys(a.cards.taken).length, `성 ${a.castle.lv}→${b.castle.lv}, 인구 ${C.popCount(a)}→${C.popCount(b)}`);
+  check('개발자 모드: 해당 라운드부터 시작 (다음 틱에 R 시작)', (() => { C.tick(b, DT); return b.round === 40; })(), 'round ' + b.round);
+  check('개발자 모드: 전직 6개 모두 완료 + 보스 보상 단계 누적 (R40)', ['sword', 'archer', 'priest'].every(t => b.jobs[t].ids.length === 2) && b.bossUp.hp >= 2, JSON.stringify(b.jobs.sword.ids) + ' bossUp ' + b.bossUp.hp);
+  check('개발자 모드: 60라운드는 무한 모드 상태', c.endless && c.act === 2);
+  const g0 = b.gold; b.gold = 5; C.tick(b, DT); check('개발자 모드: 골드가 무한 (줄어도 다시 채워짐)', b.gold >= 1e8 && g0 >= 1e8);
+  check('개발자 모드는 기록 검증에서 제외(랭킹 등록 불가)', !C.checkRun(b).ok && C.checkRun(b).why.includes('개발자 모드'));
+  let alive = 0, over = false; for (let i = 0; i < 30 * 40 && !b.over; i++) { C.tick(b, DT); if (b.cards.offer) C.pickCard(b, 0); if (b.jobs.offer) C.pickJob(b, 0); } check('개발자 모드 R40: 40초 플레이 중 성이 무너지지 않음', !b.over, 'hp ' + Math.round(b.core.hp)); }
+// 55) 수비 모드: 자기 주변(자리에서 58px 이내)에 들어온 적은 상대하러 나간다
+{ const g = C.createGame(61, 'hold'); g.gold = 1e6; g.buyCd.sword = 0; const u = C.buy(g, 'sword').unit; g.phase = 'round'; g.hold = true; g.queue = []; g.core.hp = g.core.max = 1e9; g.core.atk = 0;
+  for (let i = 0; i < 20; i++) C.tick(g, DT); const e = C.spawnEnemy(g, 'grunt', u.hx + 45, u.hy) || g.enemies[g.enemies.length - 1]; e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; const x0 = u.x;
+  for (let i = 0; i < 90; i++) { g.core.hp = g.core.max; C.tick(g, DT); }
+  check('수비 모드: 검사가 자리 근처(45px)의 적에게 가서 싸움', e.hp < e.max - 1, '피해 ' + Math.round(e.max - e.hp)); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

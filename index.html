@@ -24,6 +24,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #hpfill { height: 100%; width: 100%; background: var(--ok); transition: width .15s; }
 #gold { color: var(--gold); }
 
+#btnSpeed { position: fixed; top: max(5px, env(safe-area-inset-top)); left: 214px; z-index: 6; zoom: .84; min-width: 40px; }
 #tools { position: fixed; top: calc(max(5px, env(safe-area-inset-top)) + 106px); right: 5px; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
 .tbtn { padding: 4px 8px; font-size: 11.5px; min-height: 26px; border-radius: 8px; }
 
@@ -170,7 +171,7 @@ body.defeating #hud, body.defeating #units, body.defeating #tools, body.defeatin
   transform: translate(var(--x), var(--y)); animation: cloudAway 3.1s cubic-bezier(.5,0,.8,.6) .35s forwards; }
 @keyframes cloudAway { to { transform: translate(calc(var(--x) * 3.2), calc(var(--y) * 3.2)) scale(1.5); opacity: 0; } }
 @keyframes skyOff { 0%,30% { opacity: 1; } 100% { opacity: 0; } }
-body.introOn #btnUp, body.introOn #hud, body.introOn #units, body.introOn #tools, body.introOn #modeBar, body.introOn #bossbar { opacity: 0; }
+body.introOn #btnSpeed, body.introOn #feed, body.introOn #hud, body.introOn #units, body.introOn #tools, body.introOn #modeBar, body.introOn #bossbar { opacity: 0; }
 #hud, #units, #tools, #modeBar, #bossbar { transition: opacity .8s; }
 /* 업그레이드 선택 */
 #picker { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(8, 11, 17, .7); padding: 12px; z-index: 5; }
@@ -223,11 +224,6 @@ body.introOn #btnUp, body.introOn #hud, body.introOn #units, body.introOn #tools
 #pickFoot { margin-top: 12px; display: flex; gap: 12px; align-items: center; justify-content: center; font-size: 12px; color: var(--muted); }
 #btnReroll { padding: 8px 14px; border-radius: 10px; }
 #btnReroll:disabled { opacity: .4; cursor: default; }
-#btnUp { position: fixed; left: 5px; top: calc(max(5px, env(safe-area-inset-top)) + 118px); z-index: 6; zoom: .84; }
-#upl { position: fixed; left: 5px; top: calc(max(5px, env(safe-area-inset-top)) + 150px); padding: 6px 9px; font-size: 11px; max-width: 210px; max-height: 40vh; overflow: auto; line-height: 1.6; }
-#upl[hidden] { display: none; }
-#upl .it { display: flex; justify-content: space-between; gap: 10px; }
-#upl .rare { color: #7cc0ff; } #upl .epic { color: #ffd166; }
 @media (max-width: 620px) { #bossbar { width: 180px; padding: 3px 7px 4px; } #bossName { font-size: 12px; } #bossHpTxt { font-size: 10.5px; } #bossState { font-size: 9.5px; } }
 @media (max-width: 520px) { .pcard { width: 100%; min-height: 0; flex-direction: column; } #pickCards { flex-direction: column; } }
 @media (max-width: 520px) { #units .ucard { width: 80px; } #tools { top: calc(max(5px, env(safe-area-inset-top)) + 90px); } #hud { min-width: 128px; } #hud .row { font-size: 11px; } }
@@ -303,8 +299,20 @@ body.comicOn { overflow: hidden; }
 .arow .bar { height: 4px; border-radius: 2px; background: #2a3244; margin-top: 4px; overflow: hidden; } .arow .bar i { display: block; height: 100%; background: #6fc3ff; } .arow.done .bar i { background: #ffd166; } .arow .pc { font-size: 11px; color: var(--muted); flex: none; }
 #title.menu #tMenu { gap: 9px; } #tMenu button { padding: 11px 10px; font-size: 16px; }
 #btnToMenu.hidden { display: none; }
-@media (max-height: 600px) { #title.menu #tMenu { display: grid; grid-template-columns: 1fr 1fr; width: min(420px, 90vw); margin-top: 14px; gap: 7px; } #tMenu button { padding: 8px 6px; font-size: 14px; } #tMenu button.main { grid-column: 1 / 3; } }
-#hud, #units, #tools, #bossbar, #newEnemy, #pickBox, #modeBar { zoom: .84; }
+@media (max-height: 780px) { #title.menu #tMenu { display: grid; grid-template-columns: 1fr 1fr; width: min(420px, 90vw); margin-top: 14px; gap: 7px; } #tMenu button { padding: 8px 6px; font-size: 14px; } #tMenu button.main { grid-column: 1 / 3; } }
+#hud, #units, #tools, #bossbar, #newEnemy, #pickBox, #modeBar, #feed { zoom: .84; }
+
+.uwrap { display: flex; gap: 8px; align-items: flex-start; margin-top: 3px; } .uwrap > div { flex: 1; min-width: 0; } .uimg { width: 72px; height: 72px; flex: none; border-radius: 8px; background: rgba(255,255,255,.06); }
+.devp { display: flex; gap: 5px; margin: 8px 0 12px; } .devp button { flex: 1; padding: 7px 0; border-radius: 8px; border: 1px solid var(--line); background: #1b2132; color: var(--ink); font-weight: 700; }
+.vrow { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; background: #1b2132; border: 1px solid var(--line); font-size: 14px; }
+.vrow label { flex: none; width: 92px; font-weight: 700; } .vrow input { flex: 1; min-width: 0; accent-color: #ffd166; height: 28px; touch-action: pan-y; } .vrow b { width: 30px; text-align: right; font-variant-numeric: tabular-nums; color: #ffd166; }
+#feed { position: fixed; right: 5px; top: calc(max(5px, env(safe-area-inset-top)) + 188px); width: 236px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; pointer-events: none; z-index: 7; }
+#feed .fe { box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: 5px; padding: 3px 9px 3px 4px; border-radius: 10px; background: rgba(46,14,20,.84); border-right: 3px solid #ff5a5a; font-size: 11px; color: #f4dede; opacity: 0; transform: translateX(34px); max-height: 0; overflow: hidden; transition: opacity .3s, transform .3s, max-height .35s, padding .35s; }
+#feed .fe.in { opacity: 1; transform: none; max-height: 46px; } #feed .fe.old { opacity: .62; }
+#feed .fe.out { opacity: 0; transform: translateX(34px); max-height: 0; padding-top: 0; padding-bottom: 0; }
+#feed .fe.rv { background: rgba(10,44,32,.84); border-right-color: #5ae6a0; }
+#feed .fe img { width: 36px; height: 36px; flex: none; border-radius: 8px; background: rgba(255,255,255,.07); }
+#feed .fe .ic { flex: none; width: 22px; text-align: center; font-size: 17px; line-height: 1; } #feed .fe .nm { flex: 1; min-width: 0; text-align: right; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #modeBar { position: fixed; left: 5px; top: calc(max(5px, env(safe-area-inset-top)) + 82px); display: flex; padding: 2px; gap: 2px; border-radius: 9px; z-index: 6; }
 #modeBar button { padding: 3px 11px; font-size: 12px; border-radius: 7px; background: transparent; border: 0; color: var(--muted); font-weight: 700; }
 #modeBar button.on { background: rgba(255,209,102,.18); color: #ffd166; }
@@ -335,11 +343,10 @@ body.comicOn { overflow: hidden; }
   <div class="row"><span>유닛 <b id="unitTxt">0</b></span><span>처치 <b id="killTxt">0</b></span></div>
 </div>
 
+<button class="btn panel tbtn" id="btnSpeed" title="배속">1×</button>
 <div id="tools">
-  <button class="btn panel tbtn" id="btnInfo" title="정보 (I)">정보</button>
-  <button class="btn panel tbtn" id="btnSpeed" title="배속">1×</button>
-  <button class="btn panel tbtn" id="btnSound" title="소리 켜기/끄기 (M)">소리 켬</button>
-  <button class="btn panel tbtn" id="btnPause" title="설정 (Space / Esc)">설정</button>
+  <button class="btn panel tbtn" id="btnInfo" title="강화 정보 (I)">강화 정보</button>
+  <button class="btn panel tbtn" id="btnPause" title="설정 (Space / Esc)" aria-label="설정">⚙️</button>
 </div>
 
 <div id="banner"></div>
@@ -359,22 +366,30 @@ body.comicOn { overflow: hidden; }
   <div id="units"></div>
 </div>
 
-<button class="btn panel tbtn" id="btnUp" title="내 강화 목록 (U)">강화 목록 ▾</button>
-<div id="upl" class="panel" hidden></div>
+<div id="feed"></div>
 
 <div id="setMenu" class="modal hidden"><div class="panel mbox">
   <h2>설정</h2>
   <div class="mlist">
     <button id="sResume" class="main">계속하기</button>
-    <button id="sSound">소리 켬</button>
+    <div class="vrow"><label for="sMus">🎵 배경음악</label><input type="range" id="sMus" min="0" max="100" step="1"><b id="sMusV">50</b></div>
+    <div class="vrow"><label for="sSfx">🔊 효과음</label><input type="range" id="sSfx" min="0" max="100" step="1"><b id="sSfxV">80</b></div>
     <button id="sRestart">다시 시작</button>
     <button id="sMenu">메인 메뉴로</button>
   </div>
   <p class="mhint">설정 창이 열려 있는 동안 게임은 멈춰 있어요</p>
 </div></div>
 
+<div id="devPanel" class="modal hidden"><div class="panel mbox">
+  <div class="mhead"><h2>🛠 개발자 모드</h2><button class="mclose" data-close="devPanel">✕</button></div>
+  <p class="mhint" style="margin:0 0 10px">고른 라운드부터 시작합니다. 골드는 무한이고, 성 레벨·강화 카드·전직·보스 보상·유닛은 그 라운드에 맞게 자동으로 갖춰집니다.<br><b style="color:#ff9a9a">기록·업적·랭킹에는 올라가지 않아요.</b></p>
+  <div class="vrow"><label for="devRound">시작 라운드</label><input type="range" id="devRound" min="2" max="100" step="1" value="30"><b id="devRoundV" style="width:62px">30라운드</b></div>
+  <div id="devPresets" class="devp"><button data-r="10">10</button><button data-r="20">20</button><button data-r="30">30</button><button data-r="40">40</button><button data-r="50">50</button><button data-r="60">60</button><button data-r="80">80</button></div>
+  <div class="mlist"><button id="devGo" class="main">이 라운드로 시작</button></div>
+</div></div>
+
 <div id="infoPanel" class="modal hidden"><div class="panel mbox wide">
-  <div class="mhead"><h2>정보</h2><button class="mclose" data-close="infoPanel">✕</button></div>
+  <div class="mhead"><h2>강화 정보</h2><button class="mclose" data-close="infoPanel">✕</button></div>
   <div class="tabs" id="infoTabs"><button data-t="up" class="on">강화</button><button data-t="unit">유닛</button><button data-t="sp">특수 유닛</button></div>
   <div class="mbody" id="infoBody"></div>
 </div></div>
@@ -401,7 +416,7 @@ body.comicOn { overflow: hidden; }
   <div class="stars"></div><div class="moon"></div><svg class="castle" viewBox="0 0 620 300" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><g fill="#07091a"><path d="M0 300V250q60-14 120-8 40-52 60-52h20v-30h14l8-18 8 18h14v30h24l20-70 18-18 18 18 20 70h24v-30h14l8-18 8 18h14v30h20q20 0 60 52 60-6 120 8v50z"/></g><g fill="#fcd96b" opacity=".85"><rect x="283" y="130" width="8" height="14" rx="3"/><rect x="329" y="130" width="8" height="14" rx="3"/><rect x="300" y="200" width="20" height="30" rx="10"/><rect x="212" y="176" width="6" height="10" rx="2"/><rect x="402" y="176" width="6" height="10" rx="2"/></g></svg>
   <div class="logo"><h1>성 지키기</h1><p>CASTLE DEFENSE</p></div>
   <div id="tapHint">화면을 터치하거나 아무 키나 누르세요</div>
-  <div id="tMenu"><button id="mStart" class="main">게임 시작</button><button id="mHow">게임 방법</button><button id="mCodex">도감</button><button id="mStats">통계</button><button id="mAch">업적</button><button id="mRank">랭킹</button><button id="mQuit">게임 종료</button></div>
+  <div id="tMenu"><button id="mStart" class="main">게임 시작</button><button id="mHow">게임 방법</button><button id="mCodex">도감</button><button id="mStats">통계</button><button id="mAch">업적</button><button id="mDev">개발자</button><button id="mRank">랭킹</button><button id="mQuit">게임 종료</button></div>
   <div id="tMsg"></div><div id="tVer"></div>
 </div>
 <div id="howto" class="hidden"><div class="panel"><h2>게임 방법</h2>

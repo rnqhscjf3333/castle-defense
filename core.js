@@ -23,7 +23,7 @@
   const CFG = {
     world: { w: W, h: H, cx: CX, cy: CY },
     startGold: 210, // 검사·궁수·사제를 한 명씩(어떤 순서로든, 가격 상승 포함 최대 204) 뽑을 수 있는 금액
-    holdRadius: 22,       // 수비 모드: 근접 유닛이 자리에서 벗어날 수 있는 거리 (원거리는 제자리)
+    holdRadius: 58,       // 수비 모드: 근접 유닛이 자리에서 벗어날 수 있는 거리 (자기 주변의 적만 상대하고 먼 곳의 적에겐 끌려가지 않는다)
     leash: 240,           // 유닛이 성으로부터 추격할 수 있는 최대 거리
     ai: {
       bias: 0.08,         // 평소(적이 멀 때) 대기 자리가 적 방향으로 쏠리는 정도 (0 = 사방에 고르게, 1 = 전부 적 방향)
@@ -60,7 +60,7 @@
     },
     enemies: {
       grunt:  { name: '돌격병', hp: 30, dmg: 6,  speed: 70, r: 9,  range: 20, rate: 1.0, gold: 4,   aggro: 110 },
-      shield: { name: '방패병', hp: 90, dmg: 8,  speed: 45, r: 13, range: 22, rate: 1.0, gold: 8,   aggro: 90, rres: 0.5, desc: '원거리 피해를 50%만 입습니다.' },
+      shield: { name: '방패병', hp: 90, dmg: 8,  speed: 45, r: 13, range: 22, rate: 1.0, gold: 8,   aggro: 90, rres: 0.5, desc: '원거리 피해를 50% 방어합니다.' },
       boss:   { name: '보스',   hp: 0,  dmg: 25, speed: 40, r: 30, range: 36, rate: 0.8, gold: 150, aggro: 180 },
       archer: { name: '사수',   hp: 28, dmg: 6,  speed: 52, r: 9,  range: 200, rate: 0.8, gold: 7,  aggro: 230, ranged: true, desc: '멀리서 화살을 쏩니다.' }, // 멀리서 화살을 쏜다
       bomber: { name: '폭파병', hp: 22, dmg: 26, speed: 100, r: 9, range: 12, rate: 1.0, gold: 6,  aggro: 170, blast: 60, desc: '아군에게 달려가 폭발합니다.' },  // 닿으면 폭발해 범위 피해
@@ -69,16 +69,16 @@
       bat:    { name: '박쥐',   hp: 22, dmg: 6,  speed: 95,  r: 8,  range: 16, rate: 1.0, gold: 6,  aggro: 240, air: true, desc: '공중형이라 궁수 계열과 포탑만 공격할 수 있습니다.' },
       boar:   { name: '멧돼지', hp: 130, dmg: 13, speed: 62, r: 14, range: 22, rate: 0.9, gold: 12, aggro: 200, rush: 1.9, desc: '멀리서 빠르게 돌진합니다.' },
       spider: { name: '독거미', hp: 52, dmg: 8,  speed: 60,  r: 10, range: 18, rate: 1.0, gold: 9,  aggro: 150, poison: 5, desc: '물린 아군을 중독시킵니다.' },
-      ghost:  { name: '유령',   hp: 75, dmg: 10, speed: 58,  r: 10, range: 20, rate: 0.9, gold: 11, aggro: 140, mres: 0.5, desc: '근접 피해를 50%만 입습니다.' },
+      ghost:  { name: '유령',   hp: 75, dmg: 10, speed: 58,  r: 10, range: 20, rate: 0.9, gold: 11, aggro: 140, mres: 0.5, desc: '근접 피해를 50% 방어합니다.' },
       captain:   { name: '정예 돌격병',   hp: 95,  dmg: 12, speed: 82,  r: 11, range: 22, rate: 1.1, gold: 9,  aggro: 130, desc: '더 빠르고 단단한 돌격병입니다.' },
-      ironshield:{ name: '철갑 방패병',   hp: 300, dmg: 12, speed: 42,  r: 15, range: 24, rate: 0.9, gold: 18, aggro: 90,  rres: 0.3, desc: '원거리 피해를 30%만 입습니다.' },
+      ironshield:{ name: '철갑 방패병',   hp: 300, dmg: 12, speed: 42,  r: 15, range: 24, rate: 0.9, gold: 18, aggro: 90,  rres: 0.3, desc: '원거리 피해를 70% 방어합니다.' },
       crossbow:  { name: '석궁 사수',     hp: 55,  dmg: 14, speed: 50,  r: 10, range: 260, rate: 0.7, gold: 14, aggro: 280, ranged: true, desc: '아주 멀리서 강한 화살을 쏩니다.' },
       sapper:    { name: '공병',          hp: 70,  dmg: 55, speed: 90,  r: 10, range: 12, rate: 1.0, gold: 13, aggro: 180, blast: 110, desc: '넓은 범위로 폭발합니다.' },
       warlock:   { name: '흑마법사',      hp: 120, dmg: 0,  speed: 48,  r: 11, range: 0,  rate: 0,   gold: 22, aggro: 0, healRange: 160, healPct: 0.07, healRate: 2.2, keep: 280, desc: '다른 적을 더 강하게 치유합니다.' },
       ogre:      { name: '오우거',        hp: 800, dmg: 36, speed: 36,  r: 21, range: 30, rate: 0.6, gold: 45, aggro: 100, desc: '거대하고 매우 단단합니다.' },
       direwolf:  { name: '광포한 늑대',   hp: 90,  dmg: 14, speed: 150, r: 11, range: 20, rate: 1.2, gold: 12, aggro: 220, desc: '늑대보다 훨씬 빠르고 강합니다.' },
       wyvern:    { name: '와이번',        hp: 160, dmg: 18, speed: 110, r: 12, range: 18, rate: 0.9, gold: 22, aggro: 260, air: true, desc: '강한 공중형이라 궁수 계열과 포탑만 공격할 수 있습니다.' },
-      wraith:    { name: '망령',          hp: 160, dmg: 24, speed: 70,  r: 12, range: 22, rate: 0.9, gold: 20, aggro: 150, mres: 0.3, desc: '근접 피해를 30%만 입습니다.' },
+      wraith:    { name: '망령',          hp: 160, dmg: 24, speed: 70,  r: 12, range: 22, rate: 0.9, gold: 20, aggro: 150, mres: 0.3, desc: '근접 피해를 70% 방어합니다.' },
       brute:  { name: '거한',   hp: 240, dmg: 16, speed: 34, r: 17, range: 26, rate: 0.7, gold: 20, aggro: 100, desc: '느리지만 매우 단단합니다.' },           // 느리고 단단하다
     },
     // 일반 적 등장표: from 라운드부터 가중치 w로 섞여 나온다 (라운드가 갈수록 종류가 늘어난다)
@@ -114,11 +114,11 @@
     jobs: {
       sword: {
         t1: [
-          { id: 'knight', name: '기사', desc: '체력 +80%, 받는 피해 -16%', mods: { hp: 0.8, def: 0.16 } },
+          { id: 'knight', name: '기사', desc: '체력 +80%, 피해 16% 방어', mods: { hp: 0.8, def: 0.16 } },
           { id: 'fighter', name: '투사', desc: '공격력 +50%, 공격 속도 +20%, 연속 공격 확률 +12%', mods: { atk: 0.5, rate: 0.2, dbl: 0.12 } },
         ],
         t2: {
-          knight: [{ id: 'paladin', name: '성기사', desc: '체력 +50%, 받는 피해 -11%, 초당 체력 2% 회복', mods: { hp: 0.5, def: 0.11, regen: 0.02 } }],
+          knight: [{ id: 'paladin', name: '성기사', desc: '체력 +50%, 피해 11% 방어, 초당 체력 2% 회복', mods: { hp: 0.5, def: 0.11, regen: 0.02 } }],
           fighter: [{ id: 'blademaster', name: '검성', desc: '공격력 +60%, 주변 적에게 50% 베기 피해, 연속 공격 확률 +10%', mods: { atk: 0.6, cleave: 0.5, dbl: 0.1 } }],
         },
       },
@@ -308,7 +308,7 @@
     { id: 'u_atk',   cat: 'unit', rar: 'common', max: 5, generic: 'atk' },
     { id: 'u_rate',  cat: 'unit', rar: 'common', max: 4, generic: 'rate' },
     // 유닛 특성 (종류 고정)
-    { id: 'u_guard',   cat: 'unit', rar: 'rare', max: 3, type: 'sword',  name: '검사 · 방어 자세', desc: l => '검사가 받는 피해 -' + Math.round(V().guard * 100 * l) + '%' },
+    { id: 'u_guard',   cat: 'unit', rar: 'rare', max: 3, type: 'sword',  name: '검사 · 방어 자세', desc: l => '검사가 피해를 ' + Math.round(V().guard * 100 * l) + '% 방어' },
     { id: 'u_charge',  cat: 'unit', rar: 'rare', max: 2, type: 'sword',  name: '검사 · 돌진',      desc: l => '검사 접근 속도 +' + Math.round(V().charge * 100 * l) + '%, 공격 속도 +' + Math.round(V().chargeRate * 100 * l) + '%' },
     { id: 'u_pierce',  cat: 'unit', rar: 'rare', max: 3, type: 'archer', name: '궁수 · 관통 화살', desc: l => '화살이 뒤의 적 ' + l + '명에게 ' + Math.round(V().pierce * 100) + '% 피해' },
     { id: 'u_crit',    cat: 'unit', rar: 'rare', max: 3, type: 'archer', name: '궁수 · 치명타',    desc: l => '치명타 확률 +' + Math.round(V().crit * 100 * l) + '% (치명타 피해 ×' + V().critMul + ')' },
@@ -325,7 +325,7 @@
     // 성 — 보급 오라 (성 주변 아군 대상)
     { id: 'a_heal', cat: 'core', rar: 'common', max: 5, name: '치유 오라', desc: l => '오라 안 아군이 초당 최대 체력의 ' + +(V().auraHeal * 100 * l).toFixed(1) + '% 회복' },
     { id: 'a_atk',  cat: 'core', rar: 'common', max: 5, name: '군기 오라', desc: l => '오라 안 아군 공격력 +' + Math.round(V().auraAtk * 100 * l) + '%' },
-    { id: 'a_def',  cat: 'core', rar: 'common', max: 5, name: '철벽 오라', desc: l => '오라 안 아군 받는 피해 -' + Math.min(Math.round(V().auraDefCap * 100), Math.round(V().auraDef * 100 * l)) + '%' },
+    { id: 'a_def',  cat: 'core', rar: 'common', max: 5, name: '철벽 오라', desc: l => '오라 안 아군이 피해를 ' + Math.min(Math.round(V().auraDefCap * 100), Math.round(V().auraDef * 100 * l)) + '% 방어' },
     { id: 'a_spd',  cat: 'core', rar: 'common', max: 4, name: '신속 오라', desc: l => '오라 안 아군 이동·공격 속도 +' + Math.round(V().auraSpd * 100 * l) + '%' },
     { id: 'a_rad',  cat: 'core', rar: 'common', max: 4, name: '오라 강화', desc: l => '모든 오라 효과 +' + Math.round(V().auraBoost * 100 * l) + '%', needsAura: true },
     // 성 — 요새
@@ -480,6 +480,32 @@
     S.round = r - 1; S.phase = 'round'; S.roundT = ROUND_TIME; S.pools.length = 0; S.rain.length = 0; S.queue = []; S.enemies.length = 0; S.shots.length = 0; S.zones.length = 0;
     if (r > ACT1_END) S.act = 2;
     return S;
+  }
+  // ───────────── 개발자 모드: r라운드에 맞는 성·강화·전직·유닛을 알아서 갖춰 준다 (골드 무한, 랭킹·기록 제외) ─────────────
+  const DEV_GOLD = 1e9;
+  const DEV_W = {"default": 1, "c_bomb": 3.28, "u_pierce": 2.75, "a_def": 2.7, "a_atk": 0.55, "a_heal": 1.19, "c_chain": 2.04, "s_hero": 2.03, "s_marksman": 1.63, "s_ballista": 1.23, "s_repeaters": 1.06, "u_aoeheal": 1.63, "u_charge": 1.1, "u_crit": 0.5, "u_range": 0.45, "s_golem": 0.55, "s_turret": 0.47, "c_atk": 0.9, "c_rate": 0.42, "c_splash": 0.85, "c_range": 0.34, "u_guard": 0.47, "u_revive": 0.42, "a_spd": 0.42, "a_rad": 1.18, "f_hp": 0.39, "f_repair": 0.39, "f_thorn": 0.32, "u_hp:sword": 0.55, "u_atk:sword": 0.55, "u_rate:sword": 0.44, "u_hp:archer": 0.82, "u_atk:archer": 0.47, "u_rate:archer": 0.91, "u_hp:priest": 0.39, "u_atk:priest": 0.39, "u_rate:priest": 0.41};
+  function devSetup(S, r) {
+    S.dev = true; S.gold = DEV_GOLD;
+    const lv = clamp(1 + Math.floor(r / 6), 1, CFG.castle.max); for (let i = 1; i < lv; i++) upgradeCastle(S, true);
+    const fill = frac => { // 검사 3 : 궁수 2 : 사제 1 비율로 인구를 채운다
+      const want = Math.floor(Math.min(popCap(S) * frac, 10 + r, 90)), ratio = ['sword', 'sword', 'sword', 'archer', 'archer', 'priest'];
+      for (let i = 0; popCount(S) < want && i < 400; i++) { const t = ratio[i % 6]; S.buyCd[t] = 0; S.gold = DEV_GOLD; if (!buy(S, t).ok) break; }
+    };
+    fill(0.5);
+    const score = c => DEV_W[c.key] ?? DEV_W[c.id] ?? DEV_W.default ?? 1;
+    const picks = Math.floor((r - 1) * 0.85);
+    for (let i = 0; i < picks; i++) { openCards(S, i % 5 === 4); const o = S.cards.offer; if (!o) break; let bi = 0; for (let k = 1; k < o.length; k++) if (score(o[k]) > score(o[bi])) bi = k; pickCard(S, bi); }
+    const prefer = ['r_army', 'r_fort', 'r_knights', 'r_snipers', 'r_golem'];
+    for (let b = 0; b < Math.floor((r - 1) / 5); b++) {
+      openJobs(S, '개발자'); const o = S.jobs.offer; if (!o) break; let bi = 0;
+      if (o.reward) { const want = prefer[(b - 6 + 60) % prefer.length]; const k = o.list.findIndex(x => x.id === want); if (k >= 0) bi = k; }
+      pickJob(S, bi);
+    }
+    fill(0.9);
+    for (const u of S.units) if (!u.dead) { refreshUnit(S, u); u.hp = u.max; }
+    S.core.hp = S.core.max; S.gold = DEV_GOLD;
+    if (r > MAX_ROUND) S.endless = true;
+    return jumpToRound(S, r);
   }
   function describeJobs(S) {
     return UNIT_TYPES.filter(t => S.jobs[t].ids.length).map(t => ({ type: t, className: CFG.units[t].name, names: S.jobs[t].ids.map(id => jobDef(t, id).name) }));
@@ -720,6 +746,7 @@
   }
   function checkRun(S) {
     const st = S.stats, bound = goldBound(S.round), why = [];
+    if (S.dev) why.push('개발자 모드');
     if (st.earned > bound) why.push('골드 수입 ' + Math.round(st.earned) + ' > 상한 ' + bound);
     if (st.spent > st.earned + 1) why.push('사용 골드가 수입보다 많음');
     if (S.gold > st.earned - st.spent + 1 || S.gold < st.earned - st.spent - 1) why.push('보유 골드가 수입-지출과 맞지 않음');
@@ -876,14 +903,14 @@
     if (S.captureEvents) numNote(S, tgt, dmg, crit ? 'c' : 'd');
     if (tgt.hp > 0) return;
     if (tgt.team === 'u' && S.reviveLeft > 0 && !isStatic(tgt) && S.units.some(p => p.type === 'priest' && !p.dead && p !== tgt)) {
-      S.reviveLeft--; tgt.hp = tgt.max * V().revive; emit(S, { type: 'revive', x: tgt.x, y: tgt.y }); return;
+      S.reviveLeft--; tgt.hp = tgt.max * V().revive; emit(S, { type: 'revive', x: tgt.x, y: tgt.y, ut: tgt.type, job: tgt.job, jt: tgt.jobTier }); return;
     }
     if (tgt.team === 'e' && tgt.kind === 'boss') { beginBossDeath(S, tgt); return; } // 보스는 사망 연출이 끝난 뒤에 쓰러진다
     tgt.dead = true;
     if (tgt.team === 'e') {
       S.gold += tgt.gold; S.stats.earned += tgt.gold; S.kills++; S.stats.killBy[tgt.kind] = (S.stats.killBy[tgt.kind] || 0) + 1; if (tgt.kind === 'boss') S.stats.bossKills++; emit(S, { type: 'kill', x: tgt.x, y: tgt.y, boss: tgt.kind === 'boss' });
     }
-    else { if (S.fallen.length < 80) S.fallen.push(tgt.type); emit(S, { type: 'udead', x: tgt.x, y: tgt.y }); }
+    else { if (S.fallen.length < 80) S.fallen.push(tgt.type); const k = src && src.team === 'e' ? { kind: src.kind, look: src.look, r: src.r, elite: !!src.elite } : null; emit(S, { type: 'udead', x: tgt.x, y: tgt.y, ut: tgt.type, job: tgt.job, jt: tgt.jobTier, by: k }); }
   }
   // 발사 위치: 몸 중심이 아니라 그림의 포구/활 위치 (조준 방향으로 len만큼 나간 지점, 높이 h0에서 출발)
   const MUZZLE = {
@@ -911,7 +938,7 @@
   // 도착한 투사체 처리
   function resolveShot(S, s) {
     if (s.aoe) { // 보스 포격: 떨어진 지점 주변 범위 피해
-      for (const u of S.units) if (!u.dead && Math.hypot(u.x - s.t.x, u.y - s.t.y) <= s.aoe + u.r) damage(S, u, s.dmg);
+      for (const u of S.units) if (!u.dead && Math.hypot(u.x - s.t.x, u.y - s.t.y) <= s.aoe + u.r) damage(S, u, s.dmg, false, s.from);
       if (Math.hypot(S.core.x - s.t.x, S.core.y - s.t.y) <= s.aoe + S.core.r) hitCore(S, s.dmg * CFG.balance.shellCoreMul, '보스 포격');
       emit(S, { type: 'boom', x: s.t.x, y: s.t.y, r: s.aoe, big: true, enemy: true });
     } else if (s.t === S.core) hitCore(S, s.dmg, '화살(사수)');
@@ -1065,7 +1092,7 @@
     if (!free && tgt && Math.hypot(tgt.x - CX, tgt.y - CY) > CFG.leash) tgt = null; // (기본 모드) 성에서 너무 먼 적은 쫓지 않는다
     if (hold && tgt) { // (수비 모드) 자리에서 조금만 벗어난다: 자리 근처로 들어온 적만 상대하고, 먼 곳의 적에게 끌려가지 않는다
       const lim = melee ? CFG.holdRadius : 0; // 근접은 자리 근처의 적만, 원거리는 제자리에서 사거리 안의 적만 쏜다
-      tgt = find(u.hx, u.hy);
+      tgt = melee ? nearest(S.gE, u.hx, u.hy, lim) : find(u.hx, u.hy); // 근접은 자기 자리 주변(lim)에 들어온 적을 상대하러 나가고, 그보다 먼 적은 쫓지 않는다
       if (tgt && Math.hypot(tgt.x - u.hx, tgt.y - u.hy) > lim + tgt.r) tgt = null;
     }
     if (tgt && (free || hold || fromCore <= CFG.leash + 40)) moveToward(u, tgt.x, tgt.y, dt, stopFor(tgt), spm * rush);
@@ -1139,7 +1166,7 @@
       if (e.leapT > 0) {
         e.leapT -= dt; e.speedMul = 0; const k = Math.min(1, dt / Math.max(0.03, e.leapT + dt)); e.x += (e.leapX - e.x) * k; e.y += (e.leapY - e.y) * k;
         if (e.leapT <= 0) {
-          for (const u of S.units) if (!u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= A.leap.r + u.r) { damage(S, u, e.dmg * e.dmgMul * A.leap.mul); u.stunT = Math.max(u.stunT || 0, 0.8); }
+          for (const u of S.units) if (!u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= A.leap.r + u.r) { damage(S, u, e.dmg * e.dmgMul * A.leap.mul, false, e); u.stunT = Math.max(u.stunT || 0, 0.8); }
           emit(S, { type: 'bossShock', x: e.x, y: e.y, r: A.leap.r });
         }
       } else {
@@ -1202,7 +1229,7 @@
   }
   function explode(S, e) {
     const R = e.blast;
-    for (const u of S.units) if (!u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= R + u.r) damage(S, u, e.dmg);
+    for (const u of S.units) if (!u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= R + u.r) damage(S, u, e.dmg, false, e);
     if (Math.hypot(S.core.x - e.x, S.core.y - e.y) <= R + S.core.r) hitCore(S, e.dmg, '폭파병');
     emit(S, { type: 'boom', x: e.x, y: e.y, r: R, enemy: true });
     e.dead = true; // 자폭: 골드/처치 수 없음
@@ -1249,7 +1276,7 @@
       else {
         damage(S, t, dmg, false, e); if (e.poison && !t.dead) t.poisonT = Math.max(t.poisonT || 0, e.poison);
         if (e.kind === 'boss') { // 보스의 기본 공격은 범위 공격: 맞은 대상 주변의 아군도 함께 피해
-          const R = CFG.balance.bossSplashR + e.r * 0.5; eachNear(S.gU, t.x, t.y, R, o => { if (o !== t) damage(S, o, dmg * CFG.balance.bossSplash); });
+          const R = CFG.balance.bossSplashR + e.r * 0.5; eachNear(S.gU, t.x, t.y, R, o => { if (o !== t) damage(S, o, dmg * CFG.balance.bossSplash, false, e); });
           emit(S, { type: 'bossSlam', x: t.x, y: t.y, r: R });
         } else if (e.elite) emit(S, { type: 'emelee', x: e.x, y: e.y, tx: t.x, ty: t.y });
       }
@@ -1259,6 +1286,7 @@
   // ───────────── 한 틱 진행 ─────────────
   function tick(S, dt) {
     if (S.over) return;
+    if (S.dev && S.gold < 1e8) S.gold = DEV_GOLD; // 개발자 모드: 골드 무한
     if (S.bossDeath) { stepBossDeath(S, dt); return; } // 보스 사망·부활 연출 중에는 시간이 멈춘다
     if (S.cards.offer || S.jobs.offer || S.cinematic) return; // 카드/전직 선택, 연출 중에는 시간이 멈춘다
     S.t += dt;
@@ -1375,7 +1403,7 @@
 
   return {
     CFG, MAX_ROUND, ACT1_END, extraAngles, EXTRA_RING, ROUND_TIME, SPAWN_TIME, PREP_TIME, SPAWN_RING, UNIT_TYPES, CARD_DEFS,
-    createGame, tick, buy, enqueue, cancelProd, goldBound, checkRun, upgradeCastle, castleCost, popCap, popGain, popCount, specialCount, endCinematic, jumpToRound, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo, drainEvents, pickCard, reroll, describeTaken, openCards,
+    createGame, tick, buy, devSetup, enqueue, cancelProd, goldBound, checkRun, upgradeCastle, castleCost, popCap, popGain, popCount, specialCount, endCinematic, jumpToRound, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo, drainEvents, pickCard, reroll, describeTaken, openCards,
     unitCostOf, enemyCount, hpMul, dmgMul, mulberry32, damage,
   };
 });

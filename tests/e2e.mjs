@@ -70,7 +70,7 @@ try {
   check('키보드 2번으로 선택 → 카드창 닫힘', await ev("document.getElementById('picker').classList.contains('hidden') && __game.S.cards.offer === null"));
   const a0 = await ev('__game.S.t'); await sleep(1500); const a1 = await ev('__game.S.t');
   check('선택 후 시간 재개', a1 - a0 > 1.2, (a1 - a0).toFixed(2) + '초');
-  check('강화 반영(토스트/목록)', await ev("(document.getElementById('btnUp').click(), document.getElementById('upl').textContent.includes('Lv 1'))"));
+  check('강화 반영(강화 정보 창)', await ev("(document.getElementById('btnInfo').click(), document.getElementById('infoBody').textContent.includes('Lv 1'))")); await ev("document.querySelector('[data-close=infoPanel]').click()");
 
   // 2.5) 전직 선택창: 보스 처치 보상 (선택 중 시간 정지, 키보드 선택, 강화 목록 반영)
   await open('?bot=1&nopick=1&seed=21&zoom=1', 800); // nopick: 봇이 선택창을 자동으로 넘기지 않게
@@ -81,8 +81,8 @@ try {
   const pickedJob = await ev('__game.S.jobs.offer.list[0].name');
   await send('Input.dispatchKeyEvent', { type: 'keyDown', key: '1', code: 'Digit1', text: '1' }); await send('Input.dispatchKeyEvent', { type: 'keyUp', key: '1', code: 'Digit1' }); await sleep(500);
   check('키보드 1번으로 전직 → 창 닫힘, 시간 재개', await ev("document.getElementById('picker').classList.contains('hidden') && __game.S.jobs.offer===null") && (await ev('__game.S.t')) > jt0, pickedJob);
-  await ev("document.getElementById('btnUp').click()");
-  check('강화 목록에 전직 이력 표시', (await ev("document.getElementById('upl').textContent")).includes(pickedJob) && (await ev("document.getElementById('upl').textContent")).includes('전직'), await ev("document.getElementById('upl').textContent"));
+  await ev("document.getElementById('btnInfo').click()"); const infoTx = await ev("document.getElementById('infoBody').textContent"); await ev("document.querySelector('[data-close=infoPanel]').click()");
+  check('강화 정보에 전직 이력 표시', infoTx.includes(pickedJob) && infoTx.includes('전직'), infoTx.slice(0, 60));
 
   // 3) 마우스 드래그(실제 입력 이벤트)로 화면 이동
   await open('?bot=1&seed=11&zoom=1', 800);
