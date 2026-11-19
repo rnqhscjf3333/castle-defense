@@ -1,7 +1,7 @@
-/* 성채 지키기 — 맵 배경과 성채 그리기 (렌더링 전용)
- * - 풀밭 바닥 + 흙길 + 성채 앞 돌바닥 광장 + 덤불/바위/꽃은 조각(chunk) 단위로 한 번만 그려 캐시한다.
+/* 성 지키기 — 맵 배경과 성 그리기 (렌더링 전용)
+ * - 풀밭 바닥 + 흙길 + 성 앞 돌바닥 광장 + 덤불/바위/꽃은 조각(chunk) 단위로 한 번만 그려 캐시한다.
  * - 나무는 매 프레임 그리며, 유닛/적과 y 순서로 함께 정렬되어 앞뒤가 맞는다.
- * - 성채는 매 프레임 그려서 포신이 적을 향해 돌고, 체력이 줄면 금이 가고 연기/불이 난다.
+ * - 성은 매 프레임 그려서 포신이 적을 향해 돌고, 체력이 줄면 금이 가고 연기/불이 난다.
  * 게임 규칙(core.js)과 무관하며 상태를 바꾸지 않는다. (길 방향은 CastleCore.spawnAngles를 따른다)
  */
 (function () {
@@ -17,7 +17,7 @@
   const mix = (c1, c2, t) => `rgb(${Math.round(lerp(c1[0], c2[0], t))},${Math.round(lerp(c1[1], c2[1], t))},${Math.round(lerp(c1[2], c2[2], t))})`;
   const GRASS_D = [44, 92, 52], GRASS_L = [92, 150, 72];
 
-  // ───────────── 길 (성채에서 바깥으로 뻗는 흙길) ─────────────
+  // ───────────── 길 (성에서 바깥으로 뻗는 흙길) ─────────────
   let act = 1, roads = [], trees = [], deco = { bushes: [], rocks: [], flowers: [], tufts: [] }, inited = false;
   const chunks = new Map();
   let openCount = 2; // 열려 있는 길 수 (2 → 4 → 6 → 8)
@@ -42,7 +42,7 @@
       return { th, phase, pts, main: i < 4, idx: i };
     });
     const r = rng(2026);
-    // 나무: 성채 주변과 길은 비우고, 바깥으로 갈수록/가장자리일수록 빽빽하게. 군데군데 숲과 빈터.
+    // 나무: 성 주변과 길은 비우고, 바깥으로 갈수록/가장자리일수록 빽빽하게. 군데군데 숲과 빈터.
     for (let t = 0; t < 9000 && trees.length < 520; t++) {
       const x = 40 + r() * (W - 80), y = 40 + r() * (H - 80), d = Math.hypot(x - CX, y - CY);
       if (d < 330) continue;
@@ -96,7 +96,7 @@
       const pr = rng(Math.floor(road.th * 1000));
       for (let k = 0; k < pts.length * 2; k++) { const p = pts[Math.floor(pr() * pts.length)]; if (!inChunk(p[0], p[1], 40)) continue; const a = pr() * TAU, d = pr() * w * 0.5; g.fillStyle = pr() < 0.5 ? 'rgba(120,100,76,.7)' : 'rgba(190,170,130,.7)'; g.beginPath(); g.arc(p[0] + Math.cos(a) * d, p[1] + Math.sin(a) * d, 1 + pr() * 1.8, 0, TAU); g.fill(); }
     }
-    // 성채 앞 돌바닥 광장
+    // 성 앞 돌바닥 광장
     if (inChunk(CX, CY, 190)) {
       g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.arc(CX + 4, CY + 6, 170, 0, TAU); g.fill();
       g.fillStyle = '#7b818c'; g.beginPath(); g.arc(CX, CY, 166, 0, TAU); g.fill();
@@ -179,7 +179,7 @@
     ctx.restore();
   }
 
-  // ───────────── 성채 ─────────────
+  // ───────────── 성 ─────────────
   function tower(ctx, x, y, now, flag) {
     ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(x + 3, y + 9, 17, 7, 0, 0, TAU); ctx.fill();
     ctx.fillStyle = '#8b92a1'; ctx.strokeStyle = '#4a505e'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, 15, 0, TAU); ctx.fill(); ctx.stroke();
@@ -192,7 +192,7 @@
   function drawCastle(ctx, c, now) {
     const hp = c.max ? c.hp / c.max : 1, t = now * 0.001, flash = c.flash > 0, lv = c.lv || 1, nc = c.cannons || 1;
     ctx.save(); ctx.translate(c.x, c.y);
-    // 성채 레벨: 3레벨부터 바깥 성벽 고리, 5레벨부터 금장식, 7레벨부터 대리석 빛깔 (레벨이 오를수록 웅장해진다)
+    // 성 레벨: 3레벨부터 바깥 성벽 고리, 5레벨부터 금장식, 7레벨부터 대리석 빛깔 (레벨이 오를수록 웅장해진다)
     if (lv >= 3) { ctx.strokeStyle = lv >= 7 ? '#e8dfc2' : '#aab2c2'; ctx.lineWidth = 7; ctx.beginPath(); ctx.arc(0, 0, 76, 0, TAU); ctx.stroke(); ctx.strokeStyle = 'rgba(40,46,58,.55)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(0, 0, 79.5, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.arc(0, 0, 72.5, 0, TAU); ctx.stroke();
       ctx.fillStyle = lv >= 5 ? '#ffd166' : '#c9cfdb'; for (let i = 0; i < 16; i++) { const a = i / 16 * TAU; ctx.beginPath(); ctx.arc(Math.cos(a) * 76, Math.sin(a) * 76, 3.2, 0, TAU); ctx.fill(); } }
     // 그림자
@@ -261,15 +261,15 @@
     for (const k of keys) if (chunks.has(k)) { const [ix, iy] = k.split(',').map(Number); chunks.set(k, makeChunk(ix, iy)); }
   }
   function roadPts(i) { return roads[i] ? roads[i].pts : []; }
-  // 2막의 어둠: 성채 주변만 횃불로 밝고 바깥으로 갈수록 어둡고 푸르스름하다 (월드 위에 한 번 덮는다)
+  // 2막의 어둠: 성 주변만 횃불로 밝고 바깥으로 갈수록 어둡고 푸르스름하다 (월드 위에 한 번 덮는다)
   function drawNight(ctx, vw, vh, sx, sy, zoom, now) {
     const flick = 1 + Math.sin(now * 0.004) * 0.03 + Math.sin(now * 0.011) * 0.015, r0 = 300 * zoom * flick, r1 = Math.max(vw, vh) * 0.85;
     ctx.fillStyle = 'rgba(12,14,52,0.18)'; ctx.fillRect(0, 0, vw, vh); // 전체를 푸르스름하게 어둡게
     const g = ctx.createRadialGradient(sx, sy, r0 * 0.3, sx, sy, r1);
-    g.addColorStop(0, 'rgba(6,6,28,0)'); g.addColorStop(Math.min(0.85, r0 / r1), 'rgba(6,6,28,0.12)'); g.addColorStop(1, 'rgba(4,4,20,0.68)'); // 성채(횃불) 주변만 밝고 바깥은 깊게 어둡다
+    g.addColorStop(0, 'rgba(6,6,28,0)'); g.addColorStop(Math.min(0.85, r0 / r1), 'rgba(6,6,28,0.12)'); g.addColorStop(1, 'rgba(4,4,20,0.68)'); // 성(횃불) 주변만 밝고 바깥은 깊게 어둡다
     ctx.fillStyle = g; ctx.fillRect(0, 0, vw, vh);
     ctx.fillStyle = 'rgba(60,30,120,0.05)'; ctx.fillRect(0, 0, vw, vh); // 옅은 보랏빛 기운
-    const gl = ctx.createRadialGradient(sx, sy, 0, sx, sy, 230 * zoom * flick); // 성채 부분은 횃불빛으로 한층 밝게
+    const gl = ctx.createRadialGradient(sx, sy, 0, sx, sy, 230 * zoom * flick); // 성 부분은 횃불빛으로 한층 밝게
     gl.addColorStop(0, 'rgba(255,214,150,0.20)'); gl.addColorStop(0.6, 'rgba(255,200,130,0.10)'); gl.addColorStop(1, 'rgba(255,200,130,0)');
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = gl; ctx.fillRect(sx - 240 * zoom * flick, sy - 240 * zoom * flick, 480 * zoom * flick, 480 * zoom * flick); ctx.restore();
   }

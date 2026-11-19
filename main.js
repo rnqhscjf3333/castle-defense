@@ -1,4 +1,4 @@
-/* 성채 지키기 — 화면/입력/UI. 게임 규칙은 core.js(CastleCore)에만 있다. */
+/* 성 지키기 — 화면/입력/UI. 게임 규칙은 core.js(CastleCore)에만 있다. */
 (function () {
   'use strict';
   const C = window.CastleCore, CFG = C.CFG, W = CFG.world.w, H = CFG.world.h, CX = CFG.world.cx, CY = CFG.world.cy;
@@ -122,7 +122,7 @@
     if (!S || !running || paused) return;
     const r = C.enqueue(S, t);
     if (!r.ok) A2.play('deny');
-    if (!r.ok) toast({ gold: '골드가 부족해요', queue: '생산 대기열이 가득 찼어요 (최대 ' + CFG.prodMax + '개)', pop: '인구가 가득 찼어요 — 성채를 업그레이드하면 늘어납니다' }[r.reason] || '생산할 수 없어요');
+    if (!r.ok) toast({ gold: '골드가 부족해요', queue: '생산 대기열이 가득 찼어요 (최대 ' + CFG.prodMax + '개)', pop: '인구가 가득 찼어요 — 성을 업그레이드하면 늘어납니다' }[r.reason] || '생산할 수 없어요');
   }
   // 생산 대기열 표시: 칸을 누르면 취소(환급)
   const prodq = document.createElement('div'); prodq.id = 'prodq'; $('dock').insertBefore(prodq, $('units'));
@@ -133,16 +133,16 @@
     if (key !== pqKey) { pqKey = key; prodq.innerHTML = L.map((p, i) => '<span class="pq' + (p.wait ? ' wait' : '') + '" data-i="' + i + '" title="누르면 취소하고 골드를 돌려받습니다">' + CFG.units[p.type].name + '<i></i></span>').join(''); }
     if (h && prodq.firstChild) prodq.firstChild.firstElementChild.style.width = Math.min(100, h.t / CFG.units[h.type].buyCd * 100) + '%';
   }
-  // 성채 업그레이드 버튼 (소환 버튼 옆): 골드로 성채를 올리면 인구 상한·체력·공격력·사거리가 오르고 특정 레벨마다 대포가 늘어난다
+  // 성 업그레이드 버튼 (소환 버튼 옆): 골드로 성을 올리면 인구 상한·체력·공격력·사거리가 오르고 특정 레벨마다 대포가 늘어난다
   const castleBtn = document.createElement('button'); castleBtn.className = 'btn panel ucard castlecard';
-  castleBtn.innerHTML = '<div class="nm"><span class="nmt">성채</span><span class="cnt"></span></div><div class="ds"></div><div class="cost"></div><span class="key">4</span>';
+  castleBtn.innerHTML = '<div class="nm"><span class="nmt">성</span><span class="cnt"></span></div><div class="ds"></div><div class="cost"></div><span class="key">4</span>';
   castleBtn.addEventListener('click', () => doCastle());
   $('units').appendChild(castleBtn);
   const cb = { lv: castleBtn.querySelector('.cnt'), ds: castleBtn.querySelector('.ds'), cost: castleBtn.querySelector('.cost') };
   function doCastle() {
     if (!S || !running || paused) return;
     const r = C.upgradeCastle(S);
-    if (!r.ok) { A2.play('deny'); toast(r.reason === 'max' ? '성채가 최대 레벨입니다' : '골드가 부족해요'); }
+    if (!r.ok) { A2.play('deny'); toast(r.reason === 'max' ? '성이 최대 레벨입니다' : '골드가 부족해요'); }
   }
   $('btnCenter').addEventListener('click', centerOnCore);
   const soundLabel = () => { $('btnSound').textContent = A2.state.muted ? '소리 끔' : '소리 켬'; };
@@ -186,7 +186,7 @@
     })();
     biTimer = setTimeout(() => el.classList.add('hidden'), 2200);
   }
-  // 길 열기: 라운드가 올라 길이 늘어나면 먼지 구름이 성채에서 바깥으로 퍼지며 새 길이 나타난다
+  // 길 열기: 라운드가 올라 길이 늘어나면 먼지 구름이 성에서 바깥으로 퍼지며 새 길이 나타난다
   let pendingPortal = 0;
   function syncPortal() { if (!pendingPortal || currentOffer()) return; const n = pendingPortal; pendingPortal = 0; addFx({ k: 'ring', x: CX, y: CY, t: 0, max: 0.8, c: '#ff3b3b', big: true }); setTimeout(() => banner('붉은 포탈이 하나 더 열렸습니다 (' + n + '/8)'), 1600); }
   function syncRoads() {
@@ -289,7 +289,7 @@
   }
 
   // ───────────── 업그레이드 선택창 / 강화 목록 ─────────────
-  const CAT_NAME = { unit: '유닛 강화', core: '성채 강화', summon: '특수 소환' };
+  const CAT_NAME = { unit: '유닛 강화', core: '성 강화', summon: '특수 소환' };
   const RAR_NAME = { common: '일반', rare: '희귀', epic: '영웅', legend: '전설' };
   let shownOffer = null, shownKind = null;
   // ── 선택창 이펙트 (등급: common 0 · rare 1 · epic 2 · legend 3) ──
@@ -437,7 +437,7 @@
         if (fx.length >= 300) continue; numFx++; addFx({ k: 'num', x: ev.x + (Math.random() - 0.5) * 14, y: ev.y, t: 0, max: ev.crit ? 0.95 : 0.75, v: Math.round(ev.v), n: ev.heal ? 'h' : ev.crit ? 'c' : ev.team === 'u' ? 'u' : 'e' });
       }
       else if (ev.type === 'newEnemy') showNewEnemy(ev.kind);
-      else if (ev.type === 'castleUp') { addFx({ k: 'ring', x: CX, y: CY, t: 0, max: 0.9, c: '#ffd166', big: true, r: 150 }); addFx({ k: 'ring', x: CX, y: CY, t: -0.15, max: 0.8, c: '#ffffff', r: 110 }); addFx({ k: 'summon', x: CX, y: CY + 30, t: 0, max: 0.9 }); toast('성채 Lv.' + ev.lv + (ev.pop < 1e8 ? ' — 인구 상한 ' + ev.pop : ' — 최대 레벨: 인구 제한 없음') + (ev.cannons > 1 ? ' · 대포 ' + ev.cannons + '문' : '')); }
+      else if (ev.type === 'castleUp') { addFx({ k: 'ring', x: CX, y: CY, t: 0, max: 0.9, c: '#ffd166', big: true, r: 150 }); addFx({ k: 'ring', x: CX, y: CY, t: -0.15, max: 0.8, c: '#ffffff', r: 110 }); addFx({ k: 'summon', x: CX, y: CY + 30, t: 0, max: 0.9 }); toast('성 Lv.' + ev.lv + (ev.pop < 1e8 ? ' — 인구 상한 ' + ev.pop : ' — 최대 레벨: 인구 제한 없음') + (ev.cannons > 1 ? ' · 대포 ' + ev.cannons + '문' : '')); }
       else if (ev.type === 'melee') { if (fx.length < 220 && cam.zoom > 0.4) addFx({ k: 'slash', x: ev.tx, y: ev.ty, a: Math.atan2(ev.ty - ev.y, ev.tx - ev.x), t: 0, max: 0.2, c: atkColor(ev.job, ev.ut) }); }
       else if (ev.type === 'emelee') { if (fx.length < 220 && cam.zoom > 0.4) { addFx({ k: 'slash', x: ev.tx, y: ev.ty, a: Math.atan2(ev.ty - ev.y, ev.tx - ev.x), t: 0, max: 0.26, c: '#ff4adf', big: true }); } }
       else if (ev.type === 'bossShock') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.55, c: '#ffcf40', r: ev.r, big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: -0.08, max: 0.5, c: '#ff5a3a', r: ev.r * 0.7 }); for (let i = 0; i < 5; i++) addFx({ k: 'dust', x: ev.x + (Math.random() - 0.5) * ev.r, y: ev.y + (Math.random() - 0.5) * ev.r * 0.6, t: -Math.random() * 0.1, max: 0.9, r: 16 }); }
@@ -520,14 +520,14 @@
     for (const a of C.extraAngles(S.extraPts || 0)) { const px = CX + Math.cos(a) * C.EXTRA_RING, py = CY + Math.sin(a) * C.EXTRA_RING; if (px > x0 - 60 && px < x1 + 60 && py > y0 - 40 && py < y1 + 40) Scenery.drawPortal(ctx, px, py, now); }
 
     const c = S.core;
-    // 성채 사거리
+    // 성 사거리
     ctx.strokeStyle = 'rgba(90,169,255,.18)'; ctx.lineWidth = 1.5 / z; ctx.beginPath(); ctx.arc(c.x, c.y, c.range, 0, Math.PI * 2); ctx.stroke();
     // 보급 오라 범위
     if (S.aura.on) {
       ctx.fillStyle = 'rgba(107,220,139,.05)'; ctx.beginPath(); ctx.arc(c.x, c.y, S.aura.r, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = 'rgba(107,220,139,.35)'; ctx.lineWidth = 1.5 / z; ctx.setLineDash([10 / z, 8 / z]); ctx.stroke(); ctx.setLineDash([]);
     }
-    // 성채 (포신이 적을 향해 돌고, 체력이 줄면 금·연기·불)
+    // 성 (포신이 적을 향해 돌고, 체력이 줄면 금·연기·불)
     Scenery.drawCastle(ctx, c, now);
 
     const p1 = performance.now(); ema('ground', p1 - p0);
@@ -565,7 +565,7 @@
       }
       ctx.globalAlpha = 0.25; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(sh.x, sh.y, 4, 2, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
       const px = sh.x, py = sh.y - sh.h, ang = Math.atan2(sh.vy - sh.vh, sh.vx);
-      if (sh.color === 'c') { // 성채 포탄
+      if (sh.color === 'c') { // 성 포탄
         ctx.fillStyle = '#2b3446'; ctx.strokeStyle = '#9fb4d6'; ctx.lineWidth = 1 / z; ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
         ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.beginPath(); ctx.arc(px - 1.5, py - 1.5, 1.6, 0, Math.PI * 2); ctx.fill();
       } else if (sh.color === 'es') { // 보스 포탄
@@ -638,7 +638,7 @@
       ctx.globalAlpha = 1;
     }
     ema('rest', performance.now() - p2);
-    // 2막: 어두운 밤 (성채 주변만 횃불로 밝다)
+    // 2막: 어두운 밤 (성 주변만 횃불로 밝다)
     if (S.act === 2 && !S.cinematic) { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); Scenery.drawNight(ctx, vw, vh, (CX - cam.x) * z + vw / 2, (CY - cam.y) * z + vh / 2, z, now); }
     // 무한 모드(51라운드~): 하늘이 붉게 물들고 점점 짙어진다
     if (S.round > C.MAX_ROUND) {
@@ -790,7 +790,7 @@
     const best = +(store.get('cd-best') || 0);
     const reached = S.round;
     if (reached > best) store.set('cd-best', String(reached));
-    $('ovTitle').textContent = win ? '방어 성공!' : '성채가 무너졌어요';
+    $('ovTitle').textContent = win ? '방어 성공!' : '성이 무너졌어요';
     $('ovBody').innerHTML = '<div class="stat"><div><b>' + reached + '</b>도달 라운드</div><div><b>' + S.kills + '</b>처치</div><div><b>' + fmtTime(S.t) + '</b>시간</div></div>'
       + '<p>최고 기록: ' + Math.max(best, reached) + '라운드</p>'
       + '<div id="regbox"><input id="nameIn" maxlength="12" placeholder="닉네임 (최대 12자)" autocomplete="off"><button id="regBtn">랭킹 등록</button></div><div id="rankbox"></div>';
@@ -818,11 +818,11 @@
     box.innerHTML = '<div class="rankhead">' + (r.server ? '전체 랭킹' : (Net.configured ? '서버에 연결하지 못해 내 기록만 표시' : '내 기록 (서버 미설정)')) + '</div>'
       + (rows ? '<table class="rank"><tr><th>#</th><th>이름</th><th>기록</th><th>시간</th></tr>' + rows + '</table>' : '<p>아직 기록이 없어요.</p>');
   }
-  // 모드 전환: 왼쪽 위 라운드 표시 아래에서 언제든 바꿀 수 있다 (기본: 성채 주변 방어 / 자유: 범위 안의 적을 멀리까지 추격)
+  // 모드 전환: 왼쪽 위 라운드 표시 아래에서 언제든 바꿀 수 있다 (기본: 성 주변 방어 / 자유: 범위 안의 적을 멀리까지 추격)
   function syncModeBar() { if (!S) return; for (const b of document.querySelectorAll('#modeBar button')) b.classList.toggle('on', b.dataset.mode === S.mode); }
   for (const b of document.querySelectorAll('#modeBar button')) b.addEventListener('click', () => {
     if (!S) return; S.mode = ['free', 'hold'].includes(b.dataset.mode) ? b.dataset.mode : 'normal'; store.set('cd-mode', S.mode); syncModeBar();
-    toast(S.mode === 'hold' ? '수비 모드: 유닛이 자기 자리를 지키며 사거리 안의 적만 공격합니다' : S.mode === 'free' ? '자유 모드: 유닛이 범위 안의 적을 멀리까지 쫓아가 공격합니다' : '기본 모드: 유닛이 성채 주변을 지키며 싸웁니다');
+    toast(S.mode === 'hold' ? '수비 모드: 유닛이 자기 자리를 지키며 사거리 안의 적만 공격합니다' : S.mode === 'free' ? '자유 모드: 유닛이 범위 안의 적을 멀리까지 쫓아가 공격합니다' : '기본 모드: 유닛이 성 주변을 지키며 싸웁니다');
   });
   $('btnRank').addEventListener('click', () => { $('ovBody').innerHTML = '<div id="rankbox"></div>'; showRank(null); $('btnRank').classList.add('hidden'); $('go').textContent = '게임 시작'; });
   // 플레이 도중 창을 닫거나 숨길 때도 기록을 남긴다 (개선 자료)
@@ -859,7 +859,7 @@
 
   // ───────────── 타이틀 화면 · 시작 연출 ─────────────
   let intro = null;
-  function startIntro() { // 구름이 걷히면서 멀리서 성채로 확대된다
+  function startIntro() { // 구름이 걷히면서 멀리서 성으로 확대된다
     const cl = $('clouds'); cl.innerHTML = '';
     for (let i = 0; i < 9; i++) { const a = i / 9 * 6.283 + 0.4, d = i % 2 ? 14 : 26, c = document.createElement('i'); c.style.cssText = '--x:' + (Math.cos(a) * d).toFixed(1) + 'vmax;--y:' + (Math.sin(a) * d * 0.7).toFixed(1) + 'vmax;width:' + (46 + (i * 7) % 24) + 'vmax'; cl.appendChild(c); }
     cl.classList.remove('hidden'); document.body.classList.add('introOn');

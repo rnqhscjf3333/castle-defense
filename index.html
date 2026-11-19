@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>성채 지키기</title>
+<title>성 지키기</title>
 <meta name="theme-color" content="#10141c">
 <style>
 :root {
@@ -148,7 +148,7 @@ table.rank tr.me td { background: rgba(255,204,64,.16); font-weight: 700; }
 #howto h2 { margin: 0 0 6px; } #howto p { color: var(--muted); font-size: 14px; line-height: 1.55; margin: 6px 0; }
 #howto .help { text-align: left; font-size: 13px; margin: 12px 0; padding: 10px 12px 10px 28px; background: rgba(255,255,255,.04); border-radius: 10px; line-height: 1.6; }
 
-/* 패배 연출: 성채가 연쇄 폭발하며 무너지고 화면이 식어간다 */
+/* 패배 연출: 성이 연쇄 폭발하며 무너지고 화면이 식어간다 */
 #defeat { position: fixed; inset: 0; z-index: 35; pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; }
 #defeat.on { opacity: 1; } #defeat.hidden { display: none; }
 #defeat::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(120,0,0,0) 20%, rgba(40,0,0,.85) 100%); animation: dfVig 3s ease-in forwards; }
@@ -162,7 +162,7 @@ table.rank tr.me td { background: rgba(255,204,64,.16); font-weight: 700; }
 @keyframes dfShake { 0%,100% { transform: none; } 20% { transform: translate(-7px, 4px); } 40% { transform: translate(6px, -5px); } 60% { transform: translate(-4px, -3px); } 80% { transform: translate(5px, 4px); } }
 @keyframes dfGray { to { filter: grayscale(.85) brightness(.55) contrast(1.1); } }
 body.defeating #hud, body.defeating #units, body.defeating #tools, body.defeating #modeBar, body.defeating #bossbar { opacity: .25; }
-/* 시작 연출: 구름이 걷히며 성채가 가까워진다 */
+/* 시작 연출: 구름이 걷히며 성이 가까워진다 */
 #clouds { position: fixed; inset: 0; z-index: 20; pointer-events: none; overflow: hidden; background: #cfdcea; animation: skyOff 2.6s ease-in .5s forwards; }
 #clouds.hidden { display: none; }
 #clouds i { position: absolute; left: 50%; top: 50%; width: 60vmax; height: 34vmax; margin: -17vmax 0 0 -30vmax; border-radius: 50%; background: radial-gradient(closest-side, #fff 40%, rgba(255,255,255,.85) 62%, rgba(255,255,255,0)); filter: blur(6px);
@@ -293,12 +293,12 @@ body.comicOn { overflow: hidden; }
 <div id="hud" class="panel">
   <div class="row"><span id="roundTxt">준비</span><b id="timeTxt">0:00</b></div>
   <div id="hpbar"><div id="hpfill"></div></div>
-  <div class="row"><span>성채 <b id="hpTxt">1000</b></span><span>골드 <b id="gold">200</b></span></div>
+  <div class="row"><span>성 <b id="hpTxt">1000</b></span><span>골드 <b id="gold">200</b></span></div>
   <div class="row"><span>유닛 <b id="unitTxt">0</b></span><span>처치 <b id="killTxt">0</b></span></div>
 </div>
 
 <div id="tools">
-  <button class="btn panel tbtn" id="btnCenter" title="성채로 돌아가기 (H)">성채로</button>
+  <button class="btn panel tbtn" id="btnCenter" title="성으로 돌아가기 (H)">성으로</button>
   <button class="btn panel tbtn" id="btnUp" title="내 업그레이드 (U)">강화 목록</button>
   <button class="btn panel tbtn" id="btnSpeed" title="배속">1×</button>
   <button class="btn panel tbtn" id="btnSound" title="소리 켜기/끄기 (M)">소리 켬</button>
@@ -337,32 +337,32 @@ body.comicOn { overflow: hidden; }
 
 <div id="title" class="hidden">
   <div class="stars"></div><div class="moon"></div><svg class="castle" viewBox="0 0 620 300" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><g fill="#07091a"><path d="M0 300V250q60-14 120-8 40-52 60-52h20v-30h14l8-18 8 18h14v30h24l20-70 18-18 18 18 20 70h24v-30h14l8-18 8 18h14v30h20q20 0 60 52 60-6 120 8v50z"/></g><g fill="#fcd96b" opacity=".85"><rect x="283" y="130" width="8" height="14" rx="3"/><rect x="329" y="130" width="8" height="14" rx="3"/><rect x="300" y="200" width="20" height="30" rx="10"/><rect x="212" y="176" width="6" height="10" rx="2"/><rect x="402" y="176" width="6" height="10" rx="2"/></g></svg>
-  <div class="logo"><h1>성채 지키기</h1><p>CASTLE DEFENSE</p></div>
+  <div class="logo"><h1>성 지키기</h1><p>CASTLE DEFENSE</p></div>
   <div id="tapHint">화면을 터치하거나 아무 키나 누르세요</div>
   <div id="tMenu"><button id="mStart" class="main">게임 시작</button><button id="mHow">게임 방법</button><button id="mRank">랭킹</button><button id="mQuit">게임 종료</button></div>
   <div id="tMsg"></div><div id="tVer"></div>
 </div>
 <div id="howto" class="hidden"><div class="panel"><h2>게임 방법</h2>
-  <p>사방에서 몰려오는 적으로부터 중앙 성채를 지키세요.<br>50라운드의 마왕을 쓰러뜨리면 붉은 하늘의 무한 모드가 시작됩니다.</p>
+  <p>사방에서 몰려오는 적으로부터 중앙 성을 지키세요.<br>50라운드의 마왕을 쓰러뜨리면 붉은 하늘의 무한 모드가 시작됩니다.</p>
   <ul class="help">
-    <li><b>화면 이동</b>: 빈 곳을 드래그 · 휠/핀치로 확대·축소 (<b>H</b> 성채로)</li>
-    <li><b>유닛 생산</b>: 아래 카드를 누르거나 키보드 1·2·3 (성채 업그레이드는 4)</li>
+    <li><b>화면 이동</b>: 빈 곳을 드래그 · 휠/핀치로 확대·축소 (<b>H</b> 성으로)</li>
+    <li><b>유닛 생산</b>: 아래 카드를 누르거나 키보드 1·2·3 (성 업그레이드는 4)</li>
     <li>시작 골드로 유닛 3기를 바로 뽑고, 적을 처치해 골드를 모아 더 뽑으세요 (뽑을수록 가격이 올라요)</li>
-    <li>유닛은 성채 주변에 퍼져서 스스로 싸워요. 인구가 가득 차면 성채를 업그레이드하세요</li>
+    <li>유닛은 성 주변에 퍼져서 스스로 싸워요. 인구가 가득 차면 성을 업그레이드하세요</li>
     <li>라운드를 넘길 때마다 업그레이드 카드 3장 중 1장을 고르고, 보스를 쓰러뜨리면 전직·보상을 받아요</li>
   </ul><button id="howClose" class="btn" style="padding:10px 28px;font-size:15px">닫기</button></div></div>
 <div id="clouds" class="hidden"></div>
-<div id="defeat" class="hidden"><h2>성채가 무너졌다…</h2><p>어둠이 모든 것을 삼켰다</p></div>
+<div id="defeat" class="hidden"><h2>성이 무너졌다…</h2><p>어둠이 모든 것을 삼켰다</p></div>
 <div id="overlay" class="hidden">
   <div id="card" class="panel">
-    <h1 id="ovTitle">성채 지키기</h1>
+    <h1 id="ovTitle">성 지키기</h1>
     <div id="ovBody">
-      <p>사방에서 몰려오는 적으로부터 중앙 성채를 지키세요.<br>50라운드의 마왕을 쓰러뜨리면 붉은 하늘의 무한 모드가 시작됩니다. 얼마나 오래 버티나요?</p>
+      <p>사방에서 몰려오는 적으로부터 중앙 성을 지키세요.<br>50라운드의 마왕을 쓰러뜨리면 붉은 하늘의 무한 모드가 시작됩니다. 얼마나 오래 버티나요?</p>
       <ul class="help">
-        <li><b>화면 이동</b>: 빈 곳을 드래그 · 휠/핀치로 확대·축소 (<b>H</b> 성채로)</li>
+        <li><b>화면 이동</b>: 빈 곳을 드래그 · 휠/핀치로 확대·축소 (<b>H</b> 성으로)</li>
         <li><b>유닛 생산</b>: 아래 카드를 누르거나 키보드 1·2·3</li>
         <li><b>시작 골드로 유닛 3기</b>를 바로 뽑을 수 있어요. 적을 처치해 골드를 모아 더 뽑으세요 (뽑을수록 모든 유닛 가격이 올라가요)</li>
-        <li><b>유닛</b>은 성채 주변에 퍼져서 스스로 싸워요</li>
+        <li><b>유닛</b>은 성 주변에 퍼져서 스스로 싸워요</li>
         <li><b>업그레이드</b>: 라운드를 넘길 때마다 3장 중 1장을 골라요</li>
       </ul>
     </div>

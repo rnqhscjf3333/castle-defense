@@ -29,7 +29,7 @@ load('../index.html?bot=1&seed=7&zoom=1', w => {
     log(g.cam.zoom > z0, '휠 확대', z0.toFixed(2) + '→' + g.cam.zoom.toFixed(2));
     cv.dispatchEvent(new w.MouseEvent('contextmenu', { clientX: 300, clientY: 300, bubbles: true, cancelable: true }));
     log(d.querySelector('.mbtn[data-mode]') === null, '모드 버튼 제거됨(깃발/모드 UI 없음)');
-    d.getElementById('btnCenter').click(); log(Math.abs(g.cam.x - 1500) < 1 && Math.abs(g.cam.y - 1500) < 1, '성채로 이동');
+    d.getElementById('btnCenter').click(); log(Math.abs(g.cam.x - 1500) < 1 && Math.abs(g.cam.y - 1500) < 1, '성으로 이동');
     const mini = d.getElementById('minimap'), r = mini.getBoundingClientRect();
     mini.dispatchEvent(new PE('pointerdown', { pointerId: 2, clientX: r.left + r.width * 0.2, clientY: r.top + r.height * 0.2, bubbles: true }));
     log(g.cam.x < 1200 && g.cam.y < 1200, '미니맵 이동', Math.round(g.cam.x) + ',' + Math.round(g.cam.y));

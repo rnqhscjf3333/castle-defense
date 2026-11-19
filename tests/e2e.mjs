@@ -95,9 +95,9 @@ try {
   await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 500, y: 350, deltaX: 0, deltaY: -240 }); await sleep(100);
   check('마우스 휠 확대', (await ev('__game.cam.zoom')) > 1.1, String(await ev('__game.cam.zoom')));
 
-  // 3.2) 맵 배경/성채 그래픽이 로드되고 그려짐
+  // 3.2) 맵 배경/성 그래픽이 로드되고 그려짐
   await open('?bot=1&warp=120&seed=3&zoom=1', 1200);
-  check('배경·성채 렌더러 로드 (Scenery)', await ev("typeof window.Scenery === 'object' && typeof Scenery.drawCastle === 'function' && Scenery.visibleTrees(0,0,3000,3000).length > 300"), String(await ev("Scenery.visibleTrees(0,0,3000,3000).length")) + '그루');
+  check('배경·성 렌더러 로드 (Scenery)', await ev("typeof window.Scenery === 'object' && typeof Scenery.drawCastle === 'function' && Scenery.visibleTrees(0,0,3000,3000).length > 300"), String(await ev("Scenery.visibleTrees(0,0,3000,3000).length")) + '그루');
   check('캔버스에 풀밭색이 칠해짐 (예전 격자 배경 아님)', await ev("(()=>{const c=document.getElementById('cv'); const x=c.getContext('2d'); const d=x.getImageData(Math.round(c.width*0.1), Math.round(c.height*0.5), 1, 1).data; return d[1] > d[0] && d[1] > d[2] && d[1] > 60;})()"));
 
   // 알림이 한꺼번에 많이 와도 멈추지 않음 (보스전에서 알림이 몰릴 때 브라우저가 멈췄던 버그의 회귀 방지)
@@ -176,7 +176,7 @@ try {
   await open('?bot=1&warp=9000&seed=5&zoom=0.6', 3000); // 봇이 30라운드 끝까지(승리 또는 패배) 미리 진행한 상태
   check('종료 화면 표시(빨리감기 중 종료)', (await ev('__game.S.over')) && !(await ev("document.getElementById('overlay').classList.contains('hidden')")), '라운드 ' + await ev('__game.S.round'));
   const title = await ev("document.getElementById('ovTitle').textContent");
-  check('결과 문구(승리/패배)', title === '방어 성공!' || title === '성채가 무너졌어요', title);
+  check('결과 문구(승리/패배)', title === '방어 성공!' || title === '성이 무너졌어요', title);
   await ev("document.getElementById('go').click()"); await sleep(500);
   check('다시 시작 → 새 게임', (await ev('__game.S.t')) < 2 && (await ev("document.getElementById('overlay').classList.contains('hidden')")), 't=' + await ev('__game.S.t'));
 

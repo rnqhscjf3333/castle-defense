@@ -1,4 +1,4 @@
-// 성채 지키기 밸런스 시뮬레이터 — core.js를 그대로 재사용해 봇이 수천 판을 돌린다.
+// 성 지키기 밸런스 시뮬레이터 — core.js를 그대로 재사용해 봇이 수천 판을 돌린다.
 //   node tools/balance.mjs baseline [N]           정책별 클리어율/도달 라운드
 //   node tools/balance.mjs cards [N] [정책]        카드별 기여도 (그 카드를 우선 선택했을 때 평균 도달 라운드 변화)
 //   node tools/balance.mjs sweep <키> <값,값,…> [N]  수치 스윕 (balance.*, growth, startGold, leash, bias, 또는 점 표기: enemies.boss.dmg, bosses.5.hp …)
@@ -48,7 +48,7 @@ function runOne(task) {
       for (const u of S.units) if (cnt[u.type] !== undefined) cnt[u.type]++;
       const order = Object.keys(ratio).sort((a, b) => cnt[a] / ratio[a] - cnt[b] / ratio[b]);
       for (const t of order) { const r = C.buy(S, t); if (r.ok || r.reason === 'gold') break; if (r.reason === 'pop') { C.upgradeCastle(S); break; } }
-      if (S.gold > C.castleCost(S) * 1.6) C.upgradeCastle(S); // 골드가 넉넉하면 성채도 올린다
+      if (S.gold > C.castleCost(S) * 1.6) C.upgradeCastle(S); // 골드가 넉넉하면 성도 올린다
     }
     C.tick(S, DT); step++;
   }
@@ -164,7 +164,7 @@ async function main() {
       const all = {}; for (const r of rs) if (r.round >= br || r.win) { const id = r.bossAt[br]; all[id] = (all[id] || 0) + 1; }
       console.log(`${lo}~${hi}라운드 사망 ${dead.length}명 | ${br}라운드 보스별:`, Object.keys(all).map(k => `${k} ${by[k] || 0}/${all[k]}`).join('  '));
     }
-  } else if (cmd === 'coredmg') { // 성채가 어떤 공격에 얼마나 맞는지 (판당 평균)
+  } else if (cmd === 'coredmg') { // 성이 어떤 공격에 얼마나 맞는지 (판당 평균)
     const n = +a1 || 60, W = loadWeights(), rs = await runPolicy({ weights: W, reroll: 1.2 }, n), tot = {};
     for (const r of rs) for (const k in r.coreDmgBy) tot[k] = (tot[k] || 0) + r.coreDmgBy[k];
     const all = Object.values(tot).reduce((x, y) => x + y, 0);

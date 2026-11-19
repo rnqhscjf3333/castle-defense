@@ -106,21 +106,21 @@ function applyById(g, id, type) {
 S = C.createGame(3); S.gold = 1000; C.buy(S, 'sword'); const sw = S.units[0], hp0 = sw.max;
 const V = C.CFG.cardVals;
 applyById(S, 'u_hp', 'sword'); check('검사 체력 강화(CFG.upPct.hp)', sw.max === Math.round(hp0 * (1 + C.CFG.upPct.hp)), hp0 + '→' + sw.max);
-applyById(S, 'c_atk'); check('성채 공격력 강화', Math.abs(S.core.atk - C.CFG.core.atk * (1 + V.coreAtk)) < 1e-9, S.core.atk);
-applyById(S, 'f_hp'); check('성채 체력 증가(즉시 회복)', S.core.max === C.CFG.core.hp + V.fortHp && S.core.hp === S.core.max, S.core.max);
+applyById(S, 'c_atk'); check('성 공격력 강화', Math.abs(S.core.atk - C.CFG.core.atk * (1 + V.coreAtk)) < 1e-9, S.core.atk);
+applyById(S, 'f_hp'); check('성 체력 증가(즉시 회복)', S.core.max === C.CFG.core.hp + V.fortHp && S.core.hp === S.core.max, S.core.max);
 applyById(S, 'a_atk'); check('군기 오라', Math.abs(S.aura.atk - V.auraAtk) < 1e-9 && S.aura.on);
 applyById(S, 'a_rad'); check('오라 강화: 모든 오라 효과 증폭', Math.abs(S.aura.atk - V.auraAtk * (1 + V.auraBoost)) < 1e-9, S.aura.atk.toFixed(4));
 applyById(S, 's_golem'); check('골렘 소환', S.units.some(u => u.type === 'golem'));
 applyById(S, 's_turret'); applyById(S, 's_turret'); check('포탑 2개', S.units.filter(u => u.type === 'turret').length === 2);
 
-// 8) 자동 라운드 + 1라운드는 성채 혼자 버티며 골드를 번다
+// 8) 자동 라운드 + 1라운드는 성 혼자 버티며 골드를 번다
 S = C.createGame(4);
 check('준비 시간 없이 바로 시작', C.PREP_TIME === 0);
 C.tick(S, DT);
 check('첫 틱에 라운드 1 자동 시작', S.round === 1 && S.phase === 'round');
 let t1 = 0; while (S.round < 2 && t1 < 3000) { C.tick(S, DT); t1++; }
 check('라운드는 시간이 지나면 자동으로 넘어감', S.round === 2, 't=' + S.t.toFixed(1));
-check('1라운드: 유닛 없이도 성채가 버티고 처치 골드를 얻음', S.core.hp > 0 && S.kills > 0 && S.gold > C.CFG.startGold, `처치 ${S.kills}, 골드 ${Math.round(S.gold)}, 성채 ${Math.round(S.core.hp)}`);
+check('1라운드: 유닛 없이도 성이 버티고 처치 골드를 얻음', S.core.hp > 0 && S.kills > 0 && S.gold > C.CFG.startGold, `처치 ${S.kills}, 골드 ${Math.round(S.gold)}, 성 ${Math.round(S.core.hp)}`);
 check('자동 라운드 진행 중 callEarly 같은 수동 호출 API 없음', C.callEarly === undefined && C.expandPop === undefined);
 
 
@@ -154,16 +154,16 @@ for (const r of [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]) {
 
 // 11) 새 적의 행동
 function arena(round, kinds, bossId) { const g = C.createGame(500 + round); g.hold = true; g.captureEvents = true; g.round = round; g.phase = 'round'; g.roundT = 0; g.queue = []; g.spawnPts = 4; if (bossId) { const idx = C.CFG.bossPool.findIndex(b => b.id === bossId), slot = round / 5 - 1, cur = g.bossOrder.indexOf(idx); if (cur >= 0) [g.bossOrder[slot], g.bossOrder[cur]] = [g.bossOrder[cur], g.bossOrder[slot]]; /* 이 라운드의 보스를 지정 */ } for (const [k, x, y] of kinds) C.spawnEnemy(g, k, x, y); return g; }
-{ // 사수: 성채에서 멀리 떨어져 포물선 화살로 성채를 맞힌다
+{ // 사수: 성에서 멀리 떨어져 포물선 화살로 성을 맞힌다
   const g = arena(5, [['archer', 1500, 1500 - 450]]); let arrow = null, hmax = 0, hp0 = g.core.hp, minD = 1e9; g.core.atk = 0; const ar0 = g.enemies[0];
   for (let i = 0; i < 30 * 40; i++) { C.tick(g, DT); minD = Math.min(minD, Math.hypot(ar0.x - 1500, ar0.y - 1500)); for (const s of g.shots) if (s.color === 'ea') { arrow = s; hmax = Math.max(hmax, s.h); } }
-  check('사수는 멀리서 쏴서 성채를 맞힘 (근접 안 함)', arrow !== null && g.core.hp < hp0, `성채 ${Math.round(hp0)}→${Math.round(g.core.hp)}`);
+  check('사수는 멀리서 쏴서 성을 맞힘 (근접 안 함)', arrow !== null && g.core.hp < hp0, `성 ${Math.round(hp0)}→${Math.round(g.core.hp)}`);
   check('사수는 사거리 끝에서 멈춤 (근접하지 않음)', minD > 150, '최소 거리 ' + Math.round(minD));
   check('화살은 포물선 (높이가 솟았다 내려옴)', hmax > 10, 'h최대=' + hmax.toFixed(1)); }
 { // 폭파병: 닿으면 터져 범위 피해, 자신은 사라지고 처치 수는 올라가지 않음
-  const g = arena(8, [['bomber', 1500, 1500 - 120]]); g.core.atk = 0; const hp0 = g.core.hp, k0 = g.kills; let boomed = false; // 성채가 먼저 처치하지 못하게 공격력 0
+  const g = arena(8, [['bomber', 1500, 1500 - 120]]); g.core.atk = 0; const hp0 = g.core.hp, k0 = g.kills; let boomed = false; // 성이 먼저 처치하지 못하게 공격력 0
   for (let i = 0; i < 30 * 10; i++) { C.tick(g, DT); if (C.drainEvents(g).some(e => e.type === 'boom' && e.enemy)) boomed = true; }
-  check('폭파병 자폭: 성채 피해 + 폭발 + 처치/골드 없음', boomed && g.core.hp < hp0 && g.enemies.length === 0 && g.kills === k0 && g.gold === C.CFG.startGold, `성채 ${Math.round(hp0)}→${Math.round(g.core.hp)}`); }
+  check('폭파병 자폭: 성 피해 + 폭발 + 처치/골드 없음', boomed && g.core.hp < hp0 && g.enemies.length === 0 && g.kills === k0 && g.gold === C.CFG.startGold, `성 ${Math.round(hp0)}→${Math.round(g.core.hp)}`); }
 { // 주술사: 다친 적을 치유
   const g = arena(10, [['shaman', 1500, 1500 - 700], ['brute', 1500 + 40, 1500 - 700]]); const br = g.enemies.find(e => e.kind === 'brute'); br.hp = br.max * 0.3; let healed = false;
   for (let i = 0; i < 30 * 6; i++) { C.tick(g, DT); if (br.hp > br.max * 0.35) healed = true; }
@@ -188,18 +188,18 @@ function arena(round, kinds, bossId) { const g = C.createGame(500 + round); g.ho
   check('R25 광전사: 체력 50% 이하에서 분노(속도/공격 증가)', rage && b.speedMul > 1.3, 'speedMul=' + b.speedMul.toFixed(2)); }
 { // 방어막은 받는 피해를 줄인다
   const g = arena(20, [['boss', 1500 + 200, 1500]], 'warden'); const b = g.enemies[0]; b.shieldT = 10; b.shieldRed = 0.8; b.speed = 0; const hp0 = b.hp;
-  C.tick(g, DT); // 성채가 사거리 안의 보스를 쏜다
+  C.tick(g, DT); // 성이 사거리 안의 보스를 쏜다
   for (let i = 0; i < 30 * 3; i++) C.tick(g, DT);
   const withShield = hp0 - b.hp;
   const g2 = arena(20, [['boss', 1500 + 200, 1500]], 'warden'); const b2 = g2.enemies[0]; b2.speed = 0; b2.abil = {};  for (let i = 0; i < 30 * 3 + 1; i++) C.tick(g2, DT);
   const noShield = b2.max - b2.hp;
   check('방어막 동안 보스가 받는 피해가 크게 줄어듦', noShield > 0 && withShield < noShield * 0.5, `${withShield.toFixed(0)} vs ${noShield.toFixed(0)}`); }
 
-// 13) 포물선 투사체 (아군 화살/성채 포탄)
+// 13) 포물선 투사체 (아군 화살/성 포탄)
 { const g = arena(1, [['grunt', 1500 + 200, 1500]]); g.gold = 1000; C.buy(g, 'archer'); const ar = g.units[0]; ar.x = 1500 - 40; ar.y = 1500; ar.hx = ar.x; ar.hy = ar.y;
   let hmax = 0, tFly = 0, seen = false; const hs = [];
   for (let i = 0; i < 30 * 6 && !seen; i++) { C.tick(g, DT); for (const s of g.shots) { hs.push(s.h); hmax = Math.max(hmax, s.h); tFly += 1; seen = true; } }
-  check('아군 화살/성채 포탄도 포물선', hmax > 8 && hs.length >= 1, 'h최대=' + hmax.toFixed(1)); }
+  check('아군 화살/성 포탄도 포물선', hmax > 8 && hs.length >= 1, 'h최대=' + hmax.toFixed(1)); }
 
 
 // 14) 특수 소환도 유닛 가격을 올린다
@@ -283,15 +283,15 @@ function killBoss(g) { const b = g.enemies.find(e => e.kind === 'boss'); b.hp = 
   const g1 = C.createGame(78); C.jumpToRound(g1, 30); const sp1 = C.enemyCount(30);
   check('1막(≤30)은 act 1, 2막 진입은 보스 처치로만', g1.act === 1 && C.createGame(1).act === 1); }
 
-// 16) 적은 맵 끝이 아니라 성채 근처(SPAWN_RING)에서 나타나 금방 도착한다
+// 16) 적은 맵 끝이 아니라 성 근처(SPAWN_RING)에서 나타나 금방 도착한다
 { const g = arena(3, []); g.captureEvents = true; g.spawnPts = 6;
   const dists = []; for (let i = 0; i < 60; i++) { const e = C.spawnEnemy(g, 'grunt'); dists.push(Math.hypot(e.x - 1500, e.y - 1500)); }
-  check('적 출현 위치는 성채에서 약 ' + C.SPAWN_RING + 'px (맵 끝이 아님)', dists.every(d => Math.abs(d - C.SPAWN_RING) < 120) && C.SPAWN_RING <= 800, `${Math.round(Math.min(...dists))}~${Math.round(Math.max(...dists))}`);
+  check('적 출현 위치는 성에서 약 ' + C.SPAWN_RING + 'px (맵 끝이 아님)', dists.every(d => Math.abs(d - C.SPAWN_RING) < 120) && C.SPAWN_RING <= 800, `${Math.round(Math.min(...dists))}~${Math.round(Math.max(...dists))}`);
   check('출현 이벤트 발생 (나타나는 효과용)', C.drainEvents(g).filter(e => e.type === 'espawn').length === 60);
   const a4 = C.spawnAngles(4), a6 = C.spawnAngles(6);
   check('스폰 방향: 4곳(90° 간격) / 6곳(샛길 2개 추가), 중복 없음', a4.length === 4 && a6.length === 6 && new Set(a6.map(x => x.toFixed(3))).size === 6 && a6.slice(0, 4).every((x, i) => Math.abs(x - a4[i]) < 1e-9));
   const g2 = arena(3, [['grunt', 1500, 1500 - C.SPAWN_RING]]); g2.core.atk = 0; const gr = g2.enemies[0]; let tArrive = 0; for (let i = 0; i < 30 * 40; i++) { C.tick(g2, DT); if (Math.hypot(gr.x - 1500, gr.y - 1500) < 100) { tArrive = g2.t; break; } }
-  check('출현 후 성채까지 도착이 빠름 (돌격병 15초 이내)', tArrive > 0 && tArrive < 15, tArrive.toFixed(1) + '초'); }
+  check('출현 후 성까지 도착이 빠름 (돌격병 15초 이내)', tArrive > 0 && tArrive < 15, tArrive.toFixed(1) + '초'); }
 
 // 17) 유닛 기본 위치: 평소에는 사방으로 고르게, 적이 가까이 오면 그쪽으로 쏠림
 function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []; for (const u of g.units) { const dx = u.x - 1500, dy = u.y - 1500; dy < 0 ? q.up++ : q.down++; dx < 0 ? q.left++ : q.right++; ang.push(Math.atan2(dy, dx)); } ang.sort((a, b) => a - b); let gap = 0; for (let i = 0; i < ang.length; i++) { let d = ang[(i + 1) % ang.length] - ang[i]; if (d <= 0) d += 2 * Math.PI; gap = Math.max(gap, d); } return { q, gapDeg: gap * 180 / Math.PI }; }
@@ -300,15 +300,15 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   const sp = spreadOf(g);
   check('적이 없을 때 유닛이 사방에 고르게 분포 (위/아래/좌/우 각각 4기 이상)', sp.q.up >= 4 && sp.q.down >= 4 && sp.q.left >= 4 && sp.q.right >= 4, JSON.stringify(sp.q));
   check('빈 각도가 크지 않음 (가장 큰 공백 < 100°)', sp.gapDeg < 100, Math.round(sp.gapDeg) + '°');
-  // 위쪽에서 적이 성채 가까이 접근 → 서서히 그쪽으로 쏠림
+  // 위쪽에서 적이 성 가까이 접근 → 서서히 그쪽으로 쏠림
   C.spawnEnemy(g, 'brute', 1500, 1500 - 380); g.core.atk = 0; const b0 = g.biasNow;
   for (let i = 0; i < 30 * 3; i++) C.tick(g, DT);
   check('적이 가까이 오면 위협 방향으로 서서히 모임 (쏠림 증가)', g.biasNow > b0 + 0.2, `bias ${b0.toFixed(2)}→${g.biasNow.toFixed(2)}`); }
 
-// 18) 성채: 적을 향해 조준하고 쏠 때 반동 상태가 생김
+// 18) 성: 적을 향해 조준하고 쏠 때 반동 상태가 생김
 { const g = arena(3, [['grunt', 1500 + 200, 1500]]); let aimed = false, swung = false;
   for (let i = 0; i < 30 * 4; i++) { C.tick(g, DT); if (g.core.swing > 0) swung = true; if (swung && Math.abs(g.core.aim - 0) < 0.3) aimed = true; }
-  check('성채가 적 방향으로 대포를 조준하고 발사 상태(swing)가 됨', swung && aimed, 'aim=' + g.core.aim.toFixed(2)); }
+  check('성이 적 방향으로 대포를 조준하고 발사 상태(swing)가 됨', swung && aimed, 'aim=' + g.core.aim.toFixed(2)); }
 
 // 19) 적 스탯 배율 (체력 enemyHp·공격력 enemyDmg, 이동 속도는 그대로)
 { const g = arena(1, []); const e = C.spawnEnemy(g, 'grunt', 1500, 800), base = C.CFG.enemies.grunt;
@@ -322,7 +322,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
 { const g = arena(3, [['grunt', 1500 + 220, 1500]]); g.core.atk = 20; let first = null;
   for (let i = 0; i < 30 * 3 && !first; i++) { C.tick(g, DT); first = g.shots.find(s => s.color === 'c'); }
   const d0 = first && Math.hypot(first.sx - 1500, first.sy - 1500);
-  check('성채 포탄은 성채 중심이 아니라 대포 포구(약 32px)에서 출발', first && Math.abs(d0 - 32) < 1.5, 'd=' + (d0 && d0.toFixed(1)));
+  check('성 포탄은 성 중심이 아니라 대포 포구(약 32px)에서 출발', first && Math.abs(d0 - 32) < 1.5, 'd=' + (d0 && d0.toFixed(1)));
   check('포구 방향으로 나감 (적이 오른쪽이면 포구도 오른쪽)', first && first.sx > 1500 + 25 && Math.abs(first.sy - 1500) < 3, first && `(${first.sx.toFixed(0)},${first.sy.toFixed(0)})`); }
 { const g = arena(3, []); g.gold = 1e6; g.buyCd.archer = 0; const ar = C.buy(g, 'archer').unit; ar.x = 1500 - 60; ar.y = 1500 + 200; ar.hx = ar.x; ar.hy = ar.y; g.core.atk = 0;
   C.spawnEnemy(g, 'grunt', 1500 - 60 + 150, 1500 + 200); let sh = null; for (let i = 0; i < 30 * 4 && !sh; i++) { C.tick(g, DT); sh = g.shots.find(s => s.color === 'a'); }
@@ -375,31 +375,31 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   const fin = arena(30, [['boss', 1500, 800]]).enemies[0]; check('암흑 기사단장(30라운드)은 패턴 7종(상태이상·강습·순간이동 포함) 고정 수치', Object.keys(fin.abil).length === 7 && fin.abil.artillery.dmg === C.CFG.act1Boss.abil.artillery.dmg);
   const fin50 = arena(50, [['boss', 1500, 800]]).enemies[0]; check('마왕(50라운드)은 패턴 9종(상태이상 4가지·강습·순간이동·도약) 고정 수치, 더 큼', Object.keys(fin50.abil).length === 9 && fin50.abil.artillery.count === 2 && fin50.r > 33 && fin50.bossName === '마왕'); }
 
-// 23) 졸개 소환: 성채 가까이 왔을 때만, 보스 앞(성채 방향)에 나온다
+// 23) 졸개 소환: 성 가까이 왔을 때만, 보스 앞(성 방향)에 나온다
 { const g = arena(10, [['boss', 1500, 1500 - 1000]], 'summoner'); g.core.atk = 0; g.core.hp = g.core.max = 1e9; const b = g.enemies[0]; b.speed = 0; delete b.abil.blink; let early = 0;
   for (let i = 0; i < 30 * 30; i++) { C.tick(g, DT); if (g.cards.offer) C.pickCard(g, 0); } // 보스가 멀리(1000px) 정지: 소환 시간이 흐르지 않음
-  check('보스가 성채에서 멀면(600px 밖) 졸개를 소환하지 않음', g.enemies.length === 1, '적 ' + g.enemies.length + '마리');
+  check('보스가 성에서 멀면(600px 밖) 졸개를 소환하지 않음', g.enemies.length === 1, '적 ' + g.enemies.length + '마리');
   b.x = 1500; b.y = 1500 - 500; g.captureEvents = true; let ev = null, minions = [];
   for (let i = 0; i < 30 * 20 && !ev; i++) { C.tick(g, DT); if (g.cards.offer) C.pickCard(g, 0); ev = C.drainEvents(g).find(e => e.type === 'bossSummon'); }
   minions = g.enemies.filter(e => e.kind !== 'boss');
-  check('성채 가까이(500px) 오면 소환하고 마릿수가 알림에 담김', !!ev && ev.n === minions.length && minions.length >= 3, ev && `n=${ev.n}, 실제 ${minions.length}`);
-  check('졸개는 보스 앞(성채 쪽)에 나옴 (보스보다 성채에 가까움)', minions.length > 0 && minions.every(m => Math.hypot(m.x - 1500, m.y - 1500) < Math.hypot(b.x - 1500, b.y - 1500) + 20), minions.map(m => Math.round(Math.hypot(m.x - 1500, m.y - 1500))).join(',') + ' vs 보스 ' + Math.round(Math.hypot(b.x - 1500, b.y - 1500)));
+  check('성 가까이(500px) 오면 소환하고 마릿수가 알림에 담김', !!ev && ev.n === minions.length && minions.length >= 3, ev && `n=${ev.n}, 실제 ${minions.length}`);
+  check('졸개는 보스 앞(성 쪽)에 나옴 (보스보다 성에 가까움)', minions.length > 0 && minions.every(m => Math.hypot(m.x - 1500, m.y - 1500) < Math.hypot(b.x - 1500, b.y - 1500) + 20), minions.map(m => Math.round(Math.hypot(m.x - 1500, m.y - 1500))).join(',') + ' vs 보스 ' + Math.round(Math.hypot(b.x - 1500, b.y - 1500)));
   const kinds = new Set(); for (const id of ['summoner', 'bombardier', 'warden']) { const gg = arena(15, [['boss', 1500, 1500 - 400]], id); gg.core.atk = 0; gg.core.hp = gg.core.max = 1e9; gg.enemies[0].speed = 0; for (let i = 0; i < 30 * 16; i++) { C.tick(gg, DT); if (gg.cards.offer) C.pickCard(gg, 0); } kinds.add(gg.enemies.filter(e => e.kind !== 'boss').map(e => e.kind)[0]); }
   check('소환사·포격대장·철벽 장군이 각자의 졸개(돌격병·사수·방패병)를 소환', ['grunt', 'archer', 'shield'].every(k => kinds.has(k)), [...kinds].join()); }
 
-// 24) 성채 원형: 아군은 들어올 수 없다
+// 24) 성 원형: 아군은 들어올 수 없다
 { const g = arena(3, []); g.gold = 1e7; for (const t of ['sword', 'archer', 'priest', 'sword', 'archer', 'priest', 'sword', 'sword', 'priest', 'archer']) { g.buyCd[t] = 0; C.buy(g, t); }
   let minD = 1e9; for (let i = 0; i < 30 * 20; i++) { if (i === 150) for (let k = 0; k < 6; k++) C.spawnEnemy(g, 'grunt', 1500 + (k - 3) * 60, 1500 - 300); C.tick(g, DT); for (const u of g.units) if (!C.CFG.units[u.type].static) minD = Math.min(minD, Math.hypot(u.x - 1500, u.y - 1500)); }
-  check('아군(검사·궁수·사제)은 성채 원형(반지름 ' + C.CFG.core.blockR + ') 안으로 들어오지 않음', minD >= C.CFG.core.blockR - 0.5, '최소 거리 ' + minD.toFixed(1));
+  check('아군(검사·궁수·사제)은 성 원형(반지름 ' + C.CFG.core.blockR + ') 안으로 들어오지 않음', minD >= C.CFG.core.blockR - 0.5, '최소 거리 ' + minD.toFixed(1));
   const g2 = arena(3, []); g2.gold = 1e6; g2.buyCd.priest = 0; const pr = C.buy(g2, 'priest').unit; pr.x = 1500; pr.y = 1500; for (let i = 0; i < 5; i++) C.tick(g2, DT);
-  check('성채 한가운데로 보내도 바로 원 밖으로 밀려남', Math.hypot(pr.x - 1500, pr.y - 1500) >= C.CFG.core.blockR - 0.5);
-  check('사제의 대기 반경이 성채 원형 밖', C.CFG.ai.homeR.priest * 0.9 > C.CFG.core.blockR + 10); }
+  check('성 한가운데로 보내도 바로 원 밖으로 밀려남', Math.hypot(pr.x - 1500, pr.y - 1500) >= C.CFG.core.blockR - 0.5);
+  check('사제의 대기 반경이 성 원형 밖', C.CFG.ai.homeR.priest * 0.9 > C.CFG.core.blockR + 10); }
 // 25) 방어 자세: 거리 조건 없이 검사 계열이 받는 피해 감소, 문구에도 300 없음
 { const g = arena(3, []); g.gold = 1e6; g.buyCd.sword = 0; const sw = C.buy(g, 'sword').unit; applyById(g, 'u_guard'); sw.x = 1500 + 800; sw.y = 1500; sw.hp = sw.max = 1e6;
   const e = C.spawnEnemy(g, 'grunt', sw.x + 15, sw.y); e.dmg = 100; e.cd = 0; e.hp = e.max = 1e9; g.core.atk = 0; const h0 = sw.hp; C.tick(g, DT); C.tick(g, DT);
   const taken = h0 - sw.hp; const expected = 100 * (1 - C.CFG.cardVals.guard);
-  check('방어 자세: 성채에서 멀리 있어도(800px) 검사 피해 감소 적용', taken > 0 && Math.abs(taken - expected) < 1, taken.toFixed(1) + ' (기대 ' + expected.toFixed(1) + ')');
-  check('방어 자세 문구에 "성채 주변(300)" 없음', !C.CARD_DEFS.find(d => d.id === 'u_guard').desc(1).includes('300') && !C.CARD_DEFS.some(d => String(d.desc ? d.desc(1) : '').includes('성채 주변(300)'))); }
+  check('방어 자세: 성에서 멀리 있어도(800px) 검사 피해 감소 적용', taken > 0 && Math.abs(taken - expected) < 1, taken.toFixed(1) + ' (기대 ' + expected.toFixed(1) + ')');
+  check('방어 자세 문구에 "성 주변(300)" 없음', !C.CARD_DEFS.find(d => d.id === 'u_guard').desc(1).includes('300') && !C.CARD_DEFS.some(d => String(d.desc ? d.desc(1) : '').includes('성 주변(300)'))); }
 
 // 26) 투사체 풀링: 재사용해도 이전 투사체의 값이 남지 않음
 { const g = arena(15, [['boss', 1500, 1500 - 500]], 'bombardier'); g.gold = 1e6; g.buyCd.archer = 0; C.buy(g, 'archer'); g.core.hp = g.core.max = 1e9;
@@ -486,7 +486,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   const ev0 = C.drainEvents(g).filter(e => e.type === 'newEnemy' && e.kind === 'bat'); check('새 종류 첫 등장 이벤트(newEnemy)', ev0.length === 1);
   g.buyCd.sword = 0; const sw = C.buy(g, 'sword').unit; sw.x = 1500; sw.y = 1500 - 160; sw.hx = sw.x; sw.hy = sw.y;
   for (let i = 0; i < 90; i++) { C.tick(g, DT); sw.x = 1500; sw.y = 1500 - 160; }
-  check('근접 유닛·성채는 공중형을 공격하지 못함', bat.hp === bat.max, `hp ${bat.hp}`);
+  check('근접 유닛·성은 공중형을 공격하지 못함', bat.hp === bat.max, `hp ${bat.hp}`);
   g.buyCd.archer = 0; const ar = C.buy(g, 'archer').unit; ar.x = 1500; ar.y = 1500 - 170 + 100; ar.hx = ar.x; ar.hy = ar.y;
   for (let i = 0; i < 90; i++) { C.tick(g, DT); ar.x = 1500; ar.y = 1500 - 70; }
   check('궁수는 공중형을 맞출 수 있음', bat.hp < bat.max, `hp ${bat.hp}`);
@@ -525,7 +525,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   const dmgIn = sec => { const a0 = u.hp; for (let i = 0; i < 30 * sec; i++) { C.tick(h, DT); u.x = 1500; u.y = 1500 - 100; } return a0 - u.hp; };
   const early = dmgIn(10); e.age = 100; const late = dmgIn(10);
   check('40초가 지난 적은 공격력이 점점 증가 (age 100에서 약 2.8배)', late > early * 2.2 && e.enr, `${early.toFixed(0)} → ${late.toFixed(0)}`); }
-// 40) 자유 모드: 성채에서 먼 적도 쫓아감 (기본 모드는 안 쫓음)
+// 40) 자유 모드: 성에서 먼 적도 쫓아감 (기본 모드는 안 쫓음)
 { const run = mode => { const g = C.createGame(5, mode); g.hold = true; g.phase = 'round'; g.round = 5; g.core.atk = 0; g.core.hp = g.core.max = 1e9; g.gold = 1e6; g.buyCd.sword = 0; const u = C.buy(g, 'sword').unit; u.hx = 1500 + 150; u.hy = 1500; u.x = u.hx; u.y = u.hy;
     const e = C.spawnEnemy(g, 'brute', 1500 + 380, 1500); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; e.aggro = 0; for (let i = 0; i < 30 * 8; i++) C.tick(g, DT); return Math.hypot(u.x - 1500, u.y - 1500); };
   const dn = run('normal'), df = run('free');
@@ -549,24 +549,24 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   const h = C.createGame(9); h.captureEvents = true; for (const [r, want] of [[50, 0], [51, 1], [55, 1], [56, 2], [61, 3], [85, 7], [86, 8], [120, 8]]) { h.round = r - 1; h.phase = 'round'; h.queue = []; h.roundT = C.ROUND_TIME; h.enemies.length = 0; h.cards.offer = null; C.tick(h, DT); h.cards.offer = null; if (h.extraPts !== want) check('포탈 수 R' + r, false, `기대 ${want} 실제 ${h.extraPts}`); }
   check('포탈 수 곡선 확인 완료', true);
   const pts = []; h.extraPts = 8; h.spawnPts = 8; h.round = 90; for (let i = 0; i < 300; i++) { const e = C.spawnEnemy(h, 'grunt'); pts.push(Math.hypot(e.x - 1500, e.y - 1500)); }
-  check('추가 포탈은 기존 포탈보다 성채에 가깝게 나옴 (거리 약 480 vs 700)', pts.some(d => d < 600) && pts.some(d => d > 650), `최소 ${Math.min(...pts).toFixed(0)} 최대 ${Math.max(...pts).toFixed(0)}`); }
-{ // 보스 개성: 돌진(등장 직후 성채로), 순간이동, 도약
+  check('추가 포탈은 기존 포탈보다 성에 가깝게 나옴 (거리 약 480 vs 700)', pts.some(d => d < 600) && pts.some(d => d > 650), `최소 ${Math.min(...pts).toFixed(0)} 최대 ${Math.max(...pts).toFixed(0)}`); }
+{ // 보스 개성: 돌진(등장 직후 성으로), 순간이동, 도약
   const mk = id => { const g = arena(10, [['boss', 1500 + 900, 1500]], id); const b = g.enemies[0]; g.core.hp = g.core.max = 1e9; g.core.atk = 0; return { g, b }; };
-  { const { g, b } = mk('charger'); const d0 = Math.hypot(b.x - 1500, b.y - 1500); for (let i = 0; i < 30 * 2; i++) C.tick(g, DT); check('돌격왕: 등장하자마자 성채 쪽으로 돌진', Math.hypot(b.x - 1500, b.y - 1500) < d0 - 350 || b.rushDone, `${d0.toFixed(0)} → ${Math.hypot(b.x - 1500, b.y - 1500).toFixed(0)}`); }
+  { const { g, b } = mk('charger'); const d0 = Math.hypot(b.x - 1500, b.y - 1500); for (let i = 0; i < 30 * 2; i++) C.tick(g, DT); check('돌격왕: 등장하자마자 성 쪽으로 돌진', Math.hypot(b.x - 1500, b.y - 1500) < d0 - 350 || b.rushDone, `${d0.toFixed(0)} → ${Math.hypot(b.x - 1500, b.y - 1500).toFixed(0)}`); }
   { const { g, b } = mk('summoner'); g.captureEvents = true; let ev = null; b.speed = 0; for (let i = 0; i < 30 * 14 && !ev; i++) { C.tick(g, DT); ev = C.drainEvents(g).find(e => e.type === 'bossBlink') || null; }
     check('소환사: 순간이동', !!ev && Math.hypot(ev.x1 - ev.x0, ev.y1 - ev.y0) > 300, ev ? `이동 거리 ${Math.hypot(ev.x1 - ev.x0, ev.y1 - ev.y0).toFixed(0)}` : '없음'); }
   { const { g, b } = mk('berserker'); g.gold = 1e7; for (let i = 0; i < 4; i++) { g.buyCd.sword = 0; const u = C.buy(g, 'sword').unit; u.x = 1500 + 300 + i * 10; u.y = 1500; u.hx = u.x; u.hy = u.y; u.max = u.hp = 1e9; } b.x = 1500 + 400; b.y = 1500; b.speed = 0; g.captureEvents = true; let ev = null, sh = null;
     for (let i = 0; i < 30 * 12 && !sh; i++) { C.tick(g, DT); for (const e of C.drainEvents(g)) { if (e.type === 'bossLeap') ev = e; if (e.type === 'bossShock') sh = e; } }
     check('광전사: 아군이 몰린 곳으로 도약해 내려찍음', !!ev && !!sh && Math.hypot(b.x - 1500, b.y - 1500) < 330, ev ? '도약 후 거리 ' + Math.hypot(b.x - 1500, b.y - 1500).toFixed(0) : '없음'); }
-  { const { g, b } = mk('bombardier'); for (let i = 0; i < 30 * 40; i++) C.tick(g, DT); const d = Math.hypot(b.x - 1500, b.y - 1500); check('포격대장: 성채에서 떨어져 포격만 함 (약 235)', d > 200 && d < 290, d.toFixed(0)); }
+  { const { g, b } = mk('bombardier'); for (let i = 0; i < 30 * 40; i++) C.tick(g, DT); const d = Math.hypot(b.x - 1500, b.y - 1500); check('포격대장: 성에서 떨어져 포격만 함 (약 235)', d > 200 && d < 290, d.toFixed(0)); }
 }
-// 43) 인구 제한 + 성채 업그레이드(능력치·대포·인구)
+// 43) 인구 제한 + 성 업그레이드(능력치·대포·인구)
 { C.CFG.castle.popBase = POP0; const g = C.createGame(3); g.gold = 1e9; let ok = 0, reason = null; for (let i = 0; i < 30; i++) { g.buyCd.sword = 0; const r = C.buy(g, 'sword'); if (r.ok) ok++; else { reason = r.reason; break; } }
-  check('인구 상한(성채 1레벨=8)이 차면 더 못 뽑음 (reason pop)', C.popCount(g) === C.popCap(g) && C.popCap(g) === POP0 && reason === 'pop', `인구 ${C.popCount(g)}/${C.popCap(g)}`);
+  check('인구 상한(성 1레벨=8)이 차면 더 못 뽑음 (reason pop)', C.popCount(g) === C.popCap(g) && C.popCap(g) === POP0 && reason === 'pop', `인구 ${C.popCount(g)}/${C.popCap(g)}`);
   const c0 = { max: g.core.max, atk: g.core.atk, range: g.core.range, cn: g.core.cannons }; g.gold = 0; const r0 = C.upgradeCastle(g);
   check('골드가 부족하면 업그레이드 불가', !r0.ok && r0.reason === 'gold' && g.castle.lv === 1);
   g.gold = 1e9; const r1 = C.upgradeCastle(g); g.buyCd.sword = 0;
-  check('성채 업그레이드: 골드 차감, 인구 상한·체력·공격력·사거리 상승', r1.ok && g.castle.lv === 2 && g.gold === 1e9 - C.CFG.castle.cost[0] && C.popCap(g) === POP0 + 3 && g.core.max > c0.max && g.core.atk > c0.atk && g.core.range > c0.range, `체력 ${c0.max}→${g.core.max} 공격 ${c0.atk.toFixed(1)}→${g.core.atk.toFixed(1)} 사거리 ${c0.range}→${g.core.range}`);
+  check('성 업그레이드: 골드 차감, 인구 상한·체력·공격력·사거리 상승', r1.ok && g.castle.lv === 2 && g.gold === 1e9 - C.CFG.castle.cost[0] && C.popCap(g) === POP0 + 3 && g.core.max > c0.max && g.core.atk > c0.atk && g.core.range > c0.range, `체력 ${c0.max}→${g.core.max} 공격 ${c0.atk.toFixed(1)}→${g.core.atk.toFixed(1)} 사거리 ${c0.range}→${g.core.range}`);
   check('업그레이드 후 다시 뽑을 수 있음', C.buy(g, 'sword').ok);
   { const h2 = C.createGame(9); h2.gold = 1e9; const caps = [C.popCap(h2)]; for (let i = 0; i < 3; i++) { C.upgradeCastle(h2); caps.push(C.popCap(h2)); } check('인구 증가량이 레벨마다 +1씩 커짐 (+3, +4, +5)', caps[1] - caps[0] === 3 && caps[2] - caps[1] === 4 && caps[3] - caps[2] === 5, caps.join('→'));
     const before = C.popCount(h2); C.spawnUnit ? 0 : 0; const u = C.createGame(1); u.units.push({ team: 'u', type: 'golem', dead: false, x: 0, y: 0 }); check('특수 유닛은 인구에 포함되지 않고 따로 셈', C.popCount(u) === 0 && C.specialCount(u) === 1); }
@@ -575,10 +575,10 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   const h = arena(10, []); h.gold = 1e9; for (let i = 1; i < 7; i++) C.upgradeCastle(h); h.core.atk = 100; h.core.rate = 1; const es = []; for (let i = 0; i < 4; i++) { const e = C.spawnEnemy(h, 'brute', 1500 + 100 + i * 12, 1500 + i * 25); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; es.push(e); }
   h.core.cd = 0; C.tick(h, DT); check('여러 문의 대포는 서로 다른 적을 동시에 쏨', h.shots.length >= 3 && new Set(h.shots.map(s => s.t)).size >= 3, `발사 ${h.shots.length}, 서로 다른 목표 ${new Set(h.shots.map(s => s.t)).size}`);
   const f = C.createGame(5); f.round = 40; f.cards.offer = null; f.jobs.offer = { boss: 'x', reward: true, list: [{ type: 'reward', reward: true, id: 'r_fort', name: 'x', desc: '', className: '', tier: 0 }] }; C.pickJob(f, 0);
-  check('보상 [성채 대개수]: 성채 2레벨 상승', f.castle.lv === 3);
+  check('보상 [성 대개수]: 성 2레벨 상승', f.castle.lv === 3);
   const ids = new Set(); for (let i = 0; i < 200; i++) { const g2 = C.createGame(300 + i); g2.round = 10; C.openCards(g2, false); for (const c of g2.cards.offer || []) ids.add(c.id); }
-  check('성채 능력치 카드(공격력·속도·사거리·체력)는 더 이상 나오지 않음', !['c_atk', 'c_rate', 'c_range', 'f_hp'].some(x => ids.has(x))); C.CFG.castle.popBase = 999; }
-// 44) 보스 순간이동 거리 제한 · 소환 졸개 성장 · 보상 성채 상한 · 목표 분산
+  check('성 능력치 카드(공격력·속도·사거리·체력)는 더 이상 나오지 않음', !['c_atk', 'c_rate', 'c_range', 'f_hp'].some(x => ids.has(x))); C.CFG.castle.popBase = 999; }
+// 44) 보스 순간이동 거리 제한 · 소환 졸개 성장 · 보상 성 상한 · 목표 분산
 { let worst = 0, n = 0; for (let t = 0; t < 40; t++) { const g = arena(30, [['boss', 1500 + 400, 1500 + (t % 7) * 40]]); const b = g.enemies[0]; b.e = 0; g.captureEvents = true; b.abil.blink = { cd: 1, minR: 300, maxR: 460 }; b.t.blink = 0; b.life = 3; b.speed = 0;
     for (let i = 0; i < 30 * 8; i++) { C.tick(g, DT); for (const ev of g.events || []) if (ev.type === 'bossBlink') { worst = Math.max(worst, Math.hypot(ev.x1 - ev.x0, ev.y1 - ev.y0)); n++; } g.events = []; } }
   check('순간이동 한 번의 이동 거리가 너무 멀지 않음 (≤ 350)', n > 20 && worst <= 350, `횟수 ${n}, 최대 ${worst.toFixed(0)}`); }
@@ -588,8 +588,8 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   const full = o(8), one = o(7), none = o(1); const pool = g => { g.jobs.offer = null; const ids = new Set(); const offs = []; for (let i = 0; i < 40; i++) { const h = C.createGame(900 + i); h.castle.lv = g.castle.lv; h.jobs.sword.ids = ['knight', 'paladin']; h.jobs.archer.ids = ['sniper', 'x']; h.jobs.priest.ids = ['a', 'b']; h.jobs.offer = null; h.round = 40; const E = h.enemies; E.length = 0; const bs = C.spawnEnemy(h, 'boss', 1500, 800); C.damage(h, bs, 1e12); if (h.jobs.offer) for (const x of h.jobs.offer.list) ids.add(x.id + ':' + x.desc); } return ids; };
   C.CFG.castle.popBase = 999;
   const pf = pool(full), p1 = pool(one);
-  check('성채가 이미 최대 레벨이면 [성채 대개수]가 제시되지 않음', ![...pf].some(x => x.startsWith('r_fort')), [...pf].length + '종');
-  check('성채가 1레벨만 남았으면 안내문이 1레벨로 바뀜', [...p1].some(x => x.startsWith('r_fort') && x.includes('1레벨') && x.includes('최대 레벨')) || ![...p1].some(x => x.startsWith('r_fort')), [...p1].filter(x => x.startsWith('r_fort')).join('|') || '(이번 표본엔 안 나옴)'); }
+  check('성이 이미 최대 레벨이면 [성 대개수]가 제시되지 않음', ![...pf].some(x => x.startsWith('r_fort')), [...pf].length + '종');
+  check('성이 1레벨만 남았으면 안내문이 1레벨로 바뀜', [...p1].some(x => x.startsWith('r_fort') && x.includes('1레벨') && x.includes('최대 레벨')) || ![...p1].some(x => x.startsWith('r_fort')), [...p1].filter(x => x.startsWith('r_fort')).join('|') || '(이번 표본엔 안 나옴)'); }
 { // 목표 분산: 같은 거리의 두 적 중 각자 자기 자리(홈) 쪽 적을 고른다
   const g = arena(10, [['grunt', 1500 + 200, 1500 - 60], ['grunt', 1500 - 200, 1500 + 60]]); for (const e of g.enemies) { e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; }
   const mk2 = (hx, hy) => { const u = C.addUnit ? C.addUnit(g, 'sword') : null; return u; };
@@ -606,8 +606,8 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
 // 47) 자유 모드: 사거리 밖이어도 나를 공격한 적에게 가서 반격한다
 { const run = mode => { const a = C.createGame(1, mode); a.hold = true; a.phase = 'round'; a.round = 10; a.queue = []; C.buy(a, 'sword'); const u = a.units[0]; const e = C.spawnEnemy(a, 'grunt', 1500 + 600, 1500); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; for (let i = 0; i < 3; i++) C.tick(a, DT); const x0 = u.x; C.damage(a, u, 1, false, e); for (let i = 0; i < 200; i++) C.tick(a, DT); return Math.hypot(u.x - e.x, u.y - e.y); };
   const f = run('free'), n = run('normal'); check('자유 모드: 멀리서 나를 때린 적에게 반격하러 감', f < n - 150, `적과의 거리 자유 ${f.toFixed(0)}px / 기본 ${n.toFixed(0)}px`); }
-// 48) 성채 최대 레벨이면 인구 제한 없음
-{ const g = C.createGame(3); g.gold = 1e9; const cap1 = C.popCap(g); for (let i = 1; i < C.CFG.castle.max; i++) C.upgradeCastle(g); check('성채 최대 레벨이면 인구 제한이 풀림', C.popCap(g) > 1e6 && cap1 < 1e6); }
+// 48) 성 최대 레벨이면 인구 제한 없음
+{ const g = C.createGame(3); g.gold = 1e9; const cap1 = C.popCap(g); for (let i = 1; i < C.CFG.castle.max; i++) C.upgradeCastle(g); check('성 최대 레벨이면 인구 제한이 풀림', C.popCap(g) > 1e6 && cap1 < 1e6); }
 // 49) 생산 대기열
 { const g = C.createGame(9); g.gold = 100000; C.CFG.castle.popBase = 999; const g0 = g.gold; const c1 = C.unitCostOf(g, 'sword');
   const res = []; for (let i = 0; i < 6; i++) res.push(C.enqueue(g, i % 2 ? 'archer' : 'sword'));

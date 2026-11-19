@@ -1,4 +1,4 @@
-/* 성채 지키기 — 게임 로직 (렌더링/DOM 없음)
+/* 성 지키기 — 게임 로직 (렌더링/DOM 없음)
  * 브라우저(window.CastleCore)와 Node(require)에서 모두 쓸 수 있다.
  * 시드 난수 + 고정 시간 단계(tick(dt))만 사용하므로 결정론적이다.
  * → 같은 코드로 밸런스 시뮬레이션과 서버 검증을 돌릴 수 있다.
@@ -24,23 +24,23 @@
     world: { w: W, h: H, cx: CX, cy: CY },
     startGold: 210, // 검사·궁수·사제를 한 명씩(어떤 순서로든, 가격 상승 포함 최대 204) 뽑을 수 있는 금액
     holdRadius: 22,       // 수비 모드: 근접 유닛이 자리에서 벗어날 수 있는 거리 (원거리는 제자리)
-    leash: 240,           // 유닛이 성채로부터 추격할 수 있는 최대 거리
+    leash: 240,           // 유닛이 성으로부터 추격할 수 있는 최대 거리
     ai: {
       bias: 0.08,         // 평소(적이 멀 때) 대기 자리가 적 방향으로 쏠리는 정도 (0 = 사방에 고르게, 1 = 전부 적 방향)
       biasAlert: 0.6,     // 적이 alertRange 안으로 들어오면 이만큼까지 서서히 쏠린다
-      alertRange: 420,    // 성채에서 이 거리 안에 적이 있으면 경계 상태
+      alertRange: 420,    // 성에서 이 거리 안에 적이 있으면 경계 상태
       sway: 6,            // 대기 중 살짝 흔들리는 폭(px) — 가만히 서 있는 느낌을 줄인다
       homeBias: 0.9, // 목표를 고를 때 '원래 자리에서의 거리'를 반영하는 정도 (0이면 가장 가까운 적만 쫓음)
       homeR: { sword: 170, archer: 110, priest: 100, golem: 150, hero: 140, marksman: 125, repeater: 100 }, // 역할별 대기 반경
     },
-    core: { hp: 1000, atk: 20, rate: 1.0, range: 260, r: 46, blockR: 64 }, // blockR: 성채 원형 안으로 아군이 들어올 수 없다
+    core: { hp: 1000, atk: 20, rate: 1.0, range: 260, r: 46, blockR: 64 }, // blockR: 성 원형 안으로 아군이 들어올 수 없다
     units: {
       sword:  { name: '검사', cost: 50, hp: 120, atk: 12, rate: 1.0, range: 30,  speed: 90, r: 10, buyCd: 1.2, aggro: 220, dbl: 0.15 },
       archer: { name: '궁수', cost: 60, hp: 67,  atk: 11, rate: 1.2, range: 220, speed: 80, r: 9,  buyCd: 1.5, aggro: 260 },
       priest: { name: '사제', cost: 80, hp: 85,  atk: 0,  rate: 0,   range: 0,   speed: 80, r: 9,  buyCd: 2.5, aggro: 0,
                 heal: 12, healRate: 2.4, healRange: 200 },
       // 카드로만 얻는 유닛
-      // 카드로 얻는 특수 유닛. line = 어느 직업 계열의 강화·전직을 받는지 (sword·archer·priest = 해당 직업, core = 성채 강화)
+      // 카드로 얻는 특수 유닛. line = 어느 직업 계열의 강화·전직을 받는지 (sword·archer·priest = 해당 직업, core = 성 강화)
       golem:  { name: '골렘', hp: 1500, atk: 52, rate: 0.8, range: 40,  speed: 55,  r: 18, aggro: 220, priceSteps: 0, line: 'sword' }, // priceSteps: 소환하면 모든 유닛 가격이 이만큼 오른다 (직접 뽑는 유닛은 1, 특수 유닛은 모두 0)
       legendsword:  { name: '검왕',   hp: 2600, atk: 150, rate: 1.4, range: 36,  speed: 105, r: 15, aggro: 320, priceSteps: 0, line: 'sword' },                 // 전설: 압도적인 전사
       legendarcher: { name: '궁신',   hp: 650,  atk: 180, rate: 0.6, range: 380, speed: 90,  r: 13, aggro: 420, priceSteps: 0, line: 'archer', pierce: 3 },   // 전설: 압도적인 궁수
@@ -105,7 +105,7 @@
       { id: 'r_snipers', name: '저격 용병단', desc: '용병 명궁 3명이 합류 (스킬 [일제 사격])', units: ['marksman', 'marksman', 'marksman'] },
       { id: 'r_golem',   name: '철갑 용병단', desc: '거대한 용병 골렘 2명 + 용병 용사 2명이 합류', units: ['golem', 'golem', 'hero', 'hero'] },
       { id: 'r_army',    name: '전군 강화',   desc: '검사·궁수·사제 모두 체력·공격력 강화 +2단계', up: 2 },
-      { id: 'r_fort',    name: '성채 대개수', desc: '성채가 즉시 2레벨 올라갑니다 (인구·체력·공격력·사거리 상승, 대포 추가) + 체력 완전 회복', castle: 2 },
+      { id: 'r_fort',    name: '성 대개수', desc: '성이 즉시 2레벨 올라갑니다 (인구·체력·공격력·사거리 상승, 대포 추가) + 체력 완전 회복', castle: 2 },
     ],
     // 전직: 보스를 처치하면 직업(검사/궁수/사제) 하나를 골라 승급시킨다. 1단계에서 갈래를 고르고, 2단계로 한 번 더 강화된다.
     jobs: {
@@ -157,15 +157,15 @@
       bossSplash: 0.25, bossSplashR: 35,               // 보스 기본 공격의 범위 피해: 주변 아군이 받는 비율, 반경(+보스 크기)
       healCap: 0.10,                                  // 한 유닛이 1초 동안 치유로 회복할 수 있는 최대 비율(최대 체력 기준). 사제를 많이 뽑아도 불사가 되지 않게 한다
       bossGrow: 0.02, bossGrowDelay: 8, bossGrowMax: 2.6, // 보스 기본 공격: 등장 8초 뒤부터 초당 +2%씩 강해진다 (최대 ×2.6)
-      summonRange: 600,                               // 보스가 성채에서 이 거리 안에 들어와야 졸개 소환 시간이 흐른다
-      shellCoreMul: 0.4,                              // 보스 포격이 성채에 주는 피해 비율 (성벽이 튼튼하다)
-      coreRepair: 0.04,                               // 라운드가 바뀔 때마다 성채가 기본으로 복구하는 비율 (최대 체력 기준)
+      summonRange: 600,                               // 보스가 성에서 이 거리 안에 들어와야 졸개 소환 시간이 흐른다
+      shellCoreMul: 0.4,                              // 보스 포격이 성에 주는 피해 비율 (성벽이 튼튼하다)
+      coreRepair: 0.04,                               // 라운드가 바뀔 때마다 성이 기본으로 복구하는 비율 (최대 체력 기준)
     },
     economy: { costAll: 1.045, costType: 0.015 }, prodMax: 5, // (임시값: 1.05는 너무 쉽고 1.08은 어려웠음 — 밸런스는 나중에 재조정) // 유닛을 하나 뽑을 때마다 모든 유닛의 비용이 이 배율만큼 오른다 (인구 제한은 없다)
     healAfterRound: 0.30, // 새 라운드 시작 시 생존 유닛 회복 비율
     // 카드/강화 수치
     upPct: { hp: 0.30, atk: 0.15, rate: 0.10, speed: 0.12 },
-    auraBase: 170, // 성채 광장(회색 원) 크기
+    auraBase: 170, // 성 광장(회색 원) 크기
     debuff: {                         // 보스 광역 상태이상 (아군에게 걸린다)
       stun: { name: '기절', dur: 1.2 },                // 행동 불가
       poison: { name: '중독', dur: 7, pct: 0.018, pool: 8 }, // pool: 독 웅덩이가 남아 있는 시간(초)    // 초당 최대 체력의 1.8% (죽지는 않고 1까지)
@@ -180,7 +180,7 @@
       auraHeal: 0.025, auraAtk: 0.08, auraDef: 0.08, auraDefCap: 0.40, auraSpd: 0.06, auraBoost: 0.15,
     },
     rerolls: 2,
-    // 성채 업그레이드: 유닛 수(인구)에 상한이 있고, 골드로 성채를 올리면 인구 상한·체력·공격력·사거리가 오르고 특정 레벨마다 대포가 1문씩 늘어난다
+    // 성 업그레이드: 유닛 수(인구)에 상한이 있고, 골드로 성을 올리면 인구 상한·체력·공격력·사거리가 오르고 특정 레벨마다 대포가 1문씩 늘어난다
     castle: { max: 8, cost: [220, 380, 640, 1000, 1550, 2350, 3500], popBase: 8, popPer: 3, hp: 350, atk: 0.16, range: 22, rate: 0.06, cannonLv: [3, 5, 7] },
     // 엘리트: 일반 몬스터가 일정 확률로 훨씬 강하고 크게 나온다. 확률은 라운드가 갈수록 커져 최대 max
     elite: { from: 3, perRound: 0.0025, max: 0.10, hp: 3, dmg: 1.6, size: 1.35, gold: 4, speed: 1.05 },
@@ -285,7 +285,7 @@
   const dmgMul = r => 1 + CFG.balance.dmgShare * (hpMul(r) - 1);
   const spawnPointCount = r => (r > ACT1_END ? 8 : r > 15 ? 6 : r > 5 ? 4 : 2); // 기본 길 2개 → 5라운드 뒤 4개 → 15라운드 뒤 6개 → 2막 8개
   // 스폰 지점 방향: 큰 길 4개(90도 간격) + 10라운드부터 샛길 2개(대각선). 배경의 길도 이 각도를 따른다.
-  // 무한 모드의 추가 포탈: 51라운드부터 5라운드마다 1개씩 (최대 8개), 길 사이사이에 기존 포탈보다 성채에 가깝게 생긴다
+  // 무한 모드의 추가 포탈: 51라운드부터 5라운드마다 1개씩 (최대 8개), 길 사이사이에 기존 포탈보다 성에 가깝게 생긴다
   const EXTRA_RING = 480, EXTRA_ORDER = [0, 4, 2, 6, 1, 5, 3, 7];
   const extraCount = r => r > MAX_ROUND ? Math.min(8, Math.floor((r - MAX_ROUND - 1) / 5) + 1) : 0;
   const extraAngles = n => EXTRA_ORDER.slice(0, n).map(k => 0.4 + Math.PI / 8 + k * Math.PI / 4);
@@ -298,7 +298,7 @@
   // ───────────── 카드 정의 ─────────────
   const TN = { sword: '검사', archer: '궁수', priest: '사제' };
   const STAT_NAME = { hp: '체력', atk: '공격력', rate: '공격 속도', speed: '이동 속도' };
-  // cat: unit(유닛 강화) / core(성채 강화) / summon(특수 소환)
+  // cat: unit(유닛 강화) / core(성 강화) / summon(특수 소환)
   const CARD_DEFS = [
     // 유닛 강화 — 대상 유닛 종류는 카드가 나올 때 정해진다
     { id: 'u_hp',    cat: 'unit', rar: 'common', max: 5, generic: 'hp' },
@@ -312,25 +312,25 @@
     { id: 'u_range',   cat: 'unit', rar: 'rare', max: 3, type: 'archer', name: '궁수 · 사거리',    desc: l => '궁수 계열 사거리 +' + Math.round(V().archerRange * 100 * l) + '%' },
     { id: 'u_aoeheal', cat: 'unit', rar: 'rare', max: 3, type: 'priest', name: '사제 · 광역 치유', desc: l => '치유 대상 바로 옆(붙어 있는) 아군도 ' + 35 * l + '% 회복' },
     { id: 'u_revive',  cat: 'unit', rar: 'epic', max: 3, type: 'priest', name: '사제 · 부활',      desc: l => '쓰러진 아군을 라운드당 ' + l + '회 체력 ' + Math.round(V().revive * 100) + '%로 부활' },
-    // 성채 — 포격
-    { id: 'c_atk',    cat: 'core', rar: 'common', max: 5, name: '성채 · 공격력',   desc: l => '성채 공격력 +' + Math.round(V().coreAtk * 100 * l) + '%' },
-    { id: 'c_rate',   cat: 'core', rar: 'common', max: 4, name: '성채 · 공격 속도', desc: l => '성채 공격 속도 +' + Math.round(V().coreRate * 100 * l) + '%' },
-    { id: 'c_range',  cat: 'core', rar: 'common', max: 3, name: '성채 · 사거리',   desc: l => '성채 사거리 +' + V().coreRange * l },
-    { id: 'c_splash', cat: 'core', rar: 'rare',   max: 3, name: '폭발탄',          desc: l => '성채 탄이 맞은 적 주변 ' + (50 + 10 * l) + ' 범위에 50% 피해' },
-    { id: 'c_chain',  cat: 'core', rar: 'rare',   max: 3, name: '연쇄 번개',       desc: l => '성채 공격이 주변 적 ' + (l + 1) + '마리로 전이 (60%)' },
-    { id: 'c_bomb',   cat: 'core', rar: 'epic',   max: 3, name: '대형 포탄',       desc: l => (11 - l) + '초마다 적이 가장 밀집한 곳에 대폭격 (성채 공격력 ×' + (V().bomb + V().bombStep * (l - 1)) + ')' },
-    // 성채 — 보급 오라 (성채 주변 아군 대상)
+    // 성 — 포격
+    { id: 'c_atk',    cat: 'core', rar: 'common', max: 5, name: '성 · 공격력',   desc: l => '성 공격력 +' + Math.round(V().coreAtk * 100 * l) + '%' },
+    { id: 'c_rate',   cat: 'core', rar: 'common', max: 4, name: '성 · 공격 속도', desc: l => '성 공격 속도 +' + Math.round(V().coreRate * 100 * l) + '%' },
+    { id: 'c_range',  cat: 'core', rar: 'common', max: 3, name: '성 · 사거리',   desc: l => '성 사거리 +' + V().coreRange * l },
+    { id: 'c_splash', cat: 'core', rar: 'rare',   max: 3, name: '폭발탄',          desc: l => '성 탄이 맞은 적 주변 ' + (50 + 10 * l) + ' 범위에 50% 피해' },
+    { id: 'c_chain',  cat: 'core', rar: 'rare',   max: 3, name: '연쇄 번개',       desc: l => '성 공격이 주변 적 ' + (l + 1) + '마리로 전이 (60%)' },
+    { id: 'c_bomb',   cat: 'core', rar: 'epic',   max: 3, name: '대형 포탄',       desc: l => (11 - l) + '초마다 적이 가장 밀집한 곳에 대폭격 (성 공격력 ×' + (V().bomb + V().bombStep * (l - 1)) + ')' },
+    // 성 — 보급 오라 (성 주변 아군 대상)
     { id: 'a_heal', cat: 'core', rar: 'common', max: 5, name: '치유 오라', desc: l => '오라 안 아군이 초당 최대 체력의 ' + +(V().auraHeal * 100 * l).toFixed(1) + '% 회복' },
     { id: 'a_atk',  cat: 'core', rar: 'common', max: 5, name: '군기 오라', desc: l => '오라 안 아군 공격력 +' + Math.round(V().auraAtk * 100 * l) + '%' },
     { id: 'a_def',  cat: 'core', rar: 'common', max: 5, name: '철벽 오라', desc: l => '오라 안 아군 받는 피해 -' + Math.min(Math.round(V().auraDefCap * 100), Math.round(V().auraDef * 100 * l)) + '%' },
     { id: 'a_spd',  cat: 'core', rar: 'common', max: 4, name: '신속 오라', desc: l => '오라 안 아군 이동·공격 속도 +' + Math.round(V().auraSpd * 100 * l) + '%' },
     { id: 'a_rad',  cat: 'core', rar: 'common', max: 4, name: '오라 강화', desc: l => '모든 오라 효과 +' + Math.round(V().auraBoost * 100 * l) + '%', needsAura: true },
-    // 성채 — 요새
-    { id: 'f_hp',     cat: 'core', rar: 'common', max: 5, name: '성채 · 체력',   desc: l => '성채 최대 체력 +' + V().fortHp * l + ' (즉시 회복)' },
-    { id: 'f_repair', cat: 'core', rar: 'rare',   max: 3, name: '자동 수리',     desc: l => '라운드가 바뀔 때 성채 체력 ' + Math.round(V().repair * 100 * l) + '% 회복' },
-    { id: 'f_thorn',  cat: 'core', rar: 'rare',   max: 3, name: '가시 방벽',     desc: l => '성채를 때린 적에게 그 피해의 ' + Math.round(V().thorn * 100 * l) + '% 반사' },
+    // 성 — 요새
+    { id: 'f_hp',     cat: 'core', rar: 'common', max: 5, name: '성 · 체력',   desc: l => '성 최대 체력 +' + V().fortHp * l + ' (즉시 회복)' },
+    { id: 'f_repair', cat: 'core', rar: 'rare',   max: 3, name: '자동 수리',     desc: l => '라운드가 바뀔 때 성 체력 ' + Math.round(V().repair * 100 * l) + '% 회복' },
+    { id: 'f_thorn',  cat: 'core', rar: 'rare',   max: 3, name: '가시 방벽',     desc: l => '성을 때린 적에게 그 피해의 ' + Math.round(V().thorn * 100 * l) + '% 반사' },
     // 특수 소환
-    { id: 's_turret', cat: 'summon', rar: 'rare',   max: 3,  name: '자동 포탑',       desc: l => '성채 옆에 자동 포탑 설치 (' + l + '/3) · 성채 공격력·공속·사거리 강화를 받음' },
+    { id: 's_turret', cat: 'summon', rar: 'rare',   max: 3,  name: '자동 포탑',       desc: l => '성 옆에 자동 포탑 설치 (' + l + '/3) · 성 공격력·공속·사거리 강화를 받음' },
     { id: 's_golem',  cat: 'summon', rar: 'epic',   max: 1,  name: '골렘 소환',       desc: () => '거대한 탱커 골렘을 영구 소환 · 검사 계열 · 스킬 [대지 강타]: 7초마다 주변 적에게 공격력 ×4.5 피해 + 3초 감속' },
     { id: 's_hero',   cat: 'summon', rar: 'epic',   max: 1,  name: '용사 소환',       desc: () => '강력한 근접 영웅 용사를 영구 소환 · 검사 계열 · 스킬 [일섬]: 5초마다 주변 적 전체에 공격력 ×6 베기' },
     // 궁수 계열 특수 유닛: 궁수 강화 카드와 궁수 전직(저격수·속사수 등)의 효과를 받는다
@@ -338,9 +338,9 @@
     { id: 'l_archer', cat: 'summon', rar: 'legend', max: 1, name: '전설 · 궁신 강림', desc: () => '압도적인 궁수 궁신을 영구 소환 · 궁수 계열 · 화살이 적 3명 관통 · 스킬 [천궁 난사]: 5초마다 적 10명을 동시에 저격' },
     { id: 's_marksman',  cat: 'summon', rar: 'epic', max: 1, name: '명궁 소환',    desc: () => '사거리 300의 영웅 궁수를 영구 소환 · 궁수 계열 · 스킬 [일제 사격]: 6초마다 가까운 적 6명을 동시에 저격 (공격력 ×4.5)' },
     { id: 's_repeaters', cat: 'summon', rar: 'rare', max: 3, name: '연노병 소환',  desc: l => '연노병 2명을 영구 소환 (' + l + '/3) · 초당 3발 이상 빠르게 쏘는 석궁병 · 궁수 계열 (궁수 강화·전직 효과를 받음)' },
-    { id: 's_ballista',  cat: 'summon', rar: 'rare', max: 2, name: '발리스타 설치', desc: l => '대형 석궁 발리스타를 성채 옆에 설치 (' + l + '/2) · 큰 화살이 적 2명을 관통 · 궁수 계열 (궁수 강화·전직 효과를 받음)' },
+    { id: 's_ballista',  cat: 'summon', rar: 'rare', max: 2, name: '발리스타 설치', desc: l => '대형 석궁 발리스타를 성 옆에 설치 (' + l + '/2) · 큰 화살이 적 2명을 관통 · 궁수 계열 (궁수 강화·전직 효과를 받음)' },
   ];
-  // 보스 개성 패턴: rush(등장하자마자 성채 한복판으로 돌진 + 충격파) · blink(순간이동) · leap(밀집한 아군 위로 도약) · siege(멀리서 포격만)
+  // 보스 개성 패턴: rush(등장하자마자 성 한복판으로 돌진 + 충격파) · blink(순간이동) · leap(밀집한 아군 위로 도약) · siege(멀리서 포격만)
   { const BA = id => CFG.bossPool.find(b => b.id === id).abil;
     Object.assign(BA('charger'), { rush: { mul: 5, until: 170, r: 120, stun: 0.9 } });
     Object.assign(BA('summoner'), { blink: { cd: 13, minR: 300, maxR: 460 } });
@@ -374,7 +374,7 @@
     const out = [];
     const owned = UNIT_TYPES.filter(t => S.units.some(u => lineOf(u.type) === t && !u.dead));
     for (const def of CARD_DEFS) {
-      if (def.rar === 'legend' || def.id === 'c_atk' || def.id === 'c_rate' || def.id === 'c_range' || def.id === 'f_hp') continue; // 성채 능력치는 이제 성채 업그레이드로 올린다 // 전설 카드는 아래 generateOffer에서 따로 (아주 낮은 확률)
+      if (def.rar === 'legend' || def.id === 'c_atk' || def.id === 'c_rate' || def.id === 'c_range' || def.id === 'f_hp') continue; // 성 능력치는 이제 성 업그레이드로 올린다 // 전설 카드는 아래 generateOffer에서 따로 (아주 낮은 확률)
       if (def.generic) {
         for (const t of UNIT_TYPES) if (taken(S, def.id + ':' + t) < def.max) out.push({ def, type: t, w: owned.includes(t) ? 3 : 1 });
       } else if (taken(S, def.id) < def.max) {
@@ -440,7 +440,7 @@
   function openJobs(S, bossName) {
     const opts = jobOptions(S);
     if (!opts.length) { // 전직이 모두 끝났으면 보상 선택
-      const left = CFG.castle.max - S.castle.lv; // 성채가 이미 최대면 대개수는 제시하지 않고, 1레벨만 남았으면 1레벨로 안내한다
+      const left = CFG.castle.max - S.castle.lv; // 성이 이미 최대면 대개수는 제시하지 않고, 1레벨만 남았으면 1레벨로 안내한다
       const pool = CFG.rewards.filter(r => !r.castle || left > 0).map(r => ({ type: 'reward', reward: true, className: '보스 보상', tier: 0, id: r.id, name: r.name, desc: r.castle && left < r.castle ? r.desc.replace('2레벨', left + '레벨') + ' (최대 레벨 도달)' : r.desc }));
       for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(S.rng() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
       S.jobs.offer = { boss: bossName, reward: true, list: pool.slice(0, 3) }; return;
@@ -450,7 +450,7 @@
   }
   function pickJob(S, idx) {
     const o = S.jobs.offer && S.jobs.offer.list[idx]; if (!o) return false;
-    if (o.reward) { // 보상: 용병 소환 / 전군 강화 / 성채 보강
+    if (o.reward) { // 보상: 용병 소환 / 전군 강화 / 성 보강
       const d = CFG.rewards.find(r => r.id === o.id); S.jobs.offer = null;
       if (d.units) for (const t of d.units) { const u = addUnit(S, t); u.x = CX + (S.rng() - 0.5) * 160; u.y = CY + 100 + S.rng() * 60; }
       if (d.up) { for (const l of ['sword', 'archer', 'priest']) { S.up[l].hp += d.up; S.up[l].atk += d.up; } for (const u of S.units) if (!u.dead) refreshUnit(S, u); }
@@ -494,7 +494,7 @@
     recompute(S);
     if (c.id === 'u_range') for (const u of S.units) if (lineOf(u.type) === 'archer' && !u.dead) refreshUnit(S, u); // 사거리 카드는 이미 있는 궁수에게도 바로 적용
     if (S.core.max > oldMax) S.core.hp += S.core.max - oldMax;
-    for (const u of S.units) if (lineOf(u.type) === 'core' && !u.dead) refreshUnit(S, u); // 포탑은 성채 강화 카드를 받는다
+    for (const u of S.units) if (lineOf(u.type) === 'core' && !u.dead) refreshUnit(S, u); // 포탑은 성 강화 카드를 받는다
     const summon = { s_turret: ['turret'], s_golem: ['golem'], s_hero: ['hero'], s_marksman: ['marksman'], s_repeaters: ['repeater', 'repeater'], s_ballista: ['ballista'], l_sword: ['legendsword'], l_archer: ['legendarcher'] }[c.id];
     if (summon) for (const t of summon) { addUnit(S, t); const steps = CFG.units[t].priceSteps | 0; if (steps > 0) { S.buyCount += steps; emit(S, { type: 'priceUp' }); } } // 특수 유닛(골렘·용사·포탑)은 priceSteps가 0이라 가격을 올리지 않는다
     emit(S, { type: 'picked', name: c.name });
@@ -536,7 +536,7 @@
   // 유닛 종류별 강화 수치 반영
   function statsOf(S, type) {
     const b = CFG.units[type], line = lineOf(type);
-    if (line === 'core') { // 포탑: 성채 공격력·공속·사거리 강화를 받는다
+    if (line === 'core') { // 포탑: 성 공격력·공속·사거리 강화를 받는다
       const v = V(), L = id => taken(S, id);
       return { max: b.hp, atk: S.core.atk, rate: S.core.rate, speed: b.speed, heal: 0, healRate: 0, range: S.core.range, healRange: 0 };
     }
@@ -570,7 +570,7 @@
   // ───────────── 게임 생성 ─────────────
   function createGame(seed, mode) {
     const S = {
-      mode: mode === 'free' ? 'free' : mode === 'hold' ? 'hold' : 'normal', // free: 유닛이 성채 주변에 머물지 않고 범위 안의 적을 어디까지든 쫓아간다
+      mode: mode === 'free' ? 'free' : mode === 'hold' ? 'hold' : 'normal', // free: 유닛이 성 주변에 머물지 않고 범위 안의 적을 어디까지든 쫓아간다
       seed: seed >>> 0, rng: mulberry32(seed >>> 0),
       t: 0, phase: 'prep', prepT: PREP_TIME, round: 0, roundT: 0, clearT: 0, zones: [], pools: [],
       queue: [], spawnT: 0, spawnGap: 1, spawnPts: 2, extraPts: 0, fallen: [], endless: false, castle: { lv: 1 },
@@ -600,10 +600,10 @@
   // ───────────── 유닛 추가 (생산/소환 공통) ─────────────
   function addUnit(S, type) {
     const cfg = CFG.units[type], st = statsOf(S, type);
-    const a = S.rng() * Math.PI * 2, rr = 86 + S.rng() * 20; // 성채 원형 밖에서 나온다
+    const a = S.rng() * Math.PI * 2, rr = 86 + S.rng() * 20; // 성 원형 밖에서 나온다
     const ha = S.spawnN++ * 2.39996323 + S.rng() * 0.3, hr = (CFG.ai.homeR[type] || 120) * (0.9 + 0.2 * S.rng()); // 황금각으로 사방에 퍼뜨림
     let x = CX + Math.cos(a) * rr, y = CY + Math.sin(a) * rr;
-    if (cfg.static) { // 설치형(포탑/발리스타): 성채 둘레의 정해진 자리
+    if (cfg.static) { // 설치형(포탑/발리스타): 성 둘레의 정해진 자리
       const n = S.units.filter(u => u.type === type && !u.dead).length, ta = n * Math.PI + (type === 'turret' ? 0.8 : 2.4), rad = type === 'turret' ? 105 : 140;
       x = CX + Math.cos(ta) * rad; y = CY + Math.sin(ta) * rad;
     }
@@ -621,8 +621,8 @@
   }
 
   // ───────────── 플레이어 행동 ─────────────
-  // 인구: 설치형(포탑·발리스타)을 뺀 유닛 수. 상한은 성채 레벨이 올릴 때마다 늘어난다 (카드·보상으로 얻는 특수 유닛은 상한과 무관하게 합류)
-  // 성채 레벨업마다 늘어나는 인구가 +1씩 커진다 (2레벨 +3, 3레벨 +4, 4레벨 +5 …)
+  // 인구: 설치형(포탑·발리스타)을 뺀 유닛 수. 상한은 성 레벨이 올릴 때마다 늘어난다 (카드·보상으로 얻는 특수 유닛은 상한과 무관하게 합류)
+  // 성 레벨업마다 늘어나는 인구가 +1씩 커진다 (2레벨 +3, 3레벨 +4, 4레벨 +5 …)
   const popCap = S => { if (S.castle.lv >= CFG.castle.max) return 1e9; const n = S.castle.lv - 1; return CFG.castle.popBase + CFG.castle.popPer * n + n * (n - 1) / 2; };
   const popGain = lv => CFG.castle.popPer + (lv - 2); // lv 레벨로 올릴 때 늘어나는 인구
   const popCount = S => { let n = 0; for (const u of S.units) if (!u.dead && UNIT_TYPES.includes(u.type)) n++; return n; }; // 기본 3종만 인구에 포함
@@ -634,7 +634,7 @@
     if (!free) S.gold -= cost;
     const oldMax = S.core.max; S.castle.lv++; recompute(S);
     S.core.hp = Math.min(S.core.max, S.core.hp + (S.core.max - oldMax) + S.core.max * 0.1);
-    for (const u of S.units) if (lineOf(u.type) === 'core' && !u.dead) refreshUnit(S, u); // 포탑도 성채 강화를 받는다
+    for (const u of S.units) if (lineOf(u.type) === 'core' && !u.dead) refreshUnit(S, u); // 포탑도 성 강화를 받는다
     emit(S, { type: 'castleUp', lv: S.castle.lv, cannons: S.core.cannons, pop: popCap(S) });
     return { ok: true, cost: free ? 0 : cost };
   }
@@ -770,7 +770,7 @@
   // ───────────── 피해/사망 ─────────────
   function hitCore(S, dmg, src) {
     const c = S.core; c.hp -= dmg; c.flash = 0.12;
-    const by = S.coreDmgBy; const k = src || '기타'; by[k] = (by[k] || 0) + dmg; // 어떤 공격에 성채가 많이 맞는지 (밸런스 진단용)
+    const by = S.coreDmgBy; const k = src || '기타'; by[k] = (by[k] || 0) + dmg; // 어떤 공격에 성이 많이 맞는지 (밸런스 진단용)
     if (c.hp <= 0 && !S.over) { c.hp = 0; S.over = true; S.win = false; emit(S, { type: 'over', win: false }); }
   }
   // 피해/치유 숫자: 같은 대상에게 짧은 시간 들어온 양은 합쳐서 한 번에 표시 (이벤트 수를 줄인다). 치명타는 즉시 따로 표시.
@@ -825,7 +825,7 @@
   }
   // 발사 위치: 몸 중심이 아니라 그림의 포구/활 위치 (조준 방향으로 len만큼 나간 지점, 높이 h0에서 출발)
   const MUZZLE = {
-    c: { len: 32, h0: 0 },   // 성채 대포 포구
+    c: { len: 32, h0: 0 },   // 성 대포 포구
     a: { len: 10, h0: 2.5 }, // 아군 궁수의 활
     ea: { len: 10, h0: 2.5 },// 적 사수의 활
     t: { len: 20, h0: 9.5 }, // 포탑 포신
@@ -855,10 +855,10 @@
     } else if (s.t === S.core) hitCore(S, s.dmg, '화살(사수)');
     else { damage(S, s.t, s.dmg * (s.t.rres || 1), s.crit, s.from); onShotHit(S, s); }
   }
-  // 성채 탄 / 화살의 추가 효과 (폭발, 전이, 관통)
+  // 성 탄 / 화살의 추가 효과 (폭발, 전이, 관통)
   function onShotHit(S, s) {
     const t = s.t;
-    if (s.color === 'c' || s.color === 't') { // 성채 탄과 포탑 탄: 폭발·연쇄
+    if (s.color === 'c' || s.color === 't') { // 성 탄과 포탑 탄: 폭발·연쇄
       if (S.perks.splash) {
         const R = 50 + 10 * S.perks.splash;
         eachNear(S.gE, t.x, t.y, R, e => { if (e !== t) damage(S, e, s.dmg * 0.5); });
@@ -981,7 +981,7 @@
     const free = S.mode === 'free', hold = S.mode === 'hold';
     if (u.rvT > 0) { u.rvT -= dt; if (u.rvT <= 0) u.rv = null; }
     if (free && u.rv && !u.rv.dead && u.rv.hp > 0) tgt = u.rv; // (자유 모드) 사거리 밖이어도 나를 공격한 적에게 가서 반격한다
-    if (!free && tgt && Math.hypot(tgt.x - CX, tgt.y - CY) > CFG.leash) tgt = null; // (기본 모드) 성채에서 너무 먼 적은 쫓지 않는다
+    if (!free && tgt && Math.hypot(tgt.x - CX, tgt.y - CY) > CFG.leash) tgt = null; // (기본 모드) 성에서 너무 먼 적은 쫓지 않는다
     if (hold && tgt) { // (수비 모드) 자리에서 조금만 벗어난다: 자리 근처로 들어온 적만 상대하고, 먼 곳의 적에게 끌려가지 않는다
       const lim = melee ? CFG.holdRadius : 0; // 근접은 자리 근처의 적만, 원거리는 제자리에서 사거리 안의 적만 쏜다
       tgt = find(u.hx, u.hy);
@@ -1035,7 +1035,7 @@
       if (!e.enraged) { e.enraged = true; emit(S, { type: 'bossRage', name: e.bossName, x: e.x, y: e.y }); }
       e.speedMul *= A.rage.speed; e.rateMul = A.rage.rate; e.dmgMul *= A.rage.dmg;
     }
-    if (A.rush && !e.rushDone) { // 등장하자마자 성채 한복판으로 돌진, 도착하면 충격파로 주변 아군을 기절시킨다
+    if (A.rush && !e.rushDone) { // 등장하자마자 성 한복판으로 돌진, 도착하면 충격파로 주변 아군을 기절시킨다
       e.speedMul *= A.rush.mul;
       if (Math.hypot(e.x - CX, e.y - CY) <= A.rush.until || e.life > 7) {
         e.rushDone = true;
@@ -1043,7 +1043,7 @@
         emit(S, { type: 'bossShock', x: e.x, y: e.y, r: A.rush.r });
       }
     }
-    if (A.blink) { // 순간이동: 성채를 기준으로 지금 있는 곳의 반대편 쪽으로 옮겨 간다
+    if (A.blink) { // 순간이동: 성을 기준으로 지금 있는 곳의 반대편 쪽으로 옮겨 간다
       e.t.blink -= dt;
       if (e.t.blink <= 0 && e.life > 2) {
         e.t.blink = A.blink.cd; const x0 = e.x, y0 = e.y, cur = Math.atan2(e.y - CY, e.x - CX), dc = Math.hypot(e.x - CX, e.y - CY);
@@ -1080,12 +1080,12 @@
       else { e.t.shield -= dt; if (e.t.shield <= 0) { e.shieldT = A.shield.dur; e.shieldRed = A.shield.red; e.t.shield = A.shield.cd; emit(S, { type: 'bossShield', x: e.x, y: e.y }); } }
     }
     if (A.summon) {
-      // 보스가 성채 가까이(summonRange) 왔을 때만 소환 시간을 센다 → 화면에 보이는 곳에서 소환한다
+      // 보스가 성 가까이(summonRange) 왔을 때만 소환 시간을 센다 → 화면에 보이는 곳에서 소환한다
       if (Math.hypot(e.x - CX, e.y - CY) <= CFG.balance.summonRange) e.t.summon -= dt;
       if (e.t.summon <= 0 && S.enemies.length >= 220) e.t.summon = 2; // 화면에 적이 너무 많으면 소환을 잠시 미룬다 (렉·멈춤 방지)
       if (e.t.summon <= 0) {
         e.t.summon = A.summon.cd;
-        const toCore = Math.atan2(CY - e.y, CX - e.x); // 졸개는 보스 앞(성채 방향)에 나온다
+        const toCore = Math.atan2(CY - e.y, CX - e.x); // 졸개는 보스 앞(성 방향)에 나온다
         const r = S.round, cnt = Math.min(Math.round(A.summon.n * clamp(1 + 0.035 * (r - 5), 1, 3.2)), 18), pUp = clamp((r - 15) / 45, 0, 0.75), nu = SUMMON_UP[A.summon.kind]; // 라운드가 지날수록 더 많이, 더 강한 졸개가 나온다
         for (let i = 0; i < cnt; i++) { const a = toCore + (S.rng() - 0.5) * 1.9, d = 75 + S.rng() * 55, kind = nu && S.rng() < pUp ? nu : A.summon.kind; spawnEnemy(S, kind, clamp(e.x + Math.cos(a) * d, 20, W - 20), clamp(e.y + Math.sin(a) * d, 20, H - 20)); }
         emit(S, { type: 'bossSummon', x: e.x, y: e.y, n: cnt, kind: A.summon.kind });
@@ -1205,14 +1205,14 @@
       if (u.aura && A.heal > 0 && u.hp < u.max) u.hp = Math.min(u.max, u.hp + u.max * A.heal * dt);
       gridAdd(S.gU, u);
     }
-    for (const e of S.enemies) if (!e.dead) gridAdd(e.air ? S.gA : S.gE, e); // 공중형은 따로: 근접·성채·범위 공격은 닿지 않고 궁수 계열·포탑만 겨눈다
+    for (const e of S.enemies) if (!e.dead) gridAdd(e.air ? S.gA : S.gE, e); // 공중형은 따로: 근접·성·범위 공격은 닿지 않고 궁수 계열·포탑만 겨눈다
 
-    // 위협 방향 (성채에서 가장 가까운 적 쪽, 부드럽게 회전)
+    // 위협 방향 (성에서 가장 가까운 적 쪽, 부드럽게 회전)
     let near = null, nd = 1500;
     for (const e of S.enemies) { if (e.dead) continue; const d = Math.hypot(e.x - CX, e.y - CY); if (d < nd) { nd = d; near = e; } }
     if (near) S.threat += wrapAngle(Math.atan2(near.y - CY, near.x - CX) - S.threat) * Math.min(1, 2 * dt);
 
-    // 성채 공격 + 대형 포탄
+    // 성 공격 + 대형 포탄
     const c = S.core; c.cd -= dt; c.flash = Math.max(0, c.flash - dt); c.swing = Math.max(0, c.swing - dt);
     if (c.cd <= 0) {
       const t = nearest(S.gE, c.x, c.y, c.range);
@@ -1242,7 +1242,7 @@
       u.hx = CX + Math.cos(a) * u.hr + Math.sin(S.t * 0.6 + u.id * 1.7) * CFG.ai.sway; u.hy = CY + Math.sin(a) * u.hr + Math.cos(S.t * 0.5 + u.id * 2.3) * CFG.ai.sway;
       if (u.type === 'priest') updatePriest(S, u, dt); else updateFighter(S, u, dt);
       u.x = clamp(u.x, 10, W - 10); u.y = clamp(u.y, 10, H - 10);
-      // 성채 원형에는 들어올 수 없다: 반지름 안이면 바깥으로 밀어낸다 (유닛당 거리 계산 한 번이라 매우 싸다)
+      // 성 원형에는 들어올 수 없다: 반지름 안이면 바깥으로 밀어낸다 (유닛당 거리 계산 한 번이라 매우 싸다)
       const bx = u.x - CX, by = u.y - CY, bd = Math.hypot(bx, by), bmin = CFG.core.blockR + u.r * 0.6;
       if (bd < bmin) { if (bd < 1) { u.x = CX + bmin; } else { u.x = CX + bx / bd * bmin; u.y = CY + by / bd * bmin; } }
     }
