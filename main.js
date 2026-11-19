@@ -361,6 +361,15 @@
     c2.translate(110, 108); c2.scale(0.98, 0.98); Scenery.drawCastle(c2, fake, performance.now() * 0.9);
     return cv2.toDataURL();
   }
+  function rewardIcon(id) {
+    const one = t => portrait('u', t, CFG.units[t], null, null, true);
+    if (id === 'r_knights') return one('hero').toDataURL();
+    if (id === 'r_snipers') return one('marksman').toDataURL();
+    if (id === 'r_golem') { const cv2 = document.createElement('canvas'); cv2.width = 220; cv2.height = 110; const c2 = cv2.getContext('2d'); c2.drawImage(one('golem'), 0, 0, 110, 110); c2.drawImage(one('hero'), 100, 0, 110, 110); return cv2.toDataURL(); }
+    if (id === 'r_army') { const cv2 = document.createElement('canvas'); cv2.width = 260; cv2.height = 100; const c2 = cv2.getContext('2d'); C.UNIT_TYPES.forEach((t, i) => c2.drawImage(one(t), i * 80, 8, 92, 92)); c2.font = '800 22px sans-serif'; c2.fillStyle = '#ffd166'; c2.textAlign = 'center'; c2.strokeStyle = '#1a1405'; c2.lineWidth = 4; c2.strokeText('+2', 238, 30); c2.fillText('+2', 238, 30); return cv2.toDataURL(); }
+    if (id === 'r_fort') return castlePortrait({ cpath: S.core.cpath, cvar: S.core.cvar, cfin: S.core.cfin });
+    return '';
+  }
   function syncPicker() {
     const cur = S && S.cinematic ? null : currentOffer(), ref = cur ? cur.ref : null;
     if (ref === shownOffer) { if (cur && cur.kind === 'card') updateReroll(); return; }
@@ -394,6 +403,9 @@
       const rar = document.createElement('span'); rar.className = 'rar'; rar.textContent = castle ? c.kind : job ? (c.reward ? '영웅' : c.className) : RAR_NAME[c.rar];
       tags.append(cat, rar);
       b.append(tags);
+      if (job && c.reward) { // 보스 보상 아이콘: 용병은 그 유닛 그림, 전군 강화는 세 직업, 성 대개수는 성 그림
+        const im = document.createElement('img'); im.className = 'pimg'; im.alt = ''; try { im.src = rewardIcon(c.id); } catch (err) {} if (c.id === 'r_army' || c.id === 'r_golem') im.classList.add('wide'); b.append(im);
+      }
       if (job && !c.reward) { // 외형 미리보기
         const im = document.createElement('img'); im.className = 'pimg'; im.alt = '';
         try {

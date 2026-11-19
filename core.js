@@ -117,7 +117,7 @@
       roots: [
         { id: 'arcane', name: '마탑', kind: '마법', desc: '성이 9초마다 가장 밀집한 적 무리에 마법 폭발(성 공격력 ×3, 범위 90)을 일으킵니다.', par: { blast: { cd: 9, mul: 3, r: 90, n: 1, zone: 0, zmul: 0, slow: 0, freeze: 0 } } },
         { id: 'guardian', name: '수호', kind: '지원', desc: '성이 6초마다 주변 아군(범위 230)을 최대 체력의 10%만큼 치유합니다.', par: { pulse: { cd: 6, heal: 0.10, r: 230, shield: 0, dmg: 0 } } },
-        { id: 'necro', name: '사령', kind: '소환', desc: '적을 처치하면 7% 확률로 망자가 되어 7초 동안 아군으로 싸웁니다 (최대 6명).', par: { raise: { chance: 0.07, dur: 7, max: 6, hp: 0.6, atk: 0.5, elite: 0, bounty: 0 } } },
+        { id: 'necro', name: '사령', kind: '소환', desc: '적이 죽으면 7% 확률로 그 자리에서 아군 병사(망자)로 부활시킵니다. 망자는 7초 동안 싸우고 사라지며, 사제의 부활 대상이 아닙니다 (최대 6명).', par: { raise: { chance: 0.07, dur: 7, max: 6, hp: 0.6, atk: 0.5, elite: 0, bounty: 0 } } },
       ],
       t2: {
         arcane: [
@@ -129,7 +129,7 @@
           { id: 'aegis', name: '수호 방벽', kind: '방어형', desc: '파동이 아군에게 최대 체력 12%의 보호막도 씌우고, 성이 받는 피해 -10%.', par: { pulse: { shield: 0.12 }, cdef: 0.1 } },
         ],
         necro: [
-          { id: 'horde', name: '망자의 군세', kind: '공격형', desc: '되살릴 확률 12%, 최대 10명, 망자 공격력 +60%.', par: { raise: { chance: 0.05, max: 4, atk: 0.3 } } },
+          { id: 'horde', name: '망자의 군세', kind: '공격형', desc: '적을 병사로 부활시킬 확률 12%, 최대 10명, 망자 공격력 +60%.', par: { raise: { chance: 0.05, max: 4, atk: 0.3 } } },
           { id: 'bind', name: '영혼 결속', kind: '방어형', desc: '망자 지속 12초, 체력 +67%, 성이 받는 피해 -10%.', par: { raise: { dur: 5, hp: 0.4 }, cdef: 0.1 } },
         ],
       },
@@ -152,10 +152,10 @@
         ],
         horde: [
           { id: 'legion', name: '망자 군단', kind: '물량형', desc: '되살릴 확률 +6%, 최대 +6명.', par: { raise: { chance: 0.06, max: 6 } } },
-          { id: 'deathknight', name: '죽음의 기사', kind: '정예형', desc: '엘리트도 망자로 되살리고, 망자 체력·공격력 +60%.', par: { raise: { elite: 1, hp: 0.6, atk: 0.6 } } },
+          { id: 'deathknight', name: '죽음의 기사', kind: '정예형', desc: '엘리트 적도 병사로 부활시키고, 망자 체력·공격력 +60%.', par: { raise: { elite: 1, hp: 0.6, atk: 0.6 } } },
         ],
         bind: [
-          { id: 'harvest', name: '영혼 수확', kind: '경제형', desc: '망자를 만들 때마다 그 적의 골드만큼 받습니다. 확률 +3%.', par: { raise: { bounty: 1, chance: 0.03, dur: 2 } } },
+          { id: 'harvest', name: '영혼 수확', kind: '경제형', desc: '적을 병사로 부활시킬 때마다 그 적의 골드만큼 받습니다. 확률 +3%.', par: { raise: { bounty: 1, chance: 0.03, dur: 2 } } },
           { id: 'immortal', name: '불멸의 망자', kind: '지속형', desc: '망자 지속 +8초, 최대 +2명, 체력 +30%.', par: { raise: { dur: 8, max: 2, hp: 0.3 } } },
         ],
       },
@@ -1001,7 +1001,7 @@
     tgt.hp -= dmg; tgt.flash = 0.1;
     if (S.captureEvents) numNote(S, tgt, dmg, crit ? 'c' : 'd');
     if (tgt.hp > 0) return;
-    if (tgt.team === 'u' && S.reviveLeft > 0 && !isStatic(tgt) && S.units.some(p => p.type === 'priest' && !p.dead && p !== tgt)) {
+    if (tgt.team === 'u' && S.reviveLeft > 0 && !isStatic(tgt) && !tgt.undead && S.units.some(p => p.type === 'priest' && !p.dead && p !== tgt)) {
       S.reviveLeft--; tgt.hp = tgt.max * V().revive; emit(S, { type: 'revive', x: tgt.x, y: tgt.y, ut: tgt.type, job: tgt.job, jt: tgt.jobTier }); return;
     }
     if (tgt.team === 'e' && tgt.kind === 'boss') { beginBossDeath(S, tgt); return; } // 보스는 사망 연출이 끝난 뒤에 쓰러진다

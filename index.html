@@ -193,7 +193,7 @@ body.introOn #btnPause, body.introOn #feed, body.introOn #hud, body.introOn #uni
 .pcard .rar { font-weight: 700; }
 .pcard .pn { font-size: 17px; font-weight: 700; line-height: 1.25; }
 .pcard .pd { font-size: 13px; color: #c3cde0; line-height: 1.5; flex: 1; }
-.pcard .pimg { width: 92px; height: 92px; align-self: center; margin: 4px 0 2px; border-radius: 12px; background: rgba(255,255,255,.07); } .pcard.castle .pimg { width: 150px; height: 130px; object-fit: contain; } .pcard .from { font-size: 11px; color: var(--muted); }
+.pcard .pimg { width: 92px; height: 92px; align-self: center; margin: 4px 0 2px; border-radius: 12px; background: rgba(255,255,255,.07); object-fit: contain; } .pcard.castle .pimg { width: 150px; height: 130px; object-fit: contain; } .pcard .pimg.wide { width: 150px; height: 62px; } .pcard .from { font-size: 11px; color: var(--muted); }
 .pcard .pk { position: absolute; right: 10px; bottom: 8px; font-size: 11px; color: var(--muted); }
 .pcard.rar-common { border-color: #3a4660; } .pcard.rar-common .rar { color: #9fb0cc; }
 .pcard.rar-rare { border-color: #5aa9ff; box-shadow: 0 0 14px rgba(90,169,255,.25); } .pcard.rar-rare .rar { color: #7cc0ff; }
@@ -234,7 +234,7 @@ body.introOn #btnPause, body.introOn #feed, body.introOn #hud, body.introOn #uni
 @media (max-width: 520px) { .pcard { width: 100%; min-height: 0; flex-direction: column; } #pickCards { flex-direction: column; gap: 7px; }
   .pcard.job { display: grid; grid-template-columns: 78px 1fr; gap: 2px 10px; padding: 8px 10px; align-items: center; } .pcard.job .tags { grid-column: 1 / -1; }
   .pcard.job .pimg { grid-column: 1; grid-row: 2 / span 4; width: 72px; height: 72px; margin: 0; } .pcard.job.castle .pimg { width: 78px; height: 70px; }
-  .pcard.job .pn, .pcard.job .pd, .pcard.job .from { grid-column: 2; } .pcard.job .pn { font-size: 15px; } .pcard.job .pd { font-size: 12px; line-height: 1.4; } }
+  .pcard.job .pimg.wide { width: 78px; height: 36px; } .pcard.job .pn, .pcard.job .pd, .pcard.job .from { grid-column: 2; } .pcard.job .pn { font-size: 15px; } .pcard.job .pd { font-size: 12px; line-height: 1.4; } }
 @media (min-width: 521px) and (max-height: 600px) { .pcard { min-height: 0; padding: 8px 10px; } .pcard .pimg { width: 62px; height: 62px; margin: 2px 0; } .pcard.castle .pimg { width: 108px; height: 90px; } .pcard .pn { font-size: 15px; } .pcard .pd { font-size: 12px; } #pickBox { padding: 10px 12px 8px; } }
 @media (max-width: 520px) { #units .ucard { width: 80px; } #tools { top: calc(max(5px, env(safe-area-inset-top)) + 90px); } #hud { min-width: 128px; } #hud .row { font-size: 11px; } }
 

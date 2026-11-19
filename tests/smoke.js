@@ -714,5 +714,16 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   { const g = C.createGame(88); g.gold = 1e9; g.phase = 'round'; g.hold = true; g.queue = []; g.core.atk = 0; g.core.hp = g.core.max = 1e9; g.buyCd.priest = 0; g.buyCd.sword = 0; C.buy(g, 'priest'); const sw = C.buy(g, 'sword').unit; for (const id of ['cleric', 'warden']) { const o = C.jobOptions(g).find(x => x.id === id); g.jobs.offer = { boss: 't', list: [o] }; C.pickJob(g, 0); } sw.hp = sw.max * 0.4; for (let i = 0; i < 100; i++) C.tick(g, DT); check('수호사제: 치유한 아군에게 보호막', sw.ward > 0 || sw.hp > sw.max * 0.4, 'ward ' + Math.round(sw.ward || 0)); }
   // 전투사제: 성스러운 구체로 공격
   { const g = C.createGame(89); g.gold = 1e9; g.phase = 'round'; g.hold = true; g.queue = []; g.core.atk = 0; g.core.hp = g.core.max = 1e9; g.buyCd.priest = 0; const p = C.buy(g, 'priest').unit; for (const id of ['bishop', 'templar']) { const o = C.jobOptions(g).find(x => x.id === id); g.jobs.offer = { boss: 't', list: [o] }; C.pickJob(g, 0); } const t = C.spawnEnemy(g, 'brute', p.x + 120, p.y); t.speed = 0; t.dmg = 0; t.hp = t.max = 1e9; let orb = false; for (let i = 0; i < 120; i++) { C.tick(g, DT); if (g.shots.some(s => s.color === 'h')) orb = true; } check('전투사제: 성스러운 구체로 적을 공격', orb && t.hp < t.max, '피해 ' + Math.round(t.max - t.hp)); } }
+// 58) 사제 부활: 망자는 부활 대상이 아니고, 주교가 여럿이어도 죽음 한 번에 한 번만 부활
+{ const g = C.createGame(91); g.gold = 1e9; g.phase = 'round'; g.hold = true; g.queue = []; g.core.hp = g.core.max = 1e9; g.core.atk = 0;
+  for (let i = 0; i < 3; i++) { g.buyCd.priest = 0; C.buy(g, 'priest'); } for (let i = 0; i < 4; i++) { g.buyCd.sword = 0; C.buy(g, 'sword'); }
+  for (const id of ['bishop']) { const o = C.jobOptions(g).find(x => x.id === id); g.jobs.offer = { boss: 't', list: [o] }; C.pickJob(g, 0); }
+  g.reviveLeft = g.perks.revive + g.jobMods.priest.revive; const pool = g.reviveLeft;
+  check('주교가 3명이어도 부활 횟수는 직업 수치 그대로 (사제 수에 곱해지지 않음)', pool === 1 && g.jobMods.priest.revive === 1, 'pool ' + pool);
+  const sw = g.units.filter(u => u.type === 'sword'); C.damage(g, sw[0], 1e9); C.damage(g, sw[1], 1e9);
+  check('죽음 2번 중 첫 번째만 부활 (부활 풀 1)', !sw[0].dead && sw[0].hp > 0 && sw[1].dead && g.reviveLeft === 0);
+  const g2 = C.createGame(92); g2.gold = 1e9; g2.phase = 'round'; g2.hold = true; g2.queue = []; g2.core.hp = g2.core.max = 1e9; g2.buyCd.priest = 0; C.buy(g2, 'priest'); g2.buyCd.priest = 0; C.buy(g2, 'priest');
+  const u = C.buy(g2, 'sword').unit; g2.reviveLeft = 5; g2.cnodes = []; const ud = (() => { g2.core.cpath = 'necro'; g2.cpar = JSON.parse(JSON.stringify(C.CFG.castleTree.roots[2].par)); g2.cpar.raise.chance = 1; const e = C.spawnEnemy(g2, 'grunt', 1700, 1500); C.damage(g2, e, 1e9); return g2.units.find(x => x.undead); })();
+  C.damage(g2, ud, 1e9); check('망자는 죽어도 사제가 부활시키지 않음 (부활 횟수도 안 씀)', ud.dead && g2.reviveLeft === 5); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);
