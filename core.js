@@ -453,6 +453,7 @@
   }
   function pickJob(S, idx) {
     const o = S.jobs.offer && S.jobs.offer.list[idx]; if (!o) return false;
+    logEv(S, ['j', S.round, o.className + ' · ' + o.name, S.jobs.offer.list.map(x => x.className + ' · ' + x.name)]);
     if (o.reward) { // 보상: 용병 소환 / 전군 강화 / 성 보강
       const d = CFG.rewards.find(r => r.id === o.id); S.jobs.offer = null;
       if (d.units) for (const t of d.units) { const u = addUnit(S, t); u.x = CX + (S.rng() - 0.5) * 160; u.y = CY + 100 + S.rng() * 60; }
@@ -514,6 +515,7 @@
   function pickCard(S, idx) {
     const c = S.cards.offer && S.cards.offer[idx]; if (!c) return false;
     S.cards.taken[c.key] = (S.cards.taken[c.key] || 0) + 1;
+    logEv(S, ['c', S.round, c.name, S.cards.taken[c.key], S.cards.offer.map(o => o.name)]);
     S.cards.offer = null;
     if (c.cat === 'unit' && DEF[c.id].generic) {
       const stat = DEF[c.id].generic; S.up[c.type][stat]++;
@@ -617,7 +619,7 @@
       bossUp: { hp: 0, atk: 0 },
       up: { sword: { hp: 0, atk: 0, rate: 0, speed: 0 }, archer: { hp: 0, atk: 0, rate: 0, speed: 0 }, priest: { hp: 0, atk: 0, rate: 0, speed: 0 } },
       aura: null, perks: null, bombCd: 8, reviveLeft: 0, jobMods: null, biasNow: 0.08, coreDmgBy: {},
-      act: 1, cinematic: null, bossDeath: null, // act 2: 30라운드 보스 처치 후. cinematic: 연출이 진행되는 동안 시간이 멈춘다
+      log: [], act: 1, cinematic: null, bossDeath: null, // act 2: 30라운드 보스 처치 후. cinematic: 연출이 진행되는 동안 시간이 멈춘다
       jobs: { sword: { ids: [] }, archer: { ids: [] }, priest: { ids: [] }, offer: null },
     };
     // 일반 보스 5종의 등장 순서 (게임마다 무작위, 한 번씩)
@@ -630,8 +632,11 @@
   function drainEvents(S) { const e = S.events; S.events = []; return e; }
 
   // ───────────── 유닛 추가 (생산/소환 공통) ─────────────
+  // 판 기록(통계 상세용): 어느 라운드에 무엇을 골랐는지·어떤 선택지가 있었는지·유닛을 몇 명 뽑았는지
+  function logEv(S, e) { if (S.log.length < 700) S.log.push(e); }
+  function logBuy(S, type) { const l = S.log[S.log.length - 1]; if (l && l[0] === 'u' && l[1] === S.round && l[2] === type) l[3]++; else if (!S.dev) logEv(S, ['u', S.round, type, 1]); }
   function addUnit(S, type) {
-    S.stats.made[type] = 1;
+    S.stats.made[type] = 1; if (UNIT_TYPES.includes(type)) logBuy(S, type);
     const cfg = CFG.units[type], st = statsOf(S, type);
     const a = S.rng() * Math.PI * 2, rr = 86 + S.rng() * 20; // 성 원형 밖에서 나온다
     const ha = S.spawnN++ * 2.39996323 + S.rng() * 0.3, hr = (CFG.ai.homeR[type] || 120) * (0.9 + 0.2 * S.rng()); // 황금각으로 사방에 퍼뜨림
@@ -668,6 +673,7 @@
     const oldMax = S.core.max; S.castle.lv++; recompute(S);
     S.core.hp = Math.min(S.core.max, S.core.hp + (S.core.max - oldMax) + S.core.max * 0.1);
     for (const u of S.units) if (lineOf(u.type) === 'core' && !u.dead) refreshUnit(S, u); // 포탑도 성 강화를 받는다
+    if (!free) logEv(S, ['k', S.round, S.castle.lv]);
     emit(S, { type: 'castleUp', lv: S.castle.lv, cannons: S.core.cannons, pop: popCap(S) });
     return { ok: true, cost: free ? 0 : cost };
   }

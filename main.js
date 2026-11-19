@@ -452,11 +452,13 @@
   // 도감 / 통계 / 업적
   const dfmt = t => { const d = new Date(t), p = n => String(n).padStart(2, '0'); return p(d.getMonth() + 1) + '/' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()); };
   const MODE_NAME = { normal: '기본', free: '자유', hold: '수비' };
-  function portrait(team, kind, cfg, look, ext) { // 도감 그림 한 칸
+  function portrait(team, kind, cfg, look, ext, face) { // 도감 그림 한 칸
     const cv2 = document.createElement('canvas'); cv2.width = cv2.height = 144; const c2 = cv2.getContext('2d');
     const r = (look && look.r) || cfg.r || 10, fake = team === 'u' ? { team: 'u', type: kind, id: 1, x: 0, y: 0, r, flash: 0, swing: 0, aim: 0, hp: 1, max: 1, job: null, jobTier: 0 } : { team: 'e', kind: look ? 'boss' : kind, type: kind, id: 3, x: 0, y: 0, r, flash: 0, swing: 0, look: look || undefined };
     if (ext) Object.assign(fake, ext);
-    const k = Math.min(5, 52 / (r * (look ? 2.2 : 2.6))) * 2; c2.translate(72, 92 - r * 0.2 * k / 2); c2.scale(k, k);
+    const BEAST = ['wolf', 'direwolf', 'boar', 'spider'], big = look || kind === 'ogre' || kind === 'brute';
+    if (face && !BEAST.includes(kind)) { const sc = (r / 10) * 1.25, yc = Figures.headTop(fake) + (look ? 10 : big ? 2 : 7.5) * sc, k = 144 / ((look ? 30 : big ? 30 : 25) * sc); c2.translate(72, 72 - (yc - 3 * sc) * k); c2.scale(k, k); } // 도감: 얼굴이 잘리지 않게 머리 중심으로 확대 (네발 짐승은 전신)
+    else { const k = Math.min(5, 52 / (r * (look ? 2.2 : 2.6))) * 2; c2.translate(72, 92 - r * 0.2 * k / 2); c2.scale(k, k); }
     try { Figures.draw(c2, fake, 0); } catch (e) {} return cv2;
   }
   let metaTab = 'codex';
@@ -467,23 +469,45 @@
       const sect = (title, items) => {
         const seen = items.filter(i => i.seen).length, h3 = document.createElement('h3'); h3.textContent = title + ' ' + seen + '/' + items.length; body.appendChild(h3);
         const g = document.createElement('div'); g.className = 'cgrid';
-        for (const it of items) { const c = document.createElement('div'); c.className = 'cc' + (it.seen ? '' : ' lock'); c.appendChild(portrait(it.team, it.kind, it.cfg, it.look)); const n = document.createElement('div'); n.className = 'n'; n.textContent = it.seen ? it.name : '???'; const s = document.createElement('div'); s.className = 's'; s.textContent = it.seen ? it.desc : '아직 만나지 못했어요'; c.append(n, s); g.appendChild(c); }
+        for (const it of items) { const c = document.createElement('div'); c.className = 'cc' + (it.seen ? '' : ' lock'); c.appendChild(portrait(it.team, it.kind, it.cfg, it.look, null, true)); const n = document.createElement('div'); n.className = 'n'; n.textContent = it.seen ? it.name : '???'; const s = document.createElement('div'); s.className = 's'; s.textContent = it.seen ? it.desc : '아직 만나지 못했어요'; c.append(n, s); g.appendChild(c); }
         body.appendChild(g);
       };
       sect('유닛', C.UNIT_TYPES.concat(SPECIALS).map(t => ({ team: 'u', kind: t, cfg: CFG.units[t], name: CFG.units[t].name, desc: UNIT_TEXT[t] || '', seen: !!M.codex.units[t] })));
       sect('몬스터', Object.keys(CFG.enemies).filter(k => k !== 'boss').map(k => ({ team: 'e', kind: k, cfg: CFG.enemies[k], name: CFG.enemies[k].name, desc: CFG.enemies[k].desc || '', seen: !!M.codex.enemies[k] })));
       sect('보스', CFG.bossPool.concat([CFG.act1Boss, CFG.finalBoss]).map(b => ({ team: 'e', kind: 'boss', cfg: CFG.enemies.boss, look: Object.assign({ r: b.r || 30 }, b.look), name: b.name, desc: b.line ? '“' + b.line + '”' : '', seen: !!M.codex.bosses[b.id] })));
+    } else if (metaTab === 'stats' && statDetail !== null && M.games[statDetail]) {
+      body.innerHTML = gameDetail(M.games[statDetail]);
     } else if (metaTab === 'stats') {
       const t = M.tot, h = Math.floor(t.time / 3600), mi = Math.floor(t.time % 3600 / 60);
       body.innerHTML = '<div class="sumrow"><div><b>' + t.games + '</b>플레이</div><div><b>' + t.kills.toLocaleString() + '</b>처치</div><div><b>' + M.best.round + '</b>최고 라운드</div><div><b>' + Math.round(t.spent).toLocaleString() + '</b>사용 골드</div><div><b>' + t.bossKills + '</b>보스 처치</div><div><b>' + h + '시간 ' + mi + '분</b>총 플레이</div></div>'
-        + (M.games.length ? '<table class="gtable"><tr><th>날짜</th><th>모드</th><th>라운드</th><th>처치</th><th>시간</th><th>번 골드</th></tr>' + M.games.map(g => '<tr><td>' + dfmt(g.at) + '</td><td>' + (MODE_NAME[g.mode] || '') + '</td><td' + (g.round > C.MAX_ROUND ? ' class="win"' : '') + '>' + g.round + '</td><td>' + g.kills + '</td><td>' + fmtTime(g.time) + '</td><td>' + g.earned.toLocaleString() + '</td></tr>').join('') + '</table>' : '<div class="d">아직 끝난 게임이 없어요.</div>');
+        + (M.games.length ? '<div class="mhint" style="margin:0 0 6px">기록을 누르면 자세히 볼 수 있어요</div><table class="gtable"><tr><th>날짜</th><th>모드</th><th>라운드</th><th>처치</th><th>시간</th><th>번 골드</th></tr>' + M.games.map((g, gi) => '<tr class="clk" data-gi="' + gi + '"><td>' + dfmt(g.at) + '</td><td>' + (MODE_NAME[g.mode] || '') + '</td><td' + (g.round > C.MAX_ROUND ? ' class="win"' : '') + '>' + g.round + '</td><td>' + g.kills + '</td><td>' + fmtTime(g.time) + '</td><td>' + g.earned.toLocaleString() + '</td></tr>').join('') + '</table>' : '<div class="d">아직 끝난 게임이 없어요.</div>');
     } else {
       const done = Meta.ACH.filter(a => M.ach[a.id]).length; body.innerHTML = '<h3>달성 ' + done + '/' + Meta.ACH.length + '</h3>';
       for (const a of Meta.ACH) { const v = Math.min(a.goal, a.val()), ok = !!M.ach[a.id]; body.insertAdjacentHTML('beforeend', '<div class="arow' + (ok ? ' done' : '') + '"><div class="ic">' + (ok ? '★' : '☆') + '</div><div class="tx"><div class="nm">' + a.name + '</div><div class="ds">' + a.desc + '</div><div class="bar"><i style="width:' + (v / a.goal * 100) + '%"></i></div></div><div class="pc">' + Math.round(v).toLocaleString() + '/' + a.goal.toLocaleString() + '</div></div>'); }
     }
   }
-  function openMeta(tab) { metaTab = tab; openModal('metaPanel'); renderMeta(); }
-  $('metaTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { metaTab = b.dataset.t; renderMeta(); $('metaBody').scrollTop = 0; } });
+  let statDetail = null;
+  // 한 판의 상세: 라운드별로 고른 강화 카드·전직·성 업그레이드·뽑은 유닛, 그리고 그때 있었던 다른 선택지
+  function gameDetail(g) {
+    const esc = t => String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+    let h = '<button class="backbtn" id="statBack">← 목록으로</button><h3 style="margin-top:8px">' + dfmt(g.at) + ' · ' + (MODE_NAME[g.mode] || '') + ' 모드' + (g.win ? ' · 마왕 토벌' : '') + '</h3>'
+      + '<div class="sumrow"><div><b>' + g.round + '</b>도달 라운드</div><div><b>' + g.kills.toLocaleString() + '</b>처치</div><div><b>' + fmtTime(g.time) + '</b>플레이 시간</div><div><b>' + g.earned.toLocaleString() + '</b>번 골드</div><div><b>' + (g.spent || 0).toLocaleString() + '</b>쓴 골드</div><div><b>Lv.' + (g.castle || 1) + ' · ' + (g.pop || 0) + '명</b>마지막 성 · 유닛</div></div>';
+    if (!g.log) return h + '<div class="d">이 판의 자세한 기록은 저장되어 있지 않아요 (최근 40판까지만 보관해요).</div>';
+    const rounds = new Map(), get = r => { if (!rounds.has(r)) rounds.set(r, []); return rounds.get(r); };
+    for (const e of g.log) {
+      const r = e[1], row = get(r);
+      if (e[0] === 'c') row.push('<div>🃏 <b>' + esc(e[2]) + '</b> Lv ' + e[3] + '<span class="alt">선택지: ' + e[4].map((n, i) => n === e[2] ? '<u>' + esc(n) + '</u>' : esc(n)).join(' / ') + '</span></div>');
+      else if (e[0] === 'j') row.push('<div>🎖 <b>' + esc(e[2]) + '</b><span class="alt">선택지: ' + e[3].map(n => n === e[2] ? '<u>' + esc(n) + '</u>' : esc(n)).join(' / ') + '</span></div>');
+      else if (e[0] === 'k') row.push('<div>🏰 성 <b>Lv ' + e[2] + '</b> 업그레이드</div>');
+      else if (e[0] === 'u') { const last = row[row.length - 1]; const t = (CFG.units[e[2]] || {}).name + ' ×' + e[3]; if (last && last.startsWith('<div class="us">')) row[row.length - 1] = last.replace('</div>', ' · ' + t + '</div>'); else row.push('<div class="us">⚔️ 뽑은 유닛: ' + t + '</div>'); }
+    }
+    h += '<h3>라운드별 기록</h3>';
+    for (const [r, row] of [...rounds.entries()].sort((a, b) => a[0] - b[0])) h += '<div class="lrow"><div class="lr">R' + r + '</div><div class="lb">' + row.join('') + '</div></div>';
+    return h + (rounds.size ? '' : '<div class="d">기록이 없어요.</div>');
+  }
+  $('metaBody').addEventListener('click', e => { if (e.target.closest('#statBack')) { statDetail = null; renderMeta(); return; } const tr = e.target.closest('tr[data-gi]'); if (tr) { statDetail = +tr.dataset.gi; renderMeta(); $('metaBody').scrollTop = 0; } });
+  function openMeta(tab) { metaTab = tab; statDetail = null; openModal('metaPanel'); renderMeta(); }
+  $('metaTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { metaTab = b.dataset.t; statDetail = null; renderMeta(); $('metaBody').scrollTop = 0; } });
   Meta.onUnlock(list => { for (const a of list) { toast('🏆 업적 달성: ' + a.name); } A2.play('ui'); });
   let lastSyncRound = 0;
 

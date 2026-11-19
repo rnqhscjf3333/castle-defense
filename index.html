@@ -304,6 +304,8 @@ body.comicOn { overflow: hidden; }
 
 .uwrap { display: flex; gap: 8px; align-items: flex-start; margin-top: 3px; } .uwrap > div { flex: 1; min-width: 0; } .uimg { width: 72px; height: 72px; flex: none; border-radius: 8px; background: rgba(255,255,255,.06); }
 .devp { display: flex; gap: 5px; margin: 8px 0 12px; } .devp button { flex: 1; padding: 7px 0; border-radius: 8px; border: 1px solid var(--line); background: #1b2132; color: var(--ink); font-weight: 700; }
+.gtable tr.clk { cursor: pointer; } .gtable tr.clk:hover td { background: rgba(255,255,255,.07); } .backbtn { padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: #1b2132; color: var(--ink); font-weight: 700; font-size: 12.5px; }
+.lrow { display: flex; gap: 8px; padding: 6px 2px; border-bottom: 1px solid rgba(255,255,255,.07); } .lr { flex: none; width: 40px; color: #ffd166; font-weight: 800; } .lb { flex: 1; min-width: 0; } .lb > div { margin-bottom: 2px; } .lb .alt { display: block; color: var(--muted); font-size: 10.5px; line-height: 1.4; } .lb .alt u { color: #9fd8ff; text-decoration: none; font-weight: 700; }
 .vrow { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; background: #1b2132; border: 1px solid var(--line); font-size: 14px; }
 .vrow label { flex: none; width: 92px; font-weight: 700; } .vrow input { flex: 1; min-width: 0; accent-color: #ffd166; height: 28px; touch-action: pan-y; } .vrow b { width: 30px; text-align: right; font-variant-numeric: tabular-nums; color: #ffd166; }
 #feed { position: fixed; right: 5px; top: calc(max(5px, env(safe-area-inset-top)) + 188px); width: 236px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; pointer-events: none; z-index: 7; }
@@ -345,8 +347,8 @@ body.comicOn { overflow: hidden; }
 
 <button class="btn panel tbtn" id="btnSpeed" title="배속">1×</button>
 <div id="tools">
-  <button class="btn panel tbtn" id="btnInfo" title="강화 정보 (I)">강화 정보</button>
   <button class="btn panel tbtn" id="btnPause" title="설정 (Space / Esc)" aria-label="설정">⚙️</button>
+  <button class="btn panel tbtn" id="btnInfo" title="강화 정보 (I)">강화 정보</button>
 </div>
 
 <div id="banner"></div>
