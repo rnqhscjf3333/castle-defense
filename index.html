@@ -188,6 +188,7 @@ body.introOn #btnSpeed, body.introOn #feed, body.introOn #hud, body.introOn #uni
 .pcard .rar { font-weight: 700; }
 .pcard .pn { font-size: 17px; font-weight: 700; line-height: 1.25; }
 .pcard .pd { font-size: 13px; color: #c3cde0; line-height: 1.5; flex: 1; }
+.pcard .pimg { width: 92px; height: 92px; align-self: center; margin: 4px 0 2px; border-radius: 12px; background: rgba(255,255,255,.07); } .pcard.castle .pimg { width: 150px; height: 130px; object-fit: contain; } .pcard .from { font-size: 11px; color: var(--muted); }
 .pcard .pk { position: absolute; right: 10px; bottom: 8px; font-size: 11px; color: var(--muted); }
 .pcard.rar-common { border-color: #3a4660; } .pcard.rar-common .rar { color: #9fb0cc; }
 .pcard.rar-rare { border-color: #5aa9ff; box-shadow: 0 0 14px rgba(90,169,255,.25); } .pcard.rar-rare .rar { color: #7cc0ff; }
@@ -408,7 +409,7 @@ body.comicOn { overflow: hidden; }
     <h2 id="pickTitle"></h2>
     <p id="pickSub"></p>
     <div id="pickCards"></div>
-    <div id="pickFoot"><button class="btn" id="btnReroll">다시 뽑기</button><span id="pickHint">1·2·3 선택 · R 다시 뽑기 · 고르는 동안 시간이 멈춰요</span></div>
+    <div id="pickFoot"><button class="btn" id="btnReroll">다시 뽑기</button><button class="btn" id="pickBack" style="display:none">← 캐릭터 다시 고르기</button><span id="pickHint">1·2·3 선택 · R 다시 뽑기 · 고르는 동안 시간이 멈춰요</span></div>
   </div>
 </div>
 

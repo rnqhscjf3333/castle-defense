@@ -36,6 +36,7 @@ function runOne(task) {
       const lst = S.jobs.offer.list, pref = P.jobPrefer ? lst.findIndex(o => o.id === P.jobPrefer) : -1;
       C.pickJob(S, pref >= 0 ? pref : Math.floor(rnd() * lst.length)); continue;
     }
+    if (S.cOffer) { C.pickCastle(S, P.castlePick !== undefined ? Math.min(P.castlePick, S.cOffer.list.length - 1) : Math.floor(rnd() * S.cOffer.list.length)); continue; } // 성 갈래
     if (S.cards.offer) {
       const offer = S.cards.offer, w = offer.map(c => weightOf(P, c));
       if (P.reroll && S.cards.rerolls > 0 && Math.max(...w) < P.reroll) { C.reroll(S); continue; }

@@ -30,7 +30,7 @@
     { id: 'b2', name: '보스 학살자', desc: '보스 50마리 처치', goal: 50, val: () => M.tot.bossKills },
     { id: 'p1', name: '군대의 시작', desc: '유닛 20명을 동시에 보유', goal: 20, val: () => M.best.pop },
     { id: 'p2', name: '대군', desc: '유닛 50명을 동시에 보유', goal: 50, val: () => M.best.pop },
-    { id: 'c1', name: '난공불락', desc: '성을 최대 레벨까지 강화', goal: 8, val: () => M.best.castle },
+    { id: 'c1', name: '난공불락', desc: '성을 최대 레벨까지 강화', goal: 10, val: () => M.best.castle },
     { id: 'h1', name: '붙박이 수비', desc: '수비 모드로 30라운드 도달', goal: 30, val: () => M.best.hold },
     { id: 'f1', name: '자유로운 영혼', desc: '자유 모드로 30라운드 도달', goal: 30, val: () => M.best.free },
     { id: 'n1', name: '단골', desc: '게임 20판 플레이', goal: 20, val: () => M.tot.games },

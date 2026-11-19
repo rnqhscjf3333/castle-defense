@@ -14,8 +14,13 @@
   const A2 = window.Audio2;
   const fx = [];             // 화면 효과 (게임 규칙과 무관)
   // 직업별 공격·치유 색: 전직마다 화살/베기/치유 광선의 색이 달라 구분된다. 치명타는 주황, 엘리트 적은 금·보라.
-  const JOBC = { knight: '#7cc0ff', paladin: '#d6efff', fighter: '#ff9a4a', blademaster: '#ff4a3a', sniper: '#ffe14a', deadeye: '#ffb81a', ranger: '#6bffa3', stormarcher: '#4ae6ff',
-    cleric: '#ffe28a', highcleric: '#fff4b8', bishop: '#8fd0ff', archbishop: '#c8a0ff' };
+  const JOBC = { knight: '#7cc0ff', paladin: '#ffe9a0', warlord: '#d9dde8', blade: '#ff9a4a', blademaster: '#8fc8ff', berserker: '#ff4a3a', sniper: '#ffe14a', deadeye: '#ffb81a', gunner: '#ff8a2a', ranger: '#6bffa3', stormarcher: '#4ae6ff', hunter: '#ff5a5a',
+    cleric: '#ffe28a', highcleric: '#fff4b8', warden: '#7ad0ff', bishop: '#c8a0ff', archbishop: '#ffd84a', templar: '#ffe9a0',
+    arcane: '#b48aff', storm: '#ff9a3a', frost: '#9fd8ff', meteor: '#ff7a1a', inferno: '#ff5a1a', zero: '#eaf8ff', shatter: '#bfe8ff', guardian: '#ffe27a', judge: '#ffe27a', aegis: '#8fc4ff', wrath: '#fff2a0', radiance: '#fff6c0', bastion: '#ffe27a', fortress: '#8fc4ff', necro: '#3ae68a', horde: '#7affc8', bind: '#7affc8', legion: '#7affc8', deathknight: '#3ae68a', harvest: '#b8ffd8', immortal: '#3ae68a' };
+  // 근접 타격 궤적 모양 (직업마다 크기·두께·갈래 수가 다르다)
+  const SLASH = { berserker: { r: 30, w: 6, n: 1, span: 1.25 }, warlord: { r: 20, w: 5, n: 1, span: 0.9 }, paladin: { r: 19, w: 4.5, n: 1, span: 0.8, cross: 1 }, knight: { r: 15, w: 3.6, n: 1, span: 0.8 }, blademaster: { r: 22, w: 2, n: 2, span: 1.1 }, blade: { r: 19, w: 2.6, n: 1, span: 1.0 }, undead: { r: 14, w: 3, n: 1, span: 0.9 } };
+  const JSHOT = { deadeye: 1, sniper: 1, gunner: 1, ranger: 1, stormarcher: 1, hunter: 1 };
+  const CFAM = id => ['arcane', 'storm', 'frost', 'meteor', 'inferno', 'zero', 'shatter'].includes(id) ? 'arc' : ['guardian', 'judge', 'aegis', 'wrath', 'radiance', 'bastion', 'fortress'].includes(id) ? 'gua' : 'nec';
   const UNITC = { golem: '#c8a46a', hero: '#ffe14a', marksman: '#ffd23a', repeater: '#cfe3ff' };
   const atkColor = (job, ut) => (job && JOBC[job]) || UNITC[ut] || '#dfe9ff';
   let eliteToasts = 0, numFont = '', numFx = 0;             // 화면에 떠 있는 피해/치유 숫자 수 (상한을 두어 부하를 막는다)
@@ -176,9 +181,10 @@
     if (e.repeat) return;
     if (anyModal()) { if (e.key === 'Escape' || (e.key === ' ' && !$('setMenu').classList.contains('hidden'))) { e.preventDefault(); closeModals(); } return; }
     if (S && S.cinematic) { if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') endCine(); return; }
-    if (S && (S.cards.offer || S.jobs.offer)) { // 카드/전직 선택 중에는 1·2·3이 선택, R이 다시 뽑기(카드만)
+    if (S && (S.cards.offer || S.jobs.offer || S.cOffer)) { // 카드/전직/성 선택 중에는 1·2·3이 선택, R이 다시 뽑기(카드만)
       if (e.key === '1' || e.key === '2' || e.key === '3') choose(+e.key - 1);
-      else if ((e.key === 'r' || e.key === 'R') && S.cards.offer && !S.jobs.offer) C.reroll(S);
+      else if ((e.key === 'Backspace' || e.key === 'b' || e.key === 'B') && S.jobs.offer && S.jobs.offer.stage === 'class') C.jobBack(S);
+      else if ((e.key === 'r' || e.key === 'R') && S.cards.offer && !S.jobs.offer && !S.cOffer) C.reroll(S);
       return;
     }
     if (e.key === '1' || e.key === '2' || e.key === '3') doBuy(C.UNIT_TYPES[+e.key - 1]);
@@ -340,42 +346,64 @@
   }
   function pickFx(i, job) {
     const b = $('pickCards').children[i]; if (!b) return;
-    const list = job ? S.jobs.offer && S.jobs.offer.list : S.cards.offer, rk = rankOf(list && list[i] || {}, job), r = b.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, Z = 0.84; // #pickBox는 zoom .84
+    const list = job ? (S.jobs.offer ? S.jobs.offer.list : S.cOffer && S.cOffer.list) : S.cards.offer, rk = rankOf(list && list[i] || {}, job), r = b.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, Z = 0.84; // #pickBox는 zoom .84
     const g = b.cloneNode(true); g.classList.remove('enter', 'flip'); g.classList.add('picked'); g.style.cssText = 'zoom:' + Z + ';left:' + r.left / Z + 'px;top:' + r.top / Z + 'px;width:' + r.width / Z + 'px;height:' + r.height / Z + 'px';
     document.body.appendChild(g); setTimeout(() => g.remove(), 800);
     ring(cx, cy, RCOL[rk], 6 + rk * 4); sparks(cx, cy, [10, 18, 30, 52][rk], RCOL[rk], 70 + rk * 40, 0.75);
     if (rk >= 1) flash(RCOL[rk], [0, 0.12, 0.25, 0.5][rk]);
   }
-  const currentOffer = () => (S && S.jobs.offer) ? { kind: 'job', list: S.jobs.offer.list, ref: S.jobs.offer } : (S && S.cards.offer) ? { kind: 'card', list: S.cards.offer, ref: S.cards.offer } : null;
+  const currentOffer = () => (S && S.jobs.offer) ? { kind: 'job', list: S.jobs.offer.list, ref: S.jobs.offer } : (S && S.cOffer) ? { kind: 'castle', list: S.cOffer.list, ref: S.cOffer } : (S && S.cards.offer) ? { kind: 'card', list: S.cards.offer, ref: S.cards.offer } : null;
+  // 성 선택지 미리보기: 고른 갈래를 반영한 성 그림 (선택지 카드 안에 들어간다)
+  function castlePortrait(c) {
+    const cv2 = document.createElement('canvas'); cv2.width = 220; cv2.height = 190; const c2 = cv2.getContext('2d');
+    const fake = { x: 0, y: 0, lv: S.castle.lv, cannons: S.core.cannons, max: 1, hp: 1, flash: 0, swing: 0, cpath: c.cpath, cvar: c.cvar, cfin: c.cfin };
+    c2.translate(110, 108); c2.scale(0.98, 0.98); Scenery.drawCastle(c2, fake, performance.now() * 0.9);
+    return cv2.toDataURL();
+  }
   function syncPicker() {
     const cur = S && S.cinematic ? null : currentOffer(), ref = cur ? cur.ref : null;
     if (ref === shownOffer) { if (cur && cur.kind === 'card') updateReroll(); return; }
     const wasCard = shownKind === 'card'; shownOffer = ref; shownKind = cur ? cur.kind : null;
     const el = $('picker');
     if (!cur) { el.classList.add('hidden'); return; }
-    const job = cur.kind === 'job', box = $('pickCards'); box.innerHTML = '';
-    if (job) {
-      const rw = S.jobs.offer.reward;
-      $('pickTitle').textContent = S.jobs.offer.boss + (rw ? ' 처치! 보스 보상' : ' 처치! 전직');
-      $('pickSub').textContent = rw ? '강력한 용병이나 강화 효과 중 하나를 고르세요' : '직업 하나를 골라 강화해요 — 이미 전직한 직업은 한 단계 더 강해져요';
+    const job = cur.kind === 'job' || cur.kind === 'castle', castle = cur.kind === 'castle', box = $('pickCards'); box.innerHTML = '';
+    const JO = S.jobs.offer, stage = JO && JO.stage;
+    $('pickBack').style.display = stage === 'class' ? '' : 'none';
+    if (castle) {
+      const n = S.cOffer.tier;
+      $('pickTitle').textContent = '성 Lv.' + S.castle.lv + ' · ' + ['성의 갈래 선택', '성의 강화 방향 선택', '성의 최종 형태 선택'][n];
+      $('pickSub').textContent = ['마탑·수호·사령 중 하나를 고르세요 — 이후 성의 모습과 공격이 달라져요', '공격형과 방어형 중 하나를 고르세요', '마지막 선택이에요 — 성이 완성돼요'][n];
+    } else if (job) {
+      const rw = JO.reward;
+      if (rw) { $('pickTitle').textContent = JO.boss + ' 처치! 보스 보상'; $('pickSub').textContent = '강력한 용병이나 강화 효과 중 하나를 고르세요'; }
+      else if (stage === 'line') { $('pickTitle').textContent = JO.boss + ' 처치! ' + JO.tier + '차 승급'; $('pickSub').textContent = '승급시킬 캐릭터를 고르세요 — 다음 화면에서 갈래를 정해요'; }
+      else if (stage !== 'class') { $('pickTitle').textContent = JO.boss + ' 처치! 전직'; $('pickSub').textContent = '직업 하나를 골라 강화해요'; }
+      else { $('pickTitle').textContent = CFG.units[JO.line].name + ' ' + JO.tier + '차 전직'; $('pickSub').textContent = '두 갈래 중 하나를 고르세요 — 외형과 공격 방식이 달라져요'; }
     } else {
       $('pickTitle').textContent = '라운드 ' + (S.round - 1) + ' 돌파 · 업그레이드 선택';
       $('pickSub').textContent = S.cards.boss ? '보스 격파 보상 — 희귀 이상 카드가 한 장 이상 나와요' : '카드를 한 장 고르세요';
     }
     $('btnReroll').style.display = job ? 'none' : '';
-    $('pickHint').textContent = job ? '1·2·3 선택 · 고르는 동안 시간이 멈춰요' : '1·2·3 선택 · R 다시 뽑기 · 고르는 동안 시간이 멈춰요';
+    $('pickHint').textContent = job ? '1·2·3 선택' + (stage === 'class' ? ' · B 뒤로' : '') + ' · 고르는 동안 시간이 멈춰요' : '1·2·3 선택 · R 다시 뽑기 · 고르는 동안 시간이 멈춰요';
     cur.list.forEach((c, i) => {
       const b = document.createElement('button');
-      b.className = job ? 'pcard job' : 'pcard rar-' + c.rar + ' cat-' + c.cat;
+      b.className = job ? 'pcard job' + (castle ? ' castle' : '') : 'pcard rar-' + c.rar + ' cat-' + c.cat;
       const tags = document.createElement('div'); tags.className = 'tags';
-      const cat = document.createElement('span'); cat.className = 'cat'; cat.textContent = job ? (c.reward ? '보스 보상' : c.tier + '단계 전직') : CAT_NAME[c.cat];
-      const rar = document.createElement('span'); rar.className = 'rar'; rar.textContent = job ? (c.reward ? '영웅' : c.className) : RAR_NAME[c.rar];
+      const cat = document.createElement('span'); cat.className = 'cat'; cat.textContent = castle ? ['갈래', '강화 방향', '최종 형태'][S.cOffer.tier] : job ? (c.reward ? '보스 보상' : c.stage === 'line' ? c.tier + '차 승급' : c.tier + '차 전직') : CAT_NAME[c.cat];
+      const rar = document.createElement('span'); rar.className = 'rar'; rar.textContent = castle ? c.kind : job ? (c.reward ? '영웅' : c.className) : RAR_NAME[c.rar];
       tags.append(cat, rar);
       b.append(tags);
-      if (job) {
-        const hist = c.reward ? null : C.describeJobs(S).find(j => j.type === c.type);
-        if (hist) { const fr = document.createElement('div'); fr.className = 'from'; fr.textContent = c.className + ' › ' + hist.names.join(' › '); b.append(fr); }
+      if (job && !c.reward) { // 외형 미리보기
+        const im = document.createElement('img'); im.className = 'pimg'; im.alt = '';
+        try {
+          if (castle) im.src = castlePortrait(c);
+          else if (c.stage === 'line') { const ids = S.jobs[c.type].ids; im.src = portrait('u', c.type, CFG.units[c.type], null, ids.length ? { job: ids[ids.length - 1], jobTier: ids.length } : null).toDataURL(); }
+          else im.src = portrait('u', c.type, CFG.units[c.type], null, { job: c.id, jobTier: c.tier }).toDataURL();
+        } catch (err) {}
+        b.append(im);
       }
+      if (job && !castle && !c.reward && c.stage !== 'line') { const hist = C.describeJobs(S).find(j => j.type === c.type); if (hist) { const fr = document.createElement('div'); fr.className = 'from'; fr.textContent = c.className + ' › ' + hist.names.join(' › '); b.append(fr); } }
+      if (job && !castle && !c.reward && c.stage === 'line') { const hist = C.describeJobs(S).find(j => j.type === c.type); if (hist) { const fr = document.createElement('div'); fr.className = 'from'; fr.textContent = hist.names.join(' › '); b.append(fr); } }
       const pn = document.createElement('div'); pn.className = 'pn'; pn.textContent = c.name;
       const pd = document.createElement('div'); pd.className = 'pd'; pd.textContent = c.desc;
       const pk = document.createElement('span'); pk.className = 'pk'; pk.textContent = String(i + 1);
@@ -389,7 +417,8 @@
     el.classList.remove('hidden');
   }
   function updateReroll() { const b = $('btnReroll'), n = S.cards.rerolls; b.textContent = '다시 뽑기 (' + n + ')'; b.disabled = n <= 0; }
-  function choose(i) { if (!S) return; if (currentOffer() && !$('picker').classList.contains('hidden')) pickFx(i, !!S.jobs.offer); if (S.jobs.offer) C.pickJob(S, i); else if (S.cards.offer) C.pickCard(S, i); }
+  function choose(i) { if (!S) return; if (currentOffer() && !$('picker').classList.contains('hidden')) pickFx(i, !!(S.jobs.offer || S.cOffer)); if (S.jobs.offer) C.pickJob(S, i); else if (S.cOffer) C.pickCastle(S, i); else if (S.cards.offer) C.pickCard(S, i); }
+  $('pickBack').addEventListener('click', () => { if (S) C.jobBack(S); });
   $('btnReroll').addEventListener('click', () => { if (S) C.reroll(S); });
 
   const MODALS = ['setMenu', 'infoPanel', 'metaPanel', 'devPanel'];
@@ -433,6 +462,8 @@
     if (infoTab === 'up') {
       const taken = C.describeTaken(S), jobs = C.describeJobs(S);
       h += '<h3>성</h3>' + irow('성 Lv.' + S.castle.lv + (S.castle.lv >= CFG.castle.max ? ' (최대)' : ''), '체력 ' + Math.round(S.core.hp) + '/' + Math.round(S.core.max) + ' · 공격력 ' + f1(S.core.atk) + ' · 사거리 ' + Math.round(S.core.range) + ' · 대포 ' + S.core.cannons + '문<br>인구 ' + C.popCount(S) + (C.popCap(S) < 1e8 ? '/' + C.popCap(S) : ' (제한 없음)'));
+      { const cd = C.describeCastle(S), nxt = CFG.castleTree.lv[S.cnodes.length];
+        h += '<h3>성 갈래</h3>' + (cd.length ? cd.map((n, i) => irow(n.name, n.desc, i === 2 ? 'epic' : 'rare', n.kind)).join('') : '<div class="d">성 Lv.' + CFG.castleTree.lv[0] + '에서 마탑·수호·사령 중 갈래를 고릅니다.</div>') + (nxt && cd.length ? '<div class="d" style="margin:2px 0 6px">다음 선택: 성 Lv.' + nxt + '</div>' : ''); }
       h += '<h3>전직</h3>' + (jobs.length ? jobs.map(j => irow(j.className, j.names.join(' › '), 'epic')).join('') : '<div class="d">아직 전직한 직업이 없어요 (보스를 처치하면 전직)</div>');
       for (const cat of ['unit', 'core', 'summon']) { const l = taken.filter(t => t.cat === cat); if (l.length) h += '<h3>' + CAT_NAME[cat] + '</h3>' + l.map(t => irow(t.name, t.desc, t.rar, 'Lv ' + t.lv + (t.max ? '/' + t.max : ''))).join(''); }
       if (S.bossUp && S.bossUp.hp) h += '<h3>보스 보상</h3>' + irow('전군 강화', '검사·궁수·사제 체력·공격력 강화 (일반 강화와 별개로 적용)', 'epic', 'Lv ' + S.bossUp.hp);
@@ -498,6 +529,7 @@
       const r = e[1], row = get(r);
       if (e[0] === 'c') row.push('<div>🃏 <b>' + esc(e[2]) + '</b> Lv ' + e[3] + '<span class="alt">선택지: ' + e[4].map((n, i) => n === e[2] ? '<u>' + esc(n) + '</u>' : esc(n)).join(' / ') + '</span></div>');
       else if (e[0] === 'j') row.push('<div>🎖 <b>' + esc(e[2]) + '</b><span class="alt">선택지: ' + e[3].map(n => n === e[2] ? '<u>' + esc(n) + '</u>' : esc(n)).join(' / ') + '</span></div>');
+      else if (e[0] === 'n') row.push('<div>🏯 성 갈래 <b>' + esc(e[2]) + '</b><span class="alt">선택지: ' + e[3].map(n => n === e[2] ? '<u>' + esc(n) + '</u>' : esc(n)).join(' / ') + '</span></div>');
       else if (e[0] === 'k') row.push('<div>🏰 성 <b>Lv ' + e[2] + '</b> 업그레이드</div>');
       else if (e[0] === 'u') { const last = row[row.length - 1]; const t = (CFG.units[e[2]] || {}).name + ' ×' + e[3]; if (last && last.startsWith('<div class="us">')) row[row.length - 1] = last.replace('</div>', ' · ' + t + '</div>'); else row.push('<div class="us">⚔️ 뽑은 유닛: ' + t + '</div>'); }
     }
@@ -531,6 +563,10 @@
       case 'picked': A2.play('card'); break;
       case 'promote': A2.play('job'); break;
       case 'bossSpawn': A2.alarm(); showBossIntro(ev); break;
+      case 'castleBlast': A2.play('bigBoom', ev.x, ev.y); break;
+      case 'castlePulse': A2.play('heal', CX, CY); break;
+      case 'raise': A2.play('cast', ev.x, ev.y); break;
+      case 'castlePick': A2.play('job'); break;
       case 'bossDying': A2.play('bigBoom', ev.x, ev.y); break;
       case 'bossRevive': A2.alarm(); A2.play('rage'); break;
       case 'bossGone': A2.play('bigBoom', ev.x, ev.y); A2.play('boom', ev.x, ev.y); break;
@@ -558,6 +594,21 @@
       else if (ev.type === 'bossCast') { addFx({ k: 'zone', x: ev.x, y: ev.y, r: ev.r, t: 0, max: ev.warn, c: DBK[ev.kind][1] }); toast('보스가 ' + DBK[ev.kind][0] + ' 광역기를 시전!'); }
       else if (ev.type === 'debuffHit') addFx({ k: 'boom', x: ev.x, y: ev.y, r: ev.r, t: 0, max: 0.4, big: false, enemy: true, c: DBK[ev.kind][1] });
       else if (ev.type === 'roundClear') banner('라운드 ' + ev.round + ' 클리어!');
+      else if (ev.type === 'castleBlast') {
+        const col = JOBC[ev.cfin] || JOBC[ev.cvar] || JOBC.arcane, dl = -ev.k * 0.28;
+        addFx({ k: 'beam', x: ev.x - 70, y: ev.y - 230, tx: ev.x, ty: ev.y, t: dl - 0.22, max: 0.22, c: col });
+        addFx({ k: 'ring', x: ev.x, y: ev.y, t: dl, max: 0.7, c: col, r: ev.r * 1.25, big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: dl - 0.08, max: 0.5, c: '#ffffff', r: ev.r * 0.7 });
+        for (let i = 0; i < 6; i++) addFx({ k: 'dust', x: ev.x + (Math.random() - 0.5) * ev.r, y: ev.y + (Math.random() - 0.5) * ev.r * 0.7, t: dl, max: 0.9, r: 10 + Math.random() * 10 });
+        if (ev.zone > 0) addFx({ k: 'pool', x: ev.x, y: ev.y, r: ev.r * 0.95, t: dl, max: ev.zone, c: ['#ff7a1a', '#ffb24a', '#ffe9a0'] });
+        if (ev.freeze) addFx({ k: 'ring', x: ev.x, y: ev.y, t: dl, max: 0.9, c: '#eaf8ff', r: ev.r * 1.5, big: true });
+      }
+      else if (ev.type === 'castlePulse') { const col = JOBC[ev.cfin] || JOBC[ev.cvar] || JOBC.guardian; addFx({ k: 'ring', x: CX, y: CY, t: 0, max: 0.9, c: col, r: ev.r, big: true }); addFx({ k: 'ring', x: CX, y: CY, t: -0.12, max: 0.7, c: '#ffffff', r: ev.r * 0.7 }); if (ev.dmg) for (let i = 0; i < 10; i++) { const a = i / 10 * 6.283; addFx({ k: 'beam', x: CX + Math.cos(a) * 40, y: CY + Math.sin(a) * 40 - 8, tx: CX + Math.cos(a) * ev.r, ty: CY + Math.sin(a) * ev.r - 8, t: 0, max: 0.35, c: col, small: true }); } }
+      else if (ev.type === 'raise') { addFx({ k: 'burst', x: ev.x, y: ev.y, t: 0, max: 0.5, c: '#3ae68a', big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.5, c: '#7affc8', r: 28 }); }
+      else if (ev.type === 'undeadFade') addFx({ k: 'burst', x: ev.x, y: ev.y, t: 0, max: 0.4, c: '#3ae68a' });
+      else if (ev.type === 'marked') addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.35, c: '#ff5a5a', r: 16 });
+      else if (ev.type === 'fireTick') { for (let i = 0; i < 2; i++) { const a = Math.random() * 6.283, rr = Math.sqrt(Math.random()) * ev.r; addFx({ k: 'burst', x: ev.x + Math.cos(a) * rr, y: ev.y + Math.sin(a) * rr, t: 0, max: 0.4, c: i ? '#ffd23a' : '#ff7a1a' }); } }
+      else if (ev.type === 'castlePick') banner('성: ' + ev.name, true);
+      else if (ev.type === 'lastStand') banner('불사 결계 발동! 성이 되살아났다', true);
       else if (ev.type === 'bossRevive') { banner(ev.name + '… 다시 일어선다!', true); for (let i = 0; i < 3; i++) addFx({ k: 'ring', x: ev.x, y: ev.y, t: -i * 0.35, max: 1.1, c: i % 2 ? '#ff7a3a' : '#ff2a4a', r: ev.r * 3, big: true }); }
       else if (ev.type === 'bossRevived') { banner('최후의 결전!', true); addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#ffffff', big: true }); }
       else if (ev.type === 'bossGone') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.9, c: '#ffffff', r: ev.r * 3.5, big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: -0.1, max: 1, c: '#ffd166', r: ev.r * 2.5, big: true }); for (let k = 0; k < 14; k++) addFx({ k: 'dust', x: ev.x + (Math.random() - 0.5) * ev.r * 2.4, y: ev.y + (Math.random() - 0.5) * ev.r * 1.6, t: 0, max: 1.3, r: 14 + Math.random() * 18 }); }
@@ -577,7 +628,7 @@
       }
       else if (ev.type === 'newEnemy') showNewEnemy(ev.kind);
       else if (ev.type === 'castleUp') { addFx({ k: 'ring', x: CX, y: CY, t: 0, max: 0.9, c: '#ffd166', big: true, r: 150 }); addFx({ k: 'ring', x: CX, y: CY, t: -0.15, max: 0.8, c: '#ffffff', r: 110 }); addFx({ k: 'summon', x: CX, y: CY + 30, t: 0, max: 0.9 }); toast('성 Lv.' + ev.lv + (ev.pop < 1e8 ? ' — 인구 상한 ' + ev.pop : ' — 최대 레벨: 인구 제한 없음') + (ev.cannons > 1 ? ' · 대포 ' + ev.cannons + '문' : '')); }
-      else if (ev.type === 'melee') { if (fx.length < 220 && cam.zoom > 0.4) addFx({ k: 'slash', x: ev.tx, y: ev.ty, a: Math.atan2(ev.ty - ev.y, ev.tx - ev.x), t: 0, max: 0.2, c: atkColor(ev.job, ev.ut) }); }
+      else if (ev.type === 'melee') { if (fx.length < 220 && cam.zoom > 0.4) addFx({ k: 'slash', x: ev.tx, y: ev.ty, a: Math.atan2(ev.ty - ev.y, ev.tx - ev.x), t: 0, max: ev.job === 'berserker' ? 0.28 : 0.2, c: atkColor(ev.job, ev.ut), st: SLASH[ev.job] || SLASH[ev.ut] }); }
       else if (ev.type === 'emelee') { if (fx.length < 220 && cam.zoom > 0.4) { addFx({ k: 'slash', x: ev.tx, y: ev.ty, a: Math.atan2(ev.ty - ev.y, ev.tx - ev.x), t: 0, max: 0.26, c: '#ff4adf', big: true }); } }
       else if (ev.type === 'bossShock') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.55, c: '#ffcf40', r: ev.r, big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: -0.08, max: 0.5, c: '#ff5a3a', r: ev.r * 0.7 }); for (let i = 0; i < 5; i++) addFx({ k: 'dust', x: ev.x + (Math.random() - 0.5) * ev.r, y: ev.y + (Math.random() - 0.5) * ev.r * 0.6, t: -Math.random() * 0.1, max: 0.9, r: 16 }); }
       else if (ev.type === 'bossBlink') { for (const [x, y] of [[ev.x0, ev.y0], [ev.x1, ev.y1]]) { addFx({ k: 'ring', x, y, t: 0, max: 0.6, c: '#c77dff', big: true }); addFx({ k: 'summon', x, y, t: 0, max: 0.7 }); } toast('보스가 순간이동했습니다!'); }
@@ -729,9 +780,13 @@
       if (e.team === 'u' && e.type && e.type.startsWith('legend')) legendGlow(e, now, z);
       if (e.elite) eliteGlow(e, now, z);
       if (lite && e.team === 'e' && e.kind !== 'boss') { Figures.drawLite(ctx, e); if (e.elite) eliteMark(e, z); continue; }
+      if (e.undead) { ctx.globalAlpha = 0.4 + 0.15 * Math.sin(now * 0.01); ctx.fillStyle = '#3ae68a'; ctx.beginPath(); ctx.ellipse(e.x, e.y + 6, e.r * 1.5, e.r * 0.7, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
       if (e.kind === 'boss') bossAura(e, now, z);
       if (e.dying) drawDyingBoss(e, now); else Figures.draw(ctx, e, now);
       if (e.elite) eliteMark(e, z);
+      if (e.team === 'u' && e.ward > 0) { ctx.globalAlpha = 0.22 + 0.1 * Math.sin(now * 0.01) + (e.wardFx > 0 ? 0.3 : 0); ctx.strokeStyle = '#8fd8ff'; ctx.fillStyle = '#8fd8ff'; ctx.lineWidth = 1.6 / z; ctx.beginPath(); ctx.arc(e.x, e.y - 4, e.r * 1.5, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 0.8; ctx.stroke(); ctx.globalAlpha = 1; }
+      if (e.team === 'e' && e.markT > 0) { ctx.strokeStyle = '#ff4a4a'; ctx.lineWidth = 1.6 / z; ctx.globalAlpha = 0.9; const my = e.y + Figures.headTop(e) - 8, mr = 5 + Math.sin(now * 0.02); ctx.beginPath(); ctx.arc(e.x, my, mr, 0, Math.PI * 2); ctx.moveTo(e.x - mr - 3, my); ctx.lineTo(e.x + mr + 3, my); ctx.moveTo(e.x, my - mr - 3); ctx.lineTo(e.x, my + mr + 3); ctx.stroke(); ctx.globalAlpha = 1; }
+      if (e.team === 'e' && e.frozenT > 0) { ctx.globalAlpha = 0.45; ctx.fillStyle = '#bfe8ff'; ctx.strokeStyle = '#eaf8ff'; ctx.lineWidth = 1.5 / z; ctx.beginPath(); ctx.ellipse(e.x, e.y - 4, e.r * 1.3, e.r * 1.7, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.globalAlpha = 1; }
       if (e.team === 'u' && (e.stunT > 0 || e.poisonT > 0 || e.weakT > 0 || e.woundT > 0)) statusMarks(e, now, z);
       if (e.kind === 'boss' && e.shieldT > 0) { ctx.globalAlpha = 0.28 + 0.12 * Math.sin(now * 0.012); ctx.fillStyle = '#8fd8ff'; ctx.beginPath(); ctx.arc(e.x, e.y - 6, e.r * 1.7, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 0.9; ctx.strokeStyle = '#d8f2ff'; ctx.lineWidth = 2.5 / z; ctx.stroke(); ctx.globalAlpha = 1; }
       if (e.hp < e.max || e.kind === 'boss') hpBar(e);
@@ -747,7 +802,38 @@
       }
       ctx.globalAlpha = 0.25; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(sh.x, sh.y, 4, 2, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
       const px = sh.x, py = sh.y - sh.h, ang = Math.atan2(sh.vy - sh.vh, sh.vx);
-      if (sh.color === 'c') { // 성 포탄
+      if (sh.color === 'h') { // 전투사제의 성스러운 구체
+        const sp = 0.5 + 0.5 * Math.sin(now * 0.03 + sh.p * 20);
+        ctx.globalAlpha = 0.35; ctx.fillStyle = '#ffe9a0'; ctx.beginPath(); ctx.arc(px, py, 8 + sp * 2, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+        ctx.fillStyle = '#fffbe0'; ctx.beginPath(); ctx.arc(px, py, 3.6, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#ffd84a'; ctx.lineWidth = 1.4 / z; ctx.beginPath(); ctx.moveTo(px - 8, py); ctx.lineTo(px + 8, py); ctx.moveTo(px, py - 8); ctx.lineTo(px, py + 8); ctx.stroke();
+      } else if (sh.color === 'c' && sh.job) { // 성 포탄: 갈래마다 다른 모양 (마탑=보라 마력구, 수호=금빛 성광, 사령=초록 혼불)
+        const fam = CFAM(sh.job), col = JOBC[sh.job] || '#fff', ux = Math.cos(ang), uy = Math.sin(ang);
+        for (let k = 4; k >= 1; k--) { ctx.globalAlpha = 0.12 * (5 - k); ctx.fillStyle = col; ctx.beginPath(); ctx.arc(px - ux * k * 5 + (fam === 'nec' ? Math.sin(now * 0.02 + k) * 2.5 : 0), py - uy * k * 5 + (fam === 'nec' ? Math.cos(now * 0.02 + k) * 2.5 : 0), 5.5 - k * 0.8, 0, Math.PI * 2); ctx.fill(); }
+        ctx.globalAlpha = 0.4; ctx.fillStyle = col; ctx.beginPath(); ctx.arc(px, py, 11, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+        ctx.fillStyle = fam === 'nec' ? '#0e2a1a' : '#fff'; ctx.strokeStyle = col; ctx.lineWidth = 2 / z; ctx.beginPath(); ctx.arc(px, py, fam === 'gua' ? 5 : 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        if (fam === 'gua') { ctx.strokeStyle = '#fff6c0'; ctx.lineWidth = 1.4 / z; const r0 = now * 0.01; ctx.beginPath(); for (let k = 0; k < 4; k++) { ctx.moveTo(px + Math.cos(r0 + k * 1.571) * 4, py + Math.sin(r0 + k * 1.571) * 4); ctx.lineTo(px + Math.cos(r0 + k * 1.571) * 11, py + Math.sin(r0 + k * 1.571) * 11); } ctx.stroke(); }
+        if (fam === 'arc') { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(px - 1.5, py - 1.5, 1.8, 0, Math.PI * 2); ctx.fill(); }
+        if (fam === 'nec') { ctx.fillStyle = '#7affc8'; ctx.beginPath(); ctx.arc(px - 2, py - 1, 1.3, 0, Math.PI * 2); ctx.arc(px + 2, py - 1, 1.3, 0, Math.PI * 2); ctx.fill(); }
+      } else if (sh.color === 'a' && JSHOT[sh.job] && !sh.crit) { // 직업별 화살/탄
+        const J = sh.job, col = JOBC[J] || '#fff', ux = Math.cos(ang), uy = Math.sin(ang), nx = -uy, ny = ux;
+        if (J === 'gunner') { // 폭탄: 검은 구 + 주황 테두리 + 도화선 불꽃 + 연기 꼬리
+          for (let k = 3; k >= 1; k--) { ctx.globalAlpha = 0.12 * (4 - k); ctx.fillStyle = '#8a8a96'; ctx.beginPath(); ctx.arc(px - ux * k * 5, py - uy * k * 5, 4 + k, 0, Math.PI * 2); ctx.fill(); } ctx.globalAlpha = 1;
+          ctx.fillStyle = '#23232b'; ctx.strokeStyle = '#ff8a2a'; ctx.lineWidth = 1.8 / z; ctx.beginPath(); ctx.arc(px, py, 4.6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = Math.sin(now * 0.05) > 0 ? '#ffe36a' : '#ff5a1a'; ctx.beginPath(); ctx.arc(px + nx * 3 - ux * 3, py + ny * 3 - uy * 3 - 2, 1.8, 0, Math.PI * 2); ctx.fill();
+        } else if (J === 'stormarcher') { // 세 갈래 질풍 화살
+          ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+          for (const o of [-3.2, 0, 3.2]) { ctx.globalAlpha = o ? 0.7 : 1; ctx.beginPath(); ctx.moveTo(px + nx * o - ux * 8, py + ny * o - uy * 8); ctx.lineTo(px + nx * o + ux * 6, py + ny * o + uy * 6); ctx.stroke(); } ctx.globalAlpha = 1;
+        } else if (J === 'hunter') { // 붉은 촉의 표식 화살
+          ctx.strokeStyle = '#d8cfa8'; ctx.lineWidth = 1.8; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(px - ux * 7, py - uy * 7); ctx.lineTo(px + ux * 5, py + uy * 5); ctx.stroke();
+          ctx.fillStyle = '#ff3a3a'; ctx.beginPath(); ctx.arc(px + ux * 6, py + uy * 6, 2.6, 0, Math.PI * 2); ctx.fill();
+        } else { // 명사수(긴 황금 볼트 + 빛 꼬리) / 저격수(긴 노란 화살) / 속사수(짧고 빠른 화살)
+          const len = J === 'deadeye' ? 26 : J === 'sniper' ? 20 : 9;
+          if (J === 'deadeye') { ctx.globalAlpha = 0.35; ctx.strokeStyle = col; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(px - ux * len, py - uy * len); ctx.lineTo(px + ux * 4, py + uy * 4); ctx.stroke(); ctx.globalAlpha = 1; }
+          ctx.strokeStyle = col; ctx.lineWidth = J === 'deadeye' ? 2.6 : J === 'sniper' ? 2.1 : 1.4; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(px - ux * len * 0.6, py - uy * len * 0.6); ctx.lineTo(px + ux * len * 0.4, py + uy * len * 0.4); ctx.stroke();
+          ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(px + ux * (len * 0.4 + 4), py + uy * (len * 0.4 + 4)); ctx.lineTo(px + ux * len * 0.4 + nx * 2.4, py + uy * len * 0.4 + ny * 2.4); ctx.lineTo(px + ux * len * 0.4 - nx * 2.4, py + uy * len * 0.4 - ny * 2.4); ctx.closePath(); ctx.fill();
+        }
+      } else if (sh.color === 'c') { // 성 포탄
         ctx.fillStyle = '#2b3446'; ctx.strokeStyle = '#9fb4d6'; ctx.lineWidth = 1 / z; ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
         ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.beginPath(); ctx.arc(px - 1.5, py - 1.5, 1.6, 0, Math.PI * 2); ctx.fill();
       } else if (sh.color === 'es') { // 보스 포탄
@@ -771,8 +857,10 @@
       const p = f.t / f.max;
       if (f.k === 'burst') { ctx.globalAlpha = 1 - p; ctx.fillStyle = f.c; ctx.beginPath(); ctx.arc(f.x, f.y, (f.big ? 20 : 8) + p * (f.big ? 50 : 16), 0, Math.PI * 2); ctx.fill(); }
       else if (f.k === 'slash') { // 근접 타격 궤적: 전직·유닛별 색 (엘리트 적은 분홍)
-        const w = f.big ? 4.5 : 3, r0 = f.big ? 20 : 15; ctx.globalAlpha = 1 - p; ctx.strokeStyle = f.c; ctx.lineWidth = w * (1 - p * 0.6) / z * 1.1; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.arc(f.x - Math.cos(f.a) * 6, f.y - Math.sin(f.a) * 6, r0 * (0.7 + p * 0.5), f.a - 0.95, f.a + 0.95); ctx.stroke(); ctx.globalAlpha = 1;
+        const st = f.st, w = st ? st.w : f.big ? 4.5 : 3, r0 = st ? st.r : f.big ? 20 : 15, sp = st ? st.span : 0.95; ctx.globalAlpha = 1 - p; ctx.strokeStyle = f.c; ctx.lineWidth = w * (1 - p * 0.6) / z * 1.1; ctx.lineCap = 'round';
+        for (let k = 0; k < (st ? st.n : 1); k++) { const off = st && st.n === 2 ? (k ? 0.3 : -0.3) : 0; ctx.beginPath(); ctx.arc(f.x - Math.cos(f.a + off) * 6, f.y - Math.sin(f.a + off) * 6, r0 * (0.7 + p * 0.5) * (k ? 0.85 : 1), f.a + off - sp, f.a + off + sp); ctx.stroke(); }
+        if (st && st.cross) { ctx.lineWidth = 2 / z; ctx.beginPath(); ctx.moveTo(f.x - 7, f.y); ctx.lineTo(f.x + 7, f.y); ctx.moveTo(f.x, f.y - 7); ctx.lineTo(f.x, f.y + 7); ctx.stroke(); }
+        ctx.globalAlpha = 1;
       }
       else if (f.k === 'pool') { // 독 웅덩이: 남아 있는 동안 초록 독기가 일렁인다
         const fade = Math.min(1, (f.max - f.t) / 1.2, f.t / 0.3 + 0.2), pu = 0.5 + 0.5 * Math.sin(now * 0.006);
@@ -949,6 +1037,7 @@
   function botAct() {
     if (S.cinematic && !params.get('nopick')) C.endCinematic(S);
     if (S.jobs.offer && !params.get('nopick')) C.pickJob(S, 0);
+    if (S.cOffer && !params.get('nopick')) C.pickCastle(S, 0);
     if (S.cards.offer && !params.get('nopick')) C.pickCard(S, 0);
     botT += STEP; if (botT < 0.4) return; botT = 0;
     for (const t of ['sword', 'archer', 'sword', 'archer', 'priest']) { const r = C.buy(S, t); if (r.reason === 'pop') { C.upgradeCastle(S); break; } }

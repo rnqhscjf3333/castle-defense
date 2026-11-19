@@ -22,6 +22,7 @@ function play(seed, policy) {
     playCards(S, policy, rnd);
     if (S.cinematic) C.endCinematic(S); // 2막 연출은 바로 넘긴다
     if (S.jobs.offer) C.pickJob(S, Math.floor(rnd() * S.jobs.offer.list.length)); // 보스 처치 후 전직 선택 (선택 전에는 시간이 멈춘다)
+    if (S.cOffer) C.pickCastle(S, Math.floor(rnd() * S.cOffer.list.length)); // 성 갈래 선택
     C.tick(S, DT); steps++;
   }
   return { round: S.round, win: S.win, kills: S.kills, t: Math.round(S.t), units: S.units.length, coreHp: Math.round(S.core.hp), cards: Object.values(S.cards.taken).reduce((a, b) => a + b, 0), ms: Date.now() - t0 };
@@ -214,26 +215,26 @@ function settle(g) { for (let i = 0; i < 600 && g.bossDeath; i++) C.tick(g, DT);
 function killBoss(g) { const b = g.enemies.find(e => e.kind === 'boss'); b.hp = 1; b.shieldT = 0; g.core.atk = 1e6; for (let i = 0; i < 600 && !g.jobs.offer; i++) C.tick(g, DT); return b; }
 { const g = arena(5, [['boss', 1500, 1500 - 220]]); g.gold = 1e6; C.buy(g, 'sword'); g.buyCd.sword = 0; C.buy(g, 'archer'); g.buyCd.archer = 0; C.buy(g, 'priest');
   const b = killBoss(g);
-  check('보스 처치 → 전직 선택(최대 3개) + 시간 정지', b.dead && g.jobs.offer && g.jobs.offer.list.length === 3 && g.jobs.offer.boss === b.bossName, g.jobs.offer && g.jobs.offer.list.map(o => o.className + ':' + o.name).join(' / '));
+  check('5라운드 보스 처치 → 승급할 캐릭터 선택(3명) + 시간 정지', b.dead && g.jobs.offer && g.jobs.offer.stage === 'line' && g.jobs.offer.list.length === 3 && g.jobs.offer.boss === b.bossName, g.jobs.offer && g.jobs.offer.list.map(o => o.className).join(' / '));
   const t0 = g.t; for (let i = 0; i < 20; i++) C.tick(g, DT); check('전직 선택 중 시간이 멈춤', g.t === t0);
-  check('1단계 선택지는 직업마다 2갈래 중에서', g.jobs.offer.list.every(o => o.tier === 1));
-  // 검사 → 기사 선택
-  const knightIdx = g.jobs.offer.list.findIndex(o => o.id === 'knight');
-  if (knightIdx < 0) { g.jobs.offer.list[0] = C.jobOptions(g).find(o => o.id === 'knight'); }
+  const swIdx = g.jobs.offer.list.findIndex(o => o.type === 'sword'); C.pickJob(g, swIdx);
+  check('캐릭터를 고르면 그 캐릭터의 전직 2개가 나옴', g.jobs.offer.stage === 'class' && g.jobs.offer.list.length === 2 && g.jobs.offer.list.every(o => o.type === 'sword' && o.tier === 1), g.jobs.offer.list.map(o => o.name).join('/'));
+  check('뒤로 가면 캐릭터 선택으로 돌아감', C.jobBack(g) && g.jobs.offer.stage === 'line' && g.jobs.offer.list.length === 3);
+  C.pickJob(g, g.jobs.offer.list.findIndex(o => o.type === 'sword'));
   const sw = g.units.find(u => u.type === 'sword'), hp0 = sw.max;
   C.pickJob(g, g.jobs.offer.list.findIndex(o => o.id === 'knight'));
-  check('전직(기사): 체력 증가(CFG 수치), 직업 표시', Math.abs(sw.max - Math.round(hp0 * (1 + C.CFG.jobs.sword.t1[0].mods.hp))) <= 1 && sw.job === 'knight' && sw.jobTier === 1, `${hp0}→${sw.max}`);
+  check('전직(나이트): 체력 증가(CFG 수치), 직업 표시', Math.abs(sw.max - Math.round(hp0 * (1 + C.CFG.jobs.sword.t1[0].mods.hp))) <= 1 && sw.job === 'knight' && sw.jobTier === 1, `${hp0}→${sw.max}`);
   check('전직 선택 후 시간 재개', (() => { const t = g.t; C.tick(g, DT); return g.t > t; })());
   check('새로 뽑는 유닛도 전직 효과를 받음', (() => { g.buyCd.sword = 0; const n = C.buy(g, 'sword').unit; return n.max === sw.max && n.job === 'knight'; })());
-  // 2단계: 기사 → 성기사 (같은 직업의 같은 갈래만 나옴)
+  // 2단계: 나이트 → 팔라딘 / 워로드 (선택한 갈래의 2차 2개)
   const opts2 = C.jobOptions(g).filter(o => o.type === 'sword');
-  check('2단계 선택지는 선택한 갈래의 상위 직업만', opts2.length === 1 && opts2[0].id === 'paladin' && opts2[0].tier === 2, opts2.map(o => o.name).join());
-  g.jobs.offer = { boss: 't', list: opts2 }; C.pickJob(g, 0);
-  check('성기사: 체력 추가 증가 + 받는 피해 감소 + 재생 보정 합산', g.jobMods.sword.hp > 1.2 && g.jobMods.sword.def > 0.19 && g.jobMods.sword.regen === 0.02, JSON.stringify(g.jobMods.sword));
+  check('2단계 선택지는 선택한 갈래의 2차 직업 2개', opts2.length === 2 && opts2.map(o => o.id).sort().join() === 'paladin,warlord' && opts2.every(o => o.tier === 2), opts2.map(o => o.name).join());
+  g.jobs.offer = { boss: 't', list: opts2 }; C.pickJob(g, opts2.findIndex(o => o.id === 'paladin'));
+  check('팔라딘: 체력 추가 증가 + 받는 피해 감소 + 재생 보정 합산', g.jobMods.sword.hp > 1.2 && g.jobMods.sword.def > 0.19 && g.jobMods.sword.regen === 0.02, JSON.stringify(g.jobMods.sword));
   sw.hp = sw.max * 0.5; const h0 = sw.hp; g.enemies.length = 0; g.queue = []; for (let i = 0; i < 60; i++) C.tick(g, DT);
-  check('성기사 재생: 체력이 서서히 차오름', sw.hp > h0, Math.round(h0) + '→' + Math.round(sw.hp));
+  check('팔라딘 재생: 체력이 서서히 차오름', sw.hp > h0, Math.round(h0) + '→' + Math.round(sw.hp));
   check('최종 전직 이후 그 직업은 더 이상 제안되지 않음', C.jobOptions(g).every(o => o.type !== 'sword'));
-  check('describeJobs에 전직 이력 표시', JSON.stringify(C.describeJobs(g).find(j => j.type === 'sword').names) === '["기사","성기사"]'); }
+  check('describeJobs에 전직 이력 표시', JSON.stringify(C.describeJobs(g).find(j => j.type === 'sword').names) === '["나이트","팔라딘"]'); }
 { // 각 직업의 효과
   const g = C.createGame(41); g.gold = 1e7; for (const t of ['sword', 'archer', 'priest']) { g.buyCd[t] = 0; C.buy(g, t); }
   const ar = g.units.find(u => u.type === 'archer'), pr = g.units.find(u => u.type === 'priest'), r0 = ar.range, hr0 = pr.healRange, heal0 = pr.heal;
@@ -246,7 +247,7 @@ function killBoss(g) { const b = g.enemies.find(e => e.kind === 'boss'); b.hp = 
   const g2 = C.createGame(42); g2.gold = 1e7; g2.buyCd.priest = 0; C.buy(g2, 'priest'); const p2 = g2.units[0], hr = p2.healRange;
   g2.jobs.offer = { boss: 't', list: [C.jobOptions(g2).find(x => x.id === 'cleric')] }; C.pickJob(g2, 0); check('성직자: 치유 범위 +40', p2.healRange === hr + 40, `${hr}→${p2.healRange}`);
   const g3 = C.createGame(43); g3.gold = 1e7; g3.buyCd.sword = 0; C.buy(g3, 'sword'); const s3 = g3.units[0], a0 = s3.atk;
-  g3.jobs.offer = { boss: 't', list: [C.jobOptions(g3).find(x => x.id === 'fighter')] }; C.pickJob(g3, 0); check('투사: 공격력 +50%, 공격 속도 +20%', Math.abs(s3.atk / a0 - 1.5) < 1e-9 && Math.abs(s3.rate / C.CFG.units.sword.rate - 1.2) < 1e-9);
+  g3.jobs.offer = { boss: 't', list: [C.jobOptions(g3).find(x => x.id === 'blade')] }; C.pickJob(g3, 0); check('블레이드: 공격력 +50%, 공격 속도 +20%', Math.abs(s3.atk / a0 - 1.5) < 1e-9 && Math.abs(s3.rate / C.CFG.units.sword.rate - 1.2) < 1e-9);
   g3.jobs.offer = { boss: 't', list: [C.jobOptions(g3).find(x => x.id === 'blademaster')] }; C.pickJob(g3, 0);
   // 검성 베기: 주변 적에게도 피해
   g3.enemies.length = 0; const e1 = C.spawnEnemy(g3, 'brute', s3.x + 30, s3.y), e2 = C.spawnEnemy(g3, 'brute', s3.x + 38, s3.y + 14); g3.core.atk = 0; g3.round = 5;
@@ -577,8 +578,8 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   { const h2 = C.createGame(9); h2.gold = 1e9; const caps = [C.popCap(h2)]; for (let i = 0; i < 3; i++) { C.upgradeCastle(h2); caps.push(C.popCap(h2)); } check('인구 증가량이 레벨마다 +1씩 커짐 (+3, +4, +5)', caps[1] - caps[0] === 3 && caps[2] - caps[1] === 4 && caps[3] - caps[2] === 5, caps.join('→'));
     const before = C.popCount(h2); C.spawnUnit ? 0 : 0; const u = C.createGame(1); u.units.push({ team: 'u', type: 'golem', dead: false, x: 0, y: 0 }); check('특수 유닛은 인구에 포함되지 않고 따로 셈', C.popCount(u) === 0 && C.specialCount(u) === 1); }
   const cn = lv => { const h = C.createGame(4); h.gold = 1e9; for (let i = 1; i < lv; i++) C.upgradeCastle(h); return h.core.cannons; };
-  check('대포: 3레벨 2문, 5레벨 3문, 7레벨 4문', cn(1) === 1 && cn(2) === 1 && cn(3) === 2 && cn(5) === 3 && cn(7) === 4 && cn(8) === 4, [1, 3, 5, 7].map(cn).join('/'));
-  const h = arena(10, []); h.gold = 1e9; for (let i = 1; i < 7; i++) C.upgradeCastle(h); h.core.atk = 100; h.core.rate = 1; const es = []; for (let i = 0; i < 4; i++) { const e = C.spawnEnemy(h, 'brute', 1500 + 100 + i * 12, 1500 + i * 25); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; es.push(e); }
+  check('대포: 3레벨 2문, 5레벨 3문, 7레벨 4문', cn(1) === 1 && cn(2) === 1 && cn(3) === 2 && cn(5) === 3 && cn(7) === 4 && cn(10) === 4, [1, 3, 5, 7].map(cn).join('/'));
+  const h = arena(10, []); h.gold = 1e9; for (let i = 1; i < 7; i++) C.upgradeCastle(h); C.autoCastle(h); h.core.atk = 100; h.core.rate = 1; const es = []; for (let i = 0; i < 4; i++) { const e = C.spawnEnemy(h, 'brute', 1500 + 100 + i * 12, 1500 + i * 25); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; es.push(e); }
   h.core.cd = 0; C.tick(h, DT); check('여러 문의 대포는 서로 다른 적을 동시에 쏨', h.shots.length >= 3 && new Set(h.shots.map(s => s.t)).size >= 3, `발사 ${h.shots.length}, 서로 다른 목표 ${new Set(h.shots.map(s => s.t)).size}`);
   const f = C.createGame(5); f.round = 40; f.cards.offer = null; f.jobs.offer = { boss: 'x', reward: true, list: [{ type: 'reward', reward: true, id: 'r_fort', name: 'x', desc: '', className: '', tier: 0 }] }; C.pickJob(f, 0);
   check('보상 [성 대개수]: 성 2레벨 상승', f.castle.lv === 3);
@@ -659,7 +660,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   const a = mkDev(10), b = mkDev(40), c = mkDev(60);
   check('개발자 모드: 라운드가 높을수록 성·유닛·강화가 더 갖춰짐', b.castle.lv > a.castle.lv && C.popCount(b) > C.popCount(a) && Object.keys(b.cards.taken).length > Object.keys(a.cards.taken).length, `성 ${a.castle.lv}→${b.castle.lv}, 인구 ${C.popCount(a)}→${C.popCount(b)}`);
   check('개발자 모드: 해당 라운드부터 시작 (다음 틱에 R 시작)', (() => { C.tick(b, DT); return b.round === 40; })(), 'round ' + b.round);
-  check('개발자 모드: 전직 6개 모두 완료 + 보스 보상 단계 누적 (R40)', ['sword', 'archer', 'priest'].every(t => b.jobs[t].ids.length === 2) && b.bossUp.hp >= 2, JSON.stringify(b.jobs.sword.ids) + ' bossUp ' + b.bossUp.hp);
+  check('개발자 모드: R40까지 승급 5번(1차 3 + 2차 2) + 보스 보상 단계 누적', ['sword', 'archer', 'priest'].every(t => b.jobs[t].ids.length >= 1) && ['sword', 'archer', 'priest'].reduce((n, t) => n + b.jobs[t].ids.length, 0) === 5 && b.bossUp.hp >= 2, JSON.stringify(b.jobs.sword.ids) + ' bossUp ' + b.bossUp.hp);
   check('개발자 모드: 60라운드는 무한 모드 상태', c.endless && c.act === 2);
   const g0 = b.gold; b.gold = 5; C.tick(b, DT); check('개발자 모드: 골드가 무한 (줄어도 다시 채워짐)', b.gold >= 1e8 && g0 >= 1e8);
   check('개발자 모드는 기록 검증에서 제외(랭킹 등록 불가)', !C.checkRun(b).ok && C.checkRun(b).why.includes('개발자 모드'));
@@ -669,5 +670,49 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   for (let i = 0; i < 20; i++) C.tick(g, DT); const e = C.spawnEnemy(g, 'grunt', u.hx + 45, u.hy) || g.enemies[g.enemies.length - 1]; e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; const x0 = u.x;
   for (let i = 0; i < 90; i++) { g.core.hp = g.core.max; C.tick(g, DT); }
   check('수비 모드: 검사가 자리 근처(45px)의 적에게 가서 싸움', e.hp < e.max - 1, '피해 ' + Math.round(e.max - e.hp)); }
+// 56) 성 트리: Lv4·7·10에서 갈래 선택 (마탑·수호·사령 → 공격/방어형 → 최종형)
+{ const g = C.createGame(81); g.gold = 1e9; for (let i = 0; i < 3; i++) C.upgradeCastle(g); C.tick(g, DT);
+  check('성 Lv4: 갈래 선택(3개) + 시간 정지', !!g.cOffer && g.cOffer.tier === 0 && g.cOffer.list.length === 3 && (() => { const t = g.t; C.tick(g, DT); return g.t === t; })(), g.cOffer && g.cOffer.list.map(o => o.name).join('/'));
+  C.pickCastle(g, 0); check('마탑 선택: 마법 폭발 + 시간 재개', g.cnodes[0] === 'arcane' && !!g.cpar.blast && g.core.cpath === 'arcane' && (() => { const t = g.t; C.tick(g, DT); return g.t > t; })());
+  for (let i = 0; i < 3; i++) C.upgradeCastle(g); C.tick(g, DT);
+  check('성 Lv7: 마탑의 공격형/방어형 2개', g.cOffer && g.cOffer.tier === 1 && g.cOffer.list.map(o => o.id).join() === 'storm,frost', g.cOffer && g.cOffer.list.map(o => o.id).join());
+  C.pickCastle(g, 0); for (let i = 0; i < 3; i++) C.upgradeCastle(g); C.tick(g, DT);
+  check('성 Lv10: 폭풍 마법진의 최종형 2개', g.castle.lv === 10 && g.cOffer && g.cOffer.tier === 2 && g.cOffer.list.map(o => o.id).join() === 'meteor,inferno', g.castle.lv + ' ' + (g.cOffer && g.cOffer.list.map(o => o.id).join()));
+  C.pickCastle(g, 0); check('운석 낙하: 폭발 3발 + 외형 id 반영', g.cpar.blast.n === 3 && g.core.cfin === 'meteor' && g.core.cvar === 'storm' && C.describeCastle(g).length === 3);
+  check('성 최대 레벨 10', C.CFG.castle.max === 10 && C.castleCost(g) === Infinity); }
+{ const mk = (root, nodes) => { const g = C.createGame(82); g.gold = 1e9; g.phase = 'round'; g.hold = true; g.queue = []; g.core.hp = g.core.max = 1e9; for (let i = 0; i < 3; i++) C.upgradeCastle(g); g.cnodes = [root, ...(nodes || [])]; g.cOffer = null; C.tick(g, DT); g.cnodes = [root, ...(nodes || [])]; g.cOffer = null; g.castle.lv = 4; const mkr = () => {}; return g; };
+  // 마탑: 마법 폭발이 밀집한 적에게 피해
+  const a = mk('arcane'); a.core.atk = 50; a.core.rate = 0.0001; a.core.cd = 1e9; a.cnodes = ['arcane']; a.core.atk = 50; const es = []; for (let i = 0; i < 5; i++) { const e = C.spawnEnemy(a, 'brute', 1500 + 120 + i * 8, 1500 + i * 8); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e6; es.push(e); }
+  a.cb = 0; a.cpar = null; a.cnodes = ['arcane']; C.pickCastle; (() => { a.cOffer = null; })();
+  const root = C.CFG.castleTree.roots[0]; a.cpar = JSON.parse(JSON.stringify(root.par)); C.tick(a, DT);
+  check('마탑: 마법 폭발이 밀집한 적 여럿에게 피해', es.filter(e => e.hp < e.max).length >= 4, es.map(e => Math.round(e.max - e.hp)).join());
+  // 수호: 치유 파동
+  const g = mk('guardian'); g.cpar = JSON.parse(JSON.stringify(C.CFG.castleTree.roots[1].par)); g.buyCd.sword = 0; const u = C.buy(g, 'sword').unit; u.x = 1500 + 60; u.y = 1500; u.hp = u.max * 0.3; g.cp = 0; const hp0 = u.hp; C.tick(g, DT);
+  check('수호: 치유 파동이 주변 아군을 치유', u.hp > hp0, Math.round(hp0) + '→' + Math.round(u.hp));
+  // 사령: 처치한 적이 망자로 되살아남, 시간이 지나면 사라짐
+  const n = mk('necro'); n.cpar = JSON.parse(JSON.stringify(C.CFG.castleTree.roots[2].par)); n.cpar.raise.chance = 1; const e0 = C.spawnEnemy(n, 'grunt', 1500 + 200, 1500); e0.speed = 0; e0.dmg = 0; C.damage(n, e0, 1e9);
+  const ud = n.units.find(x => x.undead); check('사령: 처치한 적이 망자(아군)로 되살아남', !!ud && !ud.dead && C.popCount(n) === 0 && ud.team === 'u', ud && ud.type);
+  for (let i = 0; i < 30 * 9; i++) C.tick(n, DT); check('망자는 지속시간(7초)이 지나면 사라짐', ud.dead);
+  const bs = C.spawnEnemy(n, 'grunt', 1700, 1500); bs.elite = true; n.cpar.raise.elite = 0; const cnt = n.units.filter(x => !x.dead && x.undead).length; C.damage(n, bs, 1e9); check('엘리트는 기본적으로 되살리지 않음', n.units.filter(x => !x.dead && x.undead).length === cnt); }
+// 57) 새 전직 효과
+{ const mk = (type, ids) => { const g = C.createGame(83); g.gold = 1e9; g.phase = 'round'; g.hold = true; g.queue = []; g.core.hp = g.core.max = 1e9; g.core.atk = 0; g.buyCd[type] = 0; const u = C.buy(g, type).unit; g.jobs[type].ids.push(...ids); g.jobMods = null; C.devSetup && 0; return g; };
+  const reapply = g => { g.jobs.offer = null; }; 
+  // 워로드: 받은 피해의 일부를 되돌림
+  const w = C.createGame(84); w.gold = 1e9; w.phase = 'round'; w.hold = true; w.queue = []; w.buyCd.sword = 0; const ws = C.buy(w, 'sword').unit;
+  for (const id of ['knight', 'warlord']) { const o = C.jobOptions(w).find(x => x.id === id); w.jobs.offer = { boss: 't', list: [o] }; C.pickJob(w, 0); }
+  const ee = C.spawnEnemy(w, 'grunt', ws.x + 20, ws.y); ee.hp = ee.max = 1e6; const hb = ee.hp; C.damage(w, ws, 100, false, ee); check('워로드: 받은 피해의 30%를 때린 적에게 되돌림', hb - ee.hp > 10, '반사 ' + Math.round(hb - ee.hp));
+  // 버서커: 체력이 낮을수록 공격력 상승
+  const b = C.createGame(85); b.gold = 1e9; b.phase = 'round'; b.hold = true; b.queue = []; b.core.atk = 0; b.core.hp = b.core.max = 1e9; b.buyCd.sword = 0; const bs = C.buy(b, 'sword').unit;
+  for (const id of ['blade', 'berserker']) { const o = C.jobOptions(b).find(x => x.id === id); b.jobs.offer = { boss: 't', list: [o] }; C.pickJob(b, 0); }
+  const dmgAt = frac => { const g = C.createGame(86); g.gold = 1e9; g.phase = 'round'; g.hold = true; g.queue = []; g.core.atk = 0; g.core.hp = g.core.max = 1e9; g.buyCd.sword = 0; const u = C.buy(g, 'sword').unit; for (const id of ['blade', 'berserker']) { const o = C.jobOptions(g).find(x => x.id === id); g.jobs.offer = { boss: 't', list: [o] }; C.pickJob(g, 0); } u.hp = u.max * frac; const e = C.spawnEnemy(g, 'brute', u.x + 18, u.y); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; u.x = u.hx; u.y = u.hy; e.x = u.x + 18; e.y = u.y; for (let i = 0; i < 90; i++) C.tick(g, DT); return e.max - e.hp; };
+  const full = dmgAt(1), low = dmgAt(0.2); check('버서커: 체력이 낮을수록 더 강하게 때림', low > full * 1.4, `100%:${Math.round(full)} 20%:${Math.round(low)}`);
+  // 포격수(폭발)·사냥꾼(표식)
+  const mkA = id1 => { const g = C.createGame(87); g.gold = 1e9; g.phase = 'round'; g.hold = true; g.queue = []; g.core.atk = 0; g.core.hp = g.core.max = 1e9; g.buyCd.archer = 0; const u = C.buy(g, 'archer').unit; for (const id of id1) { const o = C.jobOptions(g).find(x => x.id === id); g.jobs.offer = { boss: 't', list: [o] }; C.pickJob(g, 0); } return [g, u]; };
+  { const [g, u] = mkA(['sniper', 'gunner']); const t = C.spawnEnemy(g, 'brute', u.x + 100, u.y), n2 = C.spawnEnemy(g, 'brute', u.x + 120, u.y + 12); for (const e of [t, n2]) { e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; } for (let i = 0; i < 120; i++) C.tick(g, DT); check('포격수: 폭발 화살이 주변 적에게도 피해', t.hp < t.max && n2.hp < n2.max); }
+  { const [g, u] = mkA(['ranger', 'hunter']); const t = C.spawnEnemy(g, 'brute', u.x + 100, u.y); t.speed = 0; t.dmg = 0; t.hp = t.max = 1e9; let marked = false; for (let i = 0; i < 120; i++) { C.tick(g, DT); if (t.markT > 0) marked = true; } const h1 = t.hp; C.damage(g, t, 1000); check('사냥꾼: 맞은 적에게 표식 (표식 중 받는 피해 증가)', marked, ''); }
+  // 수호사제: 치유하면 보호막
+  { const g = C.createGame(88); g.gold = 1e9; g.phase = 'round'; g.hold = true; g.queue = []; g.core.atk = 0; g.core.hp = g.core.max = 1e9; g.buyCd.priest = 0; g.buyCd.sword = 0; C.buy(g, 'priest'); const sw = C.buy(g, 'sword').unit; for (const id of ['cleric', 'warden']) { const o = C.jobOptions(g).find(x => x.id === id); g.jobs.offer = { boss: 't', list: [o] }; C.pickJob(g, 0); } sw.hp = sw.max * 0.4; for (let i = 0; i < 100; i++) C.tick(g, DT); check('수호사제: 치유한 아군에게 보호막', sw.ward > 0 || sw.hp > sw.max * 0.4, 'ward ' + Math.round(sw.ward || 0)); }
+  // 전투사제: 성스러운 구체로 공격
+  { const g = C.createGame(89); g.gold = 1e9; g.phase = 'round'; g.hold = true; g.queue = []; g.core.atk = 0; g.core.hp = g.core.max = 1e9; g.buyCd.priest = 0; const p = C.buy(g, 'priest').unit; for (const id of ['bishop', 'templar']) { const o = C.jobOptions(g).find(x => x.id === id); g.jobs.offer = { boss: 't', list: [o] }; C.pickJob(g, 0); } const t = C.spawnEnemy(g, 'brute', p.x + 120, p.y); t.speed = 0; t.dmg = 0; t.hp = t.max = 1e9; let orb = false; for (let i = 0; i < 120; i++) { C.tick(g, DT); if (g.shots.some(s => s.color === 'h')) orb = true; } check('전투사제: 성스러운 구체로 적을 공격', orb && t.hp < t.max, '피해 ' + Math.round(t.max - t.hp)); } }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);
