@@ -568,7 +568,7 @@
   function openMeta(tab) { metaTab = tab; statDetail = null; openModal('metaPanel'); renderMeta(); }
   $('metaTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { metaTab = b.dataset.t; statDetail = null; renderMeta(); $('metaBody').scrollTop = 0; } });
   Meta.onUnlock(list => { for (const a of list) { toast('🏆 업적 달성: ' + a.name); } A2.play('ui'); });
-  let lastSyncRound = 0;
+  let lastSyncRound = 0, auraSec = 0;
 
 
   // ───────────── 이벤트 → 화면 효과 ─────────────
@@ -782,10 +782,18 @@
     const c = S.core;
     // 성 사거리
     ctx.strokeStyle = 'rgba(90,169,255,.18)'; ctx.lineWidth = 1.5 / z; ctx.beginPath(); ctx.arc(c.x, c.y, c.range, 0, Math.PI * 2); ctx.stroke();
-    // 보급 오라 범위
+    // 오라 범위: 바닥에 종류별 색(치유=초록, 방어=파랑, 공격=주황, 속도=노랑)으로 선명하게 깔린다
     if (S.aura.on) {
-      ctx.fillStyle = 'rgba(107,220,139,.05)'; ctx.beginPath(); ctx.arc(c.x, c.y, S.aura.r, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = 'rgba(107,220,139,.35)'; ctx.lineWidth = 1.5 / z; ctx.setLineDash([10 / z, 8 / z]); ctx.stroke(); ctx.setLineDash([]);
+      const A = S.aura, R = A.r, kinds = [];
+      if (A.heal > 0) kinds.push('#6bdc8b'); if (A.def > 0) kinds.push('#6ab8ff'); if (A.atk > 0) kinds.push('#ff8a5a'); if (A.spd > 0) kinds.push('#ffe27a');
+      const gr = ctx.createRadialGradient(c.x, c.y, R * 0.3, c.x, c.y, R); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(1, 'rgba(255,255,255,.22)');
+      ctx.fillStyle = kinds[0]; ctx.globalAlpha = 0.13; ctx.beginPath(); ctx.arc(c.x, c.y, R, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(c.x, c.y, R, 0, Math.PI * 2); ctx.fill();
+      kinds.forEach((col, i) => { ctx.strokeStyle = col; ctx.globalAlpha = 0.8; ctx.lineWidth = 3 / z; ctx.setLineDash([14 / z, 9 / z]); ctx.lineDashOffset = (i % 2 ? 1 : -1) * now * 0.012 / z; ctx.beginPath(); ctx.arc(c.x, c.y, R - i * 7, 0, Math.PI * 2); ctx.stroke(); });
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+      if (A.heal > 0) { // 치유 오라: 1초마다 성에서 퍼져 나가는 약한 초록 파동 + 회복 중인 아군 위에 작은 치유 표시
+        const ph = S.t % 1; ctx.strokeStyle = '#6bdc8b'; ctx.lineWidth = 6 / z; ctx.globalAlpha = (1 - ph) * 0.3; ctx.beginPath(); ctx.arc(c.x, c.y, R * (0.15 + 0.85 * ph), 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
+        const sec = Math.floor(S.t); if (sec !== auraSec) { auraSec = sec; if (!paused && fx.length < 200) { let n = 0; for (const u of S.units) { if (u.dead || !u.aura || u.undead || u.hp >= u.max || n >= 10) continue; n++; addFx({ k: 'heal', x: u.x, y: u.y, t: 0, max: 0.55 }); } } }
+      }
     }
     // 성 (포신이 적을 향해 돌고, 체력이 줄면 금·연기·불)
     Scenery.drawCastle(ctx, c, now);
