@@ -375,8 +375,10 @@
     const el = $('upl'); if (!S) return;
     const list = C.describeTaken(S), jobs = C.describeJobs(S);
     el.innerHTML = '';
-    if (!list.length && !jobs.length) { el.textContent = '아직 선택한 강화가 없어요'; return; }
+    const bu = S.bossUp || { hp: 0, atk: 0 };
+    if (!list.length && !jobs.length && !bu.hp) { el.textContent = '아직 선택한 강화가 없어요'; return; }
     for (const j of jobs) { const row = document.createElement('div'); row.className = 'it epic'; const a = document.createElement('span'); a.textContent = j.className + ' 전직'; const b = document.createElement('b'); b.textContent = j.names.join(' › '); row.append(a, b); el.appendChild(row); }
+    if (bu.hp) { const row = document.createElement('div'); row.className = 'it epic'; row.title = '보스 보상: 검사·궁수·사제 체력·공격력 강화 (일반 강화와 별개)'; const a = document.createElement('span'); a.textContent = '보스 보상 · 전군 강화'; const b = document.createElement('b'); b.textContent = 'Lv ' + bu.hp; row.append(a, b); el.appendChild(row); }
     for (const it of list) {
       const row = document.createElement('div'); row.className = 'it ' + it.rar;
       const a = document.createElement('span'); a.textContent = it.name; row.title = it.desc || '';
@@ -424,10 +426,11 @@
       h += '<h3>성</h3>' + irow('성 Lv.' + S.castle.lv + (S.castle.lv >= CFG.castle.max ? ' (최대)' : ''), '체력 ' + Math.round(S.core.hp) + '/' + Math.round(S.core.max) + ' · 공격력 ' + f1(S.core.atk) + ' · 사거리 ' + Math.round(S.core.range) + ' · 대포 ' + S.core.cannons + '문<br>인구 ' + C.popCount(S) + (C.popCap(S) < 1e8 ? '/' + C.popCap(S) : ' (제한 없음)'));
       h += '<h3>전직</h3>' + (jobs.length ? jobs.map(j => irow(j.className, j.names.join(' › '), 'epic')).join('') : '<div class="d">아직 전직한 직업이 없어요 (보스를 처치하면 전직)</div>');
       for (const cat of ['unit', 'core', 'summon']) { const l = taken.filter(t => t.cat === cat); if (l.length) h += '<h3>' + CAT_NAME[cat] + '</h3>' + l.map(t => irow(t.name, t.desc, t.rar, 'Lv ' + t.lv + (t.max ? '/' + t.max : ''))).join(''); }
+      if (S.bossUp && S.bossUp.hp) h += '<h3>보스 보상</h3>' + irow('전군 강화', '검사·궁수·사제 체력·공격력 강화 (일반 강화와 별개로 적용)', 'epic', 'Lv ' + S.bossUp.hp);
       if (!taken.length) h += '<div class="d" style="margin-top:8px">아직 선택한 강화가 없어요</div>';
     } else if (infoTab === 'unit') {
       for (const t of C.UNIT_TYPES) h += unitBlock(t, S.units.filter(u => !u.dead && u.type === t));
-      const up = S.up; h += '<h3>누적 강화 단계</h3>' + C.UNIT_TYPES.map(t => irow(CFG.units[t].name, '체력 +' + up[t].hp + ' · 공격 +' + up[t].atk + ' · 속도 +' + up[t].rate + ' · 이동 +' + up[t].speed, '')).join('');
+      const up = S.up; h += '<h3>누적 강화 단계</h3>' + C.UNIT_TYPES.map(t => irow(CFG.units[t].name, '체력 +' + up[t].hp + (S.bossUp.hp ? ' (+보상 ' + S.bossUp.hp + ')' : '') + ' · 공격 +' + up[t].atk + (S.bossUp.atk ? ' (+보상 ' + S.bossUp.atk + ')' : '') + ' · 속도 +' + up[t].rate + ' · 이동 +' + up[t].speed, '')).join('');
     } else {
       const alive = S.units.filter(u => !u.dead && !C.UNIT_TYPES.includes(u.type)); const kinds = SPECIALS.filter(t => alive.some(u => u.type === t));
       h += kinds.length ? kinds.map(t => unitBlock(t, alive.filter(u => u.type === t))).join('') : '<div class="d">아직 특수 유닛이 없어요.<br>카드의 [특수 소환]이나 보스 보상으로 얻을 수 있어요.</div>';

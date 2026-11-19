@@ -627,5 +627,12 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   const h = C.createGame(22); for (let i = 0; i < 4000; i++) { C.tick(h, DT); if (h.cards.offer) C.pickCard(h, 0); if (h.jobs.offer) C.pickJob(h, 0); if (i % 15 === 0) { h.buyCd.sword = 0; C.buy(h, 'sword'); } }
   check('정상 플레이는 정상으로 판정', C.checkRun(h).ok && h.stats.earned > 0 && h.stats.killBy.grunt > 0, 'R' + h.round + ' 수입 ' + Math.round(h.stats.earned) + ' / 상한 ' + C.checkRun(h).bound);
   check('보유 골드를 몰래 늘리면 비정상', (() => { h.gold += 5000; return !C.checkRun(h).ok; })()); }
+// 51) 보스 보상 [전군 강화]는 일반 강화와 별개 단계
+{ const g = C.createGame(31); g.gold = 1e5; g.buyCd.sword = 0; const u = C.buy(g, 'sword').unit; const h0 = u.max, a0 = u.atk;
+  for (let i = 0; i < 5; i++) { g.up.sword.hp++; g.up.sword.atk++; } const h5 = C.statsOf ? 0 : 0;
+  g.jobs.offer = { reward: true, list: [{ reward: true, id: 'r_army' }] }; C.pickJob(g, 0);
+  check('전군 강화는 일반 강화 단계(up)를 건드리지 않고 bossUp만 올림', g.up.sword.hp === 5 && g.bossUp.hp === 2 && g.bossUp.atk === 2, JSON.stringify(g.bossUp));
+  const m1 = u.max; g.jobs.offer = { reward: true, list: [{ reward: true, id: 'r_army' }] }; C.pickJob(g, 0);
+  check('일반 강화가 풀업이어도 보상 강화가 추가로 적용됨', g.bossUp.hp === 4 && u.max > m1 && u.max > h0, h0 + ' → ' + m1 + ' → ' + u.max); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

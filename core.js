@@ -453,7 +453,7 @@
     if (o.reward) { // 보상: 용병 소환 / 전군 강화 / 성 보강
       const d = CFG.rewards.find(r => r.id === o.id); S.jobs.offer = null;
       if (d.units) for (const t of d.units) { const u = addUnit(S, t); u.x = CX + (S.rng() - 0.5) * 160; u.y = CY + 100 + S.rng() * 60; }
-      if (d.up) { for (const l of ['sword', 'archer', 'priest']) { S.up[l].hp += d.up; S.up[l].atk += d.up; } for (const u of S.units) if (!u.dead) refreshUnit(S, u); }
+      if (d.up) { S.bossUp.hp += d.up; S.bossUp.atk += d.up; for (const u of S.units) if (!u.dead) refreshUnit(S, u); }
       if (d.castle) { for (let i = 0; i < d.castle; i++) upgradeCastle(S, true); S.core.hp = S.core.max; }
       emit(S, { type: 'reward', name: o.name }); return true;
     }
@@ -544,9 +544,10 @@
     const k = 1; // 사제도 일반 유닛과 같은 강화 효과 (치유량·속도 카드 증가폭 축소)
     const l = S.up[line] || { hp: 0, atk: 0, rate: 0, speed: 0 }, p = Object.fromEntries(Object.entries(CFG.upPct).map(([n, v]) => [n, v * k]));
     const jm = (S.jobMods && S.jobMods[line]) || zeroMods();
+    const bu = S.bossUp || { hp: 0, atk: 0 }, bh = 1 + p.hp * bu.hp, ba = 1 + p.atk * bu.atk; // 보스 보상 [전군 강화]는 일반 강화와 별개로 곱해진다
     return {
-      max: Math.round(b.hp * (1 + p.hp * l.hp) * (1 + jm.hp)), atk: b.atk * (1 + p.atk * l.atk) * (1 + jm.atk), rate: b.rate * (1 + p.rate * l.rate) * (1 + jm.rate),
-      speed: b.speed * (1 + p.speed * l.speed) * (1 + jm.speed), heal: (b.heal || 0) * (1 + p.atk * l.atk) * (1 + jm.heal),
+      max: Math.round(b.hp * (1 + p.hp * l.hp) * bh * (1 + jm.hp)), atk: b.atk * (1 + p.atk * l.atk) * ba * (1 + jm.atk), rate: b.rate * (1 + p.rate * l.rate) * (1 + jm.rate),
+      speed: b.speed * (1 + p.speed * l.speed) * (1 + jm.speed), heal: (b.heal || 0) * (1 + p.atk * l.atk) * ba * (1 + jm.heal),
       healRate: b.healRate ? b.healRate / ((1 + p.rate * l.rate) * (1 + jm.healRate)) : 0, range: (b.range || 0) * (line === 'archer' ? 1 + V().archerRange * taken(S, 'u_range') : 1) + jm.range, healRange: (b.healRange || 0) + jm.healRange,
     };
   }
@@ -584,6 +585,7 @@
       captureEvents: false, events: [], numQ: [],
       gU: makeGrid(48), gE: makeGrid(48), gA: makeGrid(48), seen: {},
       cards: { offer: null, rerolls: CFG.rerolls, taken: {}, boss: false },
+      bossUp: { hp: 0, atk: 0 },
       up: { sword: { hp: 0, atk: 0, rate: 0, speed: 0 }, archer: { hp: 0, atk: 0, rate: 0, speed: 0 }, priest: { hp: 0, atk: 0, rate: 0, speed: 0 } },
       aura: null, perks: null, bombCd: 8, reviveLeft: 0, jobMods: null, biasNow: 0.08, coreDmgBy: {},
       act: 1, cinematic: null, // act 2: 30라운드 보스 처치 후. cinematic: 연출이 진행되는 동안 시간이 멈춘다
