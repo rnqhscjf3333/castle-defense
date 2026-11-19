@@ -76,6 +76,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #toast .tmsg.out { opacity: 0; transform: translateY(-26px); }
 
 #dock { position: fixed; left: 0; right: 0; bottom: 0; padding: 5px 5px max(5px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 4px; align-items: center; pointer-events: none; }
+#dockIn { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; max-width: 100%; }
 #prodq { display: flex; gap: 4px; pointer-events: auto; min-height: 0; zoom: .84; }
 #prodq .pq { position: relative; overflow: hidden; padding: 3px 9px; font-size: 11px; font-weight: 700; border-radius: 8px; background: rgba(20,24,36,.82); border: 1px solid rgba(255,255,255,.18); cursor: pointer; }
 #prodq .pq i { position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: #ffd166; }
@@ -146,6 +147,7 @@ table.rank tr.me td { background: rgba(255,204,64,.16); font-weight: 700; }
 @keyframes menuIn { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
 #tMenu button { padding: 14px 10px; font-size: 18px; font-weight: 800; letter-spacing: .12em; color: #fff; border-radius: 14px; border: 2px solid rgba(255,220,150,.5); background: linear-gradient(180deg, rgba(80,50,120,.9), rgba(40,24,70,.92)); box-shadow: 0 4px 0 rgba(0,0,0,.45), 0 0 18px rgba(160,110,255,.25); }
 #tMenu button.main { color: #2a1400; border-color: #fff1b0; background: linear-gradient(180deg, #ffd96a, #f1a62a); box-shadow: 0 4px 0 #8a5412, 0 0 22px rgba(255,190,70,.45); }
+#tDev, #tSet { position: absolute; top: max(10px, env(safe-area-inset-top)); z-index: 3; display: none; font-size: 13px; padding: 6px 12px; } #tDev { left: 10px; } #tSet { right: 10px; font-size: 16px; } #title.menu #tDev, #title.menu #tSet { display: block; }
 #tMenu button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.45); }
 #tMsg { position: relative; margin-top: 14px; min-height: 18px; font-size: 13px; color: #d9c8f5; text-align: center; }
 #tVer { position: absolute; right: 10px; bottom: 8px; font-size: 10px; color: rgba(255,255,255,.35); }
@@ -193,7 +195,7 @@ body.introOn #btnPause, body.introOn #feed, body.introOn #hud, body.introOn #uni
 .pcard .rar { font-weight: 700; }
 .pcard .pn { font-size: 17px; font-weight: 700; line-height: 1.25; }
 .pcard .pd { font-size: 13px; color: #c3cde0; line-height: 1.5; flex: 1; }
-.pcard .pimg { width: 92px; height: 92px; align-self: center; margin: 4px 0 2px; border-radius: 12px; background: rgba(255,255,255,.07); object-fit: contain; } .pcard.castle .pimg { width: 150px; height: 130px; object-fit: contain; } .pcard .pimg.wide { width: 150px; height: 62px; } .pcard .from { font-size: 11px; color: var(--muted); }
+.pcard .pimg.emo { display: grid; place-items: center; font-size: 46px; line-height: 1; } .pcard .pimg { width: 92px; height: 92px; align-self: center; margin: 4px 0 2px; border-radius: 12px; background: rgba(255,255,255,.07); object-fit: contain; } .pcard.castle .pimg { width: 150px; height: 130px; object-fit: contain; } .pcard .pimg.wide { width: 150px; height: 62px; } .pcard .from { font-size: 11px; color: var(--muted); }
 .pcard .pk { position: absolute; right: 10px; bottom: 8px; font-size: 11px; color: var(--muted); }
 .pcard.rar-common { border-color: #3a4660; } .pcard.rar-common .rar { color: #9fb0cc; }
 .pcard.rar-rare { border-color: #5aa9ff; box-shadow: 0 0 14px rgba(90,169,255,.25); } .pcard.rar-rare .rar { color: #7cc0ff; }
@@ -232,9 +234,9 @@ body.introOn #btnPause, body.introOn #feed, body.introOn #hud, body.introOn #uni
 #btnReroll:disabled { opacity: .4; cursor: default; }
 @media (max-width: 620px) { #bossbar { width: 180px; padding: 3px 7px 4px; } #bossName { font-size: 12px; } #bossHpTxt { font-size: 10.5px; } #bossState { font-size: 9.5px; } }
 @media (max-width: 520px) { .pcard { width: 100%; min-height: 0; flex-direction: column; } #pickCards { flex-direction: column; gap: 7px; }
-  .pcard.job { display: grid; grid-template-columns: 78px 1fr; gap: 2px 10px; padding: 8px 10px; align-items: center; } .pcard.job .tags { grid-column: 1 / -1; }
-  .pcard.job .pimg { grid-column: 1; grid-row: 2 / span 4; width: 72px; height: 72px; margin: 0; } .pcard.job.castle .pimg { width: 78px; height: 70px; }
-  .pcard.job .pimg.wide { width: 78px; height: 36px; } .pcard.job .pn, .pcard.job .pd, .pcard.job .from { grid-column: 2; } .pcard.job .pn { font-size: 15px; } .pcard.job .pd { font-size: 12px; line-height: 1.4; } }
+  .pcard.job, .pcard.hasimg { display: grid; grid-template-columns: 78px 1fr; gap: 2px 10px; padding: 8px 10px; align-items: center; } .pcard.job .tags, .pcard.hasimg .tags { grid-column: 1 / -1; }
+  .pcard.job .pimg, .pcard.hasimg .pimg { grid-column: 1; grid-row: 2 / span 4; width: 72px; height: 72px; margin: 0; } .pcard.job.castle .pimg { width: 78px; height: 70px; }
+  .pcard.job .pimg.wide { width: 78px; height: 36px; } .pcard.job .pn, .pcard.job .pd, .pcard.job .from, .pcard.hasimg .pn, .pcard.hasimg .pd { grid-column: 2; } .pcard.job .pn, .pcard.hasimg .pn { font-size: 15px; } .pcard.job .pd, .pcard.hasimg .pd { font-size: 12px; line-height: 1.4; } }
 @media (min-width: 521px) and (max-height: 600px) { .pcard { min-height: 0; padding: 8px 10px; } .pcard .pimg { width: 62px; height: 62px; margin: 2px 0; } .pcard.castle .pimg { width: 108px; height: 90px; } .pcard .pn { font-size: 15px; } .pcard .pd { font-size: 12px; } #pickBox { padding: 10px 12px 8px; } }
 @media (max-width: 520px) { #units .ucard { width: 80px; } #tools { top: calc(max(5px, env(safe-area-inset-top)) + 90px); } #hud { min-width: 128px; } #hud .row { font-size: 11px; } }
 
@@ -309,7 +311,6 @@ body.comicOn { overflow: hidden; }
 .arow .bar { height: 4px; border-radius: 2px; background: #2a3244; margin-top: 4px; overflow: hidden; } .arow .bar i { display: block; height: 100%; background: #6fc3ff; } .arow.done .bar i { background: #ffd166; } .arow .pc { font-size: 11px; color: var(--muted); flex: none; }
 #title.menu #tMenu { gap: 9px; } #tMenu button { padding: 11px 10px; font-size: 16px; }
 #btnToMenu.hidden { display: none; }
-@media (max-height: 780px) { #title.menu #tMenu { display: grid; grid-template-columns: 1fr 1fr; width: min(420px, 90vw); margin-top: 14px; gap: 7px; } #tMenu button { padding: 8px 6px; font-size: 14px; } #tMenu button.main { grid-column: 1 / 3; } }
 #hud, #units, #tools, #bossbar, #newEnemy, #pickBox, #modeBar, #feed { zoom: .84; }
 
 .uwrap { display: flex; gap: 8px; align-items: flex-start; margin-top: 3px; } .uwrap > div { flex: 1; min-width: 0; } .uimg { width: 72px; height: 72px; flex: none; border-radius: 8px; background: rgba(255,255,255,.06); }
@@ -325,6 +326,7 @@ body.comicOn { overflow: hidden; }
 #feed .fe.rv { background: rgba(10,44,32,.84); border-right-color: #5ae6a0; }
 #feed .fe img { width: 26px; height: 26px; flex: none; border-radius: 6px; background: rgba(255,255,255,.07); }
 #feed .fe .ic { flex: none; width: 15px; text-align: center; font-size: 12px; line-height: 1; }
+#setMenu.titleMode #sRestart, #setMenu.titleMode #sMenu, #setMenu.titleMode .mhint { display: none; }
 #modeBar { position: fixed; left: 5px; top: calc(max(5px, env(safe-area-inset-top)) + 82px); display: flex; padding: 2px; gap: 2px; border-radius: 9px; z-index: 6; }
 #modeBar button { padding: 3px 11px; font-size: 12px; border-radius: 7px; background: transparent; border: 0; color: var(--muted); font-weight: 700; }
 #modeBar button.on { background: rgba(255,209,102,.18); color: #ffd166; }
@@ -374,9 +376,9 @@ body.comicOn { overflow: hidden; }
 <div id="newEnemy" class="hidden"><canvas id="neCv" width="88" height="88"></canvas><div class="ne-txt"><div class="ne-tag">새로운 적</div><div id="neName"></div><div id="neDesc"></div></div></div>
 <div id="toast"></div>
 
-<div id="dock">
+<div id="dock"><div id="dockIn">
   <div id="units"></div>
-</div>
+</div></div>
 
 <div id="feed"></div>
 
@@ -407,8 +409,8 @@ body.comicOn { overflow: hidden; }
 </div></div>
 
 <div id="metaPanel" class="modal hidden"><div class="panel mbox wide">
-  <div class="mhead"><h2 id="metaTitle">도감</h2><button class="mclose" data-close="metaPanel">✕</button></div>
-  <div class="tabs" id="metaTabs"><button data-t="codex">도감</button><button data-t="stats">통계</button><button data-t="ach">업적</button></div>
+  <div class="mhead"><h2 id="metaTitle">컬렉션</h2><button class="mclose" data-close="metaPanel">✕</button></div>
+  <div class="tabs" id="metaTabs"><button data-t="codex">도감</button><button data-t="stats">통계</button><button data-t="ach">업적</button><button data-t="rank">랭킹</button></div>
   <div class="mbody" id="metaBody"></div>
 </div></div>
 
@@ -428,7 +430,8 @@ body.comicOn { overflow: hidden; }
   <div class="art"></div>
   <div class="logo"><h1>성 지키기</h1><p>CASTLE DEFENSE</p></div>
   <div id="tapHint">화면을 터치하거나 아무 키나 누르세요</div>
-  <div id="tMenu"><button id="mStart" class="main">게임 시작</button><button id="mHow">게임 방법</button><button id="mCodex">도감</button><button id="mStats">통계</button><button id="mAch">업적</button><button id="mDev">개발자</button><button id="mRank">랭킹</button><button id="mQuit">게임 종료</button></div>
+  <div id="tMenu"><button id="mStart" class="main">게임 시작</button><button id="mHow">게임 방법</button><button id="mColl">컬렉션</button><button id="mQuit">게임 종료</button></div>
+  <button id="tDev" class="btn panel tbtn">🛠 개발자</button><button id="tSet" class="btn panel tbtn" aria-label="설정">⚙️</button>
   <div id="tMsg"></div><div id="tVer"></div>
 </div>
 <div id="howto" class="hidden"><div class="panel"><h2>게임 방법</h2>

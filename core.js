@@ -1131,7 +1131,7 @@
   }
   function castPulse(S) { // 수호: 아군 치유·보호막, 공격형은 주변 적에게 피해
     const P = S.cpar.pulse, c = S.core;
-    for (const u of S.units) { if (u.dead || isStatic(u) || Math.hypot(u.x - c.x, u.y - c.y) > P.r) continue; if (P.heal > 0) applyHeal(S, u, u.max * P.heal); if (P.shield > 0) u.ward = Math.min(u.max * 0.3, (u.ward || 0) + u.max * P.shield); }
+    for (const u of S.units) { if (u.dead || u.undead || isStatic(u) || Math.hypot(u.x - c.x, u.y - c.y) > P.r) continue; if (P.heal > 0) applyHeal(S, u, u.max * P.heal); if (P.shield > 0) u.ward = Math.min(u.max * 0.3, (u.ward || 0) + u.max * P.shield); }
     if (P.heal > 0 && c.hp < c.max) c.hp = Math.min(c.max, c.hp + c.max * P.heal * 0.5);
     if (P.dmg > 0) eachNear(S.gE, c.x, c.y, P.r, o => damage(S, o, c.atk * P.dmg));
     emit(S, { type: 'castlePulse', r: P.r, cvar: c.cvar, cfin: c.cfin, dmg: P.dmg > 0, shield: P.shield > 0 });
@@ -1162,7 +1162,7 @@
   function lowestAlly(S, u, range) {
     let best = null, bp = 1;
     for (const a of S.units) {
-      if (a.dead || a.hp >= a.max) continue;
+      if (a.dead || a.undead || a.hp >= a.max) continue; // 망자는 치유하지 않는다
       if (Math.hypot(a.x - u.x, a.y - u.y) - a.r > range) continue;
       const p = a.hp / a.max; if (p < bp) { bp = p; best = a; }
     }
@@ -1170,6 +1170,7 @@
   }
   // 치유: 1초 동안 받을 수 있는 양에 상한(healCap)이 있고, 치유 감소 상태이면 줄어든다
   function applyHeal(S, t, amt) {
+    if (t.undead) return; // 사제·오라·성 파동 모두 망자는 치유하지 않는다
     if (t.woundT > 0) amt *= CFG.debuff.wound.mul;
     t.hwT = (t.hwT || 0); if (S.t - t.hwT >= 1) { t.hwT = S.t; t.hw = 0; }
     const room = Math.max(0, t.max * CFG.balance.healCap - (t.hw || 0)); amt = Math.min(amt, room, t.max - t.hp);
@@ -1493,7 +1494,7 @@
     for (const u of S.units) {
       if (u.dead) continue;
       u.aura = A.on && Math.hypot(u.x - CX, u.y - CY) <= A.r ? 1 : 0;
-      if (u.aura && A.heal > 0 && u.hp < u.max) u.hp = Math.min(u.max, u.hp + u.max * A.heal * dt);
+      if (u.aura && A.heal > 0 && !u.undead && u.hp < u.max) u.hp = Math.min(u.max, u.hp + u.max * A.heal * dt);
       gridAdd(S.gU, u);
     }
     for (const e of S.enemies) if (!e.dead) gridAdd(e.air ? S.gA : S.gE, e); // 공중형은 따로: 근접·성·범위 공격은 닿지 않고 궁수 계열·포탑만 겨눈다

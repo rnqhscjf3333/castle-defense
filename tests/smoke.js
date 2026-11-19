@@ -724,6 +724,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   check('죽음 2번 중 첫 번째만 부활 (부활 풀 1)', !sw[0].dead && sw[0].hp > 0 && sw[1].dead && g.reviveLeft === 0);
   const g2 = C.createGame(92); g2.gold = 1e9; g2.phase = 'round'; g2.hold = true; g2.queue = []; g2.core.hp = g2.core.max = 1e9; g2.buyCd.priest = 0; C.buy(g2, 'priest'); g2.buyCd.priest = 0; C.buy(g2, 'priest');
   const u = C.buy(g2, 'sword').unit; g2.reviveLeft = 5; g2.cnodes = []; const ud = (() => { g2.core.cpath = 'necro'; g2.cpar = JSON.parse(JSON.stringify(C.CFG.castleTree.roots[2].par)); g2.cpar.raise.chance = 1; const e = C.spawnEnemy(g2, 'grunt', 1700, 1500); C.damage(g2, e, 1e9); return g2.units.find(x => x.undead); })();
+  ud.hp = ud.max * 0.3; const uh0 = ud.hp; g2.aura = g2.aura || {}; for (let i = 0; i < 90; i++) C.tick(g2, DT); check('사제는 망자를 치유하지 않음', !ud.dead && ud.hp <= uh0 + 1e-6, Math.round(uh0) + '→' + Math.round(ud.hp));
   C.damage(g2, ud, 1e9); check('망자는 죽어도 사제가 부활시키지 않음 (부활 횟수도 안 씀)', ud.dead && g2.reviveLeft === 5); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

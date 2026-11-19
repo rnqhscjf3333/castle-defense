@@ -155,7 +155,7 @@
     if (!r.ok) toast({ gold: '골드가 부족해요', queue: '생산 대기열이 가득 찼어요 (최대 ' + CFG.prodMax + '개)', pop: '인구가 가득 찼어요 — 성을 업그레이드하면 늘어납니다' }[r.reason] || '생산할 수 없어요');
   }
   // 생산 대기열 표시: 칸을 누르면 취소(환급)
-  const prodq = document.createElement('div'); prodq.id = 'prodq'; $('dock').insertBefore(prodq, $('units'));
+  const prodq = document.createElement('div'); prodq.id = 'prodq'; $('dockIn').insertBefore(prodq, $('units'));
   prodq.addEventListener('click', e => { const el = e.target.closest('.pq'); if (el && S && running && !paused) { C.cancelProd(S, +el.dataset.i); A2.play('deny'); } });
   let pqKey = '';
   function updateProdQ() {
@@ -361,6 +361,14 @@
     c2.translate(110, 108); c2.scale(0.98, 0.98); Scenery.drawCastle(c2, fake, performance.now() * 0.9);
     return cv2.toDataURL();
   }
+  const CARD_EMO = { c_splash: '💥', c_chain: '⚡', c_bomb: '💣', a_heal: '💚', a_def: '🛡️', a_atk: '⚔️', a_spd: '💨', a_rad: '🔆', f_repair: '🔧', f_thorn: '🌵', f_hp: '🧱', c_atk: '🎯', c_rate: '⏱️', c_range: '📡' };
+  const SUMMON_UNIT = { s_turret: 'turret', s_golem: 'golem', s_hero: 'hero', s_marksman: 'marksman', s_repeaters: 'repeater', s_ballista: 'ballista', l_sword: 'legendsword', l_archer: 'legendarcher' };
+  function cardIcon(c) { // 일반 강화 카드의 그림: 소환 카드는 그 유닛, 유닛 강화는 해당 직업(전직 모습), 성 강화는 상징 이모지
+    const t = SUMMON_UNIT[c.id];
+    if (t) return { src: portrait('u', t, CFG.units[t], null, null, true).toDataURL() };
+    if (c.cat === 'unit' && c.type && CFG.units[c.type]) { const ids = S.jobs[c.type].ids; return { src: portrait('u', c.type, CFG.units[c.type], null, ids.length ? { job: ids[ids.length - 1], jobTier: ids.length } : null, true).toDataURL() }; }
+    return { emo: CARD_EMO[c.id] || '🏰' };
+  }
   function rewardIcon(id) {
     const one = t => portrait('u', t, CFG.units[t], null, null, true);
     if (id === 'r_knights') return one('hero').toDataURL();
@@ -397,12 +405,15 @@
     $('pickHint').textContent = job ? '1·2·3 선택' + (stage === 'class' ? ' · B 뒤로' : '') + ' · 고르는 동안 시간이 멈춰요' : '1·2·3 선택 · R 다시 뽑기 · 고르는 동안 시간이 멈춰요';
     cur.list.forEach((c, i) => {
       const b = document.createElement('button');
-      b.className = job ? 'pcard job' + (castle ? ' castle' : '') : 'pcard rar-' + c.rar + ' cat-' + c.cat;
+      b.className = job ? 'pcard job' + (castle ? ' castle' : '') : 'pcard hasimg rar-' + c.rar + ' cat-' + c.cat;
       const tags = document.createElement('div'); tags.className = 'tags';
       const cat = document.createElement('span'); cat.className = 'cat'; cat.textContent = castle ? ['갈래', '강화 방향', '최종 형태'][S.cOffer.tier] : job ? (c.reward ? '보스 보상' : c.stage === 'line' ? c.tier + '차 승급' : c.tier + '차 전직') : CAT_NAME[c.cat];
       const rar = document.createElement('span'); rar.className = 'rar'; rar.textContent = castle ? c.kind : job ? (c.reward ? '영웅' : c.className) : RAR_NAME[c.rar];
       tags.append(cat, rar);
       b.append(tags);
+      if (!job) { // 일반 강화 카드 그림
+        let ic = null; try { ic = cardIcon(c); } catch (err) {} if (ic) { if (ic.src) { const im = document.createElement('img'); im.className = 'pimg'; im.alt = ''; im.src = ic.src; b.append(im); } else { const d = document.createElement('div'); d.className = 'pimg emo'; d.textContent = ic.emo; b.append(d); } }
+      }
       if (job && c.reward) { // 보스 보상 아이콘: 용병은 그 유닛 그림, 전군 강화는 세 직업, 성 대개수는 성 그림
         const im = document.createElement('img'); im.className = 'pimg'; im.alt = ''; try { im.src = rewardIcon(c.id); } catch (err) {} if (c.id === 'r_army' || c.id === 'r_golem') im.classList.add('wide'); b.append(im);
       }
@@ -436,7 +447,7 @@
 
   const MODALS = ['setMenu', 'infoPanel', 'metaPanel', 'devPanel'];
   const anyModal = () => MODALS.some(id => !$(id).classList.contains('hidden'));
-  function openModal(id) { $(id).classList.remove('hidden'); if (S && running) paused = true; if (id === 'setMenu') syncVol(); }
+  function openModal(id) { $(id).classList.remove('hidden'); if (S && running) paused = true; if (id === 'setMenu') { syncVol(); const ing = !!(S && running); $('setMenu').classList.toggle('titleMode', !ing); $('sResume').textContent = ing ? '계속하기' : '닫기'; } }
   function closeModals() { for (const id of MODALS) $(id).classList.add('hidden'); paused = false; }
   function toggleModal(id) { if (!$(id).classList.contains('hidden')) closeModals(); else if (!anyModal()) openModal(id); }
   for (const b of document.querySelectorAll('[data-close]')) b.addEventListener('click', () => closeModals());
@@ -509,7 +520,7 @@
   let metaTab = 'codex';
   function renderMeta() {
     const M = Meta.data(), body = $('metaBody'); for (const b of document.querySelectorAll('#metaTabs button')) b.classList.toggle('on', b.dataset.t === metaTab);
-    $('metaTitle').textContent = { codex: '도감', stats: '통계', ach: '업적' }[metaTab]; body.innerHTML = '';
+    $('metaTitle').textContent = '컬렉션'; body.innerHTML = '';
     if (metaTab === 'codex') {
       const sect = (title, items) => {
         const seen = items.filter(i => i.seen).length, h3 = document.createElement('h3'); h3.textContent = title + ' ' + seen + '/' + items.length; body.appendChild(h3);
@@ -520,6 +531,8 @@
       sect('유닛', C.UNIT_TYPES.concat(SPECIALS).map(t => ({ team: 'u', kind: t, cfg: CFG.units[t], name: CFG.units[t].name, desc: UNIT_TEXT[t] || '', seen: !!M.codex.units[t] })));
       sect('몬스터', Object.keys(CFG.enemies).filter(k => k !== 'boss').map(k => ({ team: 'e', kind: k, cfg: CFG.enemies[k], name: CFG.enemies[k].name, desc: CFG.enemies[k].desc || '', seen: !!M.codex.enemies[k] })));
       sect('보스', CFG.bossPool.concat([CFG.act1Boss, CFG.finalBoss]).map(b => ({ team: 'e', kind: 'boss', cfg: CFG.enemies.boss, look: Object.assign({ r: b.r || 30 }, b.look), name: b.name, desc: b.line ? '“' + b.line + '”' : '', seen: !!M.codex.bosses[b.id] })));
+    } else if (metaTab === 'rank') {
+      body.innerHTML = '<div id="rankbox"></div>'; showRank(null);
     } else if (metaTab === 'stats' && statDetail !== null && M.games[statDetail]) {
       body.innerHTML = gameDetail(M.games[statDetail]);
     } else if (metaTab === 'stats') {
@@ -1189,16 +1202,14 @@
   $('mStart').addEventListener('click', e => { e.stopPropagation(); startFromTitle(); });
   // 개발자 모드: 라운드를 골라 그 라운드에 맞는 구성으로 시작 (골드 무한, 기록·랭킹 제외)
   const devRoundSet = v => { v = Math.max(2, Math.min(100, Math.round(+v || 2))); $('devRound').value = v; $('devRoundV').textContent = v + '라운드'; return v; };
-  $('mDev').addEventListener('click', e => { e.stopPropagation(); devRoundSet(+store.get('cd-devround') || 30); openModal('devPanel'); });
   $('devRound').addEventListener('input', () => devRoundSet($('devRound').value));
   for (const b of document.querySelectorAll('#devPresets button')) b.addEventListener('click', () => devRoundSet(b.dataset.r));
   $('devGo').addEventListener('click', e => { e.stopPropagation(); const r = devRoundSet($('devRound').value); store.set('cd-devround', String(r)); closeModals(); startFromTitle(r); });
-  $('mCodex').addEventListener('click', e => { e.stopPropagation(); openMeta('codex'); });
-  $('mStats').addEventListener('click', e => { e.stopPropagation(); openMeta('stats'); });
-  $('mAch').addEventListener('click', e => { e.stopPropagation(); openMeta('ach'); });
+  $('mColl').addEventListener('click', e => { e.stopPropagation(); openMeta('codex'); });
+  $('tDev').addEventListener('click', e => { e.stopPropagation(); devRoundSet(+store.get('cd-devround') || 30); openModal('devPanel'); });
+  $('tSet').addEventListener('click', e => { e.stopPropagation(); openModal('setMenu'); });
   $('mHow').addEventListener('click', e => { e.stopPropagation(); $('howto').classList.remove('hidden'); });
   $('howClose').addEventListener('click', () => $('howto').classList.add('hidden'));
-  $('mRank').addEventListener('click', e => { e.stopPropagation(); $('ovTitle').textContent = '랭킹'; $('ovBody').innerHTML = '<div id="rankbox"></div>'; $('go').textContent = '닫기'; $('go').dataset.back = '1'; $('btnRank').classList.add('hidden'); $('overlay').classList.remove('hidden'); showRank(null); });
   $('mQuit').addEventListener('click', e => { e.stopPropagation(); window.close(); setTimeout(() => { $('tMsg').textContent = '브라우저에서는 직접 종료할 수 없어요. 탭이나 창을 닫아 주세요.'; }, 150); });
 
   // ───────────── 메인 루프 ─────────────
