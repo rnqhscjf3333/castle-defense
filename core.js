@@ -1439,7 +1439,7 @@
     if (e.kind === 'shaman') return updateShaman(S, e, dt);
     if (e.slowT > 0) e.slowT -= dt;
     const c = S.core, spm = e.speedMul * (e.slowT > 0 ? 0.45 : 1) * (boost > 1 ? Math.min(1.5, 1 + (boost - 1) * 0.2) : 1), dmg = e.dmg * boost * e.dmgMul, cdTime = 1 / (e.rate * e.rateMul || 1);
-    const tgt = nearest(S.gU, e.x, e.y, e.abil && e.abil.rush && !e.rushDone ? 1500 : e.aggro); // 등장 돌진 중에는 거리와 상관없이 가장 가까운 아군
+    const tgt = nearest(S.gU, e.x, e.y, (e.abil && e.abil.rush && !e.rushDone) || e.dashT > 0 ? 1500 : e.aggro); // 등장 돌진 중에는 거리와 상관없이 가장 가까운 아군
     if (e.leapT > 0) return; // 도약 중
     if (e.abil && e.abil.siege && !(tgt && Math.hypot(tgt.x - e.x, tgt.y - e.y) < 110)) { moveToward(e, c.x, c.y, dt, e.abil.siege.dist, spm); return; } // 멀리서 포격만 하는 보스
     if (e.ranged) { // 사수: 사거리 끝에서 멈춰 포물선 화살을 쏜다
