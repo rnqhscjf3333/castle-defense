@@ -147,10 +147,12 @@
   $('btnCenter').addEventListener('click', centerOnCore);
   const soundLabel = () => { $('btnSound').textContent = A2.state.muted ? '소리 끔' : '소리 켬'; };
   $('btnSound').addEventListener('click', () => { A2.init(); A2.toggleMute(); soundLabel(); }); soundLabel();
-  $('btnPause').addEventListener('click', () => { paused = !paused; $('btnPause').textContent = paused ? '계속' : '일시정지'; });
+  $('btnPause').addEventListener('click', () => { if (!running && !S) return; toggleModal('setMenu'); });
+  $('btnInfo').addEventListener('click', () => { if (!S) return; toggleModal('infoPanel'); if (!$('infoPanel').classList.contains('hidden')) renderInfo(); });
   $('btnSpeed').addEventListener('click', () => { speed = speed === 1 ? 2 : speed === 2 ? 3 : 1; $('btnSpeed').textContent = speed + '×'; });
   window.addEventListener('keydown', e => {
     if (e.repeat) return;
+    if (anyModal()) { if (e.key === 'Escape' || (e.key === ' ' && !$('setMenu').classList.contains('hidden'))) { e.preventDefault(); closeModals(); } return; }
     if (S && S.cinematic) { if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') endCine(); return; }
     if (S && (S.cards.offer || S.jobs.offer)) { // 카드/전직 선택 중에는 1·2·3이 선택, R이 다시 뽑기(카드만)
       if (e.key === '1' || e.key === '2' || e.key === '3') choose(+e.key - 1);
@@ -160,6 +162,8 @@
     if (e.key === '1' || e.key === '2' || e.key === '3') doBuy(C.UNIT_TYPES[+e.key - 1]);
     if (e.key === '4') doCastle();
     else if (e.key === 'u' || e.key === 'U') $('btnUp').click();
+    else if (e.key === 'i' || e.key === 'I') $('btnInfo').click();
+    else if (e.key === 'Escape') toggleModal('setMenu');
     else if (e.key === ' ') { e.preventDefault(); $('btnPause').click(); }
     else if (e.key === 'h' || e.key === 'H') centerOnCore();
     else if (e.key === 'm' || e.key === 'M') { A2.init(); A2.toggleMute(); soundLabel(); }
@@ -375,12 +379,101 @@
     for (const j of jobs) { const row = document.createElement('div'); row.className = 'it epic'; const a = document.createElement('span'); a.textContent = j.className + ' 전직'; const b = document.createElement('b'); b.textContent = j.names.join(' › '); row.append(a, b); el.appendChild(row); }
     for (const it of list) {
       const row = document.createElement('div'); row.className = 'it ' + it.rar;
-      const a = document.createElement('span'); a.textContent = it.name;
+      const a = document.createElement('span'); a.textContent = it.name; row.title = it.desc || '';
       const b = document.createElement('b'); b.textContent = 'Lv ' + it.lv;
       row.append(a, b); el.appendChild(row);
     }
   }
-  $('btnUp').addEventListener('click', () => { const el = $('upl'); el.hidden = !el.hidden; if (!el.hidden) renderUpgrades(); });
+  $('btnUp').addEventListener('click', () => { const el = $('upl'); el.hidden = !el.hidden; $('btnUp').textContent = el.hidden ? '강화 목록 ▾' : '강화 목록 ▴'; if (!el.hidden) renderUpgrades(); });
+  // ───────────── 설정 · 정보 · 도감/통계/업적 창 ─────────────
+  const MODALS = ['setMenu', 'infoPanel', 'metaPanel'];
+  const anyModal = () => MODALS.some(id => !$(id).classList.contains('hidden'));
+  function openModal(id) { $(id).classList.remove('hidden'); if (S && running) paused = true; if (id === 'setMenu') $('sSound').textContent = A2.state.muted ? '소리 켜기' : '소리 끄기'; }
+  function closeModals() { for (const id of MODALS) $(id).classList.add('hidden'); paused = false; }
+  function toggleModal(id) { if (!$(id).classList.contains('hidden')) closeModals(); else if (!anyModal()) openModal(id); }
+  for (const b of document.querySelectorAll('[data-close]')) b.addEventListener('click', () => closeModals());
+  for (const id of MODALS) $(id).addEventListener('click', e => { if (e.target === $(id)) closeModals(); });
+  $('sResume').addEventListener('click', closeModals);
+  $('sSound').addEventListener('click', () => { A2.init(); A2.toggleMute(); soundLabel(); $('sSound').textContent = A2.state.muted ? '소리 켜기' : '소리 끄기'; });
+  function recordAbandon() { if (S && running && !S.over && S.round >= 2) { Meta.finish(S, C, 0); Net.sendLog(S, 'abandon', true); } }
+  $('sRestart').addEventListener('click', () => { closeModals(); recordAbandon(); newGame(); });
+  $('sMenu').addEventListener('click', () => { closeModals(); recordAbandon(); running = false; showTitle(); });
+  $('btnToMenu').addEventListener('click', () => { $('overlay').classList.add('hidden'); running = false; showTitle(); openMenu(); });
+
+  const f1 = n => Math.round(n * 10) / 10;
+  const irow = (name, desc, cls, right) => '<div class="irow ' + (cls || '') + '"><div class="t"><span>' + name + '</span><b>' + (right || '') + '</b></div>' + (desc ? '<div class="d">' + desc + '</div>' : '') + '</div>';
+  const statTable = rows => '<table>' + rows.map(r => '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td></tr>').join('') + '</table>';
+  const UNIT_TEXT = { sword: '체력이 높은 전위. 적에게 붙어서 싸웁니다.', archer: '멀리서 화살을 쏩니다.', priest: '아군을 치유합니다.', golem: '거대한 용병. 체력이 매우 높습니다.', hero: '용병 용사. 스킬 [일섬]을 씁니다.', marksman: '긴 사거리의 명사수. 스킬 [일제 사격].', repeater: '빠르게 연사하는 석궁병.', turret: '성 곁에 설치된 자동 포탑.', ballista: '적 2명을 관통하는 설치형 대형 석궁.', legendsword: '전설의 검사. 스킬 [천검 강림].', legendarcher: '전설의 궁수. 스킬 [천궁 난사].' };
+  const SPECIALS = ['golem', 'hero', 'marksman', 'repeater', 'turret', 'ballista', 'legendsword', 'legendarcher'];
+  function unitBlock(type, list) {
+    const cfg = CFG.units[type], n = list.length, avg = k => list.reduce((t, u) => t + (u[k] || 0), 0) / Math.max(1, n);
+    const hpNow = list.reduce((t, u) => t + u.hp, 0);
+    const rows = n ? [['인원', n + '명'], ['체력', f1(avg('max')) + ' (현재 평균 ' + f1(hpNow / n) + ')'], ['공격력', f1(avg('atk'))], ['공격 속도', f1(avg('rate')) + '/초'], ['사거리', Math.round(avg('range'))], ['이동 속도', Math.round(avg('speed'))]]
+      : [['인원', '0명'], ['기본 체력', cfg.hp], ['기본 공격력', cfg.atk], ['기본 사거리', cfg.range]];
+    if (type === 'priest' && n) { rows.splice(2, 2, ['치유량', f1(avg('heal'))], ['치유 속도', f1(avg('healRate')) + '/초']); }
+    const hs = CFG.heroSkill && CFG.heroSkill[type]; if (hs) rows.push(['스킬', hs.name + ' (' + hs.cd + '초마다)']);
+    const job = n && list[0].job ? ' · ' + (C.describeJobs(S).find(j => CFG.units[j.type] === cfg) || { names: [] }).names.join(' › ') : '';
+    return irow(cfg.name + job, (UNIT_TEXT[type] || '') + statTable(rows), '');
+  }
+  let infoTab = 'up';
+  function renderInfo() {
+    if (!S) return; const body = $('infoBody'); for (const b of document.querySelectorAll('#infoTabs button')) b.classList.toggle('on', b.dataset.t === infoTab);
+    let h = '';
+    if (infoTab === 'up') {
+      const taken = C.describeTaken(S), jobs = C.describeJobs(S);
+      h += '<h3>성</h3>' + irow('성 Lv.' + S.castle.lv + (S.castle.lv >= CFG.castle.max ? ' (최대)' : ''), '체력 ' + Math.round(S.core.hp) + '/' + Math.round(S.core.max) + ' · 공격력 ' + f1(S.core.atk) + ' · 사거리 ' + Math.round(S.core.range) + ' · 대포 ' + S.core.cannons + '문<br>인구 ' + C.popCount(S) + (C.popCap(S) < 1e8 ? '/' + C.popCap(S) : ' (제한 없음)'));
+      h += '<h3>전직</h3>' + (jobs.length ? jobs.map(j => irow(j.className, j.names.join(' › '), 'epic')).join('') : '<div class="d">아직 전직한 직업이 없어요 (보스를 처치하면 전직)</div>');
+      for (const cat of ['unit', 'core', 'summon']) { const l = taken.filter(t => t.cat === cat); if (l.length) h += '<h3>' + CAT_NAME[cat] + '</h3>' + l.map(t => irow(t.name, t.desc, t.rar, 'Lv ' + t.lv + (t.max ? '/' + t.max : ''))).join(''); }
+      if (!taken.length) h += '<div class="d" style="margin-top:8px">아직 선택한 강화가 없어요</div>';
+    } else if (infoTab === 'unit') {
+      for (const t of C.UNIT_TYPES) h += unitBlock(t, S.units.filter(u => !u.dead && u.type === t));
+      const up = S.up; h += '<h3>누적 강화 단계</h3>' + C.UNIT_TYPES.map(t => irow(CFG.units[t].name, '체력 +' + up[t].hp + ' · 공격 +' + up[t].atk + ' · 속도 +' + up[t].rate + ' · 이동 +' + up[t].speed, '')).join('');
+    } else {
+      const alive = S.units.filter(u => !u.dead && !C.UNIT_TYPES.includes(u.type)); const kinds = SPECIALS.filter(t => alive.some(u => u.type === t));
+      h += kinds.length ? kinds.map(t => unitBlock(t, alive.filter(u => u.type === t))).join('') : '<div class="d">아직 특수 유닛이 없어요.<br>카드의 [특수 소환]이나 보스 보상으로 얻을 수 있어요.</div>';
+      if (S.fallen && S.fallen.length) h += '<h3>쓰러진 병사</h3><div class="d">' + S.fallen.length + '명 (사제의 부활로만 돌아와요)</div>';
+    }
+    body.innerHTML = h;
+  }
+  $('infoTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { infoTab = b.dataset.t; renderInfo(); $('infoBody').scrollTop = 0; } });
+
+  // 도감 / 통계 / 업적
+  const dfmt = t => { const d = new Date(t), p = n => String(n).padStart(2, '0'); return p(d.getMonth() + 1) + '/' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()); };
+  const MODE_NAME = { normal: '기본', free: '자유', hold: '수비' };
+  function portrait(team, kind, cfg, look) { // 도감 그림 한 칸
+    const cv2 = document.createElement('canvas'); cv2.width = cv2.height = 144; const c2 = cv2.getContext('2d');
+    const r = (look && look.r) || cfg.r || 10, fake = team === 'u' ? { team: 'u', type: kind, id: 1, x: 0, y: 0, r, flash: 0, swing: 0, aim: 0, hp: 1, max: 1, job: null, jobTier: 0 } : { team: 'e', kind: look ? 'boss' : kind, type: kind, id: 3, x: 0, y: 0, r, flash: 0, swing: 0, look: look || undefined };
+    const k = Math.min(5, 52 / (r * (look ? 2.2 : 2.6))) * 2; c2.translate(72, 92 - r * 0.2 * k / 2); c2.scale(k, k);
+    try { Figures.draw(c2, fake, 0); } catch (e) {} return cv2;
+  }
+  let metaTab = 'codex';
+  function renderMeta() {
+    const M = Meta.data(), body = $('metaBody'); for (const b of document.querySelectorAll('#metaTabs button')) b.classList.toggle('on', b.dataset.t === metaTab);
+    $('metaTitle').textContent = { codex: '도감', stats: '통계', ach: '업적' }[metaTab]; body.innerHTML = '';
+    if (metaTab === 'codex') {
+      const sect = (title, items) => {
+        const seen = items.filter(i => i.seen).length, h3 = document.createElement('h3'); h3.textContent = title + ' ' + seen + '/' + items.length; body.appendChild(h3);
+        const g = document.createElement('div'); g.className = 'cgrid';
+        for (const it of items) { const c = document.createElement('div'); c.className = 'cc' + (it.seen ? '' : ' lock'); c.appendChild(portrait(it.team, it.kind, it.cfg, it.look)); const n = document.createElement('div'); n.className = 'n'; n.textContent = it.seen ? it.name : '???'; const s = document.createElement('div'); s.className = 's'; s.textContent = it.seen ? it.desc : '아직 만나지 못했어요'; c.append(n, s); g.appendChild(c); }
+        body.appendChild(g);
+      };
+      sect('유닛', C.UNIT_TYPES.concat(SPECIALS).map(t => ({ team: 'u', kind: t, cfg: CFG.units[t], name: CFG.units[t].name, desc: UNIT_TEXT[t] || '', seen: !!M.codex.units[t] })));
+      sect('몬스터', Object.keys(CFG.enemies).filter(k => k !== 'boss').map(k => ({ team: 'e', kind: k, cfg: CFG.enemies[k], name: CFG.enemies[k].name, desc: CFG.enemies[k].desc || '', seen: !!M.codex.enemies[k] })));
+      sect('보스', CFG.bossPool.concat([CFG.act1Boss, CFG.finalBoss]).map(b => ({ team: 'e', kind: 'boss', cfg: CFG.enemies.boss, look: Object.assign({ r: b.r || 30 }, b.look), name: b.name, desc: b.line ? '“' + b.line + '”' : '', seen: !!M.codex.bosses[b.id] })));
+    } else if (metaTab === 'stats') {
+      const t = M.tot, h = Math.floor(t.time / 3600), mi = Math.floor(t.time % 3600 / 60);
+      body.innerHTML = '<div class="sumrow"><div><b>' + t.games + '</b>플레이</div><div><b>' + t.kills.toLocaleString() + '</b>처치</div><div><b>' + M.best.round + '</b>최고 라운드</div><div><b>' + Math.round(t.spent).toLocaleString() + '</b>사용 골드</div><div><b>' + t.bossKills + '</b>보스 처치</div><div><b>' + h + '시간 ' + mi + '분</b>총 플레이</div></div>'
+        + (M.games.length ? '<table class="gtable"><tr><th>날짜</th><th>모드</th><th>라운드</th><th>처치</th><th>시간</th><th>번 골드</th></tr>' + M.games.map(g => '<tr><td>' + dfmt(g.at) + '</td><td>' + (MODE_NAME[g.mode] || '') + '</td><td' + (g.round > C.MAX_ROUND ? ' class="win"' : '') + '>' + g.round + '</td><td>' + g.kills + '</td><td>' + fmtTime(g.time) + '</td><td>' + g.earned.toLocaleString() + '</td></tr>').join('') + '</table>' : '<div class="d">아직 끝난 게임이 없어요.</div>');
+    } else {
+      const done = Meta.ACH.filter(a => M.ach[a.id]).length; body.innerHTML = '<h3>달성 ' + done + '/' + Meta.ACH.length + '</h3>';
+      for (const a of Meta.ACH) { const v = Math.min(a.goal, a.val()), ok = !!M.ach[a.id]; body.insertAdjacentHTML('beforeend', '<div class="arow' + (ok ? ' done' : '') + '"><div class="ic">' + (ok ? '★' : '☆') + '</div><div class="tx"><div class="nm">' + a.name + '</div><div class="ds">' + a.desc + '</div><div class="bar"><i style="width:' + (v / a.goal * 100) + '%"></i></div></div><div class="pc">' + Math.round(v).toLocaleString() + '/' + a.goal.toLocaleString() + '</div></div>'); }
+    }
+  }
+  function openMeta(tab) { metaTab = tab; openModal('metaPanel'); renderMeta(); }
+  $('metaTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { metaTab = b.dataset.t; renderMeta(); $('metaBody').scrollTop = 0; } });
+  Meta.onUnlock(list => { for (const a of list) { toast('🏆 업적 달성: ' + a.name); } A2.play('ui'); });
+  let lastSyncRound = 0;
+
 
   // ───────────── 이벤트 → 화면 효과 ─────────────
   // 이벤트 → 효과음 (위치가 있는 소리는 확대·거리에 따라 크기가 달라진다)
@@ -751,7 +844,7 @@
     const mm = params.get('mode') || store.get('cd-mode'), mode = mm === 'free' || mm === 'hold' ? mm : 'normal';
     S = C.createGame(seed, mode); S.captureEvents = true; Net.begin(S); syncModeBar();
     fx.length = 0; numFx = 0; paused = false; speed = 1; shownOffer = null; $('picker').classList.add('hidden'); renderUpgrades();
-    $('btnPause').textContent = '일시정지'; $('btnSpeed').textContent = '1×';
+    $('btnSpeed').textContent = '1×'; closeModals(); Meta.begin(); lastSyncRound = 0; $('btnToMenu').classList.add('hidden');
     for (const k in last) delete last[k];
     for (const t of C.UNIT_TYPES) { ucards[t].last = undefined; ucards[t].n = undefined; }
     cine = null; $('cine').classList.add('hidden'); $('cine').classList.remove('on'); Scenery.setAct(1, false);
@@ -794,14 +887,15 @@
     $('ovBody').innerHTML = '<div class="stat"><div><b>' + reached + '</b>도달 라운드</div><div><b>' + S.kills + '</b>처치</div><div><b>' + fmtTime(S.t) + '</b>시간</div></div>'
       + '<p>최고 기록: ' + Math.max(best, reached) + '라운드</p>'
       + '<div id="regbox"><input id="nameIn" maxlength="12" placeholder="닉네임 (최대 12자)" autocomplete="off"><button id="regBtn">랭킹 등록</button></div><div id="rankbox"></div>';
-    $('go').textContent = '다시 시작'; $('btnRank').classList.add('hidden');
+    $('go').textContent = '다시 시작'; $('btnRank').classList.add('hidden'); $('btnToMenu').classList.remove('hidden');
     $('overlay').classList.remove('hidden');
+    const chk = C.checkRun(S); Meta.finish(S, C, Net.scoreOf(S.win, S.round, S.kills, S.t));
     Net.sendLog(S, 'end');
     const ended = S, myScore = Net.scoreOf(S.win, S.round, S.kills, S.t);
     $('nameIn').value = Net.name();
     const reg = async () => {
       const name = $('nameIn').value; $('regBtn').disabled = true; $('regBtn').textContent = '등록 중…';
-      await Net.submit(ended, name); $('regbox').remove(); showRank(myScore);
+      const res = await Net.submit(ended, name); $('regbox').remove(); if (res && res.rejected) { $('ovBody').insertAdjacentHTML('beforeend', '<p style="color:#ff9a9a">기록이 비정상적이라 랭킹에 올리지 않았어요.</p>'); } showRank(res && res.rejected ? null : myScore);
     };
     $('regBtn').addEventListener('click', reg);
     $('nameIn').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') reg(); });
@@ -879,8 +973,11 @@
     if (!openingSeen && !params.get('nointro')) { openingSeen = true; playOpening(() => { newGame(); startIntro(); }); } else { newGame(); startIntro(); }
   }
   titleEl.addEventListener('click', e => { if (!titleEl.classList.contains('menu')) openMenu(); });
-  window.addEventListener('keydown', e => { if (!titleEl.classList.contains('hidden') && !titleEl.classList.contains('out')) { if (!titleEl.classList.contains('menu')) { e.preventDefault(); e.stopPropagation(); openMenu(); } else if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); startFromTitle(); } } }, true);
+  window.addEventListener('keydown', e => { if (!titleEl.classList.contains('hidden') && !titleEl.classList.contains('out')) { if (anyModal()) { if (e.key === 'Escape') closeModals(); e.stopPropagation(); return; } if (!titleEl.classList.contains('menu')) { e.preventDefault(); e.stopPropagation(); openMenu(); } else if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); startFromTitle(); } } }, true);
   $('mStart').addEventListener('click', e => { e.stopPropagation(); startFromTitle(); });
+  $('mCodex').addEventListener('click', e => { e.stopPropagation(); openMeta('codex'); });
+  $('mStats').addEventListener('click', e => { e.stopPropagation(); openMeta('stats'); });
+  $('mAch').addEventListener('click', e => { e.stopPropagation(); openMeta('ach'); });
   $('mHow').addEventListener('click', e => { e.stopPropagation(); $('howto').classList.remove('hidden'); });
   $('howClose').addEventListener('click', () => $('howto').classList.add('hidden'));
   $('mRank').addEventListener('click', e => { e.stopPropagation(); $('ovTitle').textContent = '랭킹'; $('ovBody').innerHTML = '<div id="rankbox"></div>'; $('go').textContent = '닫기'; $('go').dataset.back = '1'; $('btnRank').classList.add('hidden'); $('overlay').classList.remove('hidden'); showRank(null); });
@@ -938,7 +1035,7 @@
       else if (Scenery.act !== S.act) Scenery.setAct(S.act, true); // 불러오기/재시작/점프 시 막에 맞는 배경으로
       if (!cine && S.act === 1) syncRoads();
       syncPortal();
-      const h0 = performance.now(); Net.sample(S, perf, renderScale); A2.setView({ x: cam.x, y: cam.y, zoom: cam.zoom, vw, vh }); updateMood(); handleEvents(); syncPicker(); updateHud(); const h1 = performance.now(); drawWorld(now); const h2 = performance.now();
+      const h0 = performance.now(); if (S.round !== lastSyncRound) { lastSyncRound = S.round; Meta.sync(S, C); } Net.sample(S, perf, renderScale); A2.setView({ x: cam.x, y: cam.y, zoom: cam.zoom, vw, vh }); updateMood(); handleEvents(); syncPicker(); updateHud(); const h1 = performance.now(); drawWorld(now); const h2 = performance.now();
       ema('hud', h1 - h0); ema('draw', h2 - h1);
     }
     ema('frame', performance.now() - f0);
@@ -957,5 +1054,5 @@
   if (!params.get('bot') && !params.get('notitle')) showTitle(); else $('overlay').classList.add('hidden');
   if (params.get('bot')) { $('overlay').classList.add('hidden'); newGame(); const warp = +params.get('warp') || 0; for (let i = 0; i < warp / STEP && !S.over; i++) { botAct(); C.tick(S, STEP); } if (+params.get('round')) { C.jumpToRound(S, +params.get('round')); C.tick(S, STEP); } C.drainEvents(S); if (S.over) showEnd(S.win); cam.zoom = +params.get('zoom') || 0.5; clampCam(); }
   requestAnimationFrame(frame);
-  window.__game = { toast, get S() { return S; }, cam, CastleCore: C, get bossArrows() { return bossArrows; }, get enemyArrows() { return enemyArrows; }, perf, get liteMode() { return liteMode; }, get drawnCount() { return drawnCount; }, get renderScale() { return renderScale; }, get fxPoolSize() { return fxPool.length; }, uiRects, skipCinematic: () => $('cineSkip').click() };
+  window.__game = { toast, Meta, get S() { return S; }, cam, CastleCore: C, get bossArrows() { return bossArrows; }, get enemyArrows() { return enemyArrows; }, perf, get liteMode() { return liteMode; }, get drawnCount() { return drawnCount; }, get renderScale() { return renderScale; }, get fxPoolSize() { return fxPool.length; }, uiRects, skipCinematic: () => $('cineSkip').click() };
 })();

@@ -561,8 +561,8 @@
     const out = [];
     for (const key in S.cards.taken) {
       const [id, type] = key.split(':'), def = DEF[id], lv = S.cards.taken[key];
-      const name = def.generic ? genericText(def, type, lv).name : def.name;
-      out.push({ key, name, lv, rar: def.rar });
+      const gt = def.generic ? genericText(def, type, lv) : null, name = gt ? gt.name : def.name;
+      out.push({ key, name, lv, rar: def.rar, max: def.max, cat: def.cat, desc: gt ? gt.desc : (def.desc ? def.desc(lv) : '') });
     }
     return out;
   }
@@ -575,6 +575,7 @@
       t: 0, phase: 'prep', prepT: PREP_TIME, round: 0, roundT: 0, clearT: 0, zones: [], pools: [],
       queue: [], spawnT: 0, spawnGap: 1, spawnPts: 2, extraPts: 0, fallen: [], endless: false, castle: { lv: 1 },
       gold: CFG.startGold, buyCount: 0,
+      stats: { earned: CFG.startGold, spent: 0, killBy: {}, made: {}, seenE: {}, seenB: {}, peakPop: 0, bossKills: 0 }, // 기록·도감·업적·부정 확인용 집계
       core: { x: CX, y: CY, hp: CFG.core.hp, max: CFG.core.hp, r: CFG.core.r, atk: CFG.core.atk, rate: CFG.core.rate, range: CFG.core.range, cd: 0, flash: 0, aim: -Math.PI / 2, swing: 0 },
       units: [], enemies: [], shots: [], shotPool: [],
       kills: 0, nextId: 1,
@@ -599,6 +600,7 @@
 
   // ───────────── 유닛 추가 (생산/소환 공통) ─────────────
   function addUnit(S, type) {
+    S.stats.made[type] = 1;
     const cfg = CFG.units[type], st = statsOf(S, type);
     const a = S.rng() * Math.PI * 2, rr = 86 + S.rng() * 20; // 성 원형 밖에서 나온다
     const ha = S.spawnN++ * 2.39996323 + S.rng() * 0.3, hr = (CFG.ai.homeR[type] || 120) * (0.9 + 0.2 * S.rng()); // 황금각으로 사방에 퍼뜨림
@@ -631,7 +633,7 @@
   function upgradeCastle(S, free) {
     if (S.over || S.castle.lv >= CFG.castle.max) return { ok: false, reason: 'max' };
     const cost = castleCost(S); if (!free && S.gold < cost) return { ok: false, reason: 'gold' };
-    if (!free) S.gold -= cost;
+    if (!free) { S.gold -= cost; S.stats.spent += cost; }
     const oldMax = S.core.max; S.castle.lv++; recompute(S);
     S.core.hp = Math.min(S.core.max, S.core.hp + (S.core.max - oldMax) + S.core.max * 0.1);
     for (const u of S.units) if (lineOf(u.type) === 'core' && !u.dead) refreshUnit(S, u); // 포탑도 성 강화를 받는다
@@ -646,7 +648,7 @@
     if (popCount(S) >= popCap(S)) return { ok: false, reason: 'pop' };
     const cost = unitCostOf(S, type);
     if (S.gold < cost) return { ok: false, reason: 'gold' };
-    S.gold -= cost; S.buyCd[type] = cfg.buyCd; S.buyCount++;
+    S.gold -= cost; S.stats.spent += cost; S.buyCd[type] = cfg.buyCd; S.buyCount++;
     return { ok: true, unit: addUnit(S, type), cost };
   }
 
@@ -658,17 +660,17 @@
     if (popCount(S) + S.prod.length >= popCap(S)) return { ok: false, reason: 'pop' };
     const cost = unitCostOf(S, type);
     if (S.gold < cost) return { ok: false, reason: 'gold' };
-    S.gold -= cost; S.prod.push({ type, paid: cost, t: 0, wait: false });
+    S.gold -= cost; S.stats.spent += cost; S.prod.push({ type, paid: cost, t: 0, wait: false });
     return { ok: true, cost };
   }
-  function cancelProd(S, i) { const p = S.prod[i]; if (!p) return false; S.gold += p.paid; S.prod.splice(i, 1); return true; }
+  function cancelProd(S, i) { const p = S.prod[i]; if (!p) return false; S.gold += p.paid; S.stats.spent -= p.paid; S.prod.splice(i, 1); return true; }
   function updateProd(S, dt) {
     const p = S.prod[0]; if (!p) return;
     const need = CFG.units[p.type].buyCd; if (p.t < need) p.t += dt;
     if (p.t < need) return;
     const diff = unitCostOf(S, p.type) - p.paid;
     if (diff > S.gold) { p.wait = true; return; } // 가격이 올라 추가 비용이 모자라면 골드가 찰 때까지 기다린다
-    p.wait = false; S.gold -= diff; S.prod.shift(); S.buyCount++; addUnit(S, p.type);
+    p.wait = false; S.gold -= diff; S.stats.spent += diff; S.prod.shift(); S.buyCount++; addUnit(S, p.type);
   }
   // ───────────── 보스 ─────────────
   // 이번 게임에서 r라운드의 보스 (보스 라운드가 아니면 null). 30라운드는 최종 보스.
@@ -700,12 +702,31 @@
   }
 
   // ───────────── 라운드 ─────────────
+  // ── 기록 검증(적당한 수준): 이 라운드까지 벌 수 있는 골드 상한과 비교한다 ──
+  const KIND_AVG = r => { const ks = Object.keys(CFG.spawn).filter(k => r >= CFG.spawn[k].from), tot = ks.reduce((t, k) => t + CFG.spawn[k].w, 0); return ks.reduce((t, k) => t + CFG.spawn[k].w * CFG.enemies[k].gold, 0) / tot; };
+  function goldBound(R) {
+    let b = CFG.startGold + 100;
+    for (let r = 1; r <= R; r++) {
+      if (r > 1) b += 15 + 2 * r;
+      const E = CFG.elite, ep = r >= E.from ? Math.min(E.max, (r - E.from + 1) * E.perRound) : 0;
+      b += 1.6 * (enemyCount(r) * KIND_AVG(r) * (1 + ep * (E.gold - 1)) + (r % 5 === 0 && r >= 5 ? CFG.enemies.boss.gold : 0));
+    }
+    return Math.round(b);
+  }
+  function checkRun(S) {
+    const st = S.stats, bound = goldBound(S.round), why = [];
+    if (st.earned > bound) why.push('골드 수입 ' + Math.round(st.earned) + ' > 상한 ' + bound);
+    if (st.spent > st.earned + 1) why.push('사용 골드가 수입보다 많음');
+    if (S.gold > st.earned - st.spent + 1 || S.gold < st.earned - st.spent - 1) why.push('보유 골드가 수입-지출과 맞지 않음');
+    let kb = 0; for (let r = 1; r <= S.round; r++) kb += enemyCount(r) * 3 + 60; if (S.kills > kb) why.push('처치 수가 너무 많음');
+    return { ok: !why.length, bound, why };
+  }
   function startRound(S) {
     S.phase = 'round'; S.round++; S.roundT = 0; S.clearT = 0;
     const r = S.round;
     S.reviveLeft = S.perks.revive + S.jobMods.priest.revive;
     if (r > 1) {
-      S.gold += 15 + 2 * r;
+      S.gold += 15 + 2 * r; S.stats.earned += 15 + 2 * r;
       for (const u of S.units) if (!u.dead) u.hp = Math.min(u.max, u.hp + u.max * CFG.healAfterRound);
       S.core.hp = Math.min(S.core.max, S.core.hp + S.core.max * CFG.balance.coreRepair); // 기본 수리
       if (S.perks.repair) S.core.hp = Math.min(S.core.max, S.core.hp + S.core.max * V().repair * S.perks.repair);
@@ -759,8 +780,10 @@
     if (bd) {
       e.bossName = bd.name; e.look = bd.look; e.abil = (bd === CFG.finalBoss || bd === CFG.act1Boss) ? bd.abil : scaleAbil(bd.abil, r); e.t = {};
       for (const k in e.abil) if (!Array.isArray(e.abil[k])) e.t[k] = (e.abil[k].cd || 0) * 0.6; // 첫 패턴은 조금 일찍
+      S.stats.seenB[bd.id] = 1;
       emit(S, { type: 'bossSpawn', name: bd.name, id: bd.id, line: bd.line, look: bd.look, r: e.r });
     }
+    if (!bd) S.stats.seenE[kind] = 1;
     if (!bd && kind !== 'grunt' && !S.seen[kind]) { S.seen[kind] = 1; emit(S, { type: 'newEnemy', kind }); } // 처음 보는 종류: 소개 팝업
     S.enemies.push(e);
     emit(S, { type: 'espawn', x, y, boss: !!bd }); // 나타나는 순간 효과
@@ -811,7 +834,7 @@
     }
     tgt.dead = true;
     if (tgt.team === 'e') {
-      S.gold += tgt.gold; S.kills++; emit(S, { type: 'kill', x: tgt.x, y: tgt.y, boss: tgt.kind === 'boss' });
+      S.gold += tgt.gold; S.stats.earned += tgt.gold; S.kills++; S.stats.killBy[tgt.kind] = (S.stats.killBy[tgt.kind] || 0) + 1; if (tgt.kind === 'boss') S.stats.bossKills++; emit(S, { type: 'kill', x: tgt.x, y: tgt.y, boss: tgt.kind === 'boss' });
       if (tgt.kind === 'boss') { // 보스를 처치하면 남은 졸개도 모두 쓰러지고 라운드가 끝난다
         S.queue.length = 0; S.zones.length = 0; S.pools.length = 0;
         for (const o of S.enemies) if (!o.dead && o !== tgt) { o.dead = true; emit(S, { type: 'kill', x: o.x, y: o.y, boss: false, wipe: true }); }
@@ -1285,7 +1308,7 @@
 
   return {
     CFG, MAX_ROUND, ACT1_END, extraAngles, EXTRA_RING, ROUND_TIME, SPAWN_TIME, PREP_TIME, SPAWN_RING, UNIT_TYPES, CARD_DEFS,
-    createGame, tick, buy, enqueue, cancelProd, upgradeCastle, castleCost, popCap, popGain, popCount, specialCount, endCinematic, jumpToRound, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo, drainEvents, pickCard, reroll, describeTaken, openCards,
+    createGame, tick, buy, enqueue, cancelProd, goldBound, checkRun, upgradeCastle, castleCost, popCap, popGain, popCount, specialCount, endCinematic, jumpToRound, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo, drainEvents, pickCard, reroll, describeTaken, openCards,
     unitCostOf, enemyCount, hpMul, dmgMul, mulberry32, damage,
   };
 });

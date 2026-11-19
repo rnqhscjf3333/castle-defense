@@ -620,5 +620,12 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   check('병력을 잃어 가격이 내려가면 차액 환급', k.units.filter(u => !u.dead).length === 1 && k.gold > 100000 - 4 * 70 - paid2 + 0, '');
   const w = C.createGame(9); w.gold = C.unitCostOf(w, 'sword'); C.enqueue(w, 'sword'); w.gold = 0; w.gold = 1e5; w.buyCd.archer = 0; C.buy(w, 'archer'); w.gold = 0; for (let i = 0; i < 90; i++) C.tick(w, DT);
   check('가격이 올라 추가 금액이 모자라면 골드가 찰 때까지 대기', w.prod.length === 1 && w.prod[0].wait, ''); }
+// 50) 기록 집계 · 부정 확인
+{ const g = C.createGame(21); g.gold = 1e6; g.stats.earned += 1e6 - C.CFG.startGold; C.CFG.castle.popBase = 99; for (let i = 0; i < 5; i++) { g.buyCd.sword = 0; C.buy(g, 'sword'); } g.round = 6;
+  check('구매 시 사용 골드·만든 유닛이 집계됨', g.stats.spent > 200 && g.stats.made.sword === 1, g.stats.spent + 'G');
+  const bad = C.checkRun(g); check('수입이 그 라운드의 상한을 넘으면 비정상으로 판정', !bad.ok && bad.why.length > 0, bad.why.join(' / '));
+  const h = C.createGame(22); for (let i = 0; i < 4000; i++) { C.tick(h, DT); if (h.cards.offer) C.pickCard(h, 0); if (h.jobs.offer) C.pickJob(h, 0); if (i % 15 === 0) { h.buyCd.sword = 0; C.buy(h, 'sword'); } }
+  check('정상 플레이는 정상으로 판정', C.checkRun(h).ok && h.stats.earned > 0 && h.stats.killBy.grunt > 0, 'R' + h.round + ' 수입 ' + Math.round(h.stats.earned) + ' / 상한 ' + C.checkRun(h).bound);
+  check('보유 골드를 몰래 늘리면 비정상', (() => { h.gold += 5000; return !C.checkRun(h).ok; })()); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

@@ -40,7 +40,7 @@
     const by = Object.entries(S.coreDmgBy || {}).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, v]) => [k, Math.round(v)]);
     return {
       type: 'log', mode: S.mode, v: CFG.VERSION, pid, run: run.id, status, seed: S.seed, round: S.round, act: S.act, win: !!S.win, kills: S.kills, time: Math.round(S.t),
-      coreHp: Math.round(S.core.hp), gold: Math.round(S.gold), buys: S.buyCount, units: ut, cards: Object.assign({}, S.cards.taken), jobs, coreDmgBy: by, timeline: run.tl,
+      coreHp: Math.round(S.core.hp), gold: Math.round(S.gold), buys: S.buyCount, earned: Math.round(S.stats.earned), spent: Math.round(S.stats.spent), chk: window.CastleCore.checkRun(S).ok, units: ut, cards: Object.assign({}, S.cards.taken), jobs, coreDmgBy: by, timeline: run.tl,
       lag: { n: run.lagN, ms: Math.round(run.lagMs) }, real: Math.round((Date.now() - run.start) / 1000),
       env: { ua: navigator.userAgent.slice(0, 140), w: innerWidth, h: innerHeight, dpr: window.devicePixelRatio || 1, touch: 'ontouchstart' in window, cores: navigator.hardwareConcurrency || 0 },
     };
@@ -82,9 +82,10 @@
   }
   async function submit(S, name) {
     name = String(name || '').replace(/[<>&"'`]/g, '').trim().slice(0, 12) || '이름없음'; ls.set('cd-name', name);
+    const chk = window.CastleCore.checkRun(S); if (!chk.ok) { enqueue({ type: 'flag', v: CFG.VERSION, pid, run: run.id, seed: S.seed, name, round: S.round, kills: S.kills, earned: Math.round(S.stats.earned), bound: chk.bound, why: chk.why }); return { rejected: true, why: chk.why }; } // 골드 수입이 그 라운드까지 벌 수 있는 양을 넘으면 등록하지 않는다
     const e = { name, mode: S.mode, score: scoreOf(S.win, S.round, S.kills, S.t), round: S.round, win: !!S.win, kills: S.kills, time: Math.round(S.t), at: Date.now() };
     addLocal(e);
-    if (API) { try { await post({ type: 'score', mode: S.mode, v: CFG.VERSION, pid, run: run.id, seed: S.seed, name, score: e.score, round: e.round, win: e.win, kills: e.kills, time: e.time }); } catch (er) { enqueue({ type: 'score', v: CFG.VERSION, pid, run: run.id, seed: S.seed, name, score: e.score, round: e.round, win: e.win, kills: e.kills, time: e.time }); } }
+    if (API) { try { await post({ type: 'score', mode: S.mode, v: CFG.VERSION, pid, run: run.id, seed: S.seed, name, earned: Math.round(S.stats.earned), spent: Math.round(S.stats.spent), bound: chk.bound, score: e.score, round: e.round, win: e.win, kills: e.kills, time: e.time }); } catch (er) { enqueue({ type: 'score', v: CFG.VERSION, pid, run: run.id, seed: S.seed, name, score: e.score, round: e.round, win: e.win, kills: e.kills, time: e.time }); } }
     return e;
   }
 

@@ -185,6 +185,17 @@ try {
   await ev(`(()=>{ window.__fe = []; Net.sendError = (m, s, w) => window.__fe.push(w + ': ' + m); const S = __game.S; S.core.hp = S.core.max = 1e7; })()`);
   for (const r of [51, 56, 61]) { await ev(`__game.CastleCore.jumpToRound(__game.S, ${r})`); for (let k = 0; k < 4; k++) { await sleep(400); await ev(`(()=>{const S=__game.S,C=__game.CastleCore; S.core.hp=S.core.max; if(S.cinematic) C.endCinematic(S); if(S.jobs.offer) C.pickJob(S,0); if(S.cards.offer) C.pickCard(S,0);})()`); } }
   check('무한 모드 51~61라운드에서 프레임 오류 없음', (await ev('window.__fe.length')) === 0, await ev('JSON.stringify(window.__fe.slice(0,2))'));
+  // 6) 설정 창(게임 멈춤) · 정보 창 · 도감/통계/업적 기록
+  await open('?bot=1&notitle=1&nointro=1&seed=9&startRound=3', 1500);
+  await ev(`document.getElementById('btnPause').click()`); const tm0 = await ev("__game.S.t"); await sleep(600);
+  check('설정 버튼: 창이 열리고 게임이 멈춤', !(await ev("document.getElementById('setMenu').classList.contains('hidden')")) && Math.abs((await ev("__game.S.t")) - tm0) < 0.05);
+  await ev(`document.getElementById('sResume').click()`); await sleep(500);
+  check('계속하기: 창이 닫히고 게임이 다시 흐름', (await ev("document.getElementById('setMenu').classList.contains('hidden')")) && (await ev("__game.S.t")) > tm0 + 0.2);
+  await ev(`document.getElementById('btnInfo').click()`); await sleep(200);
+  check('정보 창에 강화·성 정보가 표시됨', (await ev("document.getElementById('infoBody').textContent")).includes('성 Lv.'));
+  await ev(`document.querySelector('[data-close=infoPanel]').click()`);
+  await ev(`__game.Meta.sync(__game.S, __game.CastleCore)`);
+  check('도감 기록: 소환한 유닛과 만난 몬스터가 저장됨', await ev(`(()=>{const m=JSON.parse(localStorage.getItem('cd-meta'));return !!m.codex.units.sword && Object.keys(m.codex.enemies).length>0})()`));
 } catch (e) {
   failed++; console.log('FAIL 예외 ' + e.message);
 } finally {
