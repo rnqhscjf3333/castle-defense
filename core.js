@@ -23,7 +23,7 @@
   const CFG = {
     world: { w: W, h: H, cx: CX, cy: CY },
     startGold: 210, // 검사·궁수·사제를 한 명씩(어떤 순서로든, 가격 상승 포함 최대 204) 뽑을 수 있는 금액
-    holdRadius: 75,       // 수비 모드: 자리에서 벗어날 수 있는 거리 (원거리는 사거리 절반 추가)
+    holdRadius: 45,       // 수비 모드: 근접 유닛이 자리에서 벗어날 수 있는 거리 (원거리는 제자리)
     leash: 240,           // 유닛이 성채로부터 추격할 수 있는 최대 거리
     ai: {
       bias: 0.08,         // 평소(적이 멀 때) 대기 자리가 적 방향으로 쏠리는 정도 (0 = 사방에 고르게, 1 = 전부 적 방향)
@@ -147,7 +147,7 @@
       hpSlope: 0.125, hpSlopeLate: 0.14, lateFrom: 20, // 체력 배율: 선형, lateFrom(대혼란) 이후 기울기 증가
       dmgShare: 0.5,                                  // 공격력은 체력 증가분의 이 비율만 반영
       lateSpeed: 1.1,                                 // 대혼란 이후 적 이동 속도 배율
-      enemyHp: 0.27, enemyDmg: 0.5,                    // 모든 적(보스 포함)의 체력/공격력 배율
+      enemyHp: 0.25, enemyDmg: 0.5,                    // 모든 적(보스 포함)의 체력/공격력 배율
       bossHp: 1,                                      // 보스 체력에 추가로 곱하는 배율
       // 2막(31라운드~): 적이 강해지는 폭이 더 크다
       countPost: 3,                                   // 2막에서는 라운드마다 적이 이만큼 늘어난다 (1막 말 수 + 이 값 × 경과 라운드)
@@ -161,7 +161,7 @@
       shellCoreMul: 0.4,                              // 보스 포격이 성채에 주는 피해 비율 (성벽이 튼튼하다)
       coreRepair: 0.04,                               // 라운드가 바뀔 때마다 성채가 기본으로 복구하는 비율 (최대 체력 기준)
     },
-    economy: { costAll: 1.02, costType: 0.04 }, // (임시값: 1.05는 너무 쉽고 1.08은 어려웠음 — 밸런스는 나중에 재조정) // 유닛을 하나 뽑을 때마다 모든 유닛의 비용이 이 배율만큼 오른다 (인구 제한은 없다)
+    economy: { costAll: 1.045, costType: 0.015 }, prodMax: 5, // (임시값: 1.05는 너무 쉽고 1.08은 어려웠음 — 밸런스는 나중에 재조정) // 유닛을 하나 뽑을 때마다 모든 유닛의 비용이 이 배율만큼 오른다 (인구 제한은 없다)
     healAfterRound: 0.30, // 새 라운드 시작 시 생존 유닛 회복 비율
     // 카드/강화 수치
     upPct: { hp: 0.30, atk: 0.15, rate: 0.10, speed: 0.12 },
@@ -578,7 +578,7 @@
       core: { x: CX, y: CY, hp: CFG.core.hp, max: CFG.core.hp, r: CFG.core.r, atk: CFG.core.atk, rate: CFG.core.rate, range: CFG.core.range, cd: 0, flash: 0, aim: -Math.PI / 2, swing: 0 },
       units: [], enemies: [], shots: [], shotPool: [],
       kills: 0, nextId: 1,
-      spawnN: 0, buyCd: { sword: 0, archer: 0, priest: 0 },
+      prod: [], spawnN: 0, buyCd: { sword: 0, archer: 0, priest: 0 },
       threat: 0, over: false, win: false,
       captureEvents: false, events: [], numQ: [],
       gU: makeGrid(48), gE: makeGrid(48), gA: makeGrid(48), seen: {},
@@ -650,6 +650,26 @@
     return { ok: true, unit: addUnit(S, type), cost };
   }
 
+  // 생산 대기열: 누르는 즉시 골드를 내고 대기열(최대 prodMax)에 들어가 순서대로 생산된다. 완성되는 순간의 가격이 다르면 차액을 정산한다 (비싸졌으면 추가 지불, 싸졌으면 환급)
+  function enqueue(S, type) {
+    if (S.over) return { ok: false, reason: 'over' };
+    if (!UNIT_TYPES.includes(type)) return { ok: false, reason: 'type' };
+    if (S.prod.length >= CFG.prodMax) return { ok: false, reason: 'queue' };
+    if (popCount(S) + S.prod.length >= popCap(S)) return { ok: false, reason: 'pop' };
+    const cost = unitCostOf(S, type);
+    if (S.gold < cost) return { ok: false, reason: 'gold' };
+    S.gold -= cost; S.prod.push({ type, paid: cost, t: 0, wait: false });
+    return { ok: true, cost };
+  }
+  function cancelProd(S, i) { const p = S.prod[i]; if (!p) return false; S.gold += p.paid; S.prod.splice(i, 1); return true; }
+  function updateProd(S, dt) {
+    const p = S.prod[0]; if (!p) return;
+    const need = CFG.units[p.type].buyCd; if (p.t < need) p.t += dt;
+    if (p.t < need) return;
+    const diff = unitCostOf(S, p.type) - p.paid;
+    if (diff > S.gold) { p.wait = true; return; } // 가격이 올라 추가 비용이 모자라면 골드가 찰 때까지 기다린다
+    p.wait = false; S.gold -= diff; S.prod.shift(); S.buyCount++; addUnit(S, p.type);
+  }
   // ───────────── 보스 ─────────────
   // 이번 게임에서 r라운드의 보스 (보스 라운드가 아니면 null). 30라운드는 최종 보스.
   function bossDefFor(S, r) {
@@ -963,7 +983,7 @@
     if (free && u.rv && !u.rv.dead && u.rv.hp > 0) tgt = u.rv; // (자유 모드) 사거리 밖이어도 나를 공격한 적에게 가서 반격한다
     if (!free && tgt && Math.hypot(tgt.x - CX, tgt.y - CY) > CFG.leash) tgt = null; // (기본 모드) 성채에서 너무 먼 적은 쫓지 않는다
     if (hold && tgt) { // (수비 모드) 자리에서 조금만 벗어난다: 자리 근처로 들어온 적만 상대하고, 먼 곳의 적에게 끌려가지 않는다
-      const lim = CFG.holdRadius + (melee ? 0 : u.range * 0.5);
+      const lim = melee ? CFG.holdRadius : 0; // 근접은 자리 근처의 적만, 원거리는 제자리에서 사거리 안의 적만 쏜다
       tgt = find(u.hx, u.hy);
       if (tgt && Math.hypot(tgt.x - u.hx, tgt.y - u.hy) > lim + tgt.r) tgt = null;
     }
@@ -1160,6 +1180,7 @@
     if (S.over || S.cards.offer || S.jobs.offer || S.cinematic) return; // 카드/전직 선택, 연출 중에는 시간이 멈춘다
     S.t += dt;
     for (const k in S.buyCd) if (S.buyCd[k] > 0) S.buyCd[k] -= dt;
+    updateProd(S, dt);
 
     // 라운드 진행
     if (S.phase === 'prep') { S.prepT -= dt; if (S.prepT <= 0) startRound(S); }
@@ -1264,7 +1285,7 @@
 
   return {
     CFG, MAX_ROUND, ACT1_END, extraAngles, EXTRA_RING, ROUND_TIME, SPAWN_TIME, PREP_TIME, SPAWN_RING, UNIT_TYPES, CARD_DEFS,
-    createGame, tick, buy, upgradeCastle, castleCost, popCap, popGain, popCount, specialCount, endCinematic, jumpToRound, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo, drainEvents, pickCard, reroll, describeTaken, openCards,
+    createGame, tick, buy, enqueue, cancelProd, upgradeCastle, castleCost, popCap, popGain, popCount, specialCount, endCinematic, jumpToRound, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo, drainEvents, pickCard, reroll, describeTaken, openCards,
     unitCostOf, enemyCount, hpMul, dmgMul, mulberry32, damage,
   };
 });

@@ -120,9 +120,18 @@
   });
   function doBuy(t) {
     if (!S || !running || paused) return;
-    const r = C.buy(S, t);
+    const r = C.enqueue(S, t);
     if (!r.ok) A2.play('deny');
-    if (!r.ok) toast({ gold: '골드가 부족해요', cooldown: '잠시 후 다시 생산할 수 있어요', pop: '인구가 가득 찼어요 — 성채를 업그레이드하면 늘어납니다' }[r.reason] || '생산할 수 없어요');
+    if (!r.ok) toast({ gold: '골드가 부족해요', queue: '생산 대기열이 가득 찼어요 (최대 ' + CFG.prodMax + '개)', pop: '인구가 가득 찼어요 — 성채를 업그레이드하면 늘어납니다' }[r.reason] || '생산할 수 없어요');
+  }
+  // 생산 대기열 표시: 칸을 누르면 취소(환급)
+  const prodq = document.createElement('div'); prodq.id = 'prodq'; $('dock').insertBefore(prodq, $('units'));
+  prodq.addEventListener('click', e => { const el = e.target.closest('.pq'); if (el && S && running && !paused) { C.cancelProd(S, +el.dataset.i); A2.play('deny'); } });
+  let pqKey = '';
+  function updateProdQ() {
+    const L = S.prod, h = L.length ? L[0] : null, key = L.map(p => p.type + (p.wait ? 'w' : '')).join(',');
+    if (key !== pqKey) { pqKey = key; prodq.innerHTML = L.map((p, i) => '<span class="pq' + (p.wait ? ' wait' : '') + '" data-i="' + i + '" title="누르면 취소하고 골드를 돌려받습니다">' + CFG.units[p.type].name + '<i></i></span>').join(''); }
+    if (h && prodq.firstChild) prodq.firstChild.firstElementChild.style.width = Math.min(100, h.t / CFG.units[h.type].buyCd * 100) + '%';
   }
   // 성채 업그레이드 버튼 (소환 버튼 옆): 골드로 성채를 올리면 인구 상한·체력·공격력·사거리가 오르고 특정 레벨마다 대포가 늘어난다
   const castleBtn = document.createElement('button'); castleBtn.className = 'btn panel ucard castlecard';
@@ -263,6 +272,7 @@
     setText('killTxt', String(S.kills));
     const pct = Math.max(0, c.hp / c.max * 100);
     const f = $('hpfill'); f.style.width = pct + '%'; f.style.background = pct > 50 ? 'var(--ok)' : pct > 25 ? 'var(--gold)' : 'var(--danger)';
+    updateProdQ();
     for (const t of C.UNIT_TYPES) {
       const u = ucards[t], cost = C.unitCostOf(S, t), cd = S.buyCd[t] > 0 ? S.buyCd[t] / CFG.units[t].buyCd : 0;
       if (u.last !== undefined && cost > u.last) { // 가격이 오르면 숫자가 붉게 튀고 +N이 떠오른다
@@ -273,7 +283,7 @@
       let n = 0; for (const x of S.units) if (!x.dead && x.type === t) n++; if (u.n !== n) { u.n = n; u.cnt.textContent = '×' + n; }
       u.cost.textContent = cost + 'G';
       u.cd.style.height = (cd * 100) + '%';
-      const cant = S.gold < cost || C.popCount(S) >= C.popCap(S);
+      const cant = S.gold < cost || C.popCount(S) + S.prod.length >= C.popCap(S) || S.prod.length >= CFG.prodMax;
       u.el.classList.toggle('off', cant);
     }
   }

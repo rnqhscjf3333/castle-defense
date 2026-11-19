@@ -74,6 +74,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #toast .tmsg.out { opacity: 0; transform: translateY(-26px); }
 
 #dock { position: fixed; left: 0; right: 0; bottom: 0; padding: 5px 5px max(5px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 4px; align-items: center; pointer-events: none; }
+#prodq { display: flex; gap: 4px; pointer-events: auto; min-height: 0; zoom: .84; }
+#prodq .pq { position: relative; overflow: hidden; padding: 3px 9px; font-size: 11px; font-weight: 700; border-radius: 8px; background: rgba(20,24,36,.82); border: 1px solid rgba(255,255,255,.18); cursor: pointer; }
+#prodq .pq i { position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: #ffd166; }
+#prodq .pq:not(:first-child) i { display: none; }
+#prodq .pq.wait { border-color: #ff7a7a; color: #ff9a9a; }
 #units { display: flex; gap: 5px; pointer-events: auto; max-width: 100%; }
 #units .ucard { position: relative; width: 88px; padding: 6px 7px 5px; border-radius: 10px; text-align: left; overflow: hidden; }
 .ucard .nm { font-weight: 700; font-size: 13px; }

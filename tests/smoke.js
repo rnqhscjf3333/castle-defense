@@ -602,11 +602,23 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   check('검사 연속 공격: 확률 0이면 없음, 1이면 매번 한 번 더', a[1] === 0 && b[1] > 5 && b[1] >= b[0] * 0.4, `0%: ${a[1]}/${a[0]}회, 100%: ${b[1]}/${b[0]}회`); }
 // 46) 수비 모드: 자기 자리를 벗어나지 않는다
 { const run = mode => { const a = C.createGame(1, mode); a.hold = true; a.phase = 'round'; a.round = 10; a.queue = []; C.buy(a, 'sword'); const u = a.units[0]; u.x = u.hx = 1500 + 100; u.y = u.hy = 1500; const e = C.spawnEnemy(a, 'grunt', 1500 + 238, 1500); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; for (let i = 0; i < 150; i++) C.tick(a, DT); return Math.hypot(u.x - u.hx, u.y - u.hy); };
-  C.CFG.holdRadius = 40; const n = run('normal'), h = run('hold'); C.CFG.holdRadius = 75; check('수비 모드: 자리를 지키고, 기본 모드는 적을 쫓아감', h < 7 && n > h + 12, `수비 이동 ${h.toFixed(1)}px / 기본 ${n.toFixed(0)}px`); }
+  const n = run('normal'), h = run('hold'); check('수비 모드: 자리를 지키고, 기본 모드는 적을 쫓아감', h < 7 && n > h + 12, `수비 이동 ${h.toFixed(1)}px / 기본 ${n.toFixed(0)}px`); }
 // 47) 자유 모드: 사거리 밖이어도 나를 공격한 적에게 가서 반격한다
 { const run = mode => { const a = C.createGame(1, mode); a.hold = true; a.phase = 'round'; a.round = 10; a.queue = []; C.buy(a, 'sword'); const u = a.units[0]; const e = C.spawnEnemy(a, 'grunt', 1500 + 600, 1500); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; for (let i = 0; i < 3; i++) C.tick(a, DT); const x0 = u.x; C.damage(a, u, 1, false, e); for (let i = 0; i < 200; i++) C.tick(a, DT); return Math.hypot(u.x - e.x, u.y - e.y); };
   const f = run('free'), n = run('normal'); check('자유 모드: 멀리서 나를 때린 적에게 반격하러 감', f < n - 150, `적과의 거리 자유 ${f.toFixed(0)}px / 기본 ${n.toFixed(0)}px`); }
 // 48) 성채 최대 레벨이면 인구 제한 없음
 { const g = C.createGame(3); g.gold = 1e9; const cap1 = C.popCap(g); for (let i = 1; i < C.CFG.castle.max; i++) C.upgradeCastle(g); check('성채 최대 레벨이면 인구 제한이 풀림', C.popCap(g) > 1e6 && cap1 < 1e6); }
+// 49) 생산 대기열
+{ const g = C.createGame(9); g.gold = 100000; C.CFG.castle.popBase = 999; const g0 = g.gold; const c1 = C.unitCostOf(g, 'sword');
+  const res = []; for (let i = 0; i < 6; i++) res.push(C.enqueue(g, i % 2 ? 'archer' : 'sword'));
+  check('생산 대기열: 누르는 즉시 골드를 내고 최대 5개까지', res.filter(r => r.ok).length === 5 && res[5].reason === 'queue' && g.gold < g0 - c1 && g.units.length === 0, g0 - g.gold + 'G 선지불');
+  const paid = g0 - g.gold; for (let i = 0; i < 30 * 12; i++) C.tick(g, DT);
+  check('대기열은 먼저 누른 순서대로 하나씩 생산', g.units.map(u => u.type).join() === 'sword,archer,sword,archer,sword' && g.prod.length === 0, g.units.map(u => u.type).join());
+  check('가격이 변한 만큼 완성 시 정산 (뒤 유닛은 앞 유닛 때문에 비싸져 추가 지불)', g0 - g.gold > paid, paid + ' → ' + (g0 - g.gold));
+  const h = C.createGame(9); h.gold = 1000; C.enqueue(h, 'sword'); const gb = h.gold; check('대기열 취소 시 환급', C.cancelProd(h, 0) && h.gold === gb + C.unitCostOf(h, 'sword') && h.prod.length === 0);
+  const k = C.createGame(9); k.gold = 100000; for (let i = 0; i < 4; i++) { k.buyCd.sword = 0; C.buy(k, 'sword'); } C.enqueue(k, 'sword'); const paid2 = k.prod[0].paid; for (let i = 0; i < 4; i++) k.units[i].dead = true; for (let i = 0; i < 60; i++) C.tick(k, DT);
+  check('병력을 잃어 가격이 내려가면 차액 환급', k.units.filter(u => !u.dead).length === 1 && k.gold > 100000 - 4 * 70 - paid2 + 0, '');
+  const w = C.createGame(9); w.gold = C.unitCostOf(w, 'sword'); C.enqueue(w, 'sword'); w.gold = 0; w.gold = 1e5; w.buyCd.archer = 0; C.buy(w, 'archer'); w.gold = 0; for (let i = 0; i < 90; i++) C.tick(w, DT);
+  check('가격이 올라 추가 금액이 모자라면 골드가 찰 때까지 대기', w.prod.length === 1 && w.prod[0].wait, ''); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);
