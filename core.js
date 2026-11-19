@@ -1022,11 +1022,12 @@
     b: { len: 26, h0: 12 },  // 발리스타 석궁
     es: { len: 85, h0: 34 }, // 보스(포격대장) 어깨 대포
     h: { len: 8, h0: 10 },   // 전투사제의 성스러운 구체
+    cm: { len: 14, h0: 36 }, // 갈래를 고른 성: 지붕 위 마법사의 지팡이 끝에서 나간다
     throw: { len: 0, h0: 62 },// 대포가 없는 보스: 머리 위로 던지듯 발사
   };
   // 투사체: 지면 위치(x,y)는 목표를 향해 직선으로 가고, 높이(h)가 포물선을 그린다. 도착하면 피해.
   function fire(S, from, tgt, dmg, spd, color, extra) {
-    const m = (color === 'es' && !(from.look && from.look.weapon === 'cannon')) ? MUZZLE.throw : (MUZZLE[color] || { len: 0, h0: 0 });
+    const m = (color === 'c' && from.cpath) ? MUZZLE.cm : (color === 'es' && !(from.look && from.look.weapon === 'cannon')) ? MUZZLE.throw : (MUZZLE[color] || { len: 0, h0: 0 });
     const ang = Math.atan2(tgt.y - from.y, tgt.x - from.x), sx = from.x + Math.cos(ang) * m.len, sy = from.y + Math.sin(ang) * m.len;
     const dx = tgt.x - sx, dy = tgt.y - sy, d = Math.hypot(dx, dy), cf = CFG.shots;
     const T = extra && extra.T ? extra.T : Math.max(cf.minT, d / spd);

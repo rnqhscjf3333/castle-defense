@@ -42,10 +42,10 @@ try {
   await open('?bot=1&seed=11&zoom=1', 800);
   const t0 = await ev('__game.S.t'); await sleep(3000); const t1 = await ev('__game.S.t');
   check('게임 시간이 실제 시간과 비슷하게 흐름(3초)', t1 - t0 > 2.4 && t1 - t0 < 3.8, (t1 - t0).toFixed(2) + '초');
-  await ev("document.getElementById('btnSpeed').click()");
+  await ev("document.querySelector('#speedBar [data-sp=\"2\"]').click()");
   const s0 = await ev('__game.S.t'), w0 = Date.now(); await sleep(2000); const s1 = await ev('__game.S.t'), real = (Date.now() - w0) / 1000;
   check('배속 2× (게임 시간 ÷ 실제 시간)', (s1 - s0) / real > 1.85 && (s1 - s0) / real < 2.15, ((s1 - s0) / real).toFixed(2) + '배');
-  await ev("document.getElementById('btnSpeed').click(); document.getElementById('btnSpeed').click()"); // 3× → 1×
+  await ev("document.querySelector('#speedBar [data-sp=\"3\"]').click(); document.querySelector('#speedBar [data-sp=\"1\"]').click()"); // 3× → 1×
   await ev("document.getElementById('btnPause').click()"); const p0 = await ev('__game.S.t'); await sleep(800); const p1 = await ev('__game.S.t');
   check('일시정지 중 시간 정지', p1 === p0);
   await ev("document.getElementById('btnPause').click()");

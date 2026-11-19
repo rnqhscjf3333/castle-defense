@@ -189,6 +189,52 @@
     ctx.strokeStyle = '#27385e'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x, y - 3, 11, 0, TAU); ctx.stroke();
     if (flag) { const w = Math.sin(now * 0.006 + x) * 2; ctx.strokeStyle = '#3a2a1a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x, y - 3); ctx.lineTo(x, y - 20); ctx.stroke(); ctx.fillStyle = '#e1b43a'; ctx.beginPath(); ctx.moveTo(x, y - 20); ctx.lineTo(x + 10 + w, y - 17); ctx.lineTo(x, y - 13); ctx.closePath(); ctx.fill(); }
   }
+  const ACC = { arcane: '#b48aff', storm: '#ff9a3a', frost: '#9fd8ff', meteor: '#ff7a1a', inferno: '#ff5a1a', zero: '#eaf8ff', shatter: '#bfe8ff', guardian: '#ffe27a', judge: '#ffe27a', aegis: '#8fc4ff', wrath: '#fff2a0', radiance: '#fff6c0', bastion: '#ffe27a', fortress: '#8fc4ff', necro: '#3ae68a', horde: '#7affc8', bind: '#7affc8', legion: '#7affc8', deathknight: '#3ae68a', harvest: '#b8ffd8', immortal: '#3ae68a' };
+  // 갈래를 고른 성: 대포 대신 지붕 위의 시전자가 직접 공격한다 (마탑=마법사, 수호=성직자, 사령=강령술사). 지팡이가 적을 향하고, 쏠 때 보주가 번쩍인다.
+  function castleCaster(ctx, c, t, ox, oy, sc, aimOff) {
+    const p = c.cpath, acc = ACC[c.cfin || c.cvar || p] || '#fff', aim = (c.aim !== undefined ? c.aim : -Math.PI / 2) + aimOff, dir = Math.cos(aim) >= 0 ? 1 : -1;
+    const sw = c.swing > 0 ? Math.min(1, c.swing / 0.22) : 0, bob = Math.sin(t * 3 + ox) * 1.1, fl = c.flash > 0, lw = 1.5;
+    const robe = p === 'arcane' ? ['#5a3aa8', '#2e1a6a'] : p === 'guardian' ? ['#f7f0da', '#c8b878'] : ['#25352c', '#101814'];
+    ctx.save(); ctx.translate(ox, oy + bob * 0.5); ctx.scale(sc, sc);
+    ctx.globalAlpha = 0.3; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(0, 16, 11, 3.6, 0, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
+    // 지팡이 (뒤쪽 손에 쥐고, 평소엔 위로 비스듬히 · 쏠 때는 적 방향)
+    const sa = sw > 0 ? aim : (dir > 0 ? -1.2 : -Math.PI + 1.2), hx = dir * 8, hy = 2, L = 27 + sw * 3, tx = hx + Math.cos(sa) * L, ty = hy + Math.sin(sa) * L;
+    ctx.strokeStyle = p === 'necro' ? '#3a3a40' : '#8a5a2a'; ctx.lineWidth = 2.6; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(hx - Math.cos(sa) * 6, hy - Math.sin(sa) * 6); ctx.lineTo(tx, ty); ctx.stroke();
+    // 로브
+    ctx.fillStyle = fl ? '#fff' : robe[0]; ctx.strokeStyle = robe[1]; ctx.lineWidth = lw; ctx.beginPath(); ctx.moveTo(-6, -4); ctx.lineTo(6, -4); ctx.lineTo(11, 15); ctx.lineTo(-11, 15); ctx.closePath(); ctx.fill(); ctx.stroke();
+    if (!fl) { ctx.strokeStyle = acc; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(-9, 12); ctx.lineTo(9, 12); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, -3); ctx.lineTo(0, 12); ctx.stroke(); }
+    if (p === 'guardian' && !fl) { ctx.fillStyle = '#e0a63a'; ctx.fillRect(-0.9, 1, 1.8, 7); ctx.fillRect(-3, 3, 6, 1.8); }
+    // 팔 (지팡이 쪽으로 뻗음)
+    ctx.strokeStyle = robe[0]; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(dir * 4, 0); ctx.lineTo(hx, hy); ctx.stroke(); ctx.fillStyle = '#f3cfa6'; ctx.beginPath(); ctx.arc(hx, hy, 2, 0, TAU); ctx.fill();
+    // 머리
+    if (p === 'necro') { // 두건 속 어둠 + 초록 눈
+      ctx.fillStyle = fl ? '#fff' : '#18221c'; ctx.strokeStyle = '#0a0f0c'; ctx.beginPath(); ctx.arc(0, -10, 7.4, Math.PI * 0.9, Math.PI * 2.1); ctx.lineTo(7, -3); ctx.lineTo(-7, -3); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#05080a'; ctx.beginPath(); ctx.arc(dir * 0.8, -9, 4.6, 0, TAU); ctx.fill(); ctx.fillStyle = '#3ae68a'; ctx.shadowColor = '#3ae68a'; ctx.shadowBlur = 6; ctx.beginPath(); ctx.arc(dir * 0.8 - 1.8, -9.4, 1.1, 0, TAU); ctx.arc(dir * 0.8 + 1.8, -9.4, 1.1, 0, TAU); ctx.fill(); ctx.shadowBlur = 0;
+    } else {
+      ctx.fillStyle = fl ? '#fff' : '#f3cfa6'; ctx.strokeStyle = '#3a2a1a'; ctx.beginPath(); ctx.arc(0, -10, 6, 0, TAU); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#1a1d26'; ctx.beginPath(); ctx.arc(dir * 2.2 - 1.7, -10.3, 0.9, 0, TAU); ctx.arc(dir * 2.2 + 1.7, -10.3, 0.9, 0, TAU); ctx.fill();
+      if (p === 'arcane') { // 뾰족한 마법사 모자 + 별
+        ctx.fillStyle = fl ? '#fff' : '#4a2a98'; ctx.strokeStyle = '#1e0f48'; ctx.lineWidth = lw; ctx.beginPath(); ctx.moveTo(-9, -13); ctx.lineTo(9, -13); ctx.lineTo(dir * 2 + Math.sin(t * 2) * 1.5, -33); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(0, -13, 10.5, 2.6, 0, 0, TAU); ctx.fill(); ctx.stroke(); ctx.fillStyle = acc; ctx.fillRect(-6, -17, 12, 2.2);
+        ctx.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 1.3 : 3; ctx.lineTo(dir * 1 + Math.cos(a) * r, -24 + Math.sin(a) * r); } ctx.closePath(); ctx.fill();
+      } else { // 수호: 금빛 광륜 + 흰 두건
+        ctx.strokeStyle = '#ffe36a'; ctx.lineWidth = 2; ctx.globalAlpha = 0.95; ctx.beginPath(); ctx.ellipse(0, -19, 6.6, 2.1, 0, 0, TAU); ctx.stroke(); ctx.globalAlpha = 0.25; ctx.fillStyle = '#fff2a0'; ctx.beginPath(); ctx.arc(0, -19, 10, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
+        ctx.fillStyle = fl ? '#fff' : '#f7f0da'; ctx.strokeStyle = '#a89860'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(0, -10.4, 6.6, Math.PI * 1.02, Math.PI * 1.98); ctx.fill(); ctx.stroke();
+      }
+    }
+    // 지팡이 머리: 보주 (쏠 때 크게 번쩍)
+    const pul = 0.5 + 0.5 * Math.sin(t * 5 + ox), gr = 5 + pul * 1.5 + sw * 9;
+    ctx.globalAlpha = 0.35 + sw * 0.3; ctx.fillStyle = acc; ctx.beginPath(); ctx.arc(tx, ty, gr + 3, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
+    if (p === 'necro') { // 해골 지팡이
+      ctx.fillStyle = '#ecebe0'; ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(tx, ty - 1, 4.6, 0, TAU); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#1a1a1a'; ctx.fillRect(tx - 2.6, ty - 2.2, 1.8, 2); ctx.fillRect(tx + 0.8, ty - 2.2, 1.8, 2);
+      ctx.fillStyle = acc; ctx.beginPath(); ctx.moveTo(tx - 3, ty - 5); ctx.quadraticCurveTo(tx - 4, ty - 11 - pul * 3, tx, ty - 14 - pul * 4); ctx.quadraticCurveTo(tx + 4, ty - 11 - pul * 3, tx + 3, ty - 5); ctx.closePath(); ctx.fill();
+    } else if (p === 'arcane') { // 마력 수정구
+      ctx.fillStyle = '#fff'; ctx.strokeStyle = acc; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(tx, ty - 6); ctx.lineTo(tx + 4.4, ty); ctx.lineTo(tx, ty + 6); ctx.lineTo(tx - 4.4, ty); ctx.closePath(); ctx.fill(); ctx.stroke();
+    } else { // 성스러운 홀: 황금 보주 + 십자 광채
+      ctx.fillStyle = '#fffbe0'; ctx.strokeStyle = '#e0a63a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(tx, ty, 4.2, 0, TAU); ctx.fill(); ctx.stroke(); ctx.strokeStyle = acc; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(tx - 8, ty); ctx.lineTo(tx + 8, ty); ctx.moveTo(tx, ty - 8); ctx.lineTo(tx, ty + 8); ctx.stroke();
+    }
+    ctx.restore();
+  }
   // 성 갈래(마탑·수호·사령)의 외형: 갈래 → 공격/방어형 → 최종형 순서로 장식이 하나씩 더해진다
   function castleMods(ctx, c, t) {
     const tri = (cx, ax, ay, bx, by, qx, qy) => { cx.beginPath(); cx.moveTo(ax, ay); cx.lineTo(bx, by); cx.lineTo(qx, qy); cx.closePath(); };
@@ -198,8 +244,6 @@
     ctx.save();
     if (p === 'arcane') {
       orb(0, 0, 30 + pu * 4, '#9a5aff', 0.16 + 0.1 * pu);
-      ctx.fillStyle = '#b48aff'; ctx.strokeStyle = '#3a1a7a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(0, -34 - pu * 2); ctx.lineTo(8, -16); ctx.lineTo(0, -4); ctx.lineTo(-8, -16); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#ece0ff'; ctx.beginPath(); ctx.moveTo(0, -30); ctx.lineTo(3.5, -17); ctx.lineTo(0, -10); ctx.closePath(); ctx.fill();
       for (let i = 0; i < 4; i++) { const a = t * 1.2 + i * TAU / 4; orb(Math.cos(a) * 58, Math.sin(a) * 58, 3.2, '#c9a0ff', 0.9); orb(Math.cos(a) * 58, Math.sin(a) * 58, 6, '#9a5aff', 0.3); }
       for (const [x, y] of corners) orb(x, y - 8, 3 + pu, '#b48aff', 0.9);
       if (v === 'storm') for (let i = 0; i < 16; i++) { const a = i / 16 * TAU + t * 0.4; flame(Math.cos(a) * 82, Math.sin(a) * 82 + 4, 5, '#ff7a1a', '#ffd23a', i * 2); }
@@ -212,8 +256,8 @@
       ctx.strokeStyle = '#ffe27a'; ctx.lineWidth = 3; ctx.globalAlpha = 0.85; ctx.beginPath(); ctx.ellipse(0, -2, 40, 15, 0, 0, TAU); ctx.stroke(); ctx.globalAlpha = 0.25; ctx.strokeStyle = '#fff6c0'; ctx.lineWidth = 7; ctx.stroke(); ctx.globalAlpha = 1;
       for (const [x, y] of corners) { ctx.strokeStyle = '#7a6a3a'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(x, y - 6); ctx.lineTo(x, y - 20); ctx.stroke(); ctx.fillStyle = '#fffdf0'; ctx.strokeStyle = '#d9b84a'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, y - 20); ctx.lineTo(x + 11 + Math.sin(t * 4 + x) * 2, y - 16); ctx.lineTo(x, y - 12); ctx.closePath(); ctx.fill(); ctx.stroke(); }
       orb(0, 0, 26 + pu * 3, '#fff2a0', 0.14);
-      if (v === 'judge') { ctx.strokeStyle = '#ffe27a'; ctx.lineWidth = 1.4; ctx.globalAlpha = 0.6; for (let i = 0; i < 8; i++) { const a = i / 8 * TAU + t * 0.3; ctx.beginPath(); ctx.moveTo(Math.cos(a) * 30, Math.sin(a) * 30); ctx.lineTo(Math.cos(a) * 62, Math.sin(a) * 62); ctx.stroke(); } ctx.globalAlpha = 1; ctx.fillStyle = '#ffe27a'; ctx.strokeStyle = '#8a6a10'; ctx.lineWidth = 1.2; ctx.fillRect(-2, -30, 4, 22); ctx.strokeRect(-2, -30, 4, 22); ctx.fillRect(-8, -22, 16, 3.4); ctx.strokeRect(-8, -22, 16, 3.4); }
-      if (v === 'aegis') { ctx.globalAlpha = 0.14 + 0.05 * pu; ctx.fillStyle = '#7ab8ff'; ctx.beginPath(); ctx.arc(0, 0, 84, 0, TAU); ctx.fill(); ctx.globalAlpha = 0.7; ctx.strokeStyle = '#bfe0ff'; ctx.lineWidth = 2; ctx.stroke(); ctx.globalAlpha = 1; ctx.fillStyle = '#4a86d8'; ctx.strokeStyle = '#d8ecff'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(-8, -28); ctx.lineTo(8, -28); ctx.lineTo(8, -17); ctx.quadraticCurveTo(0, -8, -8, -17); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+      if (v === 'judge') { ctx.strokeStyle = '#ffe27a'; ctx.lineWidth = 1.4; ctx.globalAlpha = 0.6; for (let i = 0; i < 8; i++) { const a = i / 8 * TAU + t * 0.3; ctx.beginPath(); ctx.moveTo(Math.cos(a) * 30, Math.sin(a) * 30); ctx.lineTo(Math.cos(a) * 62, Math.sin(a) * 62); ctx.stroke(); } ctx.globalAlpha = 1; }
+      if (v === 'aegis') { ctx.globalAlpha = 0.14 + 0.05 * pu; ctx.fillStyle = '#7ab8ff'; ctx.beginPath(); ctx.arc(0, 0, 84, 0, TAU); ctx.fill(); ctx.globalAlpha = 0.7; ctx.strokeStyle = '#bfe0ff'; ctx.lineWidth = 2; ctx.stroke(); ctx.globalAlpha = 1; }
       if (f === 'wrath') { ctx.strokeStyle = '#fff2a0'; ctx.lineWidth = 2.4; ctx.globalAlpha = 0.5 + 0.5 * Math.abs(Math.sin(t * 9)); for (const k of [-1, 1]) { ctx.beginPath(); ctx.moveTo(k * 20, -60); ctx.lineTo(k * 14, -44); ctx.lineTo(k * 24, -38); ctx.lineTo(k * 16, -20); ctx.stroke(); } ctx.globalAlpha = 1; }
       if (f === 'radiance') { ctx.fillStyle = '#fff6c0'; ctx.globalAlpha = 0.55; for (let i = 0; i < 12; i++) { const a = i / 12 * TAU - t * 0.25; tri(ctx, Math.cos(a - 0.08) * 36, Math.sin(a - 0.08) * 36, Math.cos(a) * 86, Math.sin(a) * 86, Math.cos(a + 0.08) * 36, Math.sin(a + 0.08) * 36); ctx.fill(); } ctx.globalAlpha = 1; }
       if (f === 'bastion') { ctx.fillStyle = '#ffe27a'; ctx.strokeStyle = '#8a6a10'; ctx.lineWidth = 1.2; for (const k of [-1, 1]) { ctx.beginPath(); ctx.moveTo(k * 22, -20); ctx.quadraticCurveTo(k * 58, -50 + Math.sin(t * 3) * 3, k * 70, -18); ctx.quadraticCurveTo(k * 50, -26, k * 22, -8); ctx.closePath(); ctx.fill(); ctx.stroke(); } }
@@ -221,11 +265,9 @@
     } else if (p === 'necro') {
       ctx.globalAlpha = 0.22; ctx.fillStyle = '#1a3a22'; ctx.beginPath(); ctx.ellipse(0, 10, 96, 70, 0, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
       for (const [x, y] of corners) { ctx.fillStyle = '#3a3a44'; ctx.fillRect(x - 4, y - 9, 8, 4); flame(x, y - 9, 6, '#3ae68a', '#d8ffe8', x); }
-      ctx.fillStyle = '#e8e8dc'; ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(0, -4, 9, 0, TAU); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#1a1a1a'; ctx.beginPath(); ctx.arc(-3.2, -5, 2.2, 0, TAU); ctx.arc(3.2, -5, 2.2, 0, TAU); ctx.fill(); ctx.fillRect(-1.6, -1, 3.2, 3); orb(-3.2, -5, 1.4, '#3ae68a', 1); orb(3.2, -5, 1.4, '#3ae68a', 1);
       if (v === 'horde') for (let i = 0; i < 8; i++) { const a = i / 8 * TAU + 0.4; const x = Math.cos(a) * 66, y = Math.sin(a) * 66; ctx.fillStyle = '#e8e8dc'; ctx.beginPath(); ctx.arc(x, y, 4.2, 0, TAU); ctx.fill(); ctx.fillStyle = '#1a1a1a'; ctx.fillRect(x - 2.6, y - 1.2, 1.8, 1.8); ctx.fillRect(x + 0.8, y - 1.2, 1.8, 1.8); }
       if (v === 'bind') for (let i = 0; i < 5; i++) { const a = t * 1.0 + i * TAU / 5; const x = Math.cos(a) * 60, y = Math.sin(a) * 38 - 8; orb(x, y, 7, '#7affc8', 0.28); orb(x, y, 3, '#d8fff0', 0.9); }
       if (f === 'legion') for (let i = 0; i < 10; i++) { const a = i / 10 * TAU; const x = Math.cos(a) * 88, y = Math.sin(a) * 88; ctx.globalAlpha = 0.55 + 0.2 * Math.sin(t * 4 + i); ctx.fillStyle = '#7affc8'; ctx.beginPath(); ctx.arc(x, y - 5, 3, 0, TAU); ctx.fill(); ctx.fillRect(x - 2.4, y - 2, 4.8, 7); ctx.globalAlpha = 1; }
-      if (f === 'deathknight') { ctx.fillStyle = '#2a2a33'; ctx.strokeStyle = '#3ae68a'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(-12, -14); ctx.lineTo(-16, -34); ctx.lineTo(-7, -22); ctx.lineTo(0, -38); ctx.lineTo(7, -22); ctx.lineTo(16, -34); ctx.lineTo(12, -14); ctx.closePath(); ctx.fill(); ctx.stroke(); }
       if (f === 'harvest') for (let i = 0; i < 6; i++) { const ph = (t * 0.5 + i / 6) % 1; orb(Math.cos(i * 1.7) * 50, 30 - ph * 90, 3.2, '#b8ffd8', 0.9 * (1 - ph)); }
       if (f === 'immortal') { ctx.strokeStyle = '#3ae68a'; ctx.lineWidth = 3; ctx.globalAlpha = 0.35 + 0.35 * pu; ctx.beginPath(); ctx.arc(0, 0, 86, 0, TAU); ctx.stroke(); ctx.lineWidth = 8; ctx.globalAlpha = 0.12 + 0.1 * pu; ctx.stroke(); ctx.globalAlpha = 1; }
     }
@@ -267,9 +309,10 @@
     if (lv >= 4) for (const [x, y] of [[-46, -46], [46, -46], [-46, 46], [46, 46]]) { ctx.strokeStyle = '#3a2a1a'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(x, y - 6); ctx.lineTo(x, y - 24); ctx.stroke(); ctx.fillStyle = lv >= 6 ? '#ffd166' : '#d9534f'; ctx.beginPath(); ctx.moveTo(x, y - 24); ctx.lineTo(x + 11 + Math.sin(t * 5 + x) * 1.5, y - 20); ctx.lineTo(x, y - 16); ctx.closePath(); ctx.fill(); }
     // 추가 대포: 3·5·7레벨마다 모서리 탑 위에 1문씩 (서로 다른 적을 겨눈다)
     const aimX = c.aim !== undefined ? c.aim : -Math.PI / 2;
-    for (let i = 1; i < nc; i++) { const [x, y] = [[46, -46], [-46, 46], [46, 46]][i - 1], rc2 = c.swing > 0 ? c.swing * 18 : 0; ctx.save(); ctx.translate(x, y); ctx.rotate(aimX + (i % 2 ? 0.25 : -0.25)); ctx.fillStyle = '#3d424d'; ctx.strokeStyle = '#14161c'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.arc(0, 0, 7, 0, TAU); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#4a505e'; ctx.fillRect(1 - rc2, -3.4, 17, 6.8); ctx.strokeRect(1 - rc2, -3.4, 17, 6.8); ctx.fillStyle = '#2a2e38'; ctx.fillRect(14 - rc2, -4.2, 4, 8.4); if (c.swing > 0.12) { ctx.fillStyle = 'rgba(255,214,90,.9)'; ctx.beginPath(); ctx.arc(20 - rc2, 0, 5 + c.swing * 10, 0, TAU); ctx.fill(); } ctx.restore(); }
+    for (let i = 1; i < (c.cpath ? 0 : nc); i++) { const [x, y] = [[46, -46], [-46, 46], [46, 46]][i - 1], rc2 = c.swing > 0 ? c.swing * 18 : 0; ctx.save(); ctx.translate(x, y); ctx.rotate(aimX + (i % 2 ? 0.25 : -0.25)); ctx.fillStyle = '#3d424d'; ctx.strokeStyle = '#14161c'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.arc(0, 0, 7, 0, TAU); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#4a505e'; ctx.fillRect(1 - rc2, -3.4, 17, 6.8); ctx.strokeRect(1 - rc2, -3.4, 17, 6.8); ctx.fillStyle = '#2a2e38'; ctx.fillRect(14 - rc2, -4.2, 4, 8.4); if (c.swing > 0.12) { ctx.fillStyle = 'rgba(255,214,90,.9)'; ctx.beginPath(); ctx.arc(20 - rc2, 0, 5 + c.swing * 10, 0, TAU); ctx.fill(); } ctx.restore(); }
     // 8레벨: 중앙 수정의 푸른 빛
     if (lv >= 8) { const g = 0.5 + 0.5 * Math.sin(t * 3); ctx.globalAlpha = 0.25 + 0.2 * g; ctx.fillStyle = '#7fd8ff'; ctx.beginPath(); ctx.arc(0, 0, 20 + g * 4, 0, TAU); ctx.fill(); ctx.globalAlpha = 1; }
+    if (c.cpath) castleCaster(ctx, c, t, 0, 4, 1, 0); else {
     // 대포: 조준 방향으로 돌고 쏠 때 반동 + 포구 불꽃
     const aim = c.aim !== undefined ? c.aim : -Math.PI / 2, recoil = c.swing > 0 ? c.swing * 26 : 0;
     ctx.fillStyle = '#3d424d'; ctx.strokeStyle = '#14161c'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(0, 0, 10, 0, TAU); ctx.fill(); ctx.stroke();
@@ -277,6 +320,8 @@
     if (c.swing > 0.12) { ctx.fillStyle = 'rgba(255,214,90,.95)'; ctx.beginPath(); ctx.arc(32 - recoil, 0, 7 + c.swing * 12, 0, TAU); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.beginPath(); ctx.arc(31 - recoil, 0, 3.5, 0, TAU); ctx.fill(); }
     ctx.restore();
     ctx.fillStyle = '#ffd166'; ctx.beginPath(); ctx.arc(0, 0, 3.4, 0, TAU); ctx.fill(); // 포탑 중심 보석
+    }
+    if (c.cpath) for (let i = 1; i < nc; i++) { const [x, y] = [[46, -46], [-46, 46], [46, 46]][i - 1]; castleCaster(ctx, c, t, x, y - 4, 0.55, i % 2 ? 0.3 : -0.3); } // 모서리 탑의 견습생
 
     if (c.cpath) castleMods(ctx, c, t);
     // 중앙 깃대 + 큰 깃발 (펄럭임)

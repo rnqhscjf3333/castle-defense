@@ -124,7 +124,7 @@
   function feedAdd(left, mid, right, text, cls) { // 얼굴 · 표시 · 얼굴 한 줄. 새 줄이 위에 들어오고 오래된 줄은 흐려지며 사라진다
     const box = $('feed'), d = document.createElement('div'); d.className = 'fe ' + (cls || '');
     const face = f => f ? '<img alt="" src="' + faceURL(f) + '">' : '<span class="ic">☠️</span>';
-    d.innerHTML = face(left) + '<span class="ic">' + mid + '</span>' + face(right) + '<span class="nm"></span>'; d.lastChild.textContent = text;
+    d.innerHTML = face(left) + '<span class="ic">' + mid + '</span>' + face(right); // (이름 텍스트 없이 얼굴과 표시만)
     box.insertBefore(d, box.firstChild);
     requestAnimationFrame(() => d.classList.add('in'));
     for (let k = 1; k < box.children.length; k++) box.children[k].classList.add('old');
@@ -176,7 +176,8 @@
   }
   $('btnPause').addEventListener('click', () => { if (!running && !S) return; toggleModal('setMenu'); });
   $('btnInfo').addEventListener('click', () => { if (!S) return; toggleModal('infoPanel'); if (!$('infoPanel').classList.contains('hidden')) renderInfo(); });
-  $('btnSpeed').addEventListener('click', () => { speed = speed === 1 ? 2 : speed === 2 ? 3 : 1; $('btnSpeed').textContent = speed + '×'; });
+  const setSpeed = v => { speed = v; for (const b of document.querySelectorAll('#speedBar button')) b.classList.toggle('on', +b.dataset.sp === v); };
+  for (const b of document.querySelectorAll('#speedBar button')) b.addEventListener('click', () => setSpeed(+b.dataset.sp));
   window.addEventListener('keydown', e => {
     if (e.repeat) return;
     if (anyModal()) { if (e.key === 'Escape' || (e.key === ' ' && !$('setMenu').classList.contains('hidden'))) { e.preventDefault(); closeModals(); } return; }
@@ -348,8 +349,8 @@
     const b = $('pickCards').children[i]; if (!b) return;
     const list = job ? (S.jobs.offer ? S.jobs.offer.list : S.cOffer && S.cOffer.list) : S.cards.offer, rk = rankOf(list && list[i] || {}, job), r = b.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, Z = 0.84; // #pickBox는 zoom .84
     const g = b.cloneNode(true); g.classList.remove('enter', 'flip'); g.classList.add('picked'); g.style.cssText = 'zoom:' + Z + ';left:' + r.left / Z + 'px;top:' + r.top / Z + 'px;width:' + r.width / Z + 'px;height:' + r.height / Z + 'px';
-    document.body.appendChild(g); setTimeout(() => g.remove(), 800);
-    ring(cx, cy, RCOL[rk], 6 + rk * 4); sparks(cx, cy, [10, 18, 30, 52][rk], RCOL[rk], 70 + rk * 40, 0.75);
+    document.body.appendChild(g); setTimeout(() => g.remove(), 340);
+    ring(cx, cy, RCOL[rk], 6 + rk * 4); sparks(cx, cy, [10, 18, 30, 52][rk], RCOL[rk], 70 + rk * 40, 0.42);
     if (rk >= 1) flash(RCOL[rk], [0, 0.12, 0.25, 0.5][rk]);
   }
   const currentOffer = () => (S && S.jobs.offer) ? { kind: 'job', list: S.jobs.offer.list, ref: S.jobs.offer } : (S && S.cOffer) ? { kind: 'castle', list: S.cOffer.list, ref: S.cOffer } : (S && S.cards.offer) ? { kind: 'card', list: S.cards.offer, ref: S.cards.offer } : null;
@@ -461,7 +462,8 @@
     let h = '';
     if (infoTab === 'up') {
       const taken = C.describeTaken(S), jobs = C.describeJobs(S);
-      h += '<h3>성</h3>' + irow('성 Lv.' + S.castle.lv + (S.castle.lv >= CFG.castle.max ? ' (최대)' : ''), '체력 ' + Math.round(S.core.hp) + '/' + Math.round(S.core.max) + ' · 공격력 ' + f1(S.core.atk) + ' · 사거리 ' + Math.round(S.core.range) + ' · 대포 ' + S.core.cannons + '문<br>인구 ' + C.popCount(S) + (C.popCap(S) < 1e8 ? '/' + C.popCap(S) : ' (제한 없음)'));
+      let cimg = ''; try { cimg = '<img class="uimg" alt="" style="width:118px;height:104px;object-fit:contain" src="' + castlePortrait({ cpath: S.core.cpath, cvar: S.core.cvar, cfin: S.core.cfin }) + '">'; } catch (e) {}
+      h += '<h3>성</h3>' + irow('성 Lv.' + S.castle.lv + (S.castle.lv >= CFG.castle.max ? ' (최대)' : ''), '<div class="uwrap">' + cimg + '<div>체력 ' + Math.round(S.core.hp) + '/' + Math.round(S.core.max) + ' · 공격력 ' + f1(S.core.atk) + ' · 사거리 ' + Math.round(S.core.range) + (S.core.cpath ? '' : ' · 대포 ' + S.core.cannons + '문') + '<br>인구 ' + C.popCount(S) + (C.popCap(S) < 1e8 ? '/' + C.popCap(S) : ' (제한 없음)') + '</div></div>');
       { const cd = C.describeCastle(S), nxt = CFG.castleTree.lv[S.cnodes.length];
         h += '<h3>성 갈래</h3>' + (cd.length ? cd.map((n, i) => irow(n.name, n.desc, i === 2 ? 'epic' : 'rare', n.kind)).join('') : '<div class="d">성 Lv.' + CFG.castleTree.lv[0] + '에서 마탑·수호·사령 중 갈래를 고릅니다.</div>') + (nxt && cd.length ? '<div class="d" style="margin:2px 0 6px">다음 선택: 성 Lv.' + nxt + '</div>' : ''); }
       h += '<h3>전직</h3>' + (jobs.length ? jobs.map(j => irow(j.className, j.names.join(' › '), 'epic')).join('') : '<div class="d">아직 전직한 직업이 없어요 (보스를 처치하면 전직)</div>');
@@ -1026,7 +1028,7 @@
     const mm = params.get('mode') || store.get('cd-mode'), mode = mm === 'free' || mm === 'hold' ? mm : 'normal';
     S = C.createGame(seed, mode); S.captureEvents = true; Net.begin(S); syncModeBar();
     fx.length = 0; numFx = 0; paused = false; speed = 1; shownOffer = null; $('picker').classList.add('hidden');
-    $('btnSpeed').textContent = '1×'; closeModals(); Meta.begin(); lastSyncRound = 0; $('btnToMenu').classList.add('hidden');
+    setSpeed(1); closeModals(); Meta.begin(); lastSyncRound = 0; $('btnToMenu').classList.add('hidden');
     for (const k in last) delete last[k];
     for (const t of C.UNIT_TYPES) { ucards[t].last = undefined; ucards[t].n = undefined; }
     cine = null; $('cine').classList.add('hidden'); $('cine').classList.remove('on'); Scenery.setAct(1, false);

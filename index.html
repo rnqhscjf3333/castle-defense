@@ -24,7 +24,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #hpfill { height: 100%; width: 100%; background: var(--ok); transition: width .15s; }
 #gold { color: var(--gold); }
 
-#btnSpeed { position: fixed; top: max(5px, env(safe-area-inset-top)); left: 214px; z-index: 6; zoom: .84; min-width: 40px; }
+#btnPause { position: fixed; top: max(5px, env(safe-area-inset-top)); left: 214px; z-index: 6; zoom: .84; min-width: 40px; }
+#speedBar { display: flex; padding: 2px; gap: 2px; border-radius: 9px; } #speedBar button { padding: 3px 9px; font-size: 12px; border-radius: 7px; background: transparent; border: 0; color: var(--muted); font-weight: 700; } #speedBar button.on { background: rgba(255,209,102,.18); color: #ffd166; }
 #tools { position: fixed; top: calc(max(5px, env(safe-area-inset-top)) + 106px); right: 5px; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
 .tbtn { padding: 4px 8px; font-size: 11.5px; min-height: 26px; border-radius: 8px; }
 
@@ -175,12 +176,12 @@ body.defeating #hud, body.defeating #units, body.defeating #tools, body.defeatin
   transform: translate(var(--x), var(--y)); animation: cloudAway 3.1s cubic-bezier(.5,0,.8,.6) .35s forwards; }
 @keyframes cloudAway { to { transform: translate(calc(var(--x) * 3.2), calc(var(--y) * 3.2)) scale(1.5); opacity: 0; } }
 @keyframes skyOff { 0%,30% { opacity: 1; } 100% { opacity: 0; } }
-body.introOn #btnSpeed, body.introOn #feed, body.introOn #hud, body.introOn #units, body.introOn #tools, body.introOn #modeBar, body.introOn #bossbar { opacity: 0; }
+body.introOn #btnPause, body.introOn #feed, body.introOn #hud, body.introOn #units, body.introOn #tools, body.introOn #modeBar, body.introOn #bossbar { opacity: 0; }
 #hud, #units, #tools, #modeBar, #bossbar { transition: opacity .8s; }
 /* 업그레이드 선택 */
 #picker { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(8, 11, 17, .7); padding: 12px; z-index: 5; }
 #picker.hidden { display: none; }
-#pickBox { width: 100%; max-width: 700px; padding: 16px 14px 12px; text-align: center; }
+#pickBox { width: 100%; max-width: 700px; padding: 16px 14px 12px; text-align: center; max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; box-sizing: border-box; }
 #pickTitle { margin: 0 0 2px; font-size: 20px; }
 #pickSub { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
 #pickCards { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
@@ -222,15 +223,19 @@ body.introOn #btnSpeed, body.introOn #feed, body.introOn #hud, body.introOn #uni
 @keyframes sparkOut { from { opacity: 1; transform: translate(0,0) scale(1); } to { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(.2); } }
 .pflash { position: fixed; inset: 0; z-index: 6; pointer-events: none; background: radial-gradient(circle at 50% 50%, var(--c), transparent 70%); animation: pFlash .7s ease-out forwards; }
 @keyframes pFlash { from { opacity: var(--a); } to { opacity: 0; } }
-.pcard.picked { position: fixed; z-index: 8; margin: 0; pointer-events: none; animation: cardPicked .7s ease-in forwards; }
-@keyframes cardPicked { 0% { transform: scale(1); opacity: 1; } 25% { transform: scale(1.04); opacity: 1; } 100% { transform: scale(1.08) translateY(-26px); opacity: 0; } }
+.pcard.picked { position: fixed; z-index: 8; margin: 0; pointer-events: none; animation: cardPicked .28s ease-out forwards; }
+@keyframes cardPicked { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.05) translateY(-18px); opacity: 0; } }
 .pring { position: fixed; z-index: 7; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%; border: 3px solid var(--c); pointer-events: none; animation: pRing .7s ease-out forwards; }
 @keyframes pRing { to { transform: scale(var(--s)); opacity: 0; } }
 #pickFoot { margin-top: 12px; display: flex; gap: 12px; align-items: center; justify-content: center; font-size: 12px; color: var(--muted); }
 #btnReroll { padding: 8px 14px; border-radius: 10px; }
 #btnReroll:disabled { opacity: .4; cursor: default; }
 @media (max-width: 620px) { #bossbar { width: 180px; padding: 3px 7px 4px; } #bossName { font-size: 12px; } #bossHpTxt { font-size: 10.5px; } #bossState { font-size: 9.5px; } }
-@media (max-width: 520px) { .pcard { width: 100%; min-height: 0; flex-direction: column; } #pickCards { flex-direction: column; } }
+@media (max-width: 520px) { .pcard { width: 100%; min-height: 0; flex-direction: column; } #pickCards { flex-direction: column; gap: 7px; }
+  .pcard.job { display: grid; grid-template-columns: 78px 1fr; gap: 2px 10px; padding: 8px 10px; align-items: center; } .pcard.job .tags { grid-column: 1 / -1; }
+  .pcard.job .pimg { grid-column: 1; grid-row: 2 / span 4; width: 72px; height: 72px; margin: 0; } .pcard.job.castle .pimg { width: 78px; height: 70px; }
+  .pcard.job .pn, .pcard.job .pd, .pcard.job .from { grid-column: 2; } .pcard.job .pn { font-size: 15px; } .pcard.job .pd { font-size: 12px; line-height: 1.4; } }
+@media (min-width: 521px) and (max-height: 600px) { .pcard { min-height: 0; padding: 8px 10px; } .pcard .pimg { width: 62px; height: 62px; margin: 2px 0; } .pcard.castle .pimg { width: 108px; height: 90px; } .pcard .pn { font-size: 15px; } .pcard .pd { font-size: 12px; } #pickBox { padding: 10px 12px 8px; } }
 @media (max-width: 520px) { #units .ucard { width: 80px; } #tools { top: calc(max(5px, env(safe-area-inset-top)) + 90px); } #hud { min-width: 128px; } #hud .row { font-size: 11px; } }
 
 table.rank .mtag { font-size: 10px; color: #ffd166; border: 1px solid #ffd16688; border-radius: 4px; padding: 0 3px; margin-left: 3px; }
@@ -313,13 +318,13 @@ body.comicOn { overflow: hidden; }
 .lrow { display: flex; gap: 8px; padding: 6px 2px; border-bottom: 1px solid rgba(255,255,255,.07); } .lr { flex: none; width: 40px; color: #ffd166; font-weight: 800; } .lb { flex: 1; min-width: 0; } .lb > div { margin-bottom: 2px; } .lb .alt { display: block; color: var(--muted); font-size: 10.5px; line-height: 1.4; } .lb .alt u { color: #9fd8ff; text-decoration: none; font-weight: 700; }
 .vrow { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; background: #1b2132; border: 1px solid var(--line); font-size: 14px; }
 .vrow label { flex: none; width: 92px; font-weight: 700; } .vrow input { flex: 1; min-width: 0; accent-color: #ffd166; height: 28px; touch-action: pan-y; } .vrow b { width: 30px; text-align: right; font-variant-numeric: tabular-nums; color: #ffd166; }
-#feed { position: fixed; right: 5px; top: calc(max(5px, env(safe-area-inset-top)) + 188px); width: 236px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; pointer-events: none; z-index: 7; }
-#feed .fe { box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: 5px; padding: 3px 9px 3px 4px; border-radius: 10px; background: rgba(46,14,20,.84); border-right: 3px solid #ff5a5a; font-size: 11px; color: #f4dede; opacity: 0; transform: translateX(34px); max-height: 0; overflow: hidden; transition: opacity .3s, transform .3s, max-height .35s, padding .35s; }
-#feed .fe.in { opacity: 1; transform: none; max-height: 46px; } #feed .fe.old { opacity: .62; }
+#feed { position: fixed; right: 5px; top: calc(max(5px, env(safe-area-inset-top)) + 188px); display: flex; flex-direction: column; align-items: flex-end; gap: 3px; pointer-events: none; z-index: 7; }
+#feed .fe { display: flex; align-items: center; gap: 3px; padding: 2px 6px 2px 3px; border-radius: 8px; background: rgba(46,14,20,.84); border-right: 3px solid #ff5a5a; font-size: 11px; color: #f4dede; opacity: 0; transform: translateX(34px); max-height: 0; overflow: hidden; transition: opacity .3s, transform .3s, max-height .35s, padding .35s; }
+#feed .fe.in { opacity: 1; transform: none; max-height: 30px; } #feed .fe.old { opacity: .62; }
 #feed .fe.out { opacity: 0; transform: translateX(34px); max-height: 0; padding-top: 0; padding-bottom: 0; }
 #feed .fe.rv { background: rgba(10,44,32,.84); border-right-color: #5ae6a0; }
-#feed .fe img { width: 36px; height: 36px; flex: none; border-radius: 8px; background: rgba(255,255,255,.07); }
-#feed .fe .ic { flex: none; width: 22px; text-align: center; font-size: 17px; line-height: 1; } #feed .fe .nm { flex: 1; min-width: 0; text-align: right; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#feed .fe img { width: 26px; height: 26px; flex: none; border-radius: 6px; background: rgba(255,255,255,.07); }
+#feed .fe .ic { flex: none; width: 15px; text-align: center; font-size: 12px; line-height: 1; }
 #modeBar { position: fixed; left: 5px; top: calc(max(5px, env(safe-area-inset-top)) + 82px); display: flex; padding: 2px; gap: 2px; border-radius: 9px; z-index: 6; }
 #modeBar button { padding: 3px 11px; font-size: 12px; border-radius: 7px; background: transparent; border: 0; color: var(--muted); font-weight: 700; }
 #modeBar button.on { background: rgba(255,209,102,.18); color: #ffd166; }
@@ -350,9 +355,9 @@ body.comicOn { overflow: hidden; }
   <div class="row"><span>유닛 <b id="unitTxt">0</b></span><span>처치 <b id="killTxt">0</b></span></div>
 </div>
 
-<button class="btn panel tbtn" id="btnSpeed" title="배속">1×</button>
+<button class="btn panel tbtn" id="btnPause" title="설정 (Space / Esc)" aria-label="설정">⚙️</button>
 <div id="tools">
-  <button class="btn panel tbtn" id="btnPause" title="설정 (Space / Esc)" aria-label="설정">⚙️</button>
+  <div id="speedBar" class="panel" title="배속"><button data-sp="1" class="on">1×</button><button data-sp="2">2×</button><button data-sp="3">3×</button></div>
   <button class="btn panel tbtn" id="btnInfo" title="강화 정보 (I)">강화 정보</button>
 </div>
 
