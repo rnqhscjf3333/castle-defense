@@ -1,4 +1,4 @@
-/* 성채방어 — 화면/입력/UI. 게임 규칙은 core.js(CastleCore)에만 있다. */
+/* 성채 지키기 — 화면/입력/UI. 게임 규칙은 core.js(CastleCore)에만 있다. */
 (function () {
   'use strict';
   const C = window.CastleCore, CFG = C.CFG, W = CFG.world.w, H = CFG.world.h, CX = CFG.world.cx, CY = CFG.world.cy;

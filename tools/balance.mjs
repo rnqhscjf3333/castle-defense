@@ -1,4 +1,4 @@
-// 성채방어 밸런스 시뮬레이터 — core.js를 그대로 재사용해 봇이 수천 판을 돌린다.
+// 성채 지키기 밸런스 시뮬레이터 — core.js를 그대로 재사용해 봇이 수천 판을 돌린다.
 //   node tools/balance.mjs baseline [N]           정책별 클리어율/도달 라운드
 //   node tools/balance.mjs cards [N] [정책]        카드별 기여도 (그 카드를 우선 선택했을 때 평균 도달 라운드 변화)
 //   node tools/balance.mjs sweep <키> <값,값,…> [N]  수치 스윕 (balance.*, growth, startGold, leash, bias, 또는 점 표기: enemies.boss.dmg, bosses.5.hp …)
