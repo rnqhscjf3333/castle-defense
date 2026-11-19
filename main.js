@@ -188,7 +188,7 @@
   }
   // 길 열기: 라운드가 올라 길이 늘어나면 먼지 구름이 성에서 바깥으로 퍼지며 새 길이 나타난다
   let pendingPortal = 0;
-  function syncPortal() { if (!pendingPortal || currentOffer()) return; const n = pendingPortal; pendingPortal = 0; addFx({ k: 'ring', x: CX, y: CY, t: 0, max: 0.8, c: '#ff3b3b', big: true }); setTimeout(() => banner('붉은 포탈이 하나 더 열렸습니다 (' + n + '/8)'), 1600); }
+  function syncPortal() { if (!pendingPortal || currentOffer()) return; const n = pendingPortal; pendingPortal = 0; addFx({ k: 'ring', x: CX, y: CY, t: 0, max: 0.8, c: '#ff3b3b', big: true }); setTimeout(() => banner('붉은 포탈이 하나 더 열렸습니다'), 1600); }
   function syncRoads() {
     const want = S.spawnPts || 2, have = Scenery.roadCount; if (want === have) return;
     if (want > have && currentOffer()) return; // 선택지를 다 고른 뒤에 새 길을 보여준다
