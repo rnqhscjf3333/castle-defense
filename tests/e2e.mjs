@@ -161,12 +161,12 @@ try {
   await open('?bot=1&nopick=1&seed=7&zoom=1', 800);
   check('시작은 1막, 배경도 1막', await ev("__game.S.act === 1 && Scenery.act === 1"));
   await ev("(()=>{const S=__game.S; S.act = 2; S.cinematic = { name: '암흑 기사단장' };})()"); await sleep(900);
-  check('2막 연출이 화면을 덮음 (제목에 보스 이름)', await ev("(()=>{const c=document.getElementById('cine'); return !c.classList.contains('hidden') && c.classList.contains('on') && document.getElementById('cineTitle').textContent.includes('암흑 기사단장');})()"));
+  check('2막 만화 컷신이 화면을 덮음 (컷 4개)', await ev("(()=>{const c=document.getElementById('comic'); return !c.classList.contains('hidden') && c.querySelectorAll('.cp[src*=act2_]').length===4 && c.querySelectorAll('.cp.in').length>=1;})()"));
   const ct0 = await ev('__game.S.t'); await sleep(600); check('연출 중에는 시간이 멈춤', (await ev('__game.S.t')) === ct0);
-  await sleep(1300); check('연출 도중 화면이 가려지면 배경이 2막(새 길)으로 바뀜', await ev("Scenery.act === 2"));
-  await ev("__game.skipCinematic()"); await sleep(400);
+  await sleep(300);
+  await ev("__game.skipCinematic()"); await sleep(400); check('컷신이 끝나면 배경이 2막(새 길)으로 바뀜', await ev("Scenery.act === 2"));
   check('건너뛰기 → 연출 종료, 시간 재개', await ev("__game.S.cinematic === null") && (await ev('__game.S.t')) > ct0, 't ' + ct0.toFixed(1) + '→' + (await ev('__game.S.t')).toFixed(1));
-  await sleep(1100); check('연출 오버레이가 사라짐', await ev("document.getElementById('cine').classList.contains('hidden')"));
+  await sleep(1100); check('컷신 오버레이가 사라짐', await ev("document.getElementById('comic').classList.contains('hidden')"));
   check('HUD에 2막 표시', await ev("document.getElementById('roundTxt').classList.contains('act2')"), await ev("document.getElementById('roundTxt').textContent"));
   // 31라운드로 점프: 스폰 지점 8곳(포탈), 미니맵 길 8갈래
   await open('?bot=1&nopick=1&startRound=31&seed=7&zoom=1', 1200);

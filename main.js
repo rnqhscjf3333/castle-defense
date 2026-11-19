@@ -993,12 +993,16 @@
     { t: 5.8, text: '마왕의 군세가 몰려온다\n50라운드까지 버텨라' },
   ];
   function cineSetText(txt) { const el = $('cineText'); el.classList.remove('show'); setTimeout(() => { if (!cine) return; el.textContent = txt; el.classList.add('show'); }, 380); }
-  function startCine(name, kind) {
+  function startCine(name, kind) { // 1막 끝(30R)·마왕 처치(50R): 만화 컷신을 보여 주고, 끝나면 다음 막/무한 모드로
+    cine = { comic: true, kind };
+    playComic(kind === 'endless' ? 'endless' : 'act2', () => { if (!cine) return; cine = null; if (kind !== 'endless') Scenery.setAct(2, true); C.endCinematic(S); });
+    return;
     cine = { t0: performance.now(), step: -1, swapped: kind === 'endless', kind };
     $('cineTitle').textContent = name + ' 처치!'; $('cineText').textContent = ''; $('cineText').classList.remove('show'); $('cineTitle').classList.remove('show');
     $('cine').classList.remove('hidden'); requestAnimationFrame(() => { $('cine').classList.add('on'); $('cineTitle').classList.add('show'); });
   }
   function stepCine(now) {
+    if (cine.comic) return;
     const t = (now - cine.t0) / 1000;
     if (!cine.swapped && t > 1.3) { cine.swapped = true; Scenery.setAct(2, true); } // 화면이 완전히 가려진 뒤 길/바닥을 새로 만든다
     const steps = cine.kind === 'endless' ? CINES.endless.steps : CINE_STEPS;
@@ -1007,6 +1011,7 @@
   }
   function endCine() {
     if (!cine) return;
+    if (cine.comic) { $('comicSkip').click(); return; }
     if (!cine.swapped) Scenery.setAct(2, true);
     cine = null; C.endCinematic(S);
     $('cine').classList.remove('on'); setTimeout(() => { if (!cine) $('cine').classList.add('hidden'); }, 950);
@@ -1105,17 +1110,29 @@
   document.addEventListener('visibilitychange', () => { if (document.hidden) abandon(); });
   // ───────────── 오프닝 만화 컷신: 컷을 터치할 때마다 다음 컷이 효과와 함께 나타난다 ─────────────
   let openingSeen = false, comicOn = false;
-  function playOpening(done) {
+  const OPENING_HTML = $('comicStage').innerHTML; // 오프닝 4컷 (HTML에 들어 있는 원본)
+  // 30라운드(암흑 기사단장 처치)·50라운드(마왕 처치) 컷신: 만화 한 장을 컷별로 잘라 둔 이미지를 오프닝처럼 한 컷씩 보여 준다 (위치는 원본 1586×992 기준 %)
+  const COMIC_POS = {
+    act2: [[0.82, 1.31, 54.29], [50.0, 1.31, 49.24], [0.82, 47.48, 50.32], [46.6, 49.09, 52.65]],
+    endless: [[0.82, 1.21, 59.08], [55.61, 1.21, 43.82], [0.82, 46.77, 49.18], [46.22, 48.59, 53.28]],
+  };
+  function playComic(name, done) {
+    if (name === 'opening') $('comicStage').innerHTML = OPENING_HTML;
+    else $('comicStage').innerHTML = COMIC_POS[name].map((p, i) => '<img class="cp" data-i="' + (i + 1) + '" src="assets/' + name + '_' + (i + 1) + '.webp?v=1" alt="" style="left:' + p[0] + '%;top:' + p[1] + '%;width:' + p[2] + '%">').join('');
     const el = $('comic'), imgs = Array.from(el.querySelectorAll('.cp')); let idx = 0, over = false; comicOn = true;
     const wait = Promise.all(imgs.map(im => im.complete ? 1 : new Promise(r => { im.onload = im.onerror = r; })));
     document.body.classList.add('comicOn'); imgs.forEach(im => im.classList.remove('in')); el.classList.remove('hidden', 'out', 'shake', 'rumble'); $('comicHint').textContent = '화면을 터치하면 다음 컷 ▶';
     const flash = (c) => { const f = $('comicFlash'); f.className = ''; void f.offsetWidth; f.className = c; };
-    const fxOf = [null,
-      () => { A2.play('page'); },
-      () => { A2.play('page'); flash('go'); },
-      () => { A2.play('rumble'); el.classList.add('rumble'); flash('red'); setTimeout(() => el.classList.remove('rumble'), 1300); },
-      () => { A2.play('horn'); el.classList.add('shake'); flash('go'); const l = $('comicLines'); l.className = ''; void l.offsetWidth; l.className = 'go'; setTimeout(() => el.classList.remove('shake'), 600); $('comicHint').textContent = '화면을 터치하면 시작 ▶'; },
-    ];
+    const endHint = name === 'opening' ? '화면을 터치하면 시작 ▶' : '화면을 터치하면 계속 ▶';
+    const rumble = () => { A2.play('rumble'); el.classList.add('rumble'); flash('red'); setTimeout(() => el.classList.remove('rumble'), 1300); };
+    const horn = () => { A2.play('horn'); el.classList.add('shake'); flash('go'); const l = $('comicLines'); l.className = ''; void l.offsetWidth; l.className = 'go'; setTimeout(() => el.classList.remove('shake'), 600); $('comicHint').textContent = endHint; };
+    const FX = {
+      opening: [null, () => { A2.play('page'); }, () => { A2.play('page'); flash('go'); }, rumble, horn],
+      act2: [null, () => { A2.play('page'); }, () => { A2.play('rage'); flash('red'); }, horn, rumble],
+      endless: [null, () => { A2.play('page'); }, () => { A2.play('page'); flash('go'); }, rumble, horn],
+    };
+    if (name !== 'opening') FX[name][4] = ((f) => () => { f(); $('comicHint').textContent = endHint; })(FX[name][4]);
+    const fxOf = FX[name];
     const show = () => { idx++; const im = imgs[idx - 1]; im.classList.add('in'); fxOf[idx] && fxOf[idx](); if (matchMedia('(max-aspect-ratio: 1/1)').matches) setTimeout(() => el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' }), 80); };
     const finish = () => { if (over) return; over = true; comicOn = false; document.body.classList.remove('comicOn'); el.classList.add('out'); setTimeout(() => { el.classList.add('hidden'); el.classList.remove('out'); }, 600); el.removeEventListener('click', advance); window.removeEventListener('keydown', key, true); done(); };
     const advance = e => { if (e && e.target && e.target.id === 'comicSkip') return; if (idx < 4) show(); else finish(); };
@@ -1124,6 +1141,7 @@
     $('comicSkip').onclick = e => { e.stopPropagation(); finish(); };
     wait.then(() => { if (!over) show(); });
   }
+  const playOpening = done => playComic('opening', done);
   $('go').addEventListener('click', () => {
     if ($('go').dataset.back) { delete $('go').dataset.back; $('overlay').classList.add('hidden'); return; }
     A2.init(); $('overlay').classList.add('hidden');
