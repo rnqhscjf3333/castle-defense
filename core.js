@@ -248,7 +248,7 @@
     cardVals: {                       // 카드 수치 (설명 문구와 효과가 모두 여기서 읽는다)
       coreAtk: 0.40, coreRate: 0.25, coreRange: 45, fortHp: 600, repair: 0.15, thorn: 0.9,
       crit: 0.10, critMul: 2, archerRange: 0.12,
-      guard: 0.15, dodge: 0.12, charge: 0.40, chargeRate: 0.15, revive: 0.70, pierce: 0.40, bomb: 4.0, bombStep: 1.5,
+      guard: 0.15, dodge: 0.12, hbuff: 0.12, hbuffT: 4, charge: 0.40, chargeRate: 0.15, revive: 0.70, pierce: 0.40, bomb: 4.0, bombStep: 1.5,
       auraHeal: 0.025, auraAtk: 0.08, auraDef: 0.08, auraDefCap: 0.40, auraSpd: 0.06, auraBoost: 0.15,
     },
     rerolls: 2,
@@ -384,7 +384,7 @@
     { id: 'u_dodge',   cat: 'unit', rar: 'rare', max: 3, type: 'archer', name: '궁수 · 회피',      desc: l => '궁수 계열이 공격을 ' + Math.round(V().dodge * 100 * l) + '% 확률로 회피' },
     { id: 'u_range',   cat: 'unit', rar: 'rare', max: 3, type: 'archer', name: '궁수 · 사거리',    desc: l => '궁수 계열 사거리 +' + Math.round(V().archerRange * 100 * l) + '%' },
     { id: 'u_aoeheal', cat: 'unit', rar: 'rare', max: 3, type: 'priest', name: '사제 · 광역 치유', desc: l => '치유 대상 바로 옆(붙어 있는) 아군도 ' + 35 * l + '% 회복' },
-    { id: 'u_revive',  cat: 'unit', rar: 'epic', max: 3, type: 'priest', name: '사제 · 부활',      desc: l => '쓰러진 아군을 라운드당 ' + l + '회 체력 ' + Math.round(V().revive * 100) + '%로 부활' },
+    { id: 'u_hbuff',   cat: 'unit', rar: 'epic', max: 3, type: 'priest', name: '사제 · 격려',      desc: l => '치유를 받은 아군은 ' + V().hbuffT + '초 동안 공격력 +' + Math.round(V().hbuff * 100 * l) + '%' },
     // 성 — 포격
     { id: 'c_atk',    cat: 'core', rar: 'common', max: 5, name: '성 · 공격력',   desc: l => '성 공격력 +' + Math.round(V().coreAtk * 100 * l) + '%' },
     { id: 'c_rate',   cat: 'core', rar: 'common', max: 4, name: '성 · 공격 속도', desc: l => '성 공격 속도 +' + Math.round(V().coreRate * 100 * l) + '%' },
@@ -632,7 +632,7 @@
     S.aura = { heal: v.auraHeal * L('a_heal') * boost, atk: v.auraAtk * L('a_atk') * boost, def: Math.min(v.auraDefCap, v.auraDef * L('a_def') * boost), spd: v.auraSpd * L('a_spd') * boost, r: CFG.auraBase,
                on: AURA_IDS.some(a => L(a) > 0) };
     S.jobMods = { sword: jobModsOf(S, 'sword'), archer: jobModsOf(S, 'archer'), priest: jobModsOf(S, 'priest') };
-    S.perks = { guard: L('u_guard'), charge: L('u_charge'), pierce: L('u_pierce'), crit: L('u_crit'), dodge: L('u_dodge'), archerRange: L('u_range'), aoeHeal: L('u_aoeheal'), revive: L('u_revive'),
+    S.perks = { guard: L('u_guard'), charge: L('u_charge'), pierce: L('u_pierce'), crit: L('u_crit'), dodge: L('u_dodge'), archerRange: L('u_range'), aoeHeal: L('u_aoeheal'), revive: 0, hbuff: L('u_hbuff'),
                 splash: L('c_splash'), chain: L('c_chain'), bomb: L('c_bomb'), thorn: L('f_thorn'), repair: L('f_repair') };
   }
   // 전직 효과 합산 (유닛 종류별)
@@ -926,11 +926,11 @@
     const revive = !!b.canRevive && !b.p2 && !S.endless;
     S.gold += b.gold; S.stats.earned += b.gold; S.kills++; S.stats.killBy.boss = (S.stats.killBy.boss || 0) + 1; if (!revive) S.stats.bossKills++;
     emit(S, { type: 'kill', x: b.x, y: b.y, boss: true });
-    S.queue.length = 0; S.zones.length = 0; S.pools.length = 0; S.rain.length = 0;
-    for (const o of S.enemies) if (!o.dead && o !== b) { o.dead = true; emit(S, { type: 'kill', x: o.x, y: o.y, boss: false, wipe: true }); }
+    if (!revive) S.queue.length = 0; S.zones.length = 0; S.pools.length = 0; S.rain.length = 0;
+    if (!revive) for (const o of S.enemies) if (!o.dead && o !== b) { o.dead = true; emit(S, { type: 'kill', x: o.x, y: o.y, boss: false, wipe: true }); }
     S.bossDeath = { b, t: 0, dur: CFG.bossDeathT, stage: 'die', revive, t0: 0 };
     emit(S, { type: 'bossDying', x: b.x, y: b.y, r: b.r, name: b.bossName, id: b.kind, dur: CFG.bossDeathT, revive });
-    emit(S, { type: 'bossWipe', x: b.x, y: b.y });
+    if (!revive) emit(S, { type: 'bossWipe', x: b.x, y: b.y });
   }
   function p2Abil(abil) {
     const N = CFG.finalNerf, out = {};
@@ -1174,9 +1174,11 @@
     return best;
   }
   // 치유: 1초 동안 받을 수 있는 양에 상한(healCap)이 있고, 치유 감소 상태이면 줄어든다
+  const hbMul = (S, u) => u.hbT > 0 ? 1 + V().hbuff * S.perks.hbuff : 1;
   function applyHeal(S, t, amt) {
     if (t.undead) return; // 사제·오라·성 파동 모두 망자는 치유하지 않는다
     if (t.woundT > 0) amt *= CFG.debuff.wound.mul;
+    if (S.perks.hbuff && t.team === 'u' && amt > 0) t.hbT = V().hbuffT; // 사제 · 격려: 치유받으면 잠시 공격력 상승
     t.hwT = (t.hwT || 0); if (S.t - t.hwT >= 1) { t.hwT = S.t; t.hw = 0; }
     const room = Math.max(0, t.max * CFG.balance.healCap - (t.hw || 0)); amt = Math.min(amt, room, t.max - t.hp);
     if (amt > 0) { t.hp += amt; t.hw = (t.hw || 0) + amt; if (S.captureEvents && t.team === 'u') numNote(S, t, amt, 'h'); }
@@ -1251,7 +1253,7 @@
     const melee = u.range < 60;
     const spm = 1 + (u.aura ? S.aura.spd : 0);
     const bz = S.jobMods[lineOf(u.type)] ? S.jobMods[lineOf(u.type)].berserk : 0; // 버서커: 체력이 낮을수록 강해진다
-    const atk = u.atk * (1 + (u.aura ? S.aura.atk : 0)) * (u.weakT > 0 ? CFG.debuff.weak.mul : 1) * (bz ? 1 + bz * (1 - Math.max(0, u.hp) / u.max) : 1);
+    const atk = u.atk * hbMul(S, u) * (1 + (u.aura ? S.aura.atk : 0)) * (u.weakT > 0 ? CFG.debuff.weak.mul : 1) * (bz ? 1 + bz * (1 - Math.max(0, u.hp) / u.max) : 1);
     const fromCore = Math.hypot(u.x - CX, u.y - CY);
     if (u.dash) { // (돌진 중) 빠르게 직진하며 닿는 적을 한 번씩 벤다
       const dsh = u.dash, sk = CFG.heroSkill[u.type], step = Math.min(sk.spd * dt, dsh.left);
@@ -1305,7 +1307,7 @@
     const cfg = CFG.units[u.type], t = nearestBoth(S, u.x, u.y, u.range);
     if (!t) return;
     u.cd = 1 / (u.rate * (1 + (u.aura ? S.aura.spd : 0))); u.swing = 0.2; u.aim = Math.atan2(t.y - u.y, t.x - u.x);
-    const dmg = u.atk * (1 + (u.aura ? S.aura.atk : 0)) * (u.weakT > 0 ? CFG.debuff.weak.mul : 1);
+    const dmg = u.atk * hbMul(S, u) * (1 + (u.aura ? S.aura.atk : 0)) * (u.weakT > 0 ? CFG.debuff.weak.mul : 1);
     if (cfg.shot === 'b') fire(S, u, t, dmg, CFG.arrowSpeed + 120, 'b', { pierce: true, pc: (cfg.pierce | 0) + pierceCount(S) }); // 발리스타: 큰 화살이 적을 꿰뚫는다
     else fire(S, u, t, dmg, CFG.arrowSpeed + 60, 't');
   }
@@ -1522,7 +1524,7 @@
     const bias = S.biasNow;
     for (const u of S.units) {
       if (u.dead) continue;
-      u.flash = Math.max(0, u.flash - dt); u.swing = Math.max(0, u.swing - dt); if (u.wardFx > 0) u.wardFx -= dt;
+      u.flash = Math.max(0, u.flash - dt); u.swing = Math.max(0, u.swing - dt); if (u.wardFx > 0) u.wardFx -= dt; if (u.hbT > 0) u.hbT -= dt;
       if (u.undead && (u.ttl -= dt) <= 0) { u.dead = true; emit(S, { type: 'undeadFade', x: u.x, y: u.y }); continue; }
       if (u.stunT > 0 || u.poisonT > 0 || u.weakT > 0 || u.woundT > 0) {
         if (u.poisonT > 0) { u.poisonT -= dt; u.hp = Math.max(1, u.hp - u.max * CFG.debuff.poison.pct * dt); }

@@ -142,9 +142,9 @@ table.rank tr.me td { background: rgba(255,204,64,.16); font-weight: 700; }
 @keyframes logoIn { from { opacity: 0; transform: translateY(-30px) scale(.9); } to { opacity: 1; transform: none; } }
 #tapHint { position: absolute; left: 0; right: 0; bottom: 17%; text-align: center; font-size: 17px; color: #fff; letter-spacing: .1em; animation: blinkHint 1.4s ease-in-out infinite; text-shadow: 0 2px 8px #000; }
 @keyframes blinkHint { 50% { opacity: .25; } }
-#tMenu { position: absolute; left: 50%; bottom: max(26px, env(safe-area-inset-bottom)); transform: translateX(-50%); display: none; flex-direction: column; gap: 12px; margin-top: 0; width: min(260px, 72vw); }
+#tMenu { position: relative; display: none; flex-direction: column; gap: 12px; margin-top: 34px; width: min(260px, 72vw); }
 #title.menu #tMenu { display: flex; animation: menuIn .45s ease-out both; } #title.menu #tapHint { display: none; }
-@keyframes menuIn { from { opacity: 0; margin-bottom: -24px; } to { opacity: 1; margin-bottom: 0; } }
+@keyframes menuIn { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
 #tMenu button { padding: 14px 10px; font-size: 18px; font-weight: 800; letter-spacing: .12em; color: #fff; border-radius: 14px; border: 2px solid rgba(255,220,150,.5); background: linear-gradient(180deg, rgba(80,50,120,.9), rgba(40,24,70,.92)); box-shadow: 0 4px 0 rgba(0,0,0,.45), 0 0 18px rgba(160,110,255,.25); }
 #tMenu button.main { color: #2a1400; border-color: #fff1b0; background: linear-gradient(180deg, #ffd96a, #f1a62a); box-shadow: 0 4px 0 #8a5412, 0 0 22px rgba(255,190,70,.45); }
 #tDev, #tSet { position: absolute; top: max(10px, env(safe-area-inset-top)); z-index: 3; display: none; font-size: 13px; padding: 6px 12px; } #tDev { left: 10px; } #tSet { right: 10px; padding: 6px 8px; } .gear { display: block; } #title.menu #tDev, #title.menu #tSet { display: block; }
