@@ -99,6 +99,9 @@
     act1Boss: { id: 'darkknight', line: '어둠 앞에 무릎을 꿇어라.', name: '암흑 기사단장', look: { body: '#2b2f3f', head: '#c9ccd6', weapon: 'sword' }, abil: { summon: { cd: 10, n: 2, kind: 'bomber' }, artillery: { cd: 6, dmg: 70, radius: 105, count: 2, flight: 1.5 }, shield: { cd: 16, dur: 3, red: 0.6 }, rage: { at: 0.35, speed: 1.3, rate: 1.4, dmg: 1.4 }, debuff: [{ kind: 'stun', cd: 13, r: 110 }, { kind: 'wound', cd: 15, r: 160 }] } },
     // 최종 보스(50라운드): 마왕
     finalBoss: { id: 'overlord', line: '모든 것은 이 어둠 속에서 끝난다.', name: '마왕', r: 38, look: { body: '#4a2a6a', head: '#d9c6e6', weapon: 'sword', crown: true }, abil: { summon: { cd: 7, n: 4, kind: 'bomber' }, artillery: { cd: 5, dmg: 130, radius: 115, count: 2, flight: 1.4 }, shield: { cd: 12, dur: 3.5, red: 0.7 }, rage: { at: 0.4, speed: 1.4, rate: 1.5, dmg: 1.5 }, dash: { cd: 9, dur: 1.2, mul: 2.5 }, debuff: [{ kind: 'stun', cd: 10, r: 120 }, { kind: 'poison', cd: 11, r: 150 }, { kind: 'weak', cd: 13, r: 170 }, { kind: 'wound', cd: 14, r: 170 }] } },
+    // 마왕(50라운드): 1·2형태. 체력·공격을 너프하는 대신 한 번 쓰러져도 각성해서 부활한다
+    finalNerf: { hp: 0.6, dmg: 0.78, hp2: 0.6, cdMul: 0.85, rageAt: 0.5, reviveT: 3.4, r: 44, name: '각성한 마왕', look: { body: '#7a1424', head: '#ecd2c4', weapon: 'sword', crown: true, p2: true } },
+    bossDeathT: 2.8,       // 보스 사망 연출 길이(초): 이 동안 시간이 멈추고 카메라가 보스를 비춘다
     // 보스 보상: 전직이 모두 끝난 뒤(35라운드~)에는 보스를 처치하면 이 중 3가지가 제시된다
     rewards: [
       { id: 'r_knights', name: '용병 기사단', desc: '강력한 용병 용사 3명이 합류 (스킬 [일섬]) — 전군 강화와 같은 수준으로 강력', units: ['hero', 'hero', 'hero'] },
@@ -588,7 +591,7 @@
       bossUp: { hp: 0, atk: 0 },
       up: { sword: { hp: 0, atk: 0, rate: 0, speed: 0 }, archer: { hp: 0, atk: 0, rate: 0, speed: 0 }, priest: { hp: 0, atk: 0, rate: 0, speed: 0 } },
       aura: null, perks: null, bombCd: 8, reviveLeft: 0, jobMods: null, biasNow: 0.08, coreDmgBy: {},
-      act: 1, cinematic: null, // act 2: 30라운드 보스 처치 후. cinematic: 연출이 진행되는 동안 시간이 멈춘다
+      act: 1, cinematic: null, bossDeath: null, // act 2: 30라운드 보스 처치 후. cinematic: 연출이 진행되는 동안 시간이 멈춘다
       jobs: { sword: { ids: [] }, archer: { ids: [] }, priest: { ids: [] }, offer: null },
     };
     // 일반 보스 5종의 등장 순서 (게임마다 무작위, 한 번씩)
@@ -679,7 +682,7 @@
   function bossDefFor(S, r) {
     if (r === MAX_ROUND) return CFG.finalBoss;
     if (r === ACT1_END) return CFG.act1Boss;
-    if (r > MAX_ROUND) return r % 5 === 0 ? (r % 10 === 0 ? CFG.finalBoss : CFG.bossPool[(r / 5) % CFG.bossPool.length]) : null; // 무한 모드: 5라운드마다 보스, 10라운드마다 마왕
+    if (r > MAX_ROUND) return r % 5 === 0 ? CFG.bossPool[(r / 5) % CFG.bossPool.length] : null; // 무한 모드: 5라운드마다 보스 (마왕은 50라운드에만 나온다)
     if (r % 5 !== 0 || r < 5 || r > 45) return null;
     return r < ACT1_END ? CFG.bossPool[S.bossOrder[r / 5 - 1]] : CFG.bossPool[S.bossOrder2[(r - 35) / 5]];
   }
@@ -782,6 +785,7 @@
     if (bd) {
       e.bossName = bd.name; e.look = bd.look; e.abil = (bd === CFG.finalBoss || bd === CFG.act1Boss) ? bd.abil : scaleAbil(bd.abil, r); e.t = {};
       for (const k in e.abil) if (!Array.isArray(e.abil[k])) e.t[k] = (e.abil[k].cd || 0) * 0.6; // 첫 패턴은 조금 일찍
+      if (bd === CFG.finalBoss && r === MAX_ROUND) { const N = CFG.finalNerf; e.max = e.hp = Math.round(e.max * N.hp); e.max2 = Math.round(e.max / N.hp * N.hp2); e.dmg *= N.dmg; e.canRevive = true; }
       S.stats.seenB[bd.id] = 1;
       emit(S, { type: 'bossSpawn', name: bd.name, id: bd.id, line: bd.line, look: bd.look, r: e.r });
     }
@@ -793,6 +797,46 @@
   }
 
   // ───────────── 피해/사망 ─────────────
+  // ───────────── 보스 사망 연출 ─────────────
+  // 보스 체력이 0이 되면: 남은 졸개가 모두 쓰러지고, 시간이 멈춘 채 보스의 사망 모션이 흐른 뒤 라운드가 끝난다.
+  // 50라운드 마왕은 여기서 한 번 더 부활한다 (체력이 다시 차오르며 모습이 바뀐다).
+  function beginBossDeath(S, b) {
+    b.dying = true; b.hp = 0; b.shieldT = 0; b.dashT = 0; b.leapT = 0;
+    const revive = !!b.canRevive && !b.p2 && !S.endless;
+    S.gold += b.gold; S.stats.earned += b.gold; S.kills++; S.stats.killBy.boss = (S.stats.killBy.boss || 0) + 1; if (!revive) S.stats.bossKills++;
+    emit(S, { type: 'kill', x: b.x, y: b.y, boss: true });
+    S.queue.length = 0; S.zones.length = 0; S.pools.length = 0; S.rain.length = 0;
+    for (const o of S.enemies) if (!o.dead && o !== b) { o.dead = true; emit(S, { type: 'kill', x: o.x, y: o.y, boss: false, wipe: true }); }
+    S.bossDeath = { b, t: 0, dur: CFG.bossDeathT, stage: 'die', revive, t0: 0 };
+    emit(S, { type: 'bossDying', x: b.x, y: b.y, r: b.r, name: b.bossName, id: b.kind, dur: CFG.bossDeathT, revive });
+    emit(S, { type: 'bossWipe', x: b.x, y: b.y });
+  }
+  function p2Abil(abil) {
+    const N = CFG.finalNerf, out = {};
+    for (const k in abil) { const a = abil[k]; out[k] = Array.isArray(a) ? a.map(d => Object.assign({}, d, { cd: d.cd * N.cdMul })) : Object.assign({}, a, a.cd ? { cd: a.cd * N.cdMul } : {}); }
+    if (out.rage) out.rage = Object.assign({}, out.rage, { at: N.rageAt });
+    delete out.rush; return out;
+  }
+  function stepBossDeath(S, dt) {
+    const D = S.bossDeath, b = D.b, N = CFG.finalNerf; D.t += dt;
+    if (D.stage === 'die') {
+      if (D.t < D.dur) return;
+      if (D.revive) { // 각성: 모습이 바뀌고 체력이 0에서 다시 차오른다
+        D.stage = 'revive'; D.t0 = D.t; b.p2 = true; b.bossName = N.name; b.look = N.look; b.r = N.r; b.max = b.max2; b.hp = 0; b.gold = 0;
+        b.abil = p2Abil(b.abil); b.t = {}; for (const k in b.abil) if (!Array.isArray(b.abil[k])) b.t[k] = (b.abil[k].cd || 0) * 0.6;
+        b.life = 0; b.enraged = false; b.rushDone = true; b.age = 0; b.enr = false; b.cd = 1;
+        emit(S, { type: 'bossRevive', x: b.x, y: b.y, r: b.r, name: b.bossName, dur: N.reviveT });
+        return;
+      }
+      b.dead = true; S.bossDeath = null; emit(S, { type: 'bossGone', x: b.x, y: b.y, r: b.r });
+      if (S.round === ACT1_END && S.act === 1) { S.act = 2; S.cinematic = { name: b.bossName, kind: 'act2' }; emit(S, { type: 'act2', boss: b.bossName }); } // 1막 마지막 보스 처치 → 연출 후 2막
+      if (S.round === MAX_ROUND && !S.endless) reviveForEndless(S, b); // 마왕 처치 → 연출과 함께 무한 모드가 시작된다
+      openJobs(S, b.bossName); // 보스를 처치하면 전직 선택
+      return;
+    }
+    const p = Math.min(1, (D.t - D.t0) / N.reviveT); b.hp = b.max * p * (2 - p); // 체력 바가 빠르게 차올랐다가 천천히 가득 찬다
+    if (p >= 1) { b.hp = b.max; b.dying = false; S.bossDeath = null; emit(S, { type: 'bossRevived', x: b.x, y: b.y, name: b.bossName }); }
+  }
   function hitCore(S, dmg, src) {
     const c = S.core; c.hp -= dmg; c.flash = 0.12;
     const by = S.coreDmgBy; const k = src || '기타'; by[k] = (by[k] || 0) + dmg; // 어떤 공격에 성이 많이 맞는지 (밸런스 진단용)
@@ -817,7 +861,7 @@
     q.length = w;
   }
   function damage(S, tgt, dmg, crit, src) {
-    if (tgt.dead) return;
+    if (tgt.dead || tgt.dying) return;
     if (src && tgt.team === 'u' && !src.dead) { tgt.rv = src; tgt.rvT = 6; } // 맞은 유닛이 때린 적을 기억 (자유 모드 반격용)
     if (CFG.dmgVar) dmg *= 1 + (S.rng() * 2 - 1) * CFG.dmgVar; // 공격력 ±N% 오차
     if (tgt.team === 'e' && tgt.shieldT > 0) dmg *= 1 - tgt.shieldRed; // 보스 방어막 동안 피해 감소
@@ -834,17 +878,10 @@
     if (tgt.team === 'u' && S.reviveLeft > 0 && !isStatic(tgt) && S.units.some(p => p.type === 'priest' && !p.dead && p !== tgt)) {
       S.reviveLeft--; tgt.hp = tgt.max * V().revive; emit(S, { type: 'revive', x: tgt.x, y: tgt.y }); return;
     }
+    if (tgt.team === 'e' && tgt.kind === 'boss') { beginBossDeath(S, tgt); return; } // 보스는 사망 연출이 끝난 뒤에 쓰러진다
     tgt.dead = true;
     if (tgt.team === 'e') {
       S.gold += tgt.gold; S.stats.earned += tgt.gold; S.kills++; S.stats.killBy[tgt.kind] = (S.stats.killBy[tgt.kind] || 0) + 1; if (tgt.kind === 'boss') S.stats.bossKills++; emit(S, { type: 'kill', x: tgt.x, y: tgt.y, boss: tgt.kind === 'boss' });
-      if (tgt.kind === 'boss') { // 보스를 처치하면 남은 졸개도 모두 쓰러지고 라운드가 끝난다
-        S.queue.length = 0; S.zones.length = 0; S.pools.length = 0; S.rain.length = 0;
-        for (const o of S.enemies) if (!o.dead && o !== tgt) { o.dead = true; emit(S, { type: 'kill', x: o.x, y: o.y, boss: false, wipe: true }); }
-        emit(S, { type: 'bossWipe', x: tgt.x, y: tgt.y });
-      }
-      if (tgt.kind === 'boss' && S.round === ACT1_END && S.act === 1) { S.act = 2; S.cinematic = { name: tgt.bossName, kind: 'act2' }; emit(S, { type: 'act2', boss: tgt.bossName }); } // 1막 마지막 보스 처치 → 연출 후 2막
-      if (tgt.kind === 'boss' && S.round === MAX_ROUND && !S.endless) reviveForEndless(S, tgt); // 마왕 처치 → 연출과 함께 쓰러진 병사들이 모두 돌아오고 무한 모드가 시작된다
-      if (tgt.kind === 'boss') openJobs(S, tgt.bossName); // 보스를 처치하면 전직 선택
     }
     else { if (S.fallen.length < 80) S.fallen.push(tgt.type); emit(S, { type: 'udead', x: tgt.x, y: tgt.y }); }
   }
@@ -1221,7 +1258,9 @@
 
   // ───────────── 한 틱 진행 ─────────────
   function tick(S, dt) {
-    if (S.over || S.cards.offer || S.jobs.offer || S.cinematic) return; // 카드/전직 선택, 연출 중에는 시간이 멈춘다
+    if (S.over) return;
+    if (S.bossDeath) { stepBossDeath(S, dt); return; } // 보스 사망·부활 연출 중에는 시간이 멈춘다
+    if (S.cards.offer || S.jobs.offer || S.cinematic) return; // 카드/전직 선택, 연출 중에는 시간이 멈춘다
     S.t += dt;
     for (const k in S.buyCd) if (S.buyCd[k] > 0) S.buyCd[k] -= dt;
     updateProd(S, dt);

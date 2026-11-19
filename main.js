@@ -251,7 +251,7 @@
     setText('bossHpTxt', Math.ceil(b.hp).toLocaleString() + ' / ' + b.max.toLocaleString() + '  (' + Math.ceil(pct) + '%)');
     const shielded = b.shieldT > 0, rage = !!b.enraged;
     el.classList.toggle('shielded', shielded); el.classList.toggle('rage', rage && !shielded);
-    let st = shielded ? '방어막 — 받는 피해 ' + Math.round(b.shieldRed * 100) + '% 감소' : b.dashT > 0 ? '돌진 중!' : rage ? '분노 — 더 빠르고 강해졌다' : '패턴: ' + Object.keys(b.abil).map(k => k === 'debuff' ? b.abil.debuff.map(d => DBK[d.kind][0]).join('·') : PAT[k]).join(' · ');
+    let st = b.dying ? (S.bossDeath && S.bossDeath.stage === 'revive' ? '부활 중…' : '쓰러지는 중…') : shielded ? '방어막 — 받는 피해 ' + Math.round(b.shieldRed * 100) + '% 감소' : b.dashT > 0 ? '돌진 중!' : rage ? '분노 — 더 빠르고 강해졌다' : '패턴: ' + Object.keys(b.abil).map(k => k === 'debuff' ? b.abil.debuff.map(d => DBK[d.kind][0]).join('·') : PAT[k]).join(' · ');
     if (b.grow > 1.04) st += '  |  공격력 ×' + b.grow.toFixed(1) + (b.grow >= CFG.balance.bossGrowMax - 0.01 ? ' (최대)' : ' ↑');
     setText('bossState', st);
   }
@@ -496,6 +496,9 @@
       case 'picked': A2.play('card'); break;
       case 'promote': A2.play('job'); break;
       case 'bossSpawn': A2.alarm(); showBossIntro(ev); break;
+      case 'bossDying': A2.play('bigBoom', ev.x, ev.y); break;
+      case 'bossRevive': A2.alarm(); A2.play('rage'); break;
+      case 'bossGone': A2.play('bigBoom', ev.x, ev.y); A2.play('boom', ev.x, ev.y); break;
       case 'bossDash': A2.play('dash', ev.x, ev.y); break;
       case 'bossShield': A2.play('shield', ev.x, ev.y); break;
       case 'bossSummon': A2.play('summon', ev.x, ev.y); break;
@@ -520,6 +523,9 @@
       else if (ev.type === 'bossCast') { addFx({ k: 'zone', x: ev.x, y: ev.y, r: ev.r, t: 0, max: ev.warn, c: DBK[ev.kind][1] }); toast('보스가 ' + DBK[ev.kind][0] + ' 광역기를 시전!'); }
       else if (ev.type === 'debuffHit') addFx({ k: 'boom', x: ev.x, y: ev.y, r: ev.r, t: 0, max: 0.4, big: false, enemy: true, c: DBK[ev.kind][1] });
       else if (ev.type === 'roundClear') banner('라운드 ' + ev.round + ' 클리어!');
+      else if (ev.type === 'bossRevive') { banner(ev.name + '… 다시 일어선다!', true); for (let i = 0; i < 3; i++) addFx({ k: 'ring', x: ev.x, y: ev.y, t: -i * 0.35, max: 1.1, c: i % 2 ? '#ff7a3a' : '#ff2a4a', r: ev.r * 3, big: true }); }
+      else if (ev.type === 'bossRevived') { banner('최후의 결전!', true); addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#ffffff', big: true }); }
+      else if (ev.type === 'bossGone') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.9, c: '#ffffff', r: ev.r * 3.5, big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: -0.1, max: 1, c: '#ffd166', r: ev.r * 2.5, big: true }); for (let k = 0; k < 14; k++) addFx({ k: 'dust', x: ev.x + (Math.random() - 0.5) * ev.r * 2.4, y: ev.y + (Math.random() - 0.5) * ev.r * 1.6, t: 0, max: 1.3, r: 14 + Math.random() * 18 }); }
       else if (ev.type === 'bossWipe') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.9, c: '#ffffff', big: true }); toast('보스 처치! 남은 적이 모두 쓰러졌어요'); }
       else if (ev.type === 'kill') { addFx({ k: 'burst', x: ev.x, y: ev.y, t: 0, max: ev.boss ? 0.8 : 0.3, c: ev.boss ? '#c77dff' : '#ff8a5c', big: ev.boss }); }
       else if (ev.type === 'udead') addFx({ k: 'burst', x: ev.x, y: ev.y, t: 0, max: 0.4, c: '#8fb7ff' });
@@ -586,7 +592,43 @@
     ctx.fillStyle = e.team === 'u' ? '#6bdc8b' : '#ff7a7a'; ctx.fillRect(x, y, w * Math.max(0, e.hp / e.max), 4);
   }
   // 보스 발밑 효과: 분노 = 붉은 기운, 돌진 = 속도선
+  // 보스 사망 모션: 몸이 흔들리고 깜박이다가 주저앉으며 사라진다. 부활할 때는 새 모습으로 커지며 나타난다
+  function drawDyingBoss(e, now) {
+    const D = S.bossDeath; let a = 1, sx = 1, sy = 1, ox = 0, oy = 0, blink = false;
+    if (D && D.b === e) {
+      if (D.stage === 'die') {
+        const p = Math.min(1, D.t / D.dur); ox = Math.sin(now * 0.09) * (1 - p * 0.5) * 4; blink = p < 0.8 && ((now / 70) | 0) % 2 === 0;
+        if (p > 0.45) { const q = (p - 0.45) / 0.55; sy = 1 - 0.6 * q * q; sx = 1 + 0.25 * q; oy = q * 6; a = 1 - q * q * q; }
+      } else {
+        const p = Math.min(1, (D.t - D.t0) / CFG.finalNerf.reviveT); a = Math.min(1, p * 2.5); sx = sy = 0.75 + 0.25 * Math.min(1, p * 1.4); blink = p < 0.3 && ((now / 60) | 0) % 2 === 0;
+        ctx.save(); ctx.globalAlpha = 0.35 * (1 - p); ctx.fillStyle = '#ff3a2a'; ctx.beginPath(); ctx.ellipse(e.x, e.y - 8, e.r * (1.2 + p), e.r * (1.8 + p), 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      }
+    }
+    const f0 = e.flash; if (blink) e.flash = 0.1;
+    ctx.save(); ctx.globalAlpha = Math.max(0, a); ctx.translate(ox, oy); ctx.translate(e.x, e.y); ctx.scale(sx, sy); ctx.translate(-e.x, -e.y);
+    Figures.draw(ctx, e, now); ctx.restore(); e.flash = f0;
+  }
+  // 보스 사망·부활 연출 카메라: 보스에게 이동·확대하고, 끝나면 원래 시점으로 돌아온다
+  let dcam = null;
+  function updateDeathCam(dt) {
+    const D = S.bossDeath;
+    if (D) {
+      if (!dcam) dcam = { prev: { x: cam.x, y: cam.y, zoom: cam.zoom }, fxT: 0 };
+      const b = D.b, k = 1 - Math.exp(-4 * dt);
+      cam.x += (b.x - cam.x) * k; cam.y += (b.y - 14 - cam.y) * k; cam.zoom += (Math.max(1.5, dcam.prev.zoom) - cam.zoom) * k; clampCam();
+      if (D.stage === 'die' && (dcam.fxT -= dt) <= 0) { // 사망 중 터지는 불꽃과 연기
+        dcam.fxT = 0.16; const a = Math.random() * 6.283, r = Math.random() * b.r * 0.9, x = b.x + Math.cos(a) * r, y = b.y - 10 + Math.sin(a) * r * 0.7;
+        addFx({ k: 'ring', x, y, t: 0, max: 0.55, c: Math.random() < 0.5 ? '#ffb347' : '#ff4a2a', r: 26 + Math.random() * 26, big: true });
+        for (let i = 0; i < 2; i++) addFx({ k: 'dust', x: x + (Math.random() - 0.5) * 30, y: y + (Math.random() - 0.5) * 20, t: 0, max: 1, r: 12 + Math.random() * 12 });
+        if (Math.random() < 0.4) A2.play('boom', x, y);
+      }
+    } else if (dcam) {
+      const k = 1 - Math.exp(-3.5 * dt); cam.x += (dcam.prev.x - cam.x) * k; cam.y += (dcam.prev.y - cam.y) * k; cam.zoom += (dcam.prev.zoom - cam.zoom) * k; clampCam();
+      if (Math.abs(cam.x - dcam.prev.x) < 3 && Math.abs(cam.y - dcam.prev.y) < 3 && Math.abs(cam.zoom - dcam.prev.zoom) < 0.02) dcam = null;
+    }
+  }
   function bossAura(e, now, z) {
+    if (e.look && e.look.p2 && !e.dying) { ctx.globalAlpha = 0.22 + 0.08 * Math.sin(now * 0.01); ctx.fillStyle = '#ff5a1a'; ctx.beginPath(); ctx.ellipse(e.x, e.y + 6, e.r * 1.7, e.r * 0.8, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
     if (e.enraged) { ctx.globalAlpha = 0.25 + 0.1 * Math.sin(now * 0.015); ctx.fillStyle = '#ff2a1a'; ctx.beginPath(); ctx.ellipse(e.x, e.y + 8, e.r * 1.5, e.r * 0.7, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
     if (e.dashT > 0 && e._ang !== undefined) {
       ctx.strokeStyle = 'rgba(255,200,120,.7)'; ctx.lineWidth = 3 / z; ctx.lineCap = 'round';
@@ -646,7 +688,7 @@
       if (e.elite) eliteGlow(e, now, z);
       if (lite && e.team === 'e' && e.kind !== 'boss') { Figures.drawLite(ctx, e); if (e.elite) eliteMark(e, z); continue; }
       if (e.kind === 'boss') bossAura(e, now, z);
-      Figures.draw(ctx, e, now);
+      if (e.dying) drawDyingBoss(e, now); else Figures.draw(ctx, e, now);
       if (e.elite) eliteMark(e, z);
       if (e.team === 'u' && (e.stunT > 0 || e.poisonT > 0 || e.weakT > 0 || e.woundT > 0)) statusMarks(e, now, z);
       if (e.kind === 'boss' && e.shieldT > 0) { ctx.globalAlpha = 0.28 + 0.12 * Math.sin(now * 0.012); ctx.fillStyle = '#8fd8ff'; ctx.beginPath(); ctx.arc(e.x, e.y - 6, e.r * 1.7, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 0.9; ctx.strokeStyle = '#d8f2ff'; ctx.lineWidth = 2.5 / z; ctx.stroke(); ctx.globalAlpha = 1; }
@@ -1035,6 +1077,7 @@
       for (let i = fx.length - 1; i >= 0; i--) { const f = fx[i]; f.t += dt * speed; if (f.t >= f.max) { if (f.k === 'num') numFx--; fx[i] = fx[fx.length - 1]; fx.pop(); fxPool.push(f); } } // 끝난 효과는 풀로 돌려보낸다
     }
     if (S) {
+      if (!paused) updateDeathCam(dt);
       if (S.cinematic && !cine) startCine(S.cinematic.name, S.cinematic.kind);
       if (cine) stepCine(now);
       else if (Scenery.act !== S.act) Scenery.setAct(S.act, true); // 불러오기/재시작/점프 시 막에 맞는 배경으로

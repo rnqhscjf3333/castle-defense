@@ -293,13 +293,18 @@
     },
     boss(ctx, e, s) {
       const L = e.look || {};
-      const h = body(ctx, e, { s, body: L.body || '#7b3fa8', legs: '#2a1a3a', head: L.head || '#d9c6e6', line: '#1f0e2e', angry: true, belt: '#e1b43a', bw: 15, bh: 15, eye: '#ff3b3b' });
+      if (L.p2) { // 각성한 모습: 등 뒤에 찢어진 날개
+        const fl0 = e.flash > 0, wf = Math.sin((e._t || 0) * 0 + (typeof performance !== 'undefined' ? performance.now() : 0) * 0.004) * 2 * s;
+        ctx.fillStyle = fl0 ? FLASH : '#4a0a18'; ctx.strokeStyle = '#1f0508'; ctx.lineWidth = s;
+        for (const sd of [-1, 1]) { tri(ctx, sd * 6 * s, -12 * s, sd * 34 * s, -30 * s + wf, sd * 22 * s, -4 * s); ctx.fill(); ctx.stroke(); tri(ctx, sd * 6 * s, -8 * s, sd * 30 * s, -12 * s + wf, sd * 18 * s, 6 * s); ctx.fill(); ctx.stroke(); }
+      }
+      const h = body(ctx, e, { s, body: L.body || '#7b3fa8', legs: L.p2 ? '#2a0a12' : '#2a1a3a', head: L.head || '#d9c6e6', line: '#1f0e2e', angry: true, belt: L.p2 ? '#ff7a2a' : '#e1b43a', bw: 15, bh: 15, eye: L.p2 ? '#ffd84a' : '#ff3b3b' });
       const d = e._dir, fl = e.flash > 0, gx = h.hx, gy = h.hy;
       const base = e.swing > 0 ? e._face : (d > 0 ? -0.7 : Math.PI + 0.7), ang = base + (e.swing > 0 ? swingOff(e, 0.25) * d : 0);
       const weapon = L.weapon || 'axe';
       // 머리 장식: 큰 뿔 (마왕은 왕관 톱니 추가)
       if (!fl) {
-        ctx.fillStyle = '#f0e6c8'; ctx.strokeStyle = '#1f0e2e'; ctx.lineWidth = s;
+        ctx.fillStyle = L.p2 ? '#ff8a3a' : '#f0e6c8'; ctx.strokeStyle = '#1f0e2e'; ctx.lineWidth = s;
         tri(ctx, -5 * s, h.hyHead - 3 * s, -9 * s, h.hyHead - 14 * s, -1.5 * s, h.hyHead - 5 * s); ctx.fill(); ctx.stroke();
         tri(ctx, 5 * s, h.hyHead - 3 * s, 9 * s, h.hyHead - 14 * s, 1.5 * s, h.hyHead - 5 * s); ctx.fill(); ctx.stroke();
         if (weapon === 'sword') { ctx.fillStyle = '#ffe36a'; for (const k of [-3, 0, 3]) { tri(ctx, k * s - 1.6 * s, h.hyHead - 5.4 * s, k * s, h.hyHead - 9 * s, k * s + 1.6 * s, h.hyHead - 5.4 * s); ctx.fill(); } }
