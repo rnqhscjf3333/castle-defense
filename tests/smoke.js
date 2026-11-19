@@ -230,7 +230,7 @@ function killBoss(g) { const b = g.enemies.find(e => e.kind === 'boss'); b.hp = 
   const opts2 = C.jobOptions(g).filter(o => o.type === 'sword');
   check('2단계 선택지는 선택한 갈래의 2차 직업 2개', opts2.length === 2 && opts2.map(o => o.id).sort().join() === 'paladin,warlord' && opts2.every(o => o.tier === 2), opts2.map(o => o.name).join());
   g.jobs.offer = { boss: 't', list: opts2 }; C.pickJob(g, opts2.findIndex(o => o.id === 'paladin'));
-  check('팔라딘: 체력 추가 증가 + 받는 피해 감소 + 재생 보정 합산', g.jobMods.sword.hp > 1.2 && g.jobMods.sword.def > 0.19 && g.jobMods.sword.regen === 0.02, JSON.stringify(g.jobMods.sword));
+  check('팔라딘: 체력 추가 증가 + 받는 피해 감소 + 재생 보정 합산', g.jobMods.sword.hp > 1.2 && g.jobMods.sword.def > 0.16 && g.jobMods.sword.regen === 0.02, JSON.stringify(g.jobMods.sword));
   sw.hp = sw.max * 0.5; const h0 = sw.hp; g.enemies.length = 0; g.queue = []; for (let i = 0; i < 60; i++) C.tick(g, DT);
   check('팔라딘 재생: 체력이 서서히 차오름', sw.hp > h0, Math.round(h0) + '→' + Math.round(sw.hp));
   check('최종 전직 이후 그 직업은 더 이상 제안되지 않음', C.jobOptions(g).every(o => o.type !== 'sword'));

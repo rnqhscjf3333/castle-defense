@@ -674,6 +674,7 @@
         if (ev.kind === 'marksman') addFx({ k: 'beam', x: ev.x, y: ev.y - 11, tx: ev.tx, ty: ev.ty - 7, t: 0, max: 0.4, c: '#ffe14a' });
         else { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.55, c: ev.kind === 'hero' ? '#ffe14a' : '#c8a46a', big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: -0.08, max: 0.5, c: '#ffffff' }); }
       }
+      else if (ev.type === 'dodge') { if (fx.length < 300) addFx({ k: 'ring', x: ev.x, y: ev.y - 4, t: 0, max: 0.3, c: '#bfe8ff', r: 14 }); }
       else if (ev.type === 'revive') {
         addFx({ k: 'heal', x: ev.x, y: ev.y, t: 0, max: 0.8 });
         const pr = S.units.find(u => u.type === 'priest' && !u.dead);
@@ -725,7 +726,7 @@
         ctx.save(); ctx.globalAlpha = 0.35 * (1 - p); ctx.fillStyle = '#ff3a2a'; ctx.beginPath(); ctx.ellipse(e.x, e.y - 8, e.r * (1.2 + p), e.r * (1.8 + p), 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
       }
     }
-    const f0 = e.flash; if (blink) e.flash = 0.1;
+    const f0 = e.flash; e.flash = blink ? 0.1 : 0;
     ctx.save(); ctx.globalAlpha = Math.max(0, a); ctx.translate(ox, oy); ctx.translate(e.x, e.y); ctx.scale(sx, sy); ctx.translate(-e.x, -e.y);
     Figures.draw(ctx, e, now); ctx.restore(); e.flash = f0;
   }

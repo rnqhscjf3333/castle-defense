@@ -164,12 +164,12 @@
     jobs: {
       sword: {
         t1: [
-          { id: 'knight', name: '나이트', desc: '큰 방패를 든 수호 전사. 체력 +80%, 피해 16% 방어', mods: { hp: 0.8, def: 0.16 } },
+          { id: 'knight', name: '나이트', desc: '큰 방패를 든 수호 전사. 체력 +80%, 피해 10% 방어', mods: { hp: 0.8, def: 0.10 } },
           { id: 'blade', name: '블레이드', desc: '긴 검을 쓰는 공격형 검사. 공격력 +50%, 공격 속도 +20%, 연속 공격 +12%', mods: { atk: 0.5, rate: 0.2, dbl: 0.12 } },
         ],
         t2: {
           knight: [
-            { id: 'paladin', name: '팔라딘', desc: '성스러운 갑옷과 철퇴. 체력 +50%, 피해 11% 방어, 초당 체력 2% 회복', mods: { hp: 0.5, def: 0.11, regen: 0.02 } },
+            { id: 'paladin', name: '팔라딘', desc: '성스러운 갑옷과 철퇴. 체력 +50%, 피해 7% 방어, 초당 체력 2% 회복', mods: { hp: 0.5, def: 0.07, regen: 0.02 } },
             { id: 'warlord', name: '워로드', desc: '뿔 투구에 가시 방패. 체력 +40%, 공격력 +30%, 받은 피해의 30%를 때린 적에게 되돌림', mods: { hp: 0.4, atk: 0.3, reflect: 0.3 } },
           ],
           blade: [
@@ -248,7 +248,7 @@
     cardVals: {                       // 카드 수치 (설명 문구와 효과가 모두 여기서 읽는다)
       coreAtk: 0.40, coreRate: 0.25, coreRange: 45, fortHp: 600, repair: 0.15, thorn: 0.9,
       crit: 0.10, critMul: 2, archerRange: 0.12,
-      guard: 0.24, charge: 0.40, chargeRate: 0.15, revive: 0.70, pierce: 0.40, bomb: 4.0, bombStep: 1.5,
+      guard: 0.15, dodge: 0.12, charge: 0.40, chargeRate: 0.15, revive: 0.70, pierce: 0.40, bomb: 4.0, bombStep: 1.5,
       auraHeal: 0.025, auraAtk: 0.08, auraDef: 0.08, auraDefCap: 0.40, auraSpd: 0.06, auraBoost: 0.15,
     },
     rerolls: 2,
@@ -381,6 +381,7 @@
     { id: 'u_charge',  cat: 'unit', rar: 'rare', max: 2, type: 'sword',  name: '검사 · 돌진',      desc: l => '검사 접근 속도 +' + Math.round(V().charge * 100 * l) + '%, 공격 속도 +' + Math.round(V().chargeRate * 100 * l) + '%' },
     { id: 'u_pierce',  cat: 'unit', rar: 'rare', max: 3, type: 'archer', name: '궁수 · 관통 화살', desc: l => '화살이 뒤의 적 ' + l + '명에게 ' + Math.round(V().pierce * 100) + '% 피해' },
     { id: 'u_crit',    cat: 'unit', rar: 'rare', max: 3, type: 'archer', name: '궁수 · 치명타',    desc: l => '치명타 확률 +' + Math.round(V().crit * 100 * l) + '% (치명타 피해 ×' + V().critMul + ')' },
+    { id: 'u_dodge',   cat: 'unit', rar: 'rare', max: 3, type: 'archer', name: '궁수 · 회피',      desc: l => '궁수 계열이 공격을 ' + Math.round(V().dodge * 100 * l) + '% 확률로 회피' },
     { id: 'u_range',   cat: 'unit', rar: 'rare', max: 3, type: 'archer', name: '궁수 · 사거리',    desc: l => '궁수 계열 사거리 +' + Math.round(V().archerRange * 100 * l) + '%' },
     { id: 'u_aoeheal', cat: 'unit', rar: 'rare', max: 3, type: 'priest', name: '사제 · 광역 치유', desc: l => '치유 대상 바로 옆(붙어 있는) 아군도 ' + 35 * l + '% 회복' },
     { id: 'u_revive',  cat: 'unit', rar: 'epic', max: 3, type: 'priest', name: '사제 · 부활',      desc: l => '쓰러진 아군을 라운드당 ' + l + '회 체력 ' + Math.round(V().revive * 100) + '%로 부활' },
@@ -631,7 +632,7 @@
     S.aura = { heal: v.auraHeal * L('a_heal') * boost, atk: v.auraAtk * L('a_atk') * boost, def: Math.min(v.auraDefCap, v.auraDef * L('a_def') * boost), spd: v.auraSpd * L('a_spd') * boost, r: CFG.auraBase,
                on: AURA_IDS.some(a => L(a) > 0) };
     S.jobMods = { sword: jobModsOf(S, 'sword'), archer: jobModsOf(S, 'archer'), priest: jobModsOf(S, 'priest') };
-    S.perks = { guard: L('u_guard'), charge: L('u_charge'), pierce: L('u_pierce'), crit: L('u_crit'), archerRange: L('u_range'), aoeHeal: L('u_aoeheal'), revive: L('u_revive'),
+    S.perks = { guard: L('u_guard'), charge: L('u_charge'), pierce: L('u_pierce'), crit: L('u_crit'), dodge: L('u_dodge'), archerRange: L('u_range'), aoeHeal: L('u_aoeheal'), revive: L('u_revive'),
                 splash: L('c_splash'), chain: L('c_chain'), bomb: L('c_bomb'), thorn: L('f_thorn'), repair: L('f_repair') };
   }
   // 전직 효과 합산 (유닛 종류별)
@@ -942,7 +943,7 @@
     if (D.stage === 'die') {
       if (D.t < D.dur) return;
       if (D.revive) { // 각성: 모습이 바뀌고 체력이 0에서 다시 차오른다
-        D.stage = 'revive'; D.t0 = D.t; b.p2 = true; b.bossName = N.name; b.look = N.look; b.r = N.r; b.max = b.max2; b.hp = 0; b.gold = 0;
+        D.stage = 'revive'; D.t0 = D.t; b.p2 = true; b.flash = 0; b.bossName = N.name; b.look = N.look; b.r = N.r; b.max = b.max2; b.hp = 0; b.gold = 0;
         b.abil = p2Abil(b.abil); b.t = {}; for (const k in b.abil) if (!Array.isArray(b.abil[k])) b.t[k] = (b.abil[k].cd || 0) * 0.6;
         b.life = 0; b.enraged = false; b.rushDone = true; b.age = 0; b.enr = false; b.cd = 1;
         emit(S, { type: 'bossRevive', x: b.x, y: b.y, r: b.r, name: b.bossName, dur: N.reviveT });
@@ -992,6 +993,7 @@
     if (tgt.team === 'e' && tgt.shieldT > 0) dmg *= 1 - tgt.shieldRed; // 보스 방어막 동안 피해 감소
     if (tgt.team === 'e' && tgt.markT > 0) dmg *= 1 + tgt.markAmp; // 사냥꾼의 표식
     if (tgt.team === 'u') {
+      if (S.perks.dodge && lineOf(tgt.type) === 'archer' && S.rng() < Math.min(0.6, V().dodge * S.perks.dodge)) { tgt.dodgeT = 0.4; emit(S, { type: 'dodge', x: tgt.x, y: tgt.y }); return; } // 궁수 회피
       let red = 0;
       if (tgt.aura) red += S.aura.def;
       if (S.perks.guard && lineOf(tgt.type) === 'sword') red += V().guard * S.perks.guard;
@@ -1505,10 +1507,10 @@
     // 성 공격 + 대형 포탄
     const c = S.core; c.cd -= dt; c.flash = Math.max(0, c.flash - dt); c.swing = Math.max(0, c.swing - dt);
     if (c.cd <= 0) {
-      const t = nearest(S.gE, c.x, c.y, c.range);
+      const t = nearestBoth(S, c.x, c.y, c.range);
       if (t) {
         c.cd = 1 / c.rate; c.swing = 0.22; c.aim = Math.atan2(t.y - c.y, t.x - c.x); fire(S, c, t, c.atk, CFG.shellSpeed, 'c');
-        if (c.cannons > 1) { const seen = new Set([t]); for (let i = 1; i < c.cannons; i++) { const t2 = nearestExcl(S.gE, c.x, c.y, c.range, seen) || t; seen.add(t2); fire(S, c, t2, c.atk, CFG.shellSpeed, 'c'); } } // 대포가 여러 문이면 서로 다른 적을 겨눈다
+        if (c.cannons > 1) { const seen = new Set([t]); for (let i = 1; i < c.cannons; i++) { const t2 = nearestExcl(S.gE, c.x, c.y, c.range, seen) || nearestExcl(S.gA, c.x, c.y, c.range, seen) || t; seen.add(t2); fire(S, c, t2, c.atk, CFG.shellSpeed, 'c'); } } // 대포가 여러 문이면 서로 다른 적을 겨눈다
       }
     }
     if (S.perks.bomb) { S.bombCd -= dt; if (S.bombCd <= 0) bigBomb(S); }
