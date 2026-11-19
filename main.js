@@ -477,7 +477,8 @@
     const hs = CFG.heroSkill && CFG.heroSkill[type]; if (hs) rows.push(['스킬', hs.name + ' (' + hs.cd + '초마다)']);
     const job = n && list[0].job ? ' · ' + (C.describeJobs(S).find(j => CFG.units[j.type] === cfg) || { names: [] }).names.join(' › ') : '';
     let img = ''; try { img = '<img class="uimg" alt="" src="' + portrait('u', type, cfg, null, n && list[0].job ? { job: list[0].job, jobTier: list[0].jobTier } : null).toDataURL() + '">'; } catch (e) {}
-    return irow(cfg.name + job, '<div class="uwrap">' + img + '<div>' + (UNIT_TEXT[type] || '') + statTable(rows) + '</div></div>', '');
+    const jd = C.describeJobs(S).find(j => j.type === type), jtxt = jd ? jd.names.map((n, i) => '<b>' + n + '</b> — ' + jd.descs[i]).join('<br>') : (UNIT_TEXT[type] || '');
+    return irow(cfg.name + job, '<div class="uwrap">' + img + '<div>' + jtxt + statTable(rows) + '</div></div>', '');
   }
   let infoTab = 'up';
   function renderInfo() {
@@ -486,7 +487,7 @@
     if (infoTab === 'up') {
       const taken = C.describeTaken(S), jobs = C.describeJobs(S);
       let cimg = ''; try { cimg = '<img class="uimg" alt="" style="width:118px;height:104px;object-fit:contain" src="' + castlePortrait({ cpath: S.core.cpath, cvar: S.core.cvar, cfin: S.core.cfin }) + '">'; } catch (e) {}
-      h += '<h3>성</h3>' + irow('성 Lv.' + S.castle.lv + (S.castle.lv >= CFG.castle.max ? ' (최대)' : ''), '<div class="uwrap">' + cimg + '<div>체력 ' + Math.round(S.core.hp) + '/' + Math.round(S.core.max) + ' · 공격력 ' + f1(S.core.atk) + ' · 사거리 ' + Math.round(S.core.range) + (S.core.cpath ? '' : ' · 대포 ' + S.core.cannons + '문') + '<br>인구 ' + C.popCount(S) + (C.popCap(S) < 1e8 ? '/' + C.popCap(S) : ' (제한 없음)') + '</div></div>');
+      h += '<h3>성</h3>' + irow('성 Lv.' + S.castle.lv + (S.castle.lv >= CFG.castle.max ? ' (최대)' : ''), '<div class="uwrap">' + cimg + '<div>체력 ' + Math.round(S.core.hp) + '/' + Math.round(S.core.max) + ' · 공격력 ' + f1(S.core.atk) + ' · 사거리 ' + Math.round(S.core.range) + (S.core.cpath ? '' : ' · 대포 ' + S.core.cannons + '문') + '<br>인구 ' + C.popCount(S) + (C.popCap(S) < 1e8 ? '/' + C.popCap(S) : ' (제한 없음)') + '<br>병사 보호: 성이 받는 피해 -' + Math.round(C.coreGuard(S) * 100) + '% (병사 1명당 -' + CFG.balance.guardPerUnit * 100 + '%, 최대 -' + CFG.balance.guardMax * 100 + '%)</div></div>');
       { const cd = C.describeCastle(S), nxt = CFG.castleTree.lv[S.cnodes.length];
         h += '<h3>성 갈래</h3>' + (cd.length ? cd.map((n, i) => irow(n.name, n.desc, i === 2 ? 'epic' : 'rare', n.kind)).join('') : '<div class="d">성 Lv.' + CFG.castleTree.lv[0] + '에서 마탑·수호·사령 중 갈래를 고릅니다.</div>') + (nxt && cd.length ? '<div class="d" style="margin:2px 0 6px">다음 선택: 성 Lv.' + nxt + '</div>' : ''); }
       h += '<h3>전직</h3>' + (jobs.length ? jobs.map(j => irow(j.className, j.names.join(' › '), 'epic')).join('') : '<div class="d">아직 전직한 직업이 없어요 (보스를 처치하면 전직)</div>');
@@ -1058,7 +1059,7 @@
   function newGame(devRound) {
     openingSeen = true;
     const seed = params.get('seed') ? +params.get('seed') : (Date.now() ^ (Math.random() * 1e9)) >>> 0;
-    const mm = params.get('mode') || store.get('cd-mode'), mode = mm === 'free' || mm === 'hold' ? mm : 'normal';
+    const mm = params.get('mode') || store.get('cd-mode'), mode = mm === 'free' ? mm : 'normal';
     S = C.createGame(seed, mode); S.captureEvents = true; Net.begin(S); syncModeBar();
     fx.length = 0; numFx = 0; paused = false; speed = 1; shownOffer = null; $('picker').classList.add('hidden');
     setSpeed(1); closeModals(); Meta.begin(); lastSyncRound = 0; $('btnToMenu').classList.add('hidden');
@@ -1135,8 +1136,8 @@
   // 모드 전환: 왼쪽 위 라운드 표시 아래에서 언제든 바꿀 수 있다 (기본: 성 주변 방어 / 자유: 범위 안의 적을 멀리까지 추격)
   function syncModeBar() { if (!S) return; for (const b of document.querySelectorAll('#modeBar button')) b.classList.toggle('on', b.dataset.mode === S.mode); }
   for (const b of document.querySelectorAll('#modeBar button')) b.addEventListener('click', () => {
-    if (!S) return; S.mode = ['free', 'hold'].includes(b.dataset.mode) ? b.dataset.mode : 'normal'; store.set('cd-mode', S.mode); syncModeBar();
-    toast(S.mode === 'hold' ? '수비 모드: 유닛이 자기 자리를 지키며 사거리 안의 적만 공격합니다' : S.mode === 'free' ? '자유 모드: 유닛이 범위 안의 적을 멀리까지 쫓아가 공격합니다' : '기본 모드: 유닛이 성 주변을 지키며 싸웁니다');
+    if (!S) return; S.mode = b.dataset.mode === 'free' ? 'free' : 'normal'; store.set('cd-mode', S.mode); syncModeBar();
+    toast(S.mode === 'free' ? '자유 모드: 유닛이 범위 안의 적을 멀리까지 쫓아가 공격합니다' : '기본 모드: 유닛이 성 주변을 지키며 싸웁니다');
   });
   $('btnRank').addEventListener('click', () => { $('ovBody').innerHTML = '<div id="rankbox"></div>'; showRank(null); $('btnRank').classList.add('hidden'); $('go').textContent = '게임 시작'; });
   // 플레이 도중 창을 닫거나 숨길 때도 기록을 남긴다 (개선 자료)

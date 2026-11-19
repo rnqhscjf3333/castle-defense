@@ -23,7 +23,6 @@
   const CFG = {
     world: { w: W, h: H, cx: CX, cy: CY },
     startGold: 210, // 검사·궁수·사제를 한 명씩(어떤 순서로든, 가격 상승 포함 최대 204) 뽑을 수 있는 금액
-    holdRadius: 58,       // 수비 모드: 근접 유닛이 자리에서 벗어날 수 있는 거리 (자기 주변의 적만 상대하고 먼 곳의 적에겐 끌려가지 않는다)
     leash: 240,           // 유닛이 성으로부터 추격할 수 있는 최대 거리
     ai: {
       bias: 0.08,         // 평소(적이 멀 때) 대기 자리가 적 방향으로 쏠리는 정도 (0 = 사방에 고르게, 1 = 전부 적 방향)
@@ -228,6 +227,7 @@
       meleeHp: 1.25, rangedDmg: 1.25,                  // 근접 적은 체력, 원거리 적은 공격력을 더 높게 (못 잡으면 쌓인다)
       bossSplash: 0.25, bossSplashR: 35,               // 보스 기본 공격의 범위 피해: 주변 아군이 받는 비율, 반경(+보스 크기)
       healCap: 0.10,                                  // 한 유닛이 1초 동안 치유로 회복할 수 있는 최대 비율(최대 체력 기준). 사제를 많이 뽑아도 불사가 되지 않게 한다
+      bomberCoreMul: 0.55, guardPerUnit: 0.008, guardMax: 0.4, // 성이 받는 피해: 폭파병 ×0.55, 살아 있는 병사 1명당 -0.8% (최대 -40%)
       bossGrow: 0.02, bossGrowDelay: 8, bossGrowMax: 2.6, // 보스 기본 공격: 등장 8초 뒤부터 초당 +2%씩 강해진다 (최대 ×2.6)
       summonRange: 600,                               // 보스가 성에서 이 거리 안에 들어와야 졸개 소환 시간이 흐른다
       shellCoreMul: 0.4,                              // 보스 포격이 성에 주는 피해 비율 (성벽이 튼튼하다)
@@ -595,7 +595,7 @@
     return jumpToRound(S, r);
   }
   function describeJobs(S) {
-    return UNIT_TYPES.filter(t => S.jobs[t].ids.length).map(t => ({ type: t, className: CFG.units[t].name, names: S.jobs[t].ids.map(id => jobDef(t, id).name) }));
+    return UNIT_TYPES.filter(t => S.jobs[t].ids.length).map(t => ({ type: t, className: CFG.units[t].name, names: S.jobs[t].ids.map(id => jobDef(t, id).name), descs: S.jobs[t].ids.map(id => jobDef(t, id).desc) }));
   }
 
   function pickCard(S, idx) {
@@ -689,7 +689,7 @@
   // ───────────── 게임 생성 ─────────────
   function createGame(seed, mode) {
     const S = {
-      mode: mode === 'free' ? 'free' : mode === 'hold' ? 'hold' : 'normal', // free: 유닛이 성 주변에 머물지 않고 범위 안의 적을 어디까지든 쫓아간다
+      mode: mode === 'free' ? 'free' : 'normal', // free: 유닛이 성 주변에 머물지 않고 범위 안의 적을 어디까지든 쫓아간다
       seed: seed >>> 0, rng: mulberry32(seed >>> 0),
       t: 0, phase: 'prep', prepT: PREP_TIME, round: 0, roundT: 0, clearT: 0, zones: [], pools: [], rain: [],
       queue: [], spawnT: 0, spawnGap: 1, spawnPts: 2, extraPts: 0, fallen: [], endless: false, castle: { lv: 1 },
@@ -957,7 +957,10 @@
     const p = Math.min(1, (D.t - D.t0) / N.reviveT); b.hp = b.max * p * (2 - p); // 체력 바가 빠르게 차올랐다가 천천히 가득 찬다
     if (p >= 1) { b.hp = b.max; b.dying = false; S.bossDeath = null; emit(S, { type: 'bossRevived', x: b.x, y: b.y, name: b.bossName }); }
   }
+  const coreGuard = S => { let n = 0; for (const u of S.units) if (!u.dead && !u.undead && !isStatic(u)) n++; return Math.min(CFG.balance.guardMax, CFG.balance.guardPerUnit * n); };
   function hitCore(S, dmg, src) {
+    if (src === '폭파병') dmg *= CFG.balance.bomberCoreMul; // 폭파병은 성 피해가 전체의 대부분이라 성에 대한 폭발력을 줄였다
+    dmg *= 1 - coreGuard(S); // 병사가 살아 있을수록 성이 덜 맞는다 (병사가 성을 지킨다)
     if (S.cpar && S.cpar.cdef) dmg *= 1 - S.cpar.cdef; // 빙결 결계·수호 방벽·영혼 결속: 성이 받는 피해 감소
     const c = S.core; c.hp -= dmg; c.flash = 0.12;
     const by = S.coreDmgBy; const k = src || '기타'; by[k] = (by[k] || 0) + dmg; // 어떤 공격에 성이 많이 맞는지 (밸런스 진단용)
@@ -1207,7 +1210,7 @@
         if (S.jobMods.priest.ward) t.ward = Math.min(t.max * 0.3, (t.ward || 0) + amt * S.jobMods.priest.ward); // 수호사제: 치유 + 보호막
         emit(S, { type: 'heal', x: u.x, y: u.y, tx: t.x, ty: t.y, job: u.job });
         if (S.perks.aoeHeal) {
-          for (const a of S.units) if (!a.dead && a !== t && Math.hypot(a.x - t.x, a.y - t.y) <= 42) { applyHeal(S, a, amt * 0.35 * S.perks.aoeHeal); emit(S, { type: 'heal', x: t.x, y: t.y, tx: a.x, ty: a.y, aoe: true }); }
+          for (const a of S.units) if (!a.dead && !a.undead && a !== t && Math.hypot(a.x - t.x, a.y - t.y) <= 42) { applyHeal(S, a, amt * 0.35 * S.perks.aoeHeal); emit(S, { type: 'heal', x: t.x, y: t.y, tx: a.x, ty: a.y, aoe: true }); }
         }
       }
     }
@@ -1265,16 +1268,11 @@
     const find = (x, y) => (melee ? nearest(S.gE, x, y, aggro) : nearestBoth(S, x, y, aggro));
     let tgt = find(u.x, u.y);
     { const th = find(u.hx, u.hy); if (th && th !== tgt) { const sc = e => Math.hypot(e.x - u.x, e.y - u.y) + CFG.ai.homeBias * Math.hypot(e.x - u.hx, e.y - u.hy); if (!tgt || sc(th) < sc(tgt)) tgt = th; } }
-    const free = S.mode === 'free', hold = S.mode === 'hold';
+    const free = S.mode === 'free';
     if (u.rvT > 0) { u.rvT -= dt; if (u.rvT <= 0) u.rv = null; }
     if (free && u.rv && !u.rv.dead && u.rv.hp > 0) tgt = u.rv; // (자유 모드) 사거리 밖이어도 나를 공격한 적에게 가서 반격한다
     if (!free && tgt && Math.hypot(tgt.x - CX, tgt.y - CY) > CFG.leash) tgt = null; // (기본 모드) 성에서 너무 먼 적은 쫓지 않는다
-    if (hold && tgt) { // (수비 모드) 자리에서 조금만 벗어난다: 자리 근처로 들어온 적만 상대하고, 먼 곳의 적에게 끌려가지 않는다
-      const lim = melee ? CFG.holdRadius : 0; // 근접은 자리 근처의 적만, 원거리는 제자리에서 사거리 안의 적만 쏜다
-      tgt = melee ? nearest(S.gE, u.hx, u.hy, lim) : find(u.hx, u.hy); // 근접은 자기 자리 주변(lim)에 들어온 적을 상대하러 나가고, 그보다 먼 적은 쫓지 않는다
-      if (tgt && Math.hypot(tgt.x - u.hx, tgt.y - u.hy) > lim + tgt.r) tgt = null;
-    }
-    if (tgt && (free || hold || fromCore <= CFG.leash + 40)) moveToward(u, tgt.x, tgt.y, dt, stopFor(tgt), spm * rush);
+    if (tgt && (free || fromCore <= CFG.leash + 40)) moveToward(u, tgt.x, tgt.y, dt, stopFor(tgt), spm * rush);
     else moveToward(u, u.hx, u.hy, dt, 6, spm);
     if (u.cd <= 0) {
       const t = melee ? nearest(S.gE, u.x, u.y, u.range + u.r) : nearestBoth(S, u.x, u.y, u.range + u.r);
@@ -1532,11 +1530,8 @@
       if (CFG.units[u.type].static) { updateStatic(S, u, dt); continue; }
       const jm = S.jobMods[lineOf(u.type)];
       if (jm && jm.regen && u.hp < u.max) u.hp = Math.min(u.max, u.hp + u.max * jm.regen * dt);
-      if (S.mode === 'hold') { u.hx = CX + Math.cos(u.ha) * u.hr; u.hy = CY + Math.sin(u.ha) * u.hr; } // (수비 모드) 배정된 자리는 적이 오는 쪽으로 쏠리지도, 흔들리지도 않는다
-      else {
-        const a = S.threat + wrapAngle(u.ha - S.threat) * (1 - bias);
-        u.hx = CX + Math.cos(a) * u.hr + Math.sin(S.t * 0.6 + u.id * 1.7) * CFG.ai.sway; u.hy = CY + Math.sin(a) * u.hr + Math.cos(S.t * 0.5 + u.id * 2.3) * CFG.ai.sway;
-      }
+      const a = S.threat + wrapAngle(u.ha - S.threat) * (1 - bias);
+      u.hx = CX + Math.cos(a) * u.hr + Math.sin(S.t * 0.6 + u.id * 1.7) * CFG.ai.sway; u.hy = CY + Math.sin(a) * u.hr + Math.cos(S.t * 0.5 + u.id * 2.3) * CFG.ai.sway;
       if (u.type === 'priest') updatePriest(S, u, dt); else updateFighter(S, u, dt);
       u.x = clamp(u.x, 10, W - 10); u.y = clamp(u.y, 10, H - 10);
       // 성 원형에는 들어올 수 없다: 반지름 안이면 바깥으로 밀어낸다 (유닛당 거리 계산 한 번이라 매우 싸다)
@@ -1586,7 +1581,7 @@
 
   return {
     CFG, MAX_ROUND, ACT1_END, extraAngles, EXTRA_RING, ROUND_TIME, SPAWN_TIME, PREP_TIME, SPAWN_RING, UNIT_TYPES, CARD_DEFS,
-    createGame, tick, buy, devSetup, pickCastle, autoCastle, castleOptions, describeCastle, jobBack, classOptions, enqueue, cancelProd, goldBound, checkRun, upgradeCastle, castleCost, popCap, popGain, popCount, specialCount, endCinematic, jumpToRound, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo, drainEvents, pickCard, reroll, describeTaken, openCards,
+    createGame, tick, buy, devSetup, coreGuard, hitCore, pickCastle, autoCastle, castleOptions, describeCastle, jobBack, classOptions, enqueue, cancelProd, goldBound, checkRun, upgradeCastle, castleCost, popCap, popGain, popCount, specialCount, endCinematic, jumpToRound, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo, drainEvents, pickCard, reroll, describeTaken, openCards,
     unitCostOf, enemyCount, hpMul, dmgMul, mulberry32, damage,
   };
 });

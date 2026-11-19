@@ -607,9 +607,6 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
 { const run = p => { C.CFG.units.sword.dbl = p; const g = arena(3, []); g.core.atk = 0; g.captureEvents = true; C.buy(g, 'sword'); const u = g.units[0]; u.x = 1500; u.y = 1400; u.hx = u.x; u.hy = u.y; const e = C.spawnEnemy(g, 'brute', 1500, 1400 - 30); e.hp = e.max = 1e9; e.speed = 0; e.dmg = 0; let n = 0, d = 0; for (let i = 0; i < 30 * 20; i++) { C.tick(g, DT); for (const ev of g.events || []) if (ev.type === 'melee') { n++; if (ev.dbl) d++; } g.events = []; } return [n, d]; };
   const a = run(0), b = run(1); C.CFG.units.sword.dbl = 0;
   check('검사 연속 공격: 확률 0이면 없음, 1이면 매번 한 번 더', a[1] === 0 && b[1] > 5 && b[1] >= b[0] * 0.4, `0%: ${a[1]}/${a[0]}회, 100%: ${b[1]}/${b[0]}회`); }
-// 46) 수비 모드: 자기 자리를 벗어나지 않는다
-{ const run = mode => { const a = C.createGame(1, mode); a.hold = true; a.phase = 'round'; a.round = 10; a.queue = []; C.buy(a, 'sword'); const u = a.units[0]; u.x = u.hx = 1500 + 100; u.y = u.hy = 1500; const e = C.spawnEnemy(a, 'grunt', 1500 + 238, 1500); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; for (let i = 0; i < 150; i++) C.tick(a, DT); return Math.hypot(u.x - u.hx, u.y - u.hy); };
-  const n = run('normal'), h = run('hold'); check('수비 모드: 자리를 지키고, 기본 모드는 적을 쫓아감', h < 7 && n > h + 12, `수비 이동 ${h.toFixed(1)}px / 기본 ${n.toFixed(0)}px`); }
 // 47) 자유 모드: 사거리 밖이어도 나를 공격한 적에게 가서 반격한다
 { const run = mode => { const a = C.createGame(1, mode); a.hold = true; a.phase = 'round'; a.round = 10; a.queue = []; C.buy(a, 'sword'); const u = a.units[0]; const e = C.spawnEnemy(a, 'grunt', 1500 + 600, 1500); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; for (let i = 0; i < 3; i++) C.tick(a, DT); const x0 = u.x; C.damage(a, u, 1, false, e); for (let i = 0; i < 200; i++) C.tick(a, DT); return Math.hypot(u.x - e.x, u.y - e.y); };
   const f = run('free'), n = run('normal'); check('자유 모드: 멀리서 나를 때린 적에게 반격하러 감', f < n - 150, `적과의 거리 자유 ${f.toFixed(0)}px / 기본 ${n.toFixed(0)}px`); }
@@ -651,10 +648,6 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   const en2 = []; for (let i = 0; i < 4; i++) { const e = C.spawnEnemy(h, 'grunt', a.x + (i - 2) * 25, a.y - 300) || h.enemies[h.enemies.length - 1]; e.speed = 0; e.dmg = 0; e.hp = e.max = 1e6; en2.push(e); }
   let rained = false, maxHits = 0; for (let i = 0; i < 400; i++) { C.tick(h, DT); if (h.rain.length) rained = true; }
   check('궁신이 화살비 지대를 만들고 범위 안 적 여럿에게 계속 피해', rained && en2.filter(e => e.hp < e.max - 1).length >= 3 && h.rain.length >= 0, en2.map(e => Math.round(e.max - e.hp)).join(',')); }
-// 53) 수비 모드: 자리가 적이 오는 쪽으로 쏠리지 않는다
-{ const run = mode => { const g = C.createGame(7, mode); g.gold = 1e7; g.stats.earned += 1e7; C.CFG.castle.popBase = 99; for (let i = 0; i < 24; i++) { g.buyCd.sword = g.buyCd.archer = 0; C.buy(g, i % 2 ? 'archer' : 'sword'); } g.phase = 'round'; g.round = 12; g.hold = true; g.queue = [];
-    let north = 0, n = 0; for (let i = 0; i < 700; i++) { if (i % 20 === 0) for (let k = 0; k < 3; k++) C.spawnEnemy(g, 'grunt', 1500 + (k - 1) * 40, 700); for (const e of g.enemies) e.dmg = 0; g.core.hp = g.core.max = 1e9; C.tick(g, DT); if (i > 200) for (const u of g.units) if (!u.dead) { n++; if (u.y < 1500) north++; } } return north / n; };
-  const nh = run('hold'), nn = run('normal'); check('수비 모드는 한쪽에서만 적이 와도 유닛이 사방 자리에 남는다 (북쪽 비율 ~50%)', nh < 0.65 && nn > nh, '수비 ' + nh.toFixed(2) + ' / 기본 ' + nn.toFixed(2)); }
 // 54) 개발자 모드: 라운드에 맞게 자동 구성 + 골드 무한 + 기록 제외
 { const mkDev = r => { const g = C.createGame(51); C.devSetup(g, r); return g; };
   const a = mkDev(10), b = mkDev(40), c = mkDev(60);
@@ -665,11 +658,6 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   const g0 = b.gold; b.gold = 5; C.tick(b, DT); check('개발자 모드: 골드가 무한 (줄어도 다시 채워짐)', b.gold >= 1e8 && g0 >= 1e8);
   check('개발자 모드는 기록 검증에서 제외(랭킹 등록 불가)', !C.checkRun(b).ok && C.checkRun(b).why.includes('개발자 모드'));
   let alive = 0, over = false; for (let i = 0; i < 30 * 40 && !b.over; i++) { C.tick(b, DT); if (b.cards.offer) C.pickCard(b, 0); if (b.jobs.offer) C.pickJob(b, 0); } check('개발자 모드 R40: 40초 플레이 중 성이 무너지지 않음', !b.over, 'hp ' + Math.round(b.core.hp)); }
-// 55) 수비 모드: 자기 주변(자리에서 58px 이내)에 들어온 적은 상대하러 나간다
-{ const g = C.createGame(61, 'hold'); g.gold = 1e6; g.buyCd.sword = 0; const u = C.buy(g, 'sword').unit; g.phase = 'round'; g.hold = true; g.queue = []; g.core.hp = g.core.max = 1e9; g.core.atk = 0;
-  for (let i = 0; i < 20; i++) C.tick(g, DT); const e = C.spawnEnemy(g, 'grunt', u.hx + 45, u.hy) || g.enemies[g.enemies.length - 1]; e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; const x0 = u.x;
-  for (let i = 0; i < 90; i++) { g.core.hp = g.core.max; C.tick(g, DT); }
-  check('수비 모드: 검사가 자리 근처(45px)의 적에게 가서 싸움', e.hp < e.max - 1, '피해 ' + Math.round(e.max - e.hp)); }
 // 56) 성 트리: Lv4·7·10에서 갈래 선택 (마탑·수호·사령 → 공격/방어형 → 최종형)
 { const g = C.createGame(81); g.gold = 1e9; for (let i = 0; i < 3; i++) C.upgradeCastle(g); C.tick(g, DT);
   check('성 Lv4: 갈래 선택(3개) + 시간 정지', !!g.cOffer && g.cOffer.tier === 0 && g.cOffer.list.length === 3 && (() => { const t = g.t; C.tick(g, DT); return g.t === t; })(), g.cOffer && g.cOffer.list.map(o => o.name).join('/'));
@@ -726,5 +714,15 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   const u = C.buy(g2, 'sword').unit; g2.reviveLeft = 5; g2.cnodes = []; const ud = (() => { g2.core.cpath = 'necro'; g2.cpar = JSON.parse(JSON.stringify(C.CFG.castleTree.roots[2].par)); g2.cpar.raise.chance = 1; const e = C.spawnEnemy(g2, 'grunt', 1700, 1500); C.damage(g2, e, 1e9); return g2.units.find(x => x.undead); })();
   ud.hp = ud.max * 0.3; const uh0 = ud.hp; g2.aura = g2.aura || {}; for (let i = 0; i < 90; i++) C.tick(g2, DT); check('사제는 망자를 치유하지 않음', !ud.dead && ud.hp <= uh0 + 1e-6, Math.round(uh0) + '→' + Math.round(ud.hp));
   C.damage(g2, ud, 1e9); check('망자는 죽어도 사제가 부활시키지 않음 (부활 횟수도 안 씀)', ud.dead && g2.reviveLeft === 5); }
+// 59) 성 피해 완화: 병사 보호 + 폭파병 / 사제 치유 범위 표시는 망자 제외
+{ const g = C.createGame(95); g.gold = 1e9; g.core.hp = g.core.max = 1000; const h0 = g.core.hp; const guard0 = C.coreGuard(g); C.CFG.castle.popBase = 99;
+  for (let i = 0; i < 20; i++) { g.buyCd.sword = 0; C.buy(g, 'sword'); } const guard1 = C.coreGuard(g);
+  check('병사가 많을수록 성 피해 감소 (1명당 0.8%, 최대 40%)', guard0 === 0 && Math.abs(guard1 - 0.16) < 1e-9 && C.CFG.balance.guardMax === 0.4, `0명 ${guard0} / 20명 ${guard1}`);
+  C.hitCore(g, 100, '근접'); const d1 = h0 - g.core.hp; g.core.hp = h0; C.hitCore(g, 100, '폭파병'); const d2 = h0 - g.core.hp;
+  check('폭파병은 성 피해가 더 작음', d2 < d1 && Math.abs(d1 - 84) < 1e-6, `일반 ${d1} / 폭파병 ${d2.toFixed(1)}`);
+  const h = C.createGame(96); h.gold = 1e9; h.phase = 'round'; h.hold = true; h.queue = []; h.core.atk = 0; h.core.hp = h.core.max = 1e9; h.buyCd.priest = 0; C.buy(h, 'priest'); h.buyCd.sword = 0; const sw = C.buy(h, 'sword').unit; h.perks.aoeHeal = 2; sw.hp = sw.max * 0.4;
+  h.core.cpath = 'necro'; h.cpar = JSON.parse(JSON.stringify(C.CFG.castleTree.roots[2].par)); h.cpar.raise.chance = 1; const e = C.spawnEnemy(h, 'grunt', 1700, 1500); C.damage(h, e, 1e9); const ud = h.units.find(x => x.undead); ud.x = sw.x + 5; ud.y = sw.y; ud.hp = ud.max * 0.3;
+  C.drainEvents(h); let healToUndead = 0; h.captureEvents = true; for (let i = 0; i < 120; i++) { C.tick(h, DT); for (const ev of C.drainEvents(h)) if (ev.type === 'heal' && ev.aoe && Math.hypot(ev.tx - ud.x, ev.ty - ud.y) < 1) healToUndead++; }
+  check('치유 범위 효과·치유 표시가 망자에게는 가지 않음', healToUndead === 0 && ud.hp <= ud.max * 0.3 + 1e-6, 'aoe 표시 ' + healToUndead); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

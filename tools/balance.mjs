@@ -54,7 +54,7 @@ function runOne(task) {
     C.tick(S, DT); step++;
   }
   const bossAt = {}; for (const r of [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]) { const bi = C.bossInfo(S, r); if (bi) bossAt[r] = bi.id; }
-  return { bossAt, round: S.round, win: S.win, act2: S.act === 2, kills: S.kills, t: S.t, taken: S.cards.taken, coreDmgBy: S.coreDmgBy };
+  return { bossAt, round: S.round, win: S.win, act2: S.act === 2, kills: S.kills, t: S.t, taken: S.cards.taken, coreDmgBy: S.coreDmgBy, pop: C.popCount(S), over: !!S.over };
 }
 function weightOf(P, c) {
   const W = P.weights || {};
@@ -170,6 +170,7 @@ async function main() {
     for (const r of rs) for (const k in r.coreDmgBy) tot[k] = (tot[k] || 0) + r.coreDmgBy[k];
     const all = Object.values(tot).reduce((x, y) => x + y, 0);
     console.log('smart', fmt(summarize(rs)));
+    const lost = rs.filter(r => r.over && !r.win); console.log('  패배', lost.length + '판 · 패배 시 남은 병사 평균', (lost.reduce((x, r) => x + r.pop, 0) / Math.max(1, lost.length)).toFixed(1) + '명', ' (중앙값 ' + (lost.map(r => r.pop).sort((a, b) => a - b)[lost.length >> 1] ?? '-') + ')');
     for (const [k, v] of Object.entries(tot).sort((x, y) => y[1] - x[1])) console.log(' ', k.padEnd(14), (v / n).toFixed(0).padStart(6), '판당 피해', (v / all * 100).toFixed(0).padStart(3) + '%');
   } else if (cmd === 'policy') { // node tools/balance.mjs policy '{"ratio":{...}}' [N] — smart 기본 정책에 JSON을 덮어써서 평가
     const n = +a2 || 60, W = loadWeights(), p = { weights: W, reroll: 1.2, ...JSON.parse(a1 || '{}') };
