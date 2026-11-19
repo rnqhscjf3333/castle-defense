@@ -634,5 +634,19 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   check('전군 강화는 일반 강화 단계(up)를 건드리지 않고 bossUp만 올림', g.up.sword.hp === 5 && g.bossUp.hp === 2 && g.bossUp.atk === 2, JSON.stringify(g.bossUp));
   const m1 = u.max; g.jobs.offer = { reward: true, list: [{ reward: true, id: 'r_army' }] }; C.pickJob(g, 0);
   check('일반 강화가 풀업이어도 보상 강화가 추가로 적용됨', g.bossUp.hp === 4 && u.max > m1 && u.max > h0, h0 + ' → ' + m1 + ' → ' + u.max); }
+// 52) 전설 유닛 스킬: 검왕 돌진 · 궁신 화살비
+{ const mk = id => { const g = C.createGame(41); g.cards.offer = [{ key: id, id, cat: 'summon', name: id }]; C.pickCard(g, 0); g.phase = 'round'; g.hold = true; g.queue = []; g.core.hp = g.core.max = 1e9; g.core.atk = 0; return g; };
+  const g = mk('l_sword'), u = g.units.find(x => x.type === 'legendsword'); u.x = u.hx; u.y = u.hy;
+  const en = []; for (let i = 0; i < 4; i++) { const e = C.spawnEnemy(g, 'grunt', u.x, u.y - 200 - i * 40) || g.enemies[g.enemies.length - 1]; e.speed = 0; e.dmg = 0; e.hp = e.max = 1e6; en.push(e); }
+  const dm = {}; let dashed = false; for (let i = 0; i < 400; i++) { C.tick(g, DT); if (u.dash) dashed = true; }
+  check('검왕이 돌진해서 길 위의 적 여럿을 벤다', dashed && en.filter(e => e.hp < e.max - 1).length >= 3, en.map(e => Math.round(e.max - e.hp)).join(','));
+  const h = mk('l_archer'), a = h.units.find(x => x.type === 'legendarcher'); a.x = a.hx; a.y = a.hy;
+  const en2 = []; for (let i = 0; i < 4; i++) { const e = C.spawnEnemy(h, 'grunt', a.x + (i - 2) * 25, a.y - 300) || h.enemies[h.enemies.length - 1]; e.speed = 0; e.dmg = 0; e.hp = e.max = 1e6; en2.push(e); }
+  let rained = false, maxHits = 0; for (let i = 0; i < 400; i++) { C.tick(h, DT); if (h.rain.length) rained = true; }
+  check('궁신이 화살비 지대를 만들고 범위 안 적 여럿에게 계속 피해', rained && en2.filter(e => e.hp < e.max - 1).length >= 3 && h.rain.length >= 0, en2.map(e => Math.round(e.max - e.hp)).join(',')); }
+// 53) 수비 모드: 자리가 적이 오는 쪽으로 쏠리지 않는다
+{ const run = mode => { const g = C.createGame(7, mode); g.gold = 1e7; g.stats.earned += 1e7; C.CFG.castle.popBase = 99; for (let i = 0; i < 24; i++) { g.buyCd.sword = g.buyCd.archer = 0; C.buy(g, i % 2 ? 'archer' : 'sword'); } g.phase = 'round'; g.round = 12; g.hold = true; g.queue = [];
+    let north = 0, n = 0; for (let i = 0; i < 700; i++) { if (i % 20 === 0) for (let k = 0; k < 3; k++) C.spawnEnemy(g, 'grunt', 1500 + (k - 1) * 40, 700); for (const e of g.enemies) e.dmg = 0; g.core.hp = g.core.max = 1e9; C.tick(g, DT); if (i > 200) for (const u of g.units) if (!u.dead) { n++; if (u.y < 1500) north++; } } return north / n; };
+  const nh = run('hold'), nn = run('normal'); check('수비 모드는 한쪽에서만 적이 와도 유닛이 사방 자리에 남는다 (북쪽 비율 ~50%)', nh < 0.65 && nn > nh, '수비 ' + nh.toFixed(2) + ' / 기본 ' + nn.toFixed(2)); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

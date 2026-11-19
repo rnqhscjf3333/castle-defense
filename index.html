@@ -272,8 +272,8 @@ body.comicOn { overflow: hidden; }
 /* 설정 · 정보 · 도감/통계/업적 창 */
 .modal { position: fixed; inset: 0; z-index: 56; display: flex; align-items: center; justify-content: center; padding: 14px; background: rgba(5,6,14,.74); }
 .modal.hidden { display: none; }
-.mbox { width: min(340px, 100%); max-height: 92vh; padding: 16px 16px 12px; display: flex; flex-direction: column; }
-.mbox.wide { width: min(560px, 100%); height: min(640px, 92vh); }
+.mbox { box-sizing: border-box; width: min(340px, 100%); max-height: min(92vh, calc(100vh - 28px)); max-height: min(92dvh, calc(100dvh - 28px)); padding: 16px 16px 12px; display: flex; flex-direction: column; }
+.mbox.wide { width: min(560px, 100%); height: min(640px, 92vh); height: min(640px, 92dvh, calc(100dvh - 28px)); }
 .mbox h2 { margin: 0 0 10px; font-size: 18px; text-align: center; }
 .mhead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; } .mhead h2 { margin: 0; text-align: left; }
 .mclose { background: transparent; border: 0; color: var(--muted); font-size: 20px; padding: 2px 8px; }
@@ -283,7 +283,7 @@ body.comicOn { overflow: hidden; }
 .mhint { color: var(--muted); font-size: 11.5px; text-align: center; margin: 10px 0 0; }
 .tabs { display: flex; gap: 5px; margin-bottom: 8px; } .tabs button { flex: 1; padding: 7px 4px; font-size: 13px; font-weight: 700; border-radius: 8px; border: 1px solid var(--line); background: #1b2132; color: var(--muted); }
 .tabs button.on { background: rgba(255,209,102,.16); color: #ffd166; border-color: rgba(255,209,102,.5); }
-.mbody { flex: 1; overflow: auto; font-size: 12.5px; line-height: 1.55; padding-right: 2px; }
+.mbody { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding-bottom: 14px; font-size: 12.5px; line-height: 1.55; padding-right: 2px; }
 .mbody h3 { margin: 10px 0 5px; font-size: 13px; color: #9fd8ff; } .mbody h3:first-child { margin-top: 0; }
 .irow { padding: 6px 8px; border-radius: 8px; background: rgba(255,255,255,.05); margin-bottom: 5px; }
 .irow .t { display: flex; justify-content: space-between; gap: 8px; font-weight: 700; } .irow .d { color: var(--muted); font-size: 11.5px; }
@@ -336,7 +336,6 @@ body.comicOn { overflow: hidden; }
 </div>
 
 <div id="tools">
-  <button class="btn panel tbtn" id="btnCenter" title="성으로 돌아가기 (H)">성으로</button>
   <button class="btn panel tbtn" id="btnInfo" title="정보 (I)">정보</button>
   <button class="btn panel tbtn" id="btnSpeed" title="배속">1×</button>
   <button class="btn panel tbtn" id="btnSound" title="소리 켜기/끄기 (M)">소리 켬</button>

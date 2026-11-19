@@ -144,7 +144,6 @@
     const r = C.upgradeCastle(S);
     if (!r.ok) { A2.play('deny'); toast(r.reason === 'max' ? '성이 최대 레벨입니다' : '골드가 부족해요'); }
   }
-  $('btnCenter').addEventListener('click', centerOnCore);
   const soundLabel = () => { $('btnSound').textContent = A2.state.muted ? '소리 끔' : '소리 켬'; };
   $('btnSound').addEventListener('click', () => { A2.init(); A2.toggleMute(); soundLabel(); }); soundLabel();
   $('btnPause').addEventListener('click', () => { if (!running && !S) return; toggleModal('setMenu'); });
@@ -405,7 +404,7 @@
   const f1 = n => Math.round(n * 10) / 10;
   const irow = (name, desc, cls, right) => '<div class="irow ' + (cls || '') + '"><div class="t"><span>' + name + '</span><b>' + (right || '') + '</b></div>' + (desc ? '<div class="d">' + desc + '</div>' : '') + '</div>';
   const statTable = rows => '<table>' + rows.map(r => '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td></tr>').join('') + '</table>';
-  const UNIT_TEXT = { sword: '체력이 높은 전위. 적에게 붙어서 싸웁니다.', archer: '멀리서 화살을 쏩니다.', priest: '아군을 치유합니다.', golem: '거대한 용병. 체력이 매우 높습니다.', hero: '용병 용사. 스킬 [일섬]을 씁니다.', marksman: '긴 사거리의 명사수. 스킬 [일제 사격].', repeater: '빠르게 연사하는 석궁병.', turret: '성 곁에 설치된 자동 포탑.', ballista: '적 2명을 관통하는 설치형 대형 석궁.', legendsword: '전설의 검사. 스킬 [천검 강림].', legendarcher: '전설의 궁수. 스킬 [천궁 난사].' };
+  const UNIT_TEXT = { sword: '체력이 높은 전위. 적에게 붙어서 싸웁니다.', archer: '멀리서 화살을 쏩니다.', priest: '아군을 치유합니다.', golem: '거대한 용병. 체력이 매우 높습니다.', hero: '용병 용사. 스킬 [일섬]을 씁니다.', marksman: '긴 사거리의 명사수. 스킬 [일제 사격].', repeater: '빠르게 연사하는 석궁병.', turret: '성 곁에 설치된 자동 포탑.', ballista: '적 2명을 관통하는 설치형 대형 석궁.', legendsword: '전설의 검사. 스킬 [질풍 돌진].', legendarcher: '전설의 궁수. 스킬 [천궁 폭우].' };
   const SPECIALS = ['golem', 'hero', 'marksman', 'repeater', 'turret', 'ballista', 'legendsword', 'legendarcher'];
   function unitBlock(type, list) {
     const cfg = CFG.units[type], n = list.length, avg = k => list.reduce((t, u) => t + (u[k] || 0), 0) / Math.max(1, n);
@@ -543,6 +542,9 @@
       else if (ev.type === 'bossSlam') addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.4, c: '#ff5a3a', r: ev.r, big: true });
       else if (ev.type === 'enrage') toast('적이 오래 살아남아 격노합니다! 점점 더 강해져요');
       else if (ev.type === 'elite') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.6, c: '#ffd84a', big: true }); if (eliteToasts < 3) { eliteToasts++; toast('엘리트 ' + CFG.enemies[ev.kind].name + ' 출현! 훨씬 강하고 큽니다'); } }
+      else if (ev.type === 'rainZone') addFx({ k: 'pool', x: ev.x, y: ev.y, r: ev.r, t: 0, max: ev.dur, c: ['#ffd84a', '#fff2a0', '#fff6c0'] });
+      else if (ev.type === 'rainTick') { for (let i = 0; i < 3; i++) { const a = Math.random() * 6.28, rr = Math.sqrt(Math.random()) * ev.r, tx = ev.x + Math.cos(a) * rr, ty = ev.y + Math.sin(a) * rr; addFx({ k: 'beam', x: tx - 30, y: ty - 150, tx, ty, t: 0, max: 0.22, c: '#ffe98a' }); } }
+      else if (ev.type === 'dashTrail') addFx({ k: 'dust', x: ev.x, y: ev.y, t: 0, max: 0.35, r: 12 });
       else if (ev.type === 'poisonPool') addFx({ k: 'pool', x: ev.x, y: ev.y, r: ev.r, t: 0, max: ev.dur });
       else if (ev.type === 'reward') toast('보상 획득: ' + ev.name);
       else if (ev.type === 'heroSkill') {
@@ -690,9 +692,9 @@
       }
       else if (f.k === 'pool') { // 독 웅덩이: 남아 있는 동안 초록 독기가 일렁인다
         const fade = Math.min(1, (f.max - f.t) / 1.2, f.t / 0.3 + 0.2), pu = 0.5 + 0.5 * Math.sin(now * 0.006);
-        ctx.globalAlpha = (0.2 + 0.08 * pu) * fade; ctx.fillStyle = '#66d63a'; ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill();
-        ctx.globalAlpha = 0.6 * fade; ctx.strokeStyle = '#8dff5a'; ctx.lineWidth = 2 / z; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (0.97 + 0.03 * pu), 0, Math.PI * 2); ctx.stroke();
-        ctx.fillStyle = '#b8ff8a'; for (let i = 0; i < 6; i++) { const a = i * 1.047 + now * 0.0004, rr = f.r * (0.3 + 0.5 * ((i * 0.37 + f.t * 0.3) % 1)), by = (f.t * 18 + i * 9) % 30; ctx.globalAlpha = 0.55 * fade * (1 - by / 30); ctx.beginPath(); ctx.arc(f.x + Math.cos(a) * rr, f.y + Math.sin(a) * rr - by, 2.2, 0, Math.PI * 2); ctx.fill(); }
+        ctx.globalAlpha = (0.2 + 0.08 * pu) * fade; ctx.fillStyle = f.c ? f.c[0] : '#66d63a'; ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 0.6 * fade; ctx.strokeStyle = f.c ? f.c[1] : '#8dff5a'; ctx.lineWidth = 2 / z; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (0.97 + 0.03 * pu), 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = f.c ? f.c[2] : '#b8ff8a'; for (let i = 0; i < 6; i++) { const a = i * 1.047 + now * 0.0004, rr = f.r * (0.3 + 0.5 * ((i * 0.37 + f.t * 0.3) % 1)), by = (f.t * 18 + i * 9) % 30; ctx.globalAlpha = 0.55 * fade * (1 - by / 30); ctx.beginPath(); ctx.arc(f.x + Math.cos(a) * rr, f.y + Math.sin(a) * rr - by, 2.2, 0, Math.PI * 2); ctx.fill(); }
         ctx.globalAlpha = 1;
       }
       else if (f.k === 'dust') { // 먼지 구름: 퍼지며 떠오르다 사라진다

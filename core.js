@@ -52,8 +52,8 @@
     },
     // 영웅 스킬: 영웅 등급 유닛이 쿨타임마다 자동 시전 (사거리 안에 적이 있을 때)
     heroSkill: {
-      legendsword:  { name: '천검 강림',  cd: 6, r: 180, mul: 9 },                // 주변 적 전체를 크게 벤다
-      legendarcher: { name: '천궁 난사',  cd: 5, r: 420, mul: 5.5, n: 10 },       // 가까운 적 10명을 동시에 저격
+      legendsword:  { name: '질풍 돌진',  cd: 7, r: 420, kind: 'dash', mul: 7, w: 26, dist: 380, spd: 620 }, // 적진을 향해 돌진하며 지나가는 길의 적을 모두 벤다
+      legendarcher: { name: '천궁 폭우',  cd: 8, r: 420, kind: 'rain', mul: 0.9, rad: 125, dur: 4, every: 0.4 }, // 적 위에 화살비 지대를 만들어 잠시 동안 범위 피해
       hero:     { name: '일섬',      cd: 5, r: 130, mul: 6.0 },              // 주변 적 전체에 큰 베기 피해
       golem:    { name: '대지 강타',  cd: 7, r: 160, mul: 4.5, slow: 3 },     // 주변 적에게 피해 + 3초간 감속
       marksman: { name: '일제 사격',  cd: 6, r: 340, mul: 4.5, n: 6 },        // 가까운 적 6명을 동시에 저격
@@ -334,8 +334,8 @@
     { id: 's_golem',  cat: 'summon', rar: 'epic',   max: 1,  name: '골렘 소환',       desc: () => '거대한 탱커 골렘을 영구 소환 · 검사 계열 · 스킬 [대지 강타]: 7초마다 주변 적에게 공격력 ×4.5 피해 + 3초 감속' },
     { id: 's_hero',   cat: 'summon', rar: 'epic',   max: 1,  name: '용사 소환',       desc: () => '강력한 근접 영웅 용사를 영구 소환 · 검사 계열 · 스킬 [일섬]: 5초마다 주변 적 전체에 공격력 ×6 베기' },
     // 궁수 계열 특수 유닛: 궁수 강화 카드와 궁수 전직(저격수·속사수 등)의 효과를 받는다
-    { id: 'l_sword',  cat: 'summon', rar: 'legend', max: 1, name: '전설 · 검왕 강림', desc: () => '압도적인 전사 검왕을 영구 소환 · 검사 계열 · 스킬 [천검 강림]: 6초마다 주변 적 전체에 공격력 ×9' },
-    { id: 'l_archer', cat: 'summon', rar: 'legend', max: 1, name: '전설 · 궁신 강림', desc: () => '압도적인 궁수 궁신을 영구 소환 · 궁수 계열 · 화살이 적 3명 관통 · 스킬 [천궁 난사]: 5초마다 적 10명을 동시에 저격' },
+    { id: 'l_sword',  cat: 'summon', rar: 'legend', max: 1, name: '전설 · 검왕 강림', desc: () => '압도적인 전사 검왕을 영구 소환 · 검사 계열 · 스킬 [질풍 돌진]: 7초마다 적진으로 돌진하며 지나가는 길의 적 모두에게 공격력 ×7' },
+    { id: 'l_archer', cat: 'summon', rar: 'legend', max: 1, name: '전설 · 궁신 강림', desc: () => '압도적인 궁수 궁신을 영구 소환 · 궁수 계열 · 화살이 적 3명 관통 · 스킬 [천궁 폭우]: 8초마다 적 위에 4초간 화살비 지대를 만들어 범위 안 적에게 계속 피해' },
     { id: 's_marksman',  cat: 'summon', rar: 'epic', max: 1, name: '명궁 소환',    desc: () => '사거리 300의 영웅 궁수를 영구 소환 · 궁수 계열 · 스킬 [일제 사격]: 6초마다 가까운 적 6명을 동시에 저격 (공격력 ×4.5)' },
     { id: 's_repeaters', cat: 'summon', rar: 'rare', max: 3, name: '연노병 소환',  desc: l => '연노병 2명을 영구 소환 (' + l + '/3) · 초당 3발 이상 빠르게 쏘는 석궁병 · 궁수 계열 (궁수 강화·전직 효과를 받음)' },
     { id: 's_ballista',  cat: 'summon', rar: 'rare', max: 2, name: '발리스타 설치', desc: l => '대형 석궁 발리스타를 성 옆에 설치 (' + l + '/2) · 큰 화살이 적 2명을 관통 · 궁수 계열 (궁수 강화·전직 효과를 받음)' },
@@ -474,7 +474,7 @@
   function endCinematic(S) { if (S.cinematic) { const k = S.cinematic.kind; S.cinematic = null; emit(S, { type: k === 'endless' ? 'endlessGo' : 'act2start' }); } }
   // (테스트/디버그) r라운드가 다음 틱에 시작되도록 점프한다
   function jumpToRound(S, r) {
-    S.round = r - 1; S.phase = 'round'; S.roundT = ROUND_TIME; S.pools.length = 0; S.queue = []; S.enemies.length = 0; S.shots.length = 0; S.zones.length = 0;
+    S.round = r - 1; S.phase = 'round'; S.roundT = ROUND_TIME; S.pools.length = 0; S.rain.length = 0; S.queue = []; S.enemies.length = 0; S.shots.length = 0; S.zones.length = 0;
     if (r > ACT1_END) S.act = 2;
     return S;
   }
@@ -573,7 +573,7 @@
     const S = {
       mode: mode === 'free' ? 'free' : mode === 'hold' ? 'hold' : 'normal', // free: 유닛이 성 주변에 머물지 않고 범위 안의 적을 어디까지든 쫓아간다
       seed: seed >>> 0, rng: mulberry32(seed >>> 0),
-      t: 0, phase: 'prep', prepT: PREP_TIME, round: 0, roundT: 0, clearT: 0, zones: [], pools: [],
+      t: 0, phase: 'prep', prepT: PREP_TIME, round: 0, roundT: 0, clearT: 0, zones: [], pools: [], rain: [],
       queue: [], spawnT: 0, spawnGap: 1, spawnPts: 2, extraPts: 0, fallen: [], endless: false, castle: { lv: 1 },
       gold: CFG.startGold, buyCount: 0,
       stats: { earned: CFG.startGold, spent: 0, killBy: {}, made: {}, seenE: {}, seenB: {}, peakPop: 0, bossKills: 0 }, // 기록·도감·업적·부정 확인용 집계
@@ -838,7 +838,7 @@
     if (tgt.team === 'e') {
       S.gold += tgt.gold; S.stats.earned += tgt.gold; S.kills++; S.stats.killBy[tgt.kind] = (S.stats.killBy[tgt.kind] || 0) + 1; if (tgt.kind === 'boss') S.stats.bossKills++; emit(S, { type: 'kill', x: tgt.x, y: tgt.y, boss: tgt.kind === 'boss' });
       if (tgt.kind === 'boss') { // 보스를 처치하면 남은 졸개도 모두 쓰러지고 라운드가 끝난다
-        S.queue.length = 0; S.zones.length = 0; S.pools.length = 0;
+        S.queue.length = 0; S.zones.length = 0; S.pools.length = 0; S.rain.length = 0;
         for (const o of S.enemies) if (!o.dead && o !== tgt) { o.dead = true; emit(S, { type: 'kill', x: o.x, y: o.y, boss: false, wipe: true }); }
         emit(S, { type: 'bossWipe', x: tgt.x, y: tgt.y });
       }
@@ -978,6 +978,17 @@
   }
   function castHeroSkill(S, u, atk) {
     const sk = CFG.heroSkill[u.type];
+    if (sk.kind === 'dash') { // 돌진: 가장 가까운 적을 향해 일직선으로 달려가며 길 위의 적을 모두 벤다
+      const t = nearest(S.gE, u.x, u.y, sk.r * 0.9); if (!t) return;
+      const dx = t.x - u.x, dy = t.y - u.y, d = Math.hypot(dx, dy) || 1;
+      u.dash = { dx: dx / d, dy: dy / d, left: Math.min(sk.dist, d + 60), hit: new Set(), atk };
+      emit(S, { type: 'heroSkill', kind: u.type, x: u.x, y: u.y, r: 60 }); u.swing = 0.4; return;
+    }
+    if (sk.kind === 'rain') { // 화살비: 가까운 적 위에 지대를 만든다
+      const t = nearest(S.gE, u.x, u.y, sk.r * 0.9); if (!t) return;
+      S.rain.push({ x: t.x, y: t.y, r: sk.rad, t: sk.dur, tick: 0.15, mul: sk.mul, atk, every: sk.every });
+      emit(S, { type: 'rainZone', x: t.x, y: t.y, r: sk.rad, dur: sk.dur }); u.swing = 0.4; return;
+    }
     if (sk.n) {
       const seen = new Set(), list = [];
       for (let i = 0; i < sk.n; i++) { const a = nearestExcl(S.gE, u.x, u.y, sk.r, seen), b = nearestExcl(S.gA, u.x, u.y, sk.r, seen), t = !b ? a : !a ? b : (Math.hypot(a.x - u.x, a.y - u.y) <= Math.hypot(b.x - u.x, b.y - u.y) ? a : b); if (!t) break; seen.add(t); list.push(t); }
@@ -994,6 +1005,14 @@
     const spm = 1 + (u.aura ? S.aura.spd : 0);
     const atk = u.atk * (1 + (u.aura ? S.aura.atk : 0)) * (u.weakT > 0 ? CFG.debuff.weak.mul : 1);
     const fromCore = Math.hypot(u.x - CX, u.y - CY);
+    if (u.dash) { // (돌진 중) 빠르게 직진하며 닿는 적을 한 번씩 벤다
+      const dsh = u.dash, sk = CFG.heroSkill[u.type], step = Math.min(sk.spd * dt, dsh.left);
+      u.x += dsh.dx * step; u.y += dsh.dy * step; dsh.left -= step; u.swing = 0.2;
+      eachNear(S.gE, u.x, u.y, u.r + sk.w, o => { if (dsh.hit.has(o)) return; dsh.hit.add(o); damage(S, o, dsh.atk * sk.mul * (o.mres || 1)); });
+      emit(S, { type: 'dashTrail', x: u.x, y: u.y });
+      if (dsh.left <= 0.01) { u.dash = null; emit(S, { type: 'heroSkill', kind: u.type, x: u.x, y: u.y, r: 60 }); }
+      return;
+    }
     const hs = CFG.heroSkill[u.type];
     if (hs) { u.skT = (u.skT === undefined ? hs.cd * 0.5 : u.skT) - dt; if (u.skT <= 0 && (hs.n ? nearestBoth(S, u.x, u.y, hs.r * 0.9) : nearest(S.gE, u.x, u.y, hs.r * 0.9))) { u.skT = hs.cd; castHeroSkill(S, u, atk); } }
     const cfg = CFG.units[u.type], aggro = cfg.aggro;
@@ -1263,8 +1282,11 @@
       if (CFG.units[u.type].static) { updateStatic(S, u, dt); continue; }
       const jm = S.jobMods[lineOf(u.type)];
       if (jm && jm.regen && u.hp < u.max) u.hp = Math.min(u.max, u.hp + u.max * jm.regen * dt);
-      const a = S.threat + wrapAngle(u.ha - S.threat) * (1 - bias);
-      u.hx = CX + Math.cos(a) * u.hr + Math.sin(S.t * 0.6 + u.id * 1.7) * CFG.ai.sway; u.hy = CY + Math.sin(a) * u.hr + Math.cos(S.t * 0.5 + u.id * 2.3) * CFG.ai.sway;
+      if (S.mode === 'hold') { u.hx = CX + Math.cos(u.ha) * u.hr; u.hy = CY + Math.sin(u.ha) * u.hr; } // (수비 모드) 배정된 자리는 적이 오는 쪽으로 쏠리지도, 흔들리지도 않는다
+      else {
+        const a = S.threat + wrapAngle(u.ha - S.threat) * (1 - bias);
+        u.hx = CX + Math.cos(a) * u.hr + Math.sin(S.t * 0.6 + u.id * 1.7) * CFG.ai.sway; u.hy = CY + Math.sin(a) * u.hr + Math.cos(S.t * 0.5 + u.id * 2.3) * CFG.ai.sway;
+      }
       if (u.type === 'priest') updatePriest(S, u, dt); else updateFighter(S, u, dt);
       u.x = clamp(u.x, 10, W - 10); u.y = clamp(u.y, 10, H - 10);
       // 성 원형에는 들어올 수 없다: 반지름 안이면 바깥으로 밀어낸다 (유닛당 거리 계산 한 번이라 매우 싸다)
@@ -1282,6 +1304,10 @@
       }
       emit(S, { type: 'debuffHit', x: z.x, y: z.y, r: z.r, kind: z.kind, hit }); S.zones.splice(i, 1);
       if (z.kind === 'poison') { S.pools.push({ x: z.x, y: z.y, r: z.r, t: dd.pool }); emit(S, { type: 'poisonPool', x: z.x, y: z.y, r: z.r, dur: dd.pool }); } // 독 웅덩이: 일정 시간 계속 중독
+    }
+    for (let i = S.rain.length - 1; i >= 0; i--) { // 화살비 지대: 남아 있는 동안 일정 간격으로 범위 안의 적을 맞힌다
+      const rn = S.rain[i]; rn.t -= dt; if (rn.t <= 0) { S.rain.splice(i, 1); continue; }
+      rn.tick -= dt; if (rn.tick <= 0) { rn.tick += rn.every; eachNear(S.gE, rn.x, rn.y, rn.r, o => damage(S, o, rn.atk * rn.mul * (o.rres || 1))); emit(S, { type: 'rainTick', x: rn.x, y: rn.y, r: rn.r }); }
     }
     for (let i = S.pools.length - 1; i >= 0; i--) {
       const pl = S.pools[i]; pl.t -= dt; if (pl.t <= 0) { S.pools.splice(i, 1); continue; }
