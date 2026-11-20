@@ -38,7 +38,7 @@
     { id: 'r4', name: '마왕의 문턱', desc: '50라운드 도달', goal: 50, val: () => M.best.round },
     { id: 'r5', name: '끝나지 않는 밤', desc: '60라운드 도달', goal: 60, val: () => M.best.round },
     { id: 'r6', name: '전설의 수문장', desc: '70라운드 도달', goal: 70, val: () => M.best.round },
-    { id: 'r7', name: '무한의 방랑자', desc: '80라운드 도달', goal: 80, val: () => M.best.round },
+    { id: 'r7', name: '불굴의 방랑자', desc: '80라운드 도달', goal: 80, val: () => M.best.round },
     { id: 'r8', name: '백 번의 밤', desc: '100라운드 도달', goal: 100, val: () => M.best.round },
     { id: 'r9', name: '끝을 모르는 자', desc: '120라운드 도달', goal: 120, val: () => M.best.round },
     { id: 'r10', name: '영원의 파수꾼', desc: '150라운드 도달', goal: 150, val: () => M.best.round },

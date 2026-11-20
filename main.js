@@ -309,7 +309,7 @@
   function updateHud() {
     const c = S.core;
     const bi = C.bossInfo(S, S.round), nb = C.bossInfo(S, S.round + 1), rt = $('roundTxt');
-    setText('roundTxt', '라운드 ' + Math.max(1, S.round) + (S.round > C.MAX_ROUND ? ' · 무한' : ' / ' + C.MAX_ROUND));
+    setText('roundTxt', '라운드 ' + Math.max(1, S.round) + ' / ' + C.FINAL_ROUND);
     rt.classList.toggle('boss', !!bi); rt.classList.toggle('nextboss', !bi && !!nb); rt.classList.toggle('act2', S.act === 2 && !bi && !nb);
     updateBossBar(); updateCastleBtn();
     setText('timeTxt', fmtTime(S.t));
@@ -1139,6 +1139,8 @@
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0); const col = OMEN_COL[S.omen] || '#ff5a1a', k = 0.45 + 0.55 * ((S.round - 1) % 10) / 9, pulse = 0.5 + 0.5 * Math.sin(now / 600), rgb = col;
       const g = ctx.createRadialGradient(vw / 2, vh / 2, Math.min(vw, vh) * 0.3, vw / 2, vh / 2, Math.max(vw, vh) * 0.6); g.addColorStop(0, rgb + '00'); g.addColorStop(1, rgb + Math.round((0.42 + 0.3 * k + 0.07 * pulse) * 255).toString(16).padStart(2, '0'));
       ctx.fillStyle = g; ctx.fillRect(0, 0, vw, vh);
+      { const bw = Math.max(46, Math.min(vw, vh) * 0.11), al = Math.round((0.5 + 0.3 * k + 0.1 * pulse) * 255).toString(16).padStart(2, '0'); // 가장자리를 따라 흐르는 속성 빛 띠
+        for (const [x0, y0, x1, y1, rx, ry, rw, rh] of [[0, 0, bw, 0, 0, 0, bw, vh], [vw, 0, vw - bw, 0, vw - bw, 0, bw, vh], [0, 0, 0, bw, 0, 0, vw, bw], [0, vh, 0, vh - bw, 0, vh - bw, vw, bw]]) { const lg = ctx.createLinearGradient(x0, y0, x1, y1); lg.addColorStop(0, rgb + al); lg.addColorStop(1, rgb + '00'); ctx.fillStyle = lg; ctx.fillRect(rx, ry, rw, rh); } }
       const n = 14 + Math.round(10 * k); ctx.globalAlpha = 0.5 + 0.3 * k;
       for (let i = 0; i < n; i++) { // 가장자리를 따라 속성 입자
         const ph = (now * 0.00006 * (1 + (i % 3) * 0.4) + i / n) % 1, side = i % 4, off = (Math.sin(i * 12.9898) * 0.5 + 0.5) * 0.12, px = side === 0 ? ph * vw : side === 1 ? vw * (1 - off) : side === 2 ? (1 - ph) * vw : vw * off, py = side === 0 ? vh * off : side === 1 ? ph * vh : side === 2 ? vh * (1 - off) : (1 - ph) * vh;

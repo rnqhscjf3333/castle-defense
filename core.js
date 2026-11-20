@@ -36,7 +36,7 @@
     core: { hp: 1000, atk: 20, rate: 1.0, range: 260, r: 46, blockR: 64 }, // blockR: 성 원형 안으로 아군이 들어올 수 없다
     units: {
       sword:  { name: '검사', cost: 50, hp: 120, atk: 12, rate: 1.0, range: 30,  speed: 90, r: 10, buyCd: 1.2, aggro: 220, dbl: 0.15 },
-      archer: { name: '궁수', cost: 60, hp: 67,  atk: 11, rate: 1.2, range: 220, speed: 80, r: 9,  buyCd: 1.5, aggro: 260 },
+      archer: { name: '궁수', cost: 60, hp: 90,  atk: 11, rate: 1.2, range: 220, speed: 80, r: 9,  buyCd: 1.5, aggro: 260 },
       priest: { name: '사제', cost: 80, hp: 85,  atk: 0,  rate: 0,   range: 0,   speed: 80, r: 9,  buyCd: 2.5, aggro: 0,
                 heal: 12, healRate: 2.4, healRange: 200 },
       undead: { name: '망자', cost: 0, hp: 40, atk: 6, rate: 1.0, range: 26, speed: 88, r: 9, buyCd: 1, aggro: 200, priceSteps: 0, line: 'none' }, // 사령 성 갈래가 되살린 임시 아군
@@ -314,7 +314,7 @@
     castle: { max: 10, extra: 3, costExtra: [10000, 15000, 22000], awk: { hp: 0.5, atk: 0.6, rate: 0.25, range: 60, cannons: 2 }, cost: [220, 380, 640, 1000, 1550, 2350, 3500, 5000, 7000], popBase: 8, popPer: 3, hp: 350, atk: 0.16, range: 22, rate: 0.06, cannonLv: [3, 5, 7] },
     // 엘리트: 일반 몬스터가 일정 확률로 훨씬 강하고 크게 나온다. 확률은 라운드가 갈수록 커져 최대 max
     elite: { from: 3, perRound: 0.0025, max: 0.10, hp: 3, dmg: 1.6, size: 1.35, gold: 4, speed: 1.05 },
-    endless: { hpLin: 0.12, hpQuad: 0.0008, cnt: 0.022, bossBase: 60000, bossExp: 0.6, marMul: 0.9 }, // 무한 모드(51라운드~) 난이도 곡선: 체력 배율 1+lin·n+quad·n², 적 수 +cnt·n (n = 50라운드 이후 지난 라운드)
+    endless: { hpLin: 0.07, hpQuad: 0.0004, cnt: 0.012, bossBase: 60000, bossExp: 0.6, marMul: 0.9 }, // 무한 모드(51라운드~) 난이도 곡선: 체력 배율 1+lin·n+quad·n², 적 수 +cnt·n (n = 50라운드 이후 지난 라운드)
     dmgVar: 0.15,                     // 모든 공격 피해에 공격력 ±15% 오차
     legendChance: 0.007,              // 30라운드 이후, 카드 한 칸마다 전설 카드가 나올 확률 (아주 낮음)
     rarityWeight: { common: 70, rare: 25, epic: 5 },
@@ -420,7 +420,7 @@
   const extraCount = r => r > MAX_ROUND ? Math.min(8, Math.floor((r - MAX_ROUND - 1) / 5) + 1) : 0;
   const extraAngles = n => EXTRA_ORDER.slice(0, n).map(k => 0.4 + Math.PI / 8 + k * Math.PI / 4);
   const spawnAngles = pts => { const b = 0.4, P = Math.PI; return [b, b + P, b + P / 2, b + 1.5 * P, b + P / 4, b + 1.25 * P, b + 0.75 * P, b + 1.75 * P].slice(0, pts); };
-  const enemySpeedMul = r => (r >= CFG.balance.lateFrom ? CFG.balance.lateSpeed : 1) * (r > ACT1_END ? CFG.balance.postSpeed : 1) * Math.min(1.5, 1 + 0.012 * endE(r));
+  const enemySpeedMul = r => (r >= CFG.balance.lateFrom ? CFG.balance.lateSpeed : 1) * (r > ACT1_END ? CFG.balance.postSpeed : 1) * Math.min(1.35, 1 + 0.007 * endE(r));
   // 비용 = 기본 비용 × 배율^(지금까지 뽑은 유닛 수). 모든 유닛 종류가 함께 오른다.
   // 가격 = 기본가 × (전체 인구 × 2%) × (같은 종류 인구 × 4%): 한 종류만 계속 뽑으면 예전(6%씩)과 비슷하고, 병력을 잃으면 가격도 같이 내려가 복구하기 쉽다
   const unitCostOf = (S, type) => { let all = 0, same = 0; for (const u of S.units) if (!u.dead && UNIT_TYPES.includes(u.type)) { all++; if (u.type === type) same++; } return Math.round(CFG.units[type].cost * (1 + CFG.economy.costRound * Math.max(0, S.round - 1)) * Math.pow(CFG.economy.costAll, all) * Math.pow(1 + CFG.economy.costType, same)); };
@@ -988,8 +988,7 @@
     if (r === 10) text += ' · 스폰 지점 증가';
     if (r === 20) text += ' · 대혼란';
     if (r === FINAL_ROUND) text = '최종 라운드';
-    if (r === MAX_ROUND + 1) { text = '무한 모드 · 사천왕의 기운이 다가온다'; emit(S, { type: 'notice', text: '마왕을 쓰러뜨렸다! 맵 가장자리의 기운이 다음 사천왕을 알린다' }); }
-    else if (r > MAX_ROUND) text += ' · 무한';
+    if (r === MAX_ROUND + 1) { text = '라운드 51 · 사천왕의 기운이 다가온다'; emit(S, { type: 'notice', text: '마왕을 쓰러뜨렸다! 맵 가장자리의 기운이 다음 사천왕을 알린다' }); }
     emit(S, boss ? { type: 'banner', text: '⚠ 보스 라운드 · ' + boss.name, boss: true } : { type: 'banner', text });
     const next = bossDefFor(S, r + 1);
     if (next) emit(S, { type: 'notice', text: '다음 라운드 보스: ' + next.name });
