@@ -3,7 +3,7 @@
   'use strict';
   const KEY = 'cd-meta';
   const ls = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
-  const blank = () => ({ v: 1, games: [], codex: { units: {}, enemies: {}, bosses: {} }, tot: { kills: 0, spent: 0, earned: 0, games: 0, wins: 0, bossKills: 0, time: 0 }, best: { round: 0, pop: 0, castle: 1, kills: 0, hold: 0, free: 0, normal: 0 }, ach: {} });
+  const blank = () => ({ v: 1, games: [], codex: { units: {}, enemies: {}, bosses: {}, jobs: {}, castle: {} }, tot: { kills: 0, spent: 0, earned: 0, games: 0, wins: 0, bossKills: 0, time: 0 }, best: { round: 0, pop: 0, castle: 1, kills: 0, hold: 0, free: 0, normal: 0 }, ach: {} });
   let M = blank();
   try { const j = JSON.parse(ls.get(KEY) || 'null'); if (j && j.v === 1) M = Object.assign(blank(), j, { codex: Object.assign(blank().codex, j.codex), tot: Object.assign(blank().tot, j.tot), best: Object.assign(blank().best, j.best) }); } catch (e) {}
   const save = () => ls.set(KEY, JSON.stringify(M));
@@ -75,6 +75,8 @@
     for (const k in st.made) M.codex.units[k] = 1;
     for (const k in st.seenE) M.codex.enemies[k] = 1;
     for (const k in st.seenB) M.codex.bosses[k] = 1;
+    for (const t in S.jobs) if (S.jobs[t] && S.jobs[t].ids) for (const id of S.jobs[t].ids) M.codex.jobs[id] = 1; // 실제로 전직한 직업
+    for (const id of S.cnodes || []) M.codex.castle[id] = 1; // 실제로 고른 성 능력
     M.tot.kills += S.kills - run.kills; run.kills = S.kills;
     M.tot.spent += st.spent - run.spent; run.spent = st.spent;
     M.tot.earned += st.earned - run.earned; run.earned = st.earned;
