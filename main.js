@@ -534,6 +534,9 @@
   }
   let metaTab = 'codex', codexSel = null, listScroll = 0;
   const SKILL_TXT = { dash: '적진으로 돌진하며 지나가는 길의 적 모두를 벤다', rain: '적 위에 화살비 지대를 만들어 범위 안 적에게 계속 피해' };
+  const SK_TXT = { dash: a => '돌진: ' + a.cd + '초마다 ' + a.dur + '초간 ' + a.mul.toFixed(1) + '배 속도로 가장 가까운 아군에게 달려듭니다', summon: a => '소환: ' + a.cd + '초마다 ' + ({ grunt: '돌격병', archer: '사수', shield: '방패병', bomber: '폭파병' }[a.kind] || a.kind) + ' ' + a.n + '명 (성 가까이 왔을 때)', artillery: a => '포격: ' + a.cd + '초마다 아군 위치에 포탄 ' + a.count + '발 (피해 ' + a.dmg + ', 범위 ' + a.radius + ', 착탄 지점 표시)' + (a.barrage ? ', ' + a.barrage + '번째마다 3배 일제 포격' : ''), shield: a => '방어막: ' + a.cd + '초마다 ' + a.dur + '초간 받는 피해 ' + Math.round(a.red * 100) + '% 감소', rage: a => '분노: 체력 ' + Math.round(a.at * 100) + '% 이하에서 속도 ×' + a.speed + ', 공격 속도 ×' + a.rate + ', 공격력 ×' + a.dmg, rush: a => '강습: 등장하자마자 가장 가까운 아군에게 돌진해 충격파로 기절시킵니다', blink: a => '순간이동: ' + a.cd + '초마다 성 둘레의 다른 자리로 이동하고 곧바로 졸개를 소환', leap: a => '도약: ' + a.cd + '초마다 아군이 가장 몰린 곳으로 뛰어올라 내려찍고 기절시킵니다', siege: () => '원거리 포격: 멀리서 포격만 합니다', clone: a => '분신: 체력 ' + Math.round(a.at * 100) + '%에서 분신 ' + a.n + '기 소환 (1회)', aura: a => '철벽 수호: ' + a.cd + '초마다 주변 적에게 ' + a.dur + '초간 방어막 (피해 ' + Math.round(a.red * 100) + '% 감소)', roar: a => '함성: ' + a.cd + '초마다 주변 적의 속도 +' + Math.round((a.speed - 1) * 100) + '% (' + a.dur + '초)', focus: a => '정신 집중: ' + a.cd + '초마다 ' + a.dur + '초간 정지하며 체력 ' + Math.round(a.heal * 100) + '% 회복, 그동안 받는 피해 ' + Math.round(a.red * 100) + '% 감소', drain: a => '암흑 흡수: ' + a.cd + '초마다 주변 아군에게 큰 피해를 주고 맞은 수만큼 체력 회복' };
+  const DB_TXT = { stun: '아군을 기절시키는', poison: '아군을 중독시키는', weak: '아군의 공격력을 낮추는', wound: '아군의 치유 효과를 낮추는' };
+  function enemyTraits(c) { const t = []; if (c.air) t.push('공중 — 궁수 계열과 포탑만 공격 가능'); if (c.ranged) t.push('원거리 공격'); if (c.blast) t.push('폭발 (범위 ' + c.blast + ')'); if (c.rres && c.rres < 1) t.push('원거리 피해 ' + Math.round((1 - c.rres) * 100) + '% 방어'); if (c.mres && c.mres < 1) t.push('근접 피해 ' + Math.round((1 - c.mres) * 100) + '% 방어'); if (c.poison) t.push('공격이 중독을 겁니다'); if (c.rush) t.push('멀리서 ×' + c.rush + ' 속도로 돌진'); if (c.healRange) t.push('주변 적을 치유 (' + Math.round(c.healPct * 100) + '%/' + c.healRate + '초)'); return t; }
   function codexDetail(key) {
     const [k, a, b] = key.split(':'); let img = '', name = '', desc = '', rows = [], extra = '';
     const back = '<button class="backbtn" id="codexBack">← 도감으로</button>';
@@ -548,6 +551,18 @@
       if (hs && !sk) sk = hs.name + ': ' + (SKILL_TXT[hs.kind] || '');
       if (sk) extra += '<div class="d" style="margin:6px 0">' + sk + '</div>';
       const J = CFG.jobs[a]; if (J) extra += '<h3>전직</h3>' + J.t1.map(d => irow(d.name + ' (1차)', d.desc, 'rare') + (J.t2[d.id] || []).map(x => irow('└ ' + x.name + ' (2차)', x.desc, 'epic')).join('')).join('');
+    } else if (k === 'e') {
+      const c = CFG.enemies[a], sp = CFG.spawn[a]; name = c.name; desc = c.desc || '평범한 적입니다.';
+      try { img = portrait('e', a, c, null, null, true).toDataURL(); } catch (e) {}
+      rows = [['기본 체력', c.hp + ' (라운드마다 증가)'], ['기본 공격력', c.dmg || '—'], ['공격 속도', c.rate ? f1(c.rate) + '/초' : '—'], ['사거리', c.range || '—'], ['이동 속도', c.speed], ['처치 골드', c.gold], ['등장', sp ? sp.from + '라운드부터' : '특수 (소환·이벤트)']];
+      const tr = enemyTraits(c); if (tr.length) extra += '<h3>특성</h3>' + tr.map(x => '<div class="d" style="margin:3px 0">• ' + x + '</div>').join('');
+    } else if (k === 'b') {
+      const all = CFG.bossPool.concat([CFG.act1Boss, CFG.finalBoss]), bd = all.find(x => x.id === a); name = bd.name; desc = bd.line ? '“' + bd.line + '”' : '';
+      try { img = portrait('e', 'boss', CFG.enemies.boss, Object.assign({ r: bd.r || 30 }, bd.look), null, true).toDataURL(); } catch (e) {}
+      const rd = bd === CFG.act1Boss ? '30라운드' : bd === CFG.finalBoss ? '50라운드' : '5라운드마다 (무작위 순서)';
+      rows = [['등장', rd], ['체력', '라운드별 표 (5R ' + CFG.bossHp[5] + ' → 50R ' + CFG.bossHp[50] + ')'], ['기본 공격력', CFG.enemies.boss.dmg + ' (시간이 지날수록 증가)'], ['기본 공격', bd.ranged ? '원거리 마법' : '범위 근접 공격']];
+      const A = bd.abil; extra += '<h3>스킬</h3>' + Object.keys(A).filter(x => x !== 'debuff').map(x => '<div class="d" style="margin:4px 0">• ' + (SK_TXT[x] ? SK_TXT[x](A[x]) : x) + '</div>').join('') + (A.debuff || []).map(d => '<div class="d" style="margin:4px 0">• ' + DBK[d.kind][0] + ' 광역기: ' + d.cd + '초마다 ' + DB_TXT[d.kind] + ' 범위(' + d.r + ')를 예고 후 터뜨립니다</div>').join('');
+      if (bd === CFG.finalBoss) extra += '<div class="d" style="margin:8px 0">한 번 쓰러져도 각성해서 부활합니다. 첫 형태 처치 시 체력이 다시 차오릅니다.</div>';
     } else if (k === 'j') {
       const d = C.jobDef(a, b), c = CFG.units[a], t2 = !CFG.jobs[a].t1.some(x => x.id === b); name = d.name; desc = d.desc;
       try { img = portrait('u', a, c, null, { job: b, jobTier: t2 ? 2 : 1 }, true).toDataURL(); } catch (e) {}
@@ -576,8 +591,8 @@
       { const items = []; for (const t of ['sword', 'archer', 'priest']) { const J = CFG.jobs[t]; J.t1.forEach(d => items.push({ team: 'u', kind: t, cfg: CFG.units[t], ext: { job: d.id, jobTier: 1 }, name: d.name, desc: '1차 · ' + CFG.units[t].name, lockTxt: '아직 선택하지 않았어요', seen: !!(M.codex.jobs[d.id] || logged.has(d.name)), det: 'j:' + t + ':' + d.id })); for (const k in J.t2) J.t2[k].forEach(d => items.push({ team: 'u', kind: t, cfg: CFG.units[t], ext: { job: d.id, jobTier: 2 }, name: d.name, desc: '2차 · ' + (J.t1.find(x => x.id === k) || {}).name, lockTxt: '아직 선택하지 않았어요', seen: !!(M.codex.jobs[d.id] || logged.has(d.name)), det: 'j:' + t + ':' + d.id })); } sect('전직', items); }
       { const T = CFG.castleTree, items = [], add = (n, tier, path, vr, fin, parent) => items.push({ name: n.name, desc: (tier === 1 ? '1단계' : tier === 2 ? '2단계 · ' : '최종 · ') + (tier === 1 ? '' : parent), img: castlePortrait({ cpath: path, cvar: vr, cfin: fin }), lockTxt: '아직 선택하지 않았어요', seen: !!(M.codex.castle[n.id] || logged.has(n.name)), det: 'c:' + n.id });
         for (const r of T.roots) { add(r, 1, r.id, null, null, ''); for (const a of T.t2[r.id]) { add(a, 2, r.id, a.id, null, r.name); for (const f of T.t3[a.id]) add(f, 3, r.id, a.id, f.id, a.name); } } sect('성', items); }
-      sect('몬스터', Object.keys(CFG.enemies).filter(k => k !== 'boss').map(k => ({ team: 'e', kind: k, cfg: CFG.enemies[k], name: CFG.enemies[k].name, desc: CFG.enemies[k].desc || '', seen: !!M.codex.enemies[k] })));
-      sect('보스', CFG.bossPool.concat([CFG.act1Boss, CFG.finalBoss]).map(b => ({ team: 'e', kind: 'boss', cfg: CFG.enemies.boss, look: Object.assign({ r: b.r || 30 }, b.look), name: b.name, desc: b.line ? '“' + b.line + '”' : '', seen: !!M.codex.bosses[b.id] })));
+      sect('몬스터', Object.keys(CFG.enemies).filter(k => k !== 'boss').map(k => ({ team: 'e', kind: k, cfg: CFG.enemies[k], name: CFG.enemies[k].name, desc: CFG.enemies[k].desc || '', seen: !!M.codex.enemies[k], det: 'e:' + k })));
+      sect('보스', CFG.bossPool.concat([CFG.act1Boss, CFG.finalBoss]).map(b => ({ team: 'e', kind: 'boss', cfg: CFG.enemies.boss, look: Object.assign({ r: b.r || 30 }, b.look), name: b.name, desc: b.line ? '“' + b.line + '”' : '', seen: !!M.codex.bosses[b.id], det: 'b:' + b.id })));
     } else if (metaTab === 'rank') {
       body.innerHTML = '<div id="rankbox"></div>'; showRank(null);
     } else if (metaTab === 'stats' && statDetail !== null && M.games[statDetail]) {
@@ -882,6 +897,7 @@
       if (lite && e.team === 'e' && e.kind !== 'boss') { Figures.drawLite(ctx, e); if (e.elite) eliteMark(e, z); continue; }
       if (e.undead) { ctx.globalAlpha = 0.4 + 0.15 * Math.sin(now * 0.01); ctx.fillStyle = '#3ae68a'; ctx.beginPath(); ctx.ellipse(e.x, e.y + 6, e.r * 1.5, e.r * 0.7, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
       if (e.kind === 'boss') bossAura(e, now, z);
+      if (e.team === 'u' && e.blT > 0 && !lite) { ctx.globalAlpha = 0.28 + 0.1 * Math.sin(now * 0.008); ctx.strokeStyle = '#ffe58a'; ctx.lineWidth = 1.6 / z; ctx.beginPath(); ctx.ellipse(e.x, e.y + e.r * 0.6, e.r * 1.2, e.r * 0.5, 0, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1; }
       if (e.focusT > 0) { ctx.globalAlpha = 0.3 + 0.15 * Math.sin(now * 0.02); ctx.fillStyle = '#6fe08a'; ctx.beginPath(); ctx.arc(e.x, e.y - 6, e.r * (1.3 + 0.25 * Math.sin(now * 0.01)), 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
       if (e.dying) drawDyingBoss(e, now); else Figures.draw(ctx, e, now);
       if (e.elite) eliteMark(e, z);

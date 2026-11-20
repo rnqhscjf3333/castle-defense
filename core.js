@@ -197,7 +197,7 @@
       priest: {
         t1: [
           { id: 'cleric', name: '성직자', desc: '광륜의 치유사. 치유량 +45%, 치유 범위 +50', mods: { heal: 0.45, healRange: 50 } },
-          { id: 'bishop', name: '주교', desc: '주교관과 지팡이. 치유량 +8%', mods: { heal: 0.08 } },
+          { id: 'bishop', name: '주교', desc: '주교관과 지팡이. 치유량 +8%. 주변 아군에게 축복: 공격력 +8%, 받는 피해 -5%', mods: { heal: 0.08, bless: 1 } },
         ],
         t2: {
           cleric: [
@@ -205,8 +205,8 @@
             { id: 'warden', name: '수호사제', desc: '푸른 등불의 수호자. 치유량 +20%, 치유한 아군에게 치유량의 80%만큼 보호막 (최대 체력의 30%까지)', mods: { heal: 0.2, ward: 0.8 } },
           ],
           bishop: [
-            { id: 'archbishop', name: '대주교', desc: '황금 십자 지팡이. 치유량 +12%, 이 사제는 라운드마다 쓰러진 아군을 1회 부활 (체력 50%)', mods: { heal: 0.12, revive: 1 } },
-            { id: 'templar', name: '전투사제', desc: '철퇴와 갑옷의 성전사. 체력 +30%. 성스러운 구체로 사거리 190 안의 적을 직접 공격(치유량의 170%)', mods: { hp: 0.3, smite: 1 } },
+            { id: 'archbishop', name: '대주교', desc: '황금 십자 지팡이. 치유량 +12%, 축복 강화(공격력 +16%, 받는 피해 -10%), 이 사제는 라운드마다 쓰러진 아군을 1회 부활 (체력 50%)', mods: { heal: 0.12, revive: 1, bless: 1 } },
+            { id: 'templar', name: '전투사제', desc: '철퇴와 갑옷의 성전사. 체력 +30%. 성스러운 구체로 사거리 190 안의 적을 직접 공격(치유량의 170%). 맞은 적은 4초간 받는 피해 +20%, 2초간 이동 속도 감소(낙인)', mods: { hp: 0.3, smite: 1 } },
           ],
         },
       },
@@ -249,7 +249,7 @@
     cardVals: {                       // 카드 수치 (설명 문구와 효과가 모두 여기서 읽는다)
       coreAtk: 0.40, coreRate: 0.25, coreRange: 45, fortHp: 600, repair: 0.15, thorn: 0.9,
       crit: 0.10, critMul: 2, archerRange: 0.12,
-      guard: 0.15, dodge: 0.12, hbuff: 0.12, hbuffT: 4, charge: 0.40, chargeRate: 0.15, revive: 0.5, pierce: 0.40, bomb: 4.0, bombStep: 1.5,
+      guard: 0.15, dodge: 0.12, hbuff: 0.12, hbuffT: 4, blessAtk: 0.08, blessDef: 0.05, charge: 0.40, chargeRate: 0.15, revive: 0.5, pierce: 0.40, bomb: 4.0, bombStep: 1.5,
       auraHeal: 0.025, auraAtk: 0.08, auraDef: 0.08, auraDefCap: 0.40, auraSpd: 0.06, auraBoost: 0.15,
     },
     rerolls: 2,
@@ -637,7 +637,7 @@
                 splash: L('c_splash'), chain: L('c_chain'), bomb: L('c_bomb'), thorn: L('f_thorn'), repair: L('f_repair') };
   }
   // 전직 효과 합산 (유닛 종류별)
-  const zeroMods = () => ({ hp: 0, atk: 0, rate: 0, speed: 0, def: 0, regen: 0, cleave: 0, range: 0, pierce: 0, crit: 0, heal: 0, healRange: 0, healRate: 0, revive: 0, dbl: 0, reflect: 0, berserk: 0, splash: 0, mark: 0, ward: 0, smite: 0 });
+  const zeroMods = () => ({ hp: 0, atk: 0, rate: 0, speed: 0, def: 0, regen: 0, cleave: 0, range: 0, pierce: 0, crit: 0, heal: 0, healRange: 0, healRate: 0, revive: 0, dbl: 0, reflect: 0, berserk: 0, splash: 0, mark: 0, ward: 0, smite: 0, bless: 0 });
   function jobDef(type, id) {
     const j = CFG.jobs[type]; if (!j) return null;
     for (const d of j.t1) if (d.id === id) return d;
@@ -1007,6 +1007,7 @@
     if (tgt.team === 'e' && tgt.shieldT > 0) dmg *= 1 - tgt.shieldRed; // 보스 방어막 동안 피해 감소
     if (tgt.team === 'e' && tgt.focusT > 0 && tgt.abil && tgt.abil.focus) dmg *= 1 - tgt.abil.focus.red; // 광전사: 정신 집중 중 피해 감소
     if (tgt.team === 'e' && tgt.markT > 0) dmg *= 1 + tgt.markAmp; // 사냥꾼의 표식
+    if (tgt.team === 'u' && tgt.blT > 0) dmg *= 1 - tgt.blD; // 주교의 축복
     if (tgt.team === 'u') {
       if (S.perks.dodge && lineOf(tgt.type) === 'archer' && S.rng() < Math.min(0.6, V().dodge * S.perks.dodge)) { tgt.dodgeT = 0.4; emit(S, { type: 'dodge', x: tgt.x, y: tgt.y }); return; } // 궁수 회피
       let red = 0;
@@ -1068,6 +1069,7 @@
     } else if (s.t === S.core) hitCore(S, s.dmg, '화살(사수)');
     else {
       damage(S, s.t, s.dmg * (s.t.rres || 1), s.crit, s.from); onShotHit(S, s);
+      if (s.color === 'h' && !s.t.dead) s.t.slowT = Math.max(s.t.slowT || 0, 2); // 전투사제: 낙인에 맞은 적은 느려진다
       if (s.mark && !s.t.dead) { s.t.markT = 4; s.t.markAmp = s.mark; emit(S, { type: 'marked', x: s.t.x, y: s.t.y }); } // 사냥꾼: 표식
       if (s.splash) { const R = 55, t = s.t; eachNear(S.gE, t.x, t.y, R, e => { if (e !== t) damage(S, e, s.dmg * s.splash); }); emit(S, { type: 'boom', x: t.x, y: t.y, r: R }); } // 포격수: 폭발 화살
     }
@@ -1191,7 +1193,7 @@
     return best;
   }
   // 치유: 1초 동안 받을 수 있는 양에 상한(healCap)이 있고, 치유 감소 상태이면 줄어든다
-  const hbMul = (S, u) => u.hbT > 0 ? 1 + V().hbuff * S.perks.hbuff : 1;
+  const hbMul = (S, u) => (u.hbT > 0 ? 1 + V().hbuff * S.perks.hbuff : 1) * (u.blT > 0 ? 1 + u.blA : 1);
   function applyHeal(S, t, amt) {
     if (t.undead) return; // 사제·오라·성 파동 모두 망자는 치유하지 않는다
     if (t.woundT > 0) amt *= CFG.debuff.wound.mul;
@@ -1213,6 +1215,7 @@
   }
   function updatePriest(S, u, dt) {
     u.cd -= dt; if (S.jobMods.priest.smite) priestSmite(S, u, dt);
+    if (S.jobMods.priest.bless) priestBless(S, u, dt);
     const spm = 1 + (u.aura ? S.aura.spd : 0);
     const near = nearest(S.gE, u.x, u.y, 90);
     if (near) {
@@ -1237,11 +1240,17 @@
     }
   }
   function rvSync(S) { let n = 0; for (const u of S.units) if (u.type === 'priest' && !u.dead) n += u.rv || 0; S.reviveLeft = n; }
+  function priestBless(S, u, dt) { // 주교 계열: 주변 아군에게 축복 (공격력 증가·받는 피해 감소)
+    u.bt = (u.bt || 0) - dt; if (u.bt > 0) return; u.bt = 0.3;
+    const L = S.jobMods.priest.bless, R = 140;
+    eachNear(S.gU, u.x, u.y, R, a => { if (a.dead || a.undead) return; a.blT = 0.7; a.blA = V().blessAtk * L; a.blD = V().blessDef * L; });
+    u.blT = 0.7; u.blA = V().blessAtk * L; u.blD = V().blessDef * L;
+  }
   function priestSmite(S, u, dt) { // 전투사제: 성스러운 구체로 가까운 적을 공격
     u.sc = (u.sc || 0) - dt; if (u.sc > 0) return;
     const t = nearest(S.gE, u.x, u.y, 190); if (!t) return;
     u.sc = 1.1; u.swing = 0.3; u.aim = Math.atan2(t.y - u.y, t.x - u.x);
-    fire(S, u, t, u.heal * 1.7 * (1 + (u.aura ? S.aura.atk : 0)), CFG.arrowSpeed * 0.85, 'h');
+    fire(S, u, t, u.heal * 1.7 * (1 + (u.aura ? S.aura.atk : 0)), CFG.arrowSpeed * 0.85, 'h', { mark: 0.2 });
   }
   function castHeroSkill(S, u, atk) {
     const sk = CFG.heroSkill[u.type];
@@ -1592,7 +1601,7 @@
     const bias = S.biasNow;
     for (const u of S.units) {
       if (u.dead) continue;
-      u.flash = Math.max(0, u.flash - dt); u.swing = Math.max(0, u.swing - dt); if (u.wardFx > 0) u.wardFx -= dt; if (u.hbT > 0) u.hbT -= dt;
+      u.flash = Math.max(0, u.flash - dt); u.swing = Math.max(0, u.swing - dt); if (u.wardFx > 0) u.wardFx -= dt; if (u.hbT > 0) u.hbT -= dt; if (u.blT > 0) u.blT -= dt;
       if (u.undead && (u.ttl -= dt) <= 0) { u.dead = true; emit(S, { type: 'undeadFade', x: u.x, y: u.y }); continue; }
       if (u.stunT > 0 || u.poisonT > 0 || u.weakT > 0 || u.woundT > 0) {
         if (u.poisonT > 0) { u.poisonT -= dt; u.hp = Math.max(1, u.hp - u.max * CFG.debuff.poison.pct * dt); }
