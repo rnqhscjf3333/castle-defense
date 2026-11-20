@@ -562,7 +562,7 @@
   }
   function renderMeta() {
     const M = Meta.data(), body = $('metaBody'); for (const b of document.querySelectorAll('#metaTabs button')) b.classList.toggle('on', b.dataset.t === metaTab);
-    $('metaTitle').textContent = '컬렉션'; body.innerHTML = '';
+    $('metaTitle').textContent = metaTab === 'rank' ? '랭킹' : '컬렉션'; body.innerHTML = '';
     if (metaTab === 'codex') {
       const sect = (title, items) => {
         const seen = items.filter(i => i.seen).length, h3 = document.createElement('h3'); h3.textContent = title + ' ' + seen + '/' + items.length; body.appendChild(h3);
@@ -617,7 +617,7 @@
     if (e.target.closest('#rankBack')) { rankScroll = listScroll; renderMeta(); return; }
     const rr = e.target.closest('tr[data-ri]'); if (rr) { const g = rankList[+rr.dataset.ri]; if (g) { listScroll = $('metaBody').scrollTop; const d = g.d || g.detail || {}; $('metaBody').innerHTML = gameDetail(Object.assign({}, g, d, { name: g.name, at: g.at || Date.now() }), 'rankBack'); $('metaBody').scrollTop = 0; } return; }
     if (e.target.closest('#statBack')) { statDetail = null; renderMeta(); $('metaBody').scrollTop = listScroll; return; } const tr = e.target.closest('tr[data-gi]'); if (tr) { listScroll = $('metaBody').scrollTop; statDetail = +tr.dataset.gi; renderMeta(); $('metaBody').scrollTop = 0; } });
-  function openMeta(tab) { metaTab = tab; statDetail = null; codexSel = null; openModal('metaPanel'); renderMeta(); }
+  function openMeta(tab) { $('metaPanel').classList.toggle('rankOnly', tab === 'rank'); metaTab = tab; statDetail = null; codexSel = null; openModal('metaPanel'); renderMeta(); }
   $('metaTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { metaTab = b.dataset.t; statDetail = null; codexSel = null; renderMeta(); $('metaBody').scrollTop = 0; } });
   Meta.onUnlock(list => { for (const a of list) { toast('🏆 업적 달성: ' + a.name); } A2.play('ui'); });
   let lastSyncRound = 0, auraSec = 0;
@@ -1271,7 +1271,7 @@
   for (const b of document.querySelectorAll('#devPresets button')) b.addEventListener('click', () => devRoundSet(b.dataset.r));
   $('devGo').addEventListener('click', e => { e.stopPropagation(); const r = devRoundSet($('devRound').value); store.set('cd-devround', String(r)); closeModals(); startFromTitle(r); });
   $('mColl').addEventListener('click', e => { e.stopPropagation(); openMeta('codex'); });
-  $('tDev').addEventListener('click', e => { e.stopPropagation(); devRoundSet(+store.get('cd-devround') || 30); openModal('devPanel'); });
+  $('mRank').addEventListener('click', e => { e.stopPropagation(); openMeta('rank'); });
   $('tSet').addEventListener('click', e => { e.stopPropagation(); openModal('setMenu'); });
   $('mHow').addEventListener('click', e => { e.stopPropagation(); $('howto').classList.remove('hidden'); });
   $('howClose').addEventListener('click', () => $('howto').classList.add('hidden'));
