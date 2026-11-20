@@ -766,6 +766,27 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   d.hidden = false; d.flyS = 'ground'; d.dying = false; g.core.hp = g.core.max; C.damage(g, d, 1e15); for (let i = 0; i < 300 && !g.over; i++) step();
   check('용을 쓰러뜨리면 게임 클리어', g.over && g.win === true);
 }
+// 63) 50라운드 이후: 새 몬스터 · 성채 각성 · 사천왕의 기운
+{ const g = C.createGame(21); g.gold = 1e12; g.endless = false; for (let i = 1; i < C.CFG.castle.max; i++) C.upgradeCastle(g, true);
+  check('50라운드 전: 성 최대 레벨 10', C.castleMax(g) === 10 && C.castleCost(g) === Infinity);
+  g.endless = true; check('50라운드 이후: 성 최대 레벨 +3', C.castleMax(g) === 13 && isFinite(C.castleCost(g)));
+  const a0 = g.core.atk, h0 = g.core.max; for (let i = 0; i < 3; i++) C.upgradeCastle(g); check('최대 레벨(13)까지 올리면 성채 각성', g.castle.lv === 13 && g.castle.awk === true && g.core.cannons >= 5 && g.core.atk > a0 * 1.5 && g.core.max > h0 * 1.4, g.core.cannons);
+  check('각성 후에는 더 올릴 수 없음', !C.upgradeCastle(g).ok); }
+{ const kinds = ['stormwolf', 'frostarcher', 'thunderbomber', 'rockgiant', 'voidwraith', 'wyrmling']; const g = C.createGame(22); const seen = new Set();
+  for (let r = 40; r <= 70; r++) { g.round = r - 1; g.phase = 'prep'; g.prepT = 0; g.endless = true; g.cards.offer = null; g.jobs.offer = null; g.cOffer = null; C.tick(g, DT); for (const k of g.queue) seen.add(k); g.queue.length = 0; g.cards.offer = null; g.jobs.offer = null; g.cOffer = null; }
+  const early = (() => { const h = C.createGame(23); const s2 = new Set(); for (let r = 1; r <= 49; r++) { h.round = r - 1; h.phase = 'prep'; h.prepT = 0; h.cards.offer = null; h.jobs.offer = null; h.cOffer = null; C.tick(h, DT); for (const k of h.queue) s2.add(k); h.queue.length = 0; h.cards.offer = null; h.jobs.offer = null; h.cOffer = null; } return kinds.some(k => s2.has(k)); })();
+  check('새 몬스터 6종은 50라운드 이후에만 등장', kinds.every(k => seen.has(k)) && !early, kinds.filter(k => !seen.has(k)).join());
+  const u = C.createGame(24); u.gold = 1e6; u.buyCd.sword = 0; C.buy(u, 'sword'); for (let i = 0; i < 400 && !u.units.length; i++) C.tick(u, DT); const sw = u.units[0]; sw.hp = sw.max = 1e9; u.round = 60; u.phase = 'round'; u.hold = true; u.enemies.length = 0;
+  const fa = C.spawnEnemy(u, 'frostarcher', sw.x + 100, sw.y); C.damage(u, sw, 5, false, fa); check('서리 궁수: 맞은 아군은 느려짐(냉기)', sw.chillT > 2);
+  const tb = C.spawnEnemy(u, 'thunderbomber', sw.x + 5, sw.y); sw.stunT = 0; for (let i = 0; i < 40 && !tb.dead; i++) C.tick(u, DT); check('뇌격병: 폭발에 휘말리면 기절·넉백', tb.dead && (sw.stunT > 0 || Math.hypot(sw.kvx, sw.kvy) > 0 || sw.x !== 0)); }
+{ const g = C.createGame(25); g.captureEvents = true; g.endless = true; const kingAt = r => C.bossInfo(g, r).id;
+  const run = r => { g.round = r - 1; g.phase = 'prep'; g.prepT = 0; g.cards.offer = null; g.jobs.offer = null; g.cOffer = null; C.tick(g, DT); g.queue.length = 0; g.cards.offer = null; g.jobs.offer = null; g.cOffer = null; return C.drainEvents(g).filter(e => e.type === 'omen'); };
+  const o51 = run(51); check('51라운드: 다음 사천왕의 기운(속성)과 대사 이벤트', g.omen === kingAt(60) && o51.length === 1 && o51[0].line.includes('마왕은 사천왕 중 최약체'), o51[0] && o51[0].line);
+  const o55 = run(55); check('52~59라운드: 기운은 유지되고 대사는 없음', g.omen === kingAt(60) && o55.length === 0);
+  const o61 = run(61); check('61라운드: 방금 쓰러뜨린 사천왕이 최약체였다는 대사', g.omen === kingAt(70) && o61.length === 1 && o61[0].line.includes(C.bossInfo(g, 60).name + '은 사천왕 중 최약체'), o61[0] && o61[0].line);
+  const o91 = run(91); check('91라운드: 용의 대사, 기운은 용(dragon)', g.omen === 'dragon' && o91.length === 1 && o91[0].id === 'dragon');
+  run(60); check('사천왕 라운드(60)에는 기운 없음', g.omen === null);
+  check('90라운드 사천왕은 80라운드와 다른 사람', kingAt(90) !== kingAt(80)); }
 // 61) 보스 개성 스킬
 { const run = (id, round, f) => { const g = arena(round, [['boss', 700, 500]], id); const b = g.enemies[0]; g.units.length = 0; f(g, b); return { g, b }; };
   { const { g, b } = run('summoner', 10, (g, b) => { b.hp = b.max * 0.49; }); for (let i = 0; i < 5; i++) C.tick(g, DT);

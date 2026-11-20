@@ -579,7 +579,7 @@
   const d = e => e._dir;
 
   // 강화형 적: 기본 적의 그림에 색만 바꿔서 그린다 (크기는 판정 반지름을 따른다)
-  const BASE = { captain: 'grunt', ironshield: 'shield', crossbow: 'archer', sapper: 'bomber', warlock: 'shaman', ogre: 'brute', direwolf: 'wolf', wyvern: 'bat', wraith: 'ghost' };
+  const BASE = { captain: 'grunt', ironshield: 'shield', crossbow: 'archer', sapper: 'bomber', warlock: 'shaman', ogre: 'brute', direwolf: 'wolf', wyvern: 'bat', wraith: 'ghost', stormwolf: 'wolf', frostarcher: 'archer', thunderbomber: 'bomber', rockgiant: 'brute', voidwraith: 'ghost', wyrmling: 'bat' };
   const PAL = {
     captain: { body: '#6a1f1f', legs: '#2a0f0e', head: '#d9b98a', belt: '#e1b43a' },
     ironshield: { body: '#5a6678', legs: '#2b3340', head: '#c9d0da', belt: '#8a94a6' },
@@ -590,6 +590,12 @@
     direwolf: { body: '#3a2f3a', belly: '#7a6a7a', head: '#4a3d4a', ear: '#2a1f2a', snout: '#6a5a6a', legs: '#241a24', eye: '#ff3b3b', mane: '#c0392b' },
     wyvern: { wing: '#2f6a3a', body: '#3d8a4a' },
     wraith: { body: '#6a7a9a', line: '#2a3550' },
+    stormwolf: { body: '#6a5a1a', belly: '#d8c24a', head: '#8a7424', ear: '#4a3d0e', snout: '#c8b040', legs: '#3a300a', eye: '#fff44a', mane: '#ffe14a' },
+    frostarcher: { body: '#2c5a7a', legs: '#143048', head: '#dff3ff', belt: '#8fd8ff' },
+    thunderbomber: { body: '#7a6a14', legs: '#2e2808', head: '#f0e6b0', belt: '#ffe14a' },
+    rockgiant: { body: '#6a5a48', legs: '#3a2e22', head: '#b8a888', belt: '#8a6a44' },
+    voidwraith: { body: '#4a2a6a', line: '#1a0a2a' },
+    wyrmling: { wing: '#8a1f24', body: '#c4402e' },
   };
   // 전설 유닛: 용사/명궁 그림에 보랏빛·청록 색을 입혀 크게 그린다
   const UBASE = { legendsword: 'hero', legendarcher: 'marksman', undead: 'sword' };
@@ -606,7 +612,7 @@
     ctx.restore();
   }
   // 적이 아주 많을 때/멀리서 볼 때 쓰는 간단한 그림: 몸통(네모) + 머리(동그라미)만, 무기·그림자·방향 애니메이션 없음
-  const LITE = { grunt: ['#c8453f', '#c9d99a'], shield: ['#8f2f33', '#d6c79a'], archer: ['#7a3b2a', '#c9d99a'], bomber: ['#e07a2a', '#e6d58a'], shaman: ['#6a3f8f', '#c9d99a'], brute: ['#7a2a2a', '#bcd08a'], captain: ['#6a1f1f', '#d9b98a'], ironshield: ['#5a6678', '#c9d0da'], crossbow: ['#2f5a3a', '#d9d9a0'], sapper: ['#2a2a33', '#e6b98a'], warlock: ['#3a1f5a', '#bca0d9'], ogre: ['#5a3a1f', '#a5c27a'], direwolf: ['#3a2f3a', '#4a3d4a'], wyvern: ['#3d8a4a', '#2f6a3a'], wraith: ['#6a7a9a', '#4a5a7a'], wolf: ['#7c828c', '#8d939e'], bat: ['#4d3d6e', '#3b2f55'], boar: ['#6b4a32', '#7a553a'], spider: ['#3a2f4a', '#2a2233'], ghost: ['#cfe3f5', '#b8d0e6'] };
+  const LITE = { grunt: ['#c8453f', '#c9d99a'], shield: ['#8f2f33', '#d6c79a'], archer: ['#7a3b2a', '#c9d99a'], bomber: ['#e07a2a', '#e6d58a'], shaman: ['#6a3f8f', '#c9d99a'], brute: ['#7a2a2a', '#bcd08a'], captain: ['#6a1f1f', '#d9b98a'], ironshield: ['#5a6678', '#c9d0da'], crossbow: ['#2f5a3a', '#d9d9a0'], sapper: ['#2a2a33', '#e6b98a'], warlock: ['#3a1f5a', '#bca0d9'], ogre: ['#5a3a1f', '#a5c27a'], direwolf: ['#3a2f3a', '#4a3d4a'], wyvern: ['#3d8a4a', '#2f6a3a'], wraith: ['#6a7a9a', '#4a5a7a'], stormwolf: ['#6a5a1a', '#8a7424'], frostarcher: ['#2c5a7a', '#dff3ff'], thunderbomber: ['#7a6a14', '#f0e6b0'], rockgiant: ['#6a5a48', '#b8a888'], voidwraith: ['#4a2a6a', '#2a1a4a'], wyrmling: ['#c4402e', '#8a1f24'], wolf: ['#7c828c', '#8d939e'], bat: ['#4d3d6e', '#3b2f55'], boar: ['#6b4a32', '#7a553a'], spider: ['#3a2f4a', '#2a2233'], ghost: ['#cfe3f5', '#b8d0e6'] };
   function drawLite(ctx, e) {
     const s = (e.r / 10) * 1.25, c = LITE[e.kind] || LITE.grunt, fl = e.flash > 0;
     ctx.fillStyle = fl ? '#fff' : c[0]; ctx.fillRect(e.x - 6 * s, e.y - 8 * s, 12 * s, 13 * s);

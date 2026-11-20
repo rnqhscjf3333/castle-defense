@@ -147,7 +147,7 @@ table.rank tr.me td { background: rgba(255,204,64,.16); font-weight: 700; }
 @keyframes menuIn { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
 #tMenu button { padding: 14px 10px; font-size: 18px; font-weight: 800; letter-spacing: .12em; color: #fff; border-radius: 14px; border: 2px solid rgba(255,220,150,.5); background: linear-gradient(180deg, rgba(80,50,120,.9), rgba(40,24,70,.92)); box-shadow: 0 4px 0 rgba(0,0,0,.45), 0 0 18px rgba(160,110,255,.25); }
 #tMenu button.main { color: #2a1400; border-color: #fff1b0; background: linear-gradient(180deg, #ffd96a, #f1a62a); box-shadow: 0 4px 0 #8a5412, 0 0 22px rgba(255,190,70,.45); }
-#tSet { position: absolute; top: max(10px, env(safe-area-inset-top)); z-index: 3; display: none; font-size: 13px; padding: 6px 12px; } #tSet { right: 10px; padding: 6px 8px; } .gear { display: block; } #title.menu #tSet { display: block; }
+#tDev, #tSet { position: absolute; top: max(10px, env(safe-area-inset-top)); z-index: 3; display: none; font-size: 13px; padding: 6px 12px; } #tDev { left: 10px; } #tSet { right: 10px; padding: 6px 8px; } .gear { display: block; } #title.menu #tDev, #title.menu #tSet { display: block; }
 #tMenu button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.45); }
 #tMsg { position: relative; margin-top: 14px; min-height: 18px; font-size: 13px; color: #d9c8f5; text-align: center; }
 #tVer { position: absolute; right: 10px; bottom: 8px; font-size: 10px; color: rgba(255,255,255,.35); }
@@ -431,7 +431,7 @@ body.comicOn { overflow: hidden; }
   <div class="logo"><h1>성 지키기</h1><p>CASTLE DEFENSE</p></div>
   <div id="tapHint">화면을 터치하거나 아무 키나 누르세요</div>
   <div id="tMenu"><button id="mStart" class="main">게임 시작</button><button id="mHow">게임 방법</button><button id="mColl">컬렉션</button><button id="mRank">랭킹</button><button id="mQuit">게임 종료</button></div>
-  <button id="tSet" class="btn panel tbtn" aria-label="설정"><svg class="gear" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8l1.5 2.4 2.8-.6.9 2.7 2.7.9-.6 2.8 2.4 1.5-2.4 1.5.6 2.8-2.7.9-.9 2.7-2.8-.6L12 21.2l-1.5-2.4-2.8.6-.9-2.7-2.7-.9.6-2.8L2.3 12l2.4-1.5-.6-2.8 2.7-.9.9-2.7 2.8.6z"/></svg></button>
+  <button id="tDev" class="btn panel tbtn">🛠 개발자</button><button id="tSet" class="btn panel tbtn" aria-label="설정"><svg class="gear" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8l1.5 2.4 2.8-.6.9 2.7 2.7.9-.6 2.8 2.4 1.5-2.4 1.5.6 2.8-2.7.9-.9 2.7-2.8-.6L12 21.2l-1.5-2.4-2.8.6-.9-2.7-2.7-.9.6-2.8L2.3 12l2.4-1.5-.6-2.8 2.7-.9.9-2.7 2.8.6z"/></svg></button>
   <div id="tMsg"></div><div id="tVer"></div>
 </div>
 <div id="howto" class="hidden"><div class="panel"><h2>게임 방법</h2>

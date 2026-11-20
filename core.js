@@ -80,11 +80,19 @@
       direwolf:  { name: '광포한 늑대',   hp: 90,  dmg: 14, speed: 150, r: 11, range: 20, rate: 1.2, gold: 12, aggro: 220, desc: '늑대보다 훨씬 빠르고 강합니다.' },
       wyvern:    { name: '와이번',        hp: 160, dmg: 18, speed: 110, r: 12, range: 18, rate: 0.9, gold: 22, aggro: 260, air: true, desc: '강한 공중형이라 궁수 계열과 포탑만 공격할 수 있습니다.' },
       wraith:    { name: '망령',          hp: 160, dmg: 24, speed: 70,  r: 12, range: 22, rate: 0.9, gold: 20, aggro: 150, mres: 0.3, desc: '근접 피해를 70% 방어합니다.' },
+      // 50라운드 이후에만 나오는 몬스터 (사천왕의 기운을 받은 무리)
+      stormwolf:  { name: '폭풍 늑대',   hp: 130, dmg: 18, speed: 175, r: 11, range: 20, rate: 1.3, gold: 14, aggro: 240, desc: '번개처럼 빠른 늑대. 눈 깜짝할 새 달려듭니다.' },
+      frostarcher:{ name: '서리 궁수',   hp: 110, dmg: 16, speed: 52, r: 10, range: 250, rate: 0.8, gold: 16, aggro: 290, ranged: true, chill: 3, desc: '화살에 맞은 아군은 3초간 느려집니다.' },
+      thunderbomber:{ name: '뇌격병',    hp: 90, dmg: 60, speed: 105, r: 10, range: 12, rate: 1.0, gold: 15, aggro: 190, blast: 95, stun: 1.2, desc: '폭발에 휘말린 아군이 기절하고 밀려납니다.' },
+      rockgiant:  { name: '암석 거인',   hp: 1500, dmg: 48, speed: 34, r: 24, range: 32, rate: 0.55, gold: 60, aggro: 110, rres: 0.7, desc: '바위처럼 단단한 거인. 맞은 아군을 멀리 날려 보냅니다 (원거리 피해 30% 방어).' },
+      voidwraith: { name: '공허 망령',   hp: 380, dmg: 30, speed: 72, r: 12, range: 22, rate: 0.9, gold: 24, aggro: 160, mres: 0.5, rres: 0.7, desc: '근접 피해 50%, 원거리 피해 30%를 방어합니다.' },
+      wyrmling:   { name: '새끼 용',     hp: 420, dmg: 36, speed: 105, r: 15, range: 20, rate: 0.9, gold: 28, aggro: 280, air: true, desc: '용의 새끼. 공중형이라 궁수 계열과 포탑만 공격할 수 있습니다.' },
       brute:  { name: '거한',   hp: 240, dmg: 16, speed: 34, r: 17, range: 26, rate: 0.7, gold: 20, aggro: 100, desc: '느리지만 매우 단단합니다.' },           // 느리고 단단하다
     },
     // 일반 적 등장표: from 라운드부터 가중치 w로 섞여 나온다 (라운드가 갈수록 종류가 늘어난다)
     spawn: { grunt: { from: 1, w: 6 }, shield: { from: 3, w: 3 }, archer: { from: 4, w: 2.5 }, bomber: { from: 7, w: 2.2 }, shaman: { from: 10, w: 1.3 }, brute: { from: 13, w: 1.4 }, wolf: { from: 5, w: 2.2 }, bat: { from: 9, w: 1.6 }, boar: { from: 11, w: 1.4 }, spider: { from: 14, w: 1.5 }, ghost: { from: 18, w: 1.4 },
-      captain: { from: 24, w: 1.8 }, direwolf: { from: 27, w: 1.5 }, crossbow: { from: 26, w: 1.5 }, ironshield: { from: 28, w: 1.3 }, sapper: { from: 30, w: 1.2 }, warlock: { from: 32, w: 1.0 }, ogre: { from: 34, w: 1.1 }, wyvern: { from: 36, w: 1.0 }, wraith: { from: 40, w: 1.0 } },
+      captain: { from: 24, w: 1.8 }, direwolf: { from: 27, w: 1.5 }, crossbow: { from: 26, w: 1.5 }, ironshield: { from: 28, w: 1.3 }, sapper: { from: 30, w: 1.2 }, warlock: { from: 32, w: 1.0 }, ogre: { from: 34, w: 1.1 }, wyvern: { from: 36, w: 1.0 }, wraith: { from: 40, w: 1.0 },
+      stormwolf: { from: 52, w: 1.6 }, frostarcher: { from: 54, w: 1.4 }, thunderbomber: { from: 56, w: 1.3 }, voidwraith: { from: 58, w: 1.2 }, rockgiant: { from: 60, w: 1.0 }, wyrmling: { from: 64, w: 1.1 } },
     // 보스: 5라운드마다, 라운드 시작과 함께 나온다. 일반 보스 5종은 게임마다 무작위 순서로 5·10·15·20·25라운드에 한 번씩,
     // 2막(35·40·45라운드)에는 다시 섞어서 3종이 나온다. 30라운드는 암흑 기사단장, 50라운드는 마왕 고정. 체력은 라운드별 표(보스가 누구든 같은 라운드면 같은 체력),
     // 패턴 강도는 라운드에 맞춰 조정된다(scaleAbil). 풀 보스의 패턴 수치는 15라운드 기준.
@@ -126,7 +134,7 @@
       { id: 'l_fort',    name: '마왕의 유산 · 성의 부활', desc: '성이 즉시 3레벨 올라가고(최대까지) 체력 완전 회복, 성 최대 체력 +30%·공격력 +50% 영구 강화', castle: 3, coreUp: true },
     ],
     // 넉백: 보스·강한 적에게 맞으면 공격이 온 반대쪽으로 밀려난다 (질량이 큰 유닛은 덜 밀림)
-    kb: { decay: 5.2, max: 950, stagger: 0.35, basic: { boss: 230, ogre: 200, brute: 150, boar: 150, direwolf: 90, elite: 110 }, mass: { golem: 0.35, legendsword: 0.5, hero: 0.8, legendarcher: 0.8, marksman: 0.9 } },
+    kb: { decay: 5.2, max: 950, stagger: 0.35, basic: { boss: 230, ogre: 200, brute: 150, boar: 150, direwolf: 90, rockgiant: 300, stormwolf: 90, elite: 110 }, mass: { golem: 0.35, legendsword: 0.5, hero: 0.8, legendarcher: 0.8, marksman: 0.9 } },
     // 사천왕 (60·70·80라운드에 무작위 순서로 한 명씩, 90라운드는 한 명이 다시 나온다). 마왕처럼 쓰러지면 속성에 맞는 모습으로 각성해 부활한다.
     kingHp: 2.0,           // 사천왕 한 형태의 체력 = 무한 모드 보스 기본 체력 × 이 값
     kings: {
@@ -303,7 +311,7 @@
     },
     rerolls: 2,
     // 성 업그레이드: 유닛 수(인구)에 상한이 있고, 골드로 성을 올리면 인구 상한·체력·공격력·사거리가 오르고 특정 레벨마다 대포가 1문씩 늘어난다
-    castle: { max: 10, cost: [220, 380, 640, 1000, 1550, 2350, 3500, 5000, 7000], popBase: 8, popPer: 3, hp: 350, atk: 0.16, range: 22, rate: 0.06, cannonLv: [3, 5, 7] },
+    castle: { max: 10, extra: 3, costExtra: [10000, 15000, 22000], awk: { hp: 0.5, atk: 0.6, rate: 0.25, range: 60, cannons: 2 }, cost: [220, 380, 640, 1000, 1550, 2350, 3500, 5000, 7000], popBase: 8, popPer: 3, hp: 350, atk: 0.16, range: 22, rate: 0.06, cannonLv: [3, 5, 7] },
     // 엘리트: 일반 몬스터가 일정 확률로 훨씬 강하고 크게 나온다. 확률은 라운드가 갈수록 커져 최대 max
     elite: { from: 3, perRound: 0.0025, max: 0.10, hp: 3, dmg: 1.6, size: 1.35, gold: 4, speed: 1.05 },
     endless: { hpLin: 0.12, hpQuad: 0.0008, cnt: 0.022, bossBase: 60000, bossExp: 0.6, marMul: 0.9 }, // 무한 모드(51라운드~) 난이도 곡선: 체력 배율 1+lin·n+quad·n², 적 수 +cnt·n (n = 50라운드 이후 지난 라운드)
@@ -589,7 +597,7 @@
       const list = lines.map(t => { const ids = S.jobs[t].ids; return { type: t, className: CFG.units[t].name, tier, stage: 'line', id: 'line_' + t, name: CFG.units[t].name, desc: tier === 1 ? '1차 전직 — 두 가지 중 하나를 고릅니다.' : jobDef(t, ids[0]).name + ' 계열 2차 전직 — 두 가지 중 하나를 고릅니다.' }; });
       S.jobs.offer = { boss: bossName, tier, stage: 'line', list }; return;
     }
-    const left = CFG.castle.max - S.castle.lv; // 성이 이미 최대면 대개수는 제시하지 않고, 1레벨만 남았으면 1레벨로 안내한다
+    const left = castleMax(S) - S.castle.lv; // 성이 이미 최대면 대개수는 제시하지 않고, 1레벨만 남았으면 1레벨로 안내한다
     const early = S.round < 30; // 초반 보스 보상은 너무 강한 용병(기사단·철갑)을 뺀다
     const pool = CFG.rewards.filter(r => (!r.castle || left > 0) && !(early && (r.id === 'r_knights' || r.id === 'r_golem'))).map(r => ({ type: 'reward', reward: true, className: '보스 보상', tier: 0, id: r.id, name: r.name, desc: r.castle && left < r.castle ? r.desc.replace('2레벨', left + '레벨') + ' (최대 레벨 도달)' : r.desc }));
     for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(S.rng() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
@@ -701,6 +709,8 @@
     c.atk = b.atk * (1 + v.coreAtk * L('c_atk') + K.atk * kl);
     c.rate = b.rate * (1 + v.coreRate * L('c_rate') + K.rate * kl);
     c.range = b.range + v.coreRange * L('c_range') + K.range * kl;
+    if (S.castle && S.castle.awk) { const A = CFG.castle.awk; c.max *= 1 + A.hp; c.atk *= 1 + A.atk; c.rate *= 1 + A.rate; c.range += A.range; c.cannons += A.cannons; } // 성채 각성
+    c.awk = !!(S.castle && S.castle.awk);
     { const lf = S.legacyFort || 0; if (lf) { c.max *= 1 + 0.3 * lf; c.atk *= 1 + 0.5 * lf; } } // 마왕의 유산 · 성의 부활
     const boost = 1 + v.auraBoost * L('a_rad');
     S.aura = { heal: v.auraHeal * L('a_heal') * boost, atk: v.auraAtk * L('a_atk') * boost, def: Math.min(v.auraDefCap, v.auraDef * L('a_def') * boost), spd: v.auraSpd * L('a_spd') * boost, r: CFG.auraBase,
@@ -775,7 +785,7 @@
       units: [], enemies: [], shots: [], shotPool: [],
       kills: 0, nextId: 1,
       prod: [], spawnN: 0, repairCd: 0, repairN: 0, buyCd: { sword: 0, archer: 0, priest: 0 },
-      threat: 0, over: false, win: false,
+      threat: 0, over: false, win: false, omen: null,
       captureEvents: false, events: [], numQ: [],
       gU: makeGrid(48), gE: makeGrid(48), gA: makeGrid(48), seen: {},
       cards: { offer: null, rerolls: CFG.rerolls, taken: {}, boss: false },
@@ -788,7 +798,7 @@
     // 일반 보스 5종의 등장 순서 (게임마다 무작위, 한 번씩)
     const shuffled = () => { const o = CFG.bossPool.map((_, i) => i); for (let i = o.length - 1; i > 0; i--) { const j = Math.floor(S.rng() * (i + 1)); [o[i], o[j]] = [o[j], o[i]]; } return o; };
     S.bossOrder = shuffled(); S.bossOrder2 = shuffled(); // 1막(5~25라운드)과 2막(35~45라운드)의 보스 순서
-    { const kr = mulberry32((S.seed | 0) + 7777), ks = ['thunder', 'snow', 'earth']; for (let i = 2; i > 0; i--) { const j = Math.floor(kr() * (i + 1)); [ks[i], ks[j]] = [ks[j], ks[i]]; } S.kingOrder = ks; S.kingRep = Math.floor(kr() * 3); } // 사천왕 등장 순서 (60·70·80라운드, 90라운드는 한 명이 다시)
+    { const kr = mulberry32((S.seed | 0) + 7777), ks = ['thunder', 'snow', 'earth']; for (let i = 2; i > 0; i--) { const j = Math.floor(kr() * (i + 1)); [ks[i], ks[j]] = [ks[j], ks[i]]; } S.kingOrder = ks; S.kingRep = Math.floor(kr() * 2); } // 사천왕 등장 순서 (60·70·80라운드, 90라운드는 한 명이 다시)
     recompute(S);
     return S;
   }
@@ -841,15 +851,18 @@
     emit(S, { type: 'castleRepair', x: S.core.x, y: S.core.y });
     return { ok: true, cost };
   }
-  const castleCost = S => S.castle.lv >= CFG.castle.max ? Infinity : CFG.castle.cost[S.castle.lv - 1];
+  // 성 최대 레벨: 50라운드 이후(무한 모드)에는 3레벨 높아지고, 끝까지 올리면 성채가 각성한다
+  const castleMax = S => CFG.castle.max + (S.endless ? CFG.castle.extra : 0);
+  const castleCost = S => S.castle.lv >= castleMax(S) ? Infinity : CFG.castle.cost.concat(CFG.castle.costExtra)[S.castle.lv - 1];
   function upgradeCastle(S, free) {
-    if (S.over || S.castle.lv >= CFG.castle.max) return { ok: false, reason: 'max' };
+    if (S.over || S.castle.lv >= castleMax(S)) return { ok: false, reason: 'max' };
     const cost = castleCost(S); if (!free && S.gold < cost) return { ok: false, reason: 'gold' };
     if (!free) { S.gold -= cost; S.stats.spent += cost; }
     const oldMax = S.core.max; S.castle.lv++; recompute(S);
     S.core.hp = Math.min(S.core.max, S.core.hp + (S.core.max - oldMax) + S.core.max * 0.1);
     for (const u of S.units) if (lineOf(u.type) === 'core' && !u.dead) refreshUnit(S, u); // 포탑도 성 강화를 받는다
     if (!free) logEv(S, ['k', S.round, S.castle.lv]);
+    if (S.endless && S.castle.lv >= castleMax(S) && !S.castle.awk) { S.castle.awk = true; recompute(S); S.core.hp = S.core.max; emit(S, { type: 'castleAwaken' }); } // 성채 각성
     emit(S, { type: 'castleUp', lv: S.castle.lv, cannons: S.core.cannons, pop: popCap(S) });
     return { ok: true, cost: free ? 0 : cost };
   }
@@ -960,13 +973,22 @@
     }
     const boss = bossDefFor(S, r);
     if (boss) q.unshift('boss'); // 보스 라운드에는 시작과 동시에 보스가 나온다
+    // 사천왕의 기운: 다음 사천왕(용) 등장 라운드까지 맵 가장자리에 그 속성의 기운이 뜬다. 51·61·71·81·91라운드에는 다음 상대가 직접 한마디 한다.
+    S.omen = null;
+    if (r > MAX_ROUND && r < FINAL_ROUND && r % 10 !== 0) {
+      const nx = Math.ceil(r / 10) * 10, nb = bossDefFor(S, nx); S.omen = nb ? nb.id : null;
+      if (r % 10 === 1 && nb) {
+        const pv = r === MAX_ROUND + 1 ? CFG.finalBoss.name : bossDefFor(S, r - 1).name, LN = { thunder: '번개처럼 끝내 주마. {p}은 사천왕 중 최약체였을 뿐이다!', snow: '…고요히 얼려 주지. {p}은 사천왕 중 최약체였다.', earth: '크크… {p}은 사천왕 중 최약체였지. 이 대지가 너희의 무덤이 될 것이다.', dragon: '사천왕 따위가 내 앞에 서겠느냐. {p}은 사천왕 중 최약체였다… 이제 내가 간다.' };
+        emit(S, { type: 'omen', id: nb.id, name: nb.name, line: (LN[nb.id] || LN.thunder).replace('{p}', pv), look: nb.look, r: nb.id === 'dragon' ? 40 : nb.r });
+      }
+    }
     if (r === FINAL_ROUND) { q.length = 0; q.push('boss'); S.dragonIntro = { t: 0, dur: 8 }; S.zones.length = 0; S.strikes.length = 0; emit(S, { type: 'dragonIntro' }); } // 마지막 라운드: 몬스터 없이 용과의 1:1 레이드
     S.queue = q; S.spawnGap = SPAWN_TIME / q.length; S.spawnT = 0;
     let text = '라운드 ' + r;
     if (r === 10) text += ' · 스폰 지점 증가';
     if (r === 20) text += ' · 대혼란';
     if (r === FINAL_ROUND) text = '최종 라운드';
-    if (r === MAX_ROUND + 1) { text = '🩸 무한 모드 · 하늘이 붉게 물든다'; emit(S, { type: 'notice', text: '마왕을 쓰러뜨렸다! 이제부터 끝없이 강해지는 적을 버텨라' }); }
+    if (r === MAX_ROUND + 1) { text = '무한 모드 · 사천왕의 기운이 다가온다'; emit(S, { type: 'notice', text: '마왕을 쓰러뜨렸다! 맵 가장자리의 기운이 다음 사천왕을 알린다' }); }
     else if (r > MAX_ROUND) text += ' · 무한';
     emit(S, boss ? { type: 'banner', text: '⚠ 보스 라운드 · ' + boss.name, boss: true } : { type: 'banner', text });
     const next = bossDefFor(S, r + 1);
@@ -993,7 +1015,7 @@
       id: S.nextId++, kind, team: 'e', x, y, hp, max: hp, dmg: cfg.dmg * dmgMul(r) * CFG.balance.enemyDmg * (!bd && cfg.ranged ? CFG.balance.rangedDmg : 1), rate: cfg.rate, range: cfg.range,
       speed: cfg.speed * enemySpeedMul(r), r: (bd && bd.r) || cfg.r, gold: cfg.gold, aggro: cfg.aggro,
       cd: 0, age: 0, flash: 0, swing: 0, dead: false,
-      ranged: !!cfg.ranged, blast: cfg.blast || 0, healRange: cfg.healRange || 0, healPct: cfg.healPct || 0, healRate: cfg.healRate || 0, keep: cfg.keep || 0,
+      ranged: !!cfg.ranged, chill: cfg.chill || 0, stun: cfg.stun || 0, blast: cfg.blast || 0, healRange: cfg.healRange || 0, healPct: cfg.healPct || 0, healRate: cfg.healRate || 0, keep: cfg.keep || 0,
       speedMul: 1, rateMul: 1, dmgMul: 1, shieldT: 0, shieldRed: 0, dashT: 0, kvx: 0, kvy: 0, kb: bd ? (bd.dragon ? 0 : CFG.kb.basic.boss) : (CFG.kb.basic[kind] || 0),
       air: !!cfg.air, rres: cfg.rres || 1, mres: cfg.mres || 1, rush: cfg.rush || 0, poison: cfg.poison || 0,
     };
@@ -1130,7 +1152,8 @@
   }
   function damage(S, tgt, dmg, crit, src) {
     if (tgt.dead || tgt.dying || tgt.hidden) return;
-    if (src && src.kb && tgt.team === 'u' && !src.dead) knock(S, tgt, src.x, src.y, src.kb); // 강한 적의 공격: 반대쪽으로 밀려난다
+    if (src && src.kb && tgt.team === 'u' && !src.dead) knock(S, tgt, src.x, src.y, src.kb);
+    if (src && src.chill && tgt.team === 'u') tgt.chillT = Math.max(tgt.chillT || 0, src.chill); // 서리 궁수: 맞으면 느려진다 // 강한 적의 공격: 반대쪽으로 밀려난다
     if (src && tgt.team === 'u' && !src.dead) { tgt.rv = src; tgt.rvT = 6; } // 맞은 유닛이 때린 적을 기억 (자유 모드 반격용)
     if (CFG.dmgVar) dmg *= 1 + (S.rng() * 2 - 1) * CFG.dmgVar; // 공격력 ±N% 오차
     if (tgt.team === 'e' && tgt.shieldT > 0) dmg *= 1 - tgt.shieldRed; // 보스 방어막 동안 피해 감소
@@ -1663,7 +1686,7 @@
   }
   function explode(S, e) {
     const R = e.blast;
-    for (const u of S.units) if (!u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= R + u.r) { damage(S, u, e.dmg, false, e); knock(S, u, e.x, e.y, 300); }
+    for (const u of S.units) if (!u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= R + u.r) { damage(S, u, e.dmg, false, e); knock(S, u, e.x, e.y, 300); if (e.stun) u.stunT = Math.max(u.stunT || 0, e.stun); }
     if (Math.hypot(S.core.x - e.x, S.core.y - e.y) <= R + S.core.r) hitCore(S, e.dmg, '폭파병');
     emit(S, { type: 'boom', x: e.x, y: e.y, r: R, enemy: true });
     e.dead = true; // 자폭: 골드/처치 수 없음
@@ -1848,7 +1871,7 @@
 
   return {
     CFG, MAX_ROUND, ACT1_END, extraAngles, EXTRA_RING, ROUND_TIME, SPAWN_TIME, PREP_TIME, SPAWN_RING, UNIT_TYPES, CARD_DEFS,
-    createGame, tick, buy, openAwaken, openLegacy, cmpDesc, FINAL_ROUND, repairCastle, repairCost, devSetup, runSummary, ctNode, jobDef, coreGuard, hitCore, pickCastle, autoCastle, castleOptions, describeCastle, jobBack, classOptions, enqueue, cancelProd, goldBound, checkRun, upgradeCastle, castleCost, popCap, popGain, popCount, specialCount, endCinematic, jumpToRound, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo, drainEvents, pickCard, reroll, describeTaken, openCards,
+    createGame, tick, buy, openAwaken, openLegacy, cmpDesc, FINAL_ROUND, castleMax, repairCastle, repairCost, devSetup, runSummary, ctNode, jobDef, coreGuard, hitCore, pickCastle, autoCastle, castleOptions, describeCastle, jobBack, classOptions, enqueue, cancelProd, goldBound, checkRun, upgradeCastle, castleCost, popCap, popGain, popCount, specialCount, endCinematic, jumpToRound, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo, drainEvents, pickCard, reroll, describeTaken, openCards,
     unitCostOf, enemyCount, hpMul, dmgMul, mulberry32, damage,
   };
 });

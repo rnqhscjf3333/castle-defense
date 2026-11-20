@@ -178,7 +178,7 @@
   const cb = { lv: castleBtn.querySelector('.cnt'), ds: castleBtn.querySelector('.ds'), cost: castleBtn.querySelector('.cost') };
   function doCastle() { // 성이 최대 레벨이면 같은 버튼이 수리 버튼이 된다
     if (!S || !running || paused) return;
-    if (S.castle.lv >= CFG.castle.max) return doRepair();
+    if (S.castle.lv >= C.castleMax(S)) return doRepair();
     const r = C.upgradeCastle(S);
     if (!r.ok) { A2.play('deny'); toast(r.reason === 'max' ? '성이 최대 레벨입니다' : '골드가 부족해요'); }
   }
@@ -219,12 +219,12 @@
     el.classList.remove('hidden'); clearTimeout(biTimer); cancelAnimationFrame(biRaf);
     const fake = { team: 'e', kind: 'boss', id: 7, x: 0, y: 0, r: ev.r || 30, look: ev.look, flash: 0, swing: 0 }, t0 = performance.now();
     (function loop() {
-      const now = performance.now(); if (now - t0 > 2300) return;
+      const now = performance.now(); if (now - t0 > (ev.long ? 5200 : 2300)) return;
       fake.x += 0.35; fake.swing = ((now - t0) % 1400) < 220 ? 0.2 : 0; fake.aim = 0;
       c2.setTransform(1, 0, 0, 1, 0, 0); c2.clearRect(0, 0, 240, 240); const k = 44 / (ev.r || 30);
       c2.translate(120 - fake.x * k, 160); c2.scale(k, k); Figures.draw(c2, fake, now); biRaf = requestAnimationFrame(loop);
     })();
-    biTimer = setTimeout(() => el.classList.add('hidden'), 2200);
+    biTimer = setTimeout(() => el.classList.add('hidden'), ev.long ? 5000 : 2200);
   }
   // 길 열기: 라운드가 올라 길이 늘어나면 먼지 구름이 성에서 바깥으로 퍼지며 새 길이 나타난다
   let pendingPortal = 0;
@@ -293,7 +293,7 @@
     setText('bossState', st);
   }
   function updateCastleBtn() {
-    const lv = S.castle.lv, max = lv >= CFG.castle.max;
+    const lv = S.castle.lv, max = lv >= C.castleMax(S);
     if (max) { // 최대 레벨: 수리 버튼 (골드로 성 체력 10% 회복, 쿨타임·누적 비용)
       const rc = C.repairCost(S), cdp = S.repairCd > 0 ? S.repairCd / CFG.repair.cd : 0, hpFull = S.core.hp >= S.core.max - 0.5;
       const k2 = 'R|' + rc + '|' + Math.round(cdp * 50) + '|' + (S.gold >= rc) + '|' + hpFull; if (cb.key === k2) return; cb.key = k2;
@@ -507,7 +507,7 @@
     if (infoTab === 'up') {
       const taken = C.describeTaken(S), jobs = C.describeJobs(S);
       let cimg = ''; try { cimg = '<img class="uimg" alt="" style="width:118px;height:104px;object-fit:contain" src="' + castlePortrait({ cpath: S.core.cpath, cvar: S.core.cvar, cfin: S.core.cfin }) + '">'; } catch (e) {}
-      h += '<h3>성</h3>' + irow('성 Lv.' + S.castle.lv + (S.castle.lv >= CFG.castle.max ? ' (최대)' : ''), '<div class="uwrap">' + cimg + '<div>체력 ' + Math.round(S.core.hp) + '/' + Math.round(S.core.max) + ' · 공격력 ' + f1(S.core.atk) + ' · 사거리 ' + Math.round(S.core.range) + (S.core.cpath ? '' : ' · 대포 ' + S.core.cannons + '문') + '<br>인구 ' + C.popCount(S) + (C.popCap(S) < 1e8 ? '/' + C.popCap(S) : ' (제한 없음)') + '<br>병사 보호: 성이 받는 피해 -' + Math.round(C.coreGuard(S) * 100) + '% (병사 1명당 -' + CFG.balance.guardPerUnit * 100 + '%, 최대 -' + CFG.balance.guardMax * 100 + '%)</div></div>');
+      h += '<h3>성</h3>' + irow('성 Lv.' + S.castle.lv + (S.castle.awk ? ' (각성)' : S.castle.lv >= C.castleMax(S) ? ' (최대)' : ''), '<div class="uwrap">' + cimg + '<div>체력 ' + Math.round(S.core.hp) + '/' + Math.round(S.core.max) + ' · 공격력 ' + f1(S.core.atk) + ' · 사거리 ' + Math.round(S.core.range) + (S.core.cpath ? '' : ' · 대포 ' + S.core.cannons + '문') + '<br>인구 ' + C.popCount(S) + (C.popCap(S) < 1e8 ? '/' + C.popCap(S) : ' (제한 없음)') + '<br>병사 보호: 성이 받는 피해 -' + Math.round(C.coreGuard(S) * 100) + '% (병사 1명당 -' + CFG.balance.guardPerUnit * 100 + '%, 최대 -' + CFG.balance.guardMax * 100 + '%)</div></div>');
       { const cd = C.describeCastle(S), nxt = CFG.castleTree.lv[S.cnodes.length];
         h += '<h3>성 능력</h3>' + (cd.length ? cd.map((n, i) => irow(n.name, n.desc, i === 2 ? 'epic' : 'rare', n.kind)).join('') : '<div class="d">성 Lv.' + CFG.castleTree.lv[0] + '에서 마탑·수호·사령 중 한 가지를 고릅니다.</div>') + (nxt && cd.length ? '<div class="d" style="margin:2px 0 6px">다음 선택: 성 Lv.' + nxt + '</div>' : ''); }
       h += '<h3>전직</h3>' + (jobs.length ? jobs.map(j => irow(j.className, j.names.join(' › '), 'epic')).join('') : '<div class="d">아직 전직한 직업이 없어요 (보스를 처치하면 전직)</div>');
@@ -693,6 +693,8 @@
       case 'act2': A2.play('cine'); break;
       case 'endlessStart': A2.play('cine'); break;
       case 'castleUp': A2.play('cine'); break;
+      case 'omen': A2.alarm(); break;
+      case 'castleAwaken': A2.play('cine'); A2.play('win'); break;
       case 'over': A2.play(ev.win ? 'win' : 'lose'); break;
     }
   }
@@ -782,6 +784,8 @@
       else if (ev.type === 'bossFocus') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#6fe08a' }); toast('광전사가 정신을 집중해 체력을 회복합니다 — 지금이 기회!'); }
       else if (ev.type === 'strikeWarn') addFx({ k: 'strikeW', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, t: 0, max: Math.max(0.2, ev.t) });
       else if (ev.type === 'strikeHit') { addFx({ k: 'strikeH', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, t: 0, max: ev.shape === 'cone' ? 0.7 : 0.55 }); if (ev.kind !== 'ice' || ev.r > 300) addShake(ev.kind === 'wind' ? 5 : ev.r > 250 ? 12 : 6, 0.3); }
+      else if (ev.type === 'omen') { showBossIntro({ name: ev.name, line: ev.line, look: ev.look, r: ev.r, long: true }); toast('사천왕의 기운이 맵 가장자리에 감돕니다'); }
+      else if (ev.type === 'castleAwaken') { banner('성채 각성!', true); for (let i = 0; i < 4; i++) addFx({ k: 'ring', x: CX, y: CY, t: -i * 0.12, max: 1.0, c: '#ffe27a', big: true, r: 200 }); addShake(8, 0.5); }
       else if (ev.type === 'dragonIntro') { { const zf = Math.min(vw / 1500, vh / 1250); cam.zoom = Math.max(minZoom(), Math.min(cam.zoom, zf)); centerOnCore(); clampCam(); } banner('땅이 갈라진다…', true); toast('성 주변만 남기고 모든 땅이 무너진다'); }
       else if (ev.type === 'dragonUp') { banner('용이 하늘로 날아오른다!', true); addShake(10, 0.6); }
       else if (ev.type === 'dragonAway') toast('하늘에서 불덩이가 쏟아져요 — 표시된 곳을 피하세요');
@@ -895,6 +899,7 @@
     ctx.save(); safePath(ctx, 0); ctx.clip(); Scenery.drawGround(ctx, x0, y0, x1, y1); ctx.restore(); // 남은 땅만 다시 풀밭으로
     ctx.restore();
   }
+  const OMEN_COL = { thunder: '#ffd814', snow: '#6fd0ff', earth: '#b8803c', dragon: '#ff5a1a' };
   const drawList = [], byY = (p, q) => p.y - q.y, LITE_AT = 140;
   let liteMode = false, drawnCount = 0;
   function drawWorld(now) {
@@ -931,6 +936,12 @@
     }
     // 성 (포신이 적을 향해 돌고, 체력이 줄면 금·연기·불)
     Scenery.drawCastle(ctx, c, now);
+    if (c.awk) { // 각성한 성채: 금빛 후광과 떠오르는 빛 입자
+      const pu = 0.5 + 0.5 * Math.sin(now * 0.004); ctx.globalAlpha = 0.16 + 0.1 * pu; ctx.fillStyle = '#ffe27a'; ctx.beginPath(); ctx.arc(c.x, c.y, 118 + 6 * pu, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 0.7; ctx.strokeStyle = '#ffd34a'; ctx.lineWidth = 3 / z; ctx.beginPath(); ctx.arc(c.x, c.y, 112, 0, Math.PI * 2); ctx.stroke(); ctx.fillStyle = '#fff3b0';
+      for (let i = 0; i < 10; i++) { const a2 = i * 0.628 + now * 0.0004, rr = 100 + (i % 3) * 8; ctx.beginPath(); ctx.arc(c.x + Math.cos(a2) * rr, c.y + Math.sin(a2) * rr * 0.9 - ((now * 0.02 + i * 13) % 26), 2.2, 0, Math.PI * 2); ctx.fill(); }
+      ctx.globalAlpha = 1;
+    }
 
     const p1 = performance.now(); ema('ground', p1 - p0);
     // 유닛 + 적: 아래쪽에 있는 개체가 앞에 오도록 y 순서로 그린다
@@ -1123,12 +1134,20 @@
     ema('rest', performance.now() - p2);
     // 2막: 어두운 밤 (성 주변만 횃불로 밝다)
     if (S.act === 2 && !S.cinematic) { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); Scenery.drawNight(ctx, vw, vh, (CX - cam.x) * z + vw / 2, (CY - cam.y) * z + vh / 2, z, now); }
-    // 무한 모드(51라운드~): 하늘이 붉게 물들고 점점 짙어진다
-    if (S.round > C.MAX_ROUND) {
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); const k = Math.min(1, (S.round - C.MAX_ROUND) / 12), pulse = 0.5 + 0.5 * Math.sin(now / 700);
-      ctx.fillStyle = 'rgba(170,10,10,' + (0.2 + 0.12 * k + 0.04 * pulse).toFixed(3) + ')'; ctx.fillRect(0, 0, vw, vh);
-      const g = ctx.createRadialGradient(vw / 2, vh / 2, Math.min(vw, vh) * 0.3, vw / 2, vh / 2, Math.max(vw, vh) * 0.75);
-      g.addColorStop(0, 'rgba(60,0,0,0)'); g.addColorStop(1, 'rgba(60,0,0,' + (0.45 + 0.2 * k).toFixed(2) + ')'); ctx.fillStyle = g; ctx.fillRect(0, 0, vw, vh);
+    // 사천왕의 기운(51라운드~): 다음 사천왕의 속성 색 빛이 맵 가장자리에 떠오른다 (뇌=노랑, 설=하늘색, 토=갈색, 용=주황)
+    if (S.omen) {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); const col = OMEN_COL[S.omen] || '#ff5a1a', k = 0.45 + 0.55 * ((S.round - 1) % 10) / 9, pulse = 0.5 + 0.5 * Math.sin(now / 600), rgb = col;
+      const g = ctx.createRadialGradient(vw / 2, vh / 2, Math.min(vw, vh) * 0.3, vw / 2, vh / 2, Math.max(vw, vh) * 0.6); g.addColorStop(0, rgb + '00'); g.addColorStop(1, rgb + Math.round((0.42 + 0.3 * k + 0.07 * pulse) * 255).toString(16).padStart(2, '0'));
+      ctx.fillStyle = g; ctx.fillRect(0, 0, vw, vh);
+      const n = 14 + Math.round(10 * k); ctx.globalAlpha = 0.5 + 0.3 * k;
+      for (let i = 0; i < n; i++) { // 가장자리를 따라 속성 입자
+        const ph = (now * 0.00006 * (1 + (i % 3) * 0.4) + i / n) % 1, side = i % 4, off = (Math.sin(i * 12.9898) * 0.5 + 0.5) * 0.12, px = side === 0 ? ph * vw : side === 1 ? vw * (1 - off) : side === 2 ? (1 - ph) * vw : vw * off, py = side === 0 ? vh * off : side === 1 ? ph * vh : side === 2 ? vh * (1 - off) : (1 - ph) * vh;
+        if (S.omen === 'thunder') { if (Math.sin(now * 0.02 + i * 5) > 0.1) { ctx.strokeStyle = '#fff6b0'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(px, py - 14); ctx.lineTo(px + 5, py - 3); ctx.lineTo(px - 4, py + 1); ctx.lineTo(px + 2, py + 14); ctx.stroke(); } }
+        else if (S.omen === 'snow') { ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(px, py + Math.sin(now * 0.003 + i) * 6, 2.6, 0, Math.PI * 2); ctx.fill(); }
+        else if (S.omen === 'earth') { ctx.fillStyle = '#8a6a44'; ctx.fillRect(px - 3, py - 3 - 5 * Math.abs(Math.sin(now * 0.004 + i)), 7, 7); }
+        else { ctx.fillStyle = '#ffb04a'; ctx.beginPath(); ctx.arc(px, py - ((now * 0.03 + i * 17) % 40), 2.6, 0, Math.PI * 2); ctx.fill(); }
+      }
+      ctx.globalAlpha = 1;
     }
     // 화면 밖/UI에 가려진 위험 방향 표시
     drawEdgeWarnings(now);
@@ -1395,6 +1414,7 @@
   $('devGo').addEventListener('click', e => { e.stopPropagation(); const r = devRoundSet($('devRound').value); store.set('cd-devround', String(r)); closeModals(); startFromTitle(r); });
   $('mColl').addEventListener('click', e => { e.stopPropagation(); openMeta('codex'); });
   $('mRank').addEventListener('click', e => { e.stopPropagation(); openMeta('rank'); });
+  $('tDev').addEventListener('click', e => { e.stopPropagation(); devRoundSet(+store.get('cd-devround') || 30); openModal('devPanel'); });
   $('tSet').addEventListener('click', e => { e.stopPropagation(); openModal('setMenu'); });
   $('mHow').addEventListener('click', e => { e.stopPropagation(); $('howto').classList.remove('hidden'); });
   $('howClose').addEventListener('click', () => $('howto').classList.add('hidden'));

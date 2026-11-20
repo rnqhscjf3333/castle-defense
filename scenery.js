@@ -309,7 +309,7 @@
     if (lv >= 4) for (const [x, y] of [[-46, -46], [46, -46], [-46, 46], [46, 46]]) { ctx.strokeStyle = '#3a2a1a'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(x, y - 6); ctx.lineTo(x, y - 24); ctx.stroke(); ctx.fillStyle = lv >= 6 ? '#ffd166' : '#d9534f'; ctx.beginPath(); ctx.moveTo(x, y - 24); ctx.lineTo(x + 11 + Math.sin(t * 5 + x) * 1.5, y - 20); ctx.lineTo(x, y - 16); ctx.closePath(); ctx.fill(); }
     // 추가 대포: 3·5·7레벨마다 모서리 탑 위에 1문씩 (서로 다른 적을 겨눈다)
     const aimX = c.aim !== undefined ? c.aim : -Math.PI / 2;
-    for (let i = 1; i < (c.cpath ? 0 : nc); i++) { const [x, y] = [[46, -46], [-46, 46], [46, 46]][i - 1], rc2 = c.swing > 0 ? c.swing * 18 : 0; ctx.save(); ctx.translate(x, y); ctx.rotate(aimX + (i % 2 ? 0.25 : -0.25)); ctx.fillStyle = '#3d424d'; ctx.strokeStyle = '#14161c'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.arc(0, 0, 7, 0, TAU); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#4a505e'; ctx.fillRect(1 - rc2, -3.4, 17, 6.8); ctx.strokeRect(1 - rc2, -3.4, 17, 6.8); ctx.fillStyle = '#2a2e38'; ctx.fillRect(14 - rc2, -4.2, 4, 8.4); if (c.swing > 0.12) { ctx.fillStyle = 'rgba(255,214,90,.9)'; ctx.beginPath(); ctx.arc(20 - rc2, 0, 5 + c.swing * 10, 0, TAU); ctx.fill(); } ctx.restore(); }
+    for (let i = 1; i < (c.cpath ? 0 : Math.min(nc, 4)); i++) { const [x, y] = [[46, -46], [-46, 46], [46, 46]][i - 1], rc2 = c.swing > 0 ? c.swing * 18 : 0; ctx.save(); ctx.translate(x, y); ctx.rotate(aimX + (i % 2 ? 0.25 : -0.25)); ctx.fillStyle = '#3d424d'; ctx.strokeStyle = '#14161c'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.arc(0, 0, 7, 0, TAU); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#4a505e'; ctx.fillRect(1 - rc2, -3.4, 17, 6.8); ctx.strokeRect(1 - rc2, -3.4, 17, 6.8); ctx.fillStyle = '#2a2e38'; ctx.fillRect(14 - rc2, -4.2, 4, 8.4); if (c.swing > 0.12) { ctx.fillStyle = 'rgba(255,214,90,.9)'; ctx.beginPath(); ctx.arc(20 - rc2, 0, 5 + c.swing * 10, 0, TAU); ctx.fill(); } ctx.restore(); }
     // 8레벨: 중앙 수정의 푸른 빛
     if (lv >= 8) { const g = 0.5 + 0.5 * Math.sin(t * 3); ctx.globalAlpha = 0.25 + 0.2 * g; ctx.fillStyle = '#7fd8ff'; ctx.beginPath(); ctx.arc(0, 0, 20 + g * 4, 0, TAU); ctx.fill(); ctx.globalAlpha = 1; }
     if (!c.cpath) {
@@ -324,7 +324,7 @@
 
     if (c.cpath) { // 성 장식 위에, 모든 것의 맨 앞에 시전자를 그린다 (탑·깃발에 가려지지 않게). 모서리 탑의 견습생은 탑 위로 올라선다
       castleMods(ctx, c, t);
-      for (let i = 1; i < nc; i++) { const [x, y] = [[46, -46], [-46, 46], [46, 46]][i - 1]; castleCaster(ctx, c, t, x, y - 13, 0.78, i % 2 ? 0.3 : -0.3); }
+      for (let i = 1; i < Math.min(nc, 4); i++) { const [x, y] = [[46, -46], [-46, 46], [46, 46]][i - 1]; castleCaster(ctx, c, t, x, y - 13, 0.78, i % 2 ? 0.3 : -0.3); }
       castleCaster(ctx, c, t, 0, 4, 1, 0);
     }
     // 중앙 깃대 + 큰 깃발 (펄럭임)
