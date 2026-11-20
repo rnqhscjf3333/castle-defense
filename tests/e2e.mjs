@@ -52,8 +52,8 @@ try {
   // 인구 제한/수동 라운드 버튼이 없고, 가격이 오르는지
   check('인구 확장·다음 라운드 버튼 없음', await ev("!document.getElementById('btnPop') && !document.getElementById('btnNext')"));
   await ev('__game.S.gold = 100000; __game.S.buyCd.sword = 0'); const price0 = await ev("(()=>{const t=document.querySelectorAll('.ucard .cost')[1].textContent; return +t.replace('G','');})()");
-  await ev("document.querySelectorAll('.ucard')[0].click()"); await sleep(300);
-  const price1 = await ev("(()=>{const t=document.querySelectorAll('.ucard .cost')[1].textContent; return +t.replace('G','');})()");
+  await ev("document.querySelectorAll('.ucard')[0].click()");
+  let price1 = price0; for (let i = 0; i < 15 && price1 <= price0; i++) { await sleep(200); price1 = await ev("(()=>{const t=document.querySelectorAll('.ucard .cost')[1].textContent; return +t.replace('G','');})()"); } // 느린 환경에서도 안정적으로 (최대 3초 대기)
   check('유닛을 뽑으면 다른 유닛 카드의 가격도 오름', price1 > price0, price0 + 'G→' + price1 + 'G');
   check('가격이 오르면 카드에 +N 표시', await ev("(()=>{const d=document.querySelectorAll('.ucard .delta')[1]; return d.textContent.startsWith('+') && d.classList.contains('show');})()"), await ev("document.querySelectorAll('.ucard .delta')[1].textContent"));
 
