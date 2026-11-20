@@ -379,7 +379,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   check('광전사 포격: 이른 라운드는 약하게, 늦은 라운드는 강하게 (피해·발수)', early.abil.artillery.dmg < late.abil.artillery.dmg && early.abil.artillery.count <= late.abil.artillery.count, `R5 ${early.abil.artillery.dmg}×${early.abil.artillery.count} / R25 ${late.abil.artillery.dmg}×${late.abil.artillery.count}`);
   const sm5 = arena(5, [['boss', 1500, 800]], 'summoner').enemies[0], sm25 = arena(25, [['boss', 1500, 800]], 'summoner').enemies[0];
   check('소환사 졸개 수도 라운드에 따라 늘어남', sm5.abil.summon.n < sm25.abil.summon.n, `${sm5.abil.summon.n} → ${sm25.abil.summon.n}`);
-  const fin = arena(30, [['boss', 1500, 800]]).enemies[0]; check('암흑 기사단장(30라운드)은 패턴 7종(상태이상·강습·순간이동 포함) 고정 수치', Object.keys(fin.abil).length === 7 && fin.abil.artillery.dmg === C.CFG.act1Boss.abil.artillery.dmg);
+  const fin = arena(30, [['boss', 1500, 800]]).enemies[0]; check('암흑 기사단장(30라운드)은 패턴 8종(상태이상·강습·순간이동·암흑 흡수 포함) 고정 수치', Object.keys(fin.abil).length === 8 && fin.abil.artillery.dmg === C.CFG.act1Boss.abil.artillery.dmg);
   const fin50 = arena(50, [['boss', 1500, 800]]).enemies[0]; check('마왕(50라운드)은 패턴 9종(상태이상 4가지·강습·순간이동·도약) 고정 수치, 더 큼', Object.keys(fin50.abil).length === 9 && fin50.abil.artillery.count === 2 && fin50.r > 33 && fin50.bossName === '마왕'); }
 
 // 23) 졸개 소환: 성 가까이 왔을 때만, 보스 앞(성 방향)에 나온다
@@ -731,7 +731,8 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   { const { g, b } = run('warden', 10, () => {}); const o = C.spawnEnemy(g, 'grunt', 760, 500); b.t.aura = 0; b.life = 3; for (let i = 0; i < 20 && !(o.shieldT > 0); i++) C.tick(g, DT);
     check('철벽 장군: 주변 적에게 방어막', o.shieldT > 0 && o.shieldRed > 0.2, o.shieldRed); for (let i = 0; i < 300; i++) C.tick(g, DT); check('철벽 장군: 방어막은 시간이 지나면 풀림', o.dead || o.shieldT <= 0 || b.t.aura > 0); }
   { const { g, b } = run('berserker', 10, (g, b) => { b.hp = b.max * 0.4; b.t.focus = 0; b.life = 5; }); const h0 = b.hp; let x0 = b.x; for (let i = 0; i < 10; i++) C.tick(g, DT);
-    check('광전사: 정신 집중 중 체력 회복·정지', b.focusT > 0 && b.hp > h0, Math.round(b.hp - h0)); const xs = b.x; for (let i = 0; i < 20; i++) C.tick(g, DT); check('광전사: 집중 중에는 움직이지 않음', Math.abs(b.x - xs) < 1); }
+    check('광전사: 정신 집중 중 체력 회복·정지', b.focusT > 0 && b.hp > h0, Math.round(b.hp - h0)); const xs = b.x; for (let i = 0; i < 20; i++) C.tick(g, DT); check('광전사: 집중 중에는 움직이지 않음', Math.abs(b.x - xs) < 1); { const h1 = b.hp; C.damage(g, b, 1000); const lost = h1 - b.hp; check('광전사: 집중 중 피해 감소', lost < 700 && lost > 300, Math.round(lost)); } }
+  { const g = arena(30, [['boss', 700, 500]]); const b = g.enemies[0]; g.units.length = 0; b.t.drain = 0; b.life = 5; b.hp = b.max * 0.5; g.gold = 1e6; C.buy(g, 'sword'); for (let i = 0; i < 400 && !g.units.length; i++) C.tick(g, DT); const su = g.units[0]; su.x = 720; su.y = 500; su.hp = su.max = 1e6; b.t.drain = 0; b.life = 5; b.hp = b.max * 0.5; const h0 = b.hp; for (let i = 0; i < 3; i++) C.tick(g, DT); check('암흑 기사단장: 암흑 흡수로 아군 피해·보스 회복', b.abil.drain && b.hp > h0, Math.round(b.hp - h0)); }
   { const { g, b } = run('charger', 10, () => {}); const o = C.spawnEnemy(g, 'grunt', 760, 500); for (let i = 0; i < 700 && !(o.hasteT > 0); i++) C.tick(g, DT); check('돌격왕: 함성으로 주변 적 가속', o.hasteT > 0 || o.dead); }
   { const { g, b } = run('bombardier', 10, () => {}); const n = []; g.captureEvents = true; for (let i = 0; i < 30 * 18; i++) C.tick(g, DT); check('포격대장: 일제 포격 설정', b.volley >= 3, b.volley); } }
 

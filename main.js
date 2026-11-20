@@ -208,7 +208,7 @@
   function setText(id, v) { if (last[id] !== v) { last[id] = v; $(id).textContent = v; } }
   const fmtTime = t => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
   // 보스 체력 바 (화면 위 가운데): 이름, 체력 숫자, 현재 상태, 가진 패턴
-  const PAT = { dash: '돌진', summon: '소환', artillery: '포격', shield: '방어막', rage: '분노', rush: '강습', blink: '순간이동', leap: '도약', siege: '원거리 포격', clone: '분신', aura: '철벽 수호', roar: '함성', focus: '정신 집중' };
+  const PAT = { dash: '돌진', summon: '소환', artillery: '포격', shield: '방어막', rage: '분노', rush: '강습', blink: '순간이동', leap: '도약', siege: '원거리 포격', clone: '분신', aura: '철벽 수호', roar: '함성', focus: '정신 집중', drain: '암흑 흡수' };
   const DBK = { stun: ['기절', '#ffe14a'], poison: ['중독', '#7be04a'], weak: ['공격력 감소', '#ff6b6b'], wound: ['치유 감소', '#c77dff'] };
   // 보스 등장 컷신: 모습·이름·대사가 잠깐 나왔다가 사라진다 (게임은 멈추지 않는다)
   let biTimer = 0, biRaf = 0;
@@ -287,7 +287,7 @@
     setText('bossHpTxt', Math.ceil(b.hp).toLocaleString() + ' / ' + b.max.toLocaleString() + '  (' + Math.ceil(pct) + '%)');
     const shielded = b.shieldT > 0, rage = !!b.enraged;
     el.classList.toggle('shielded', shielded); el.classList.toggle('rage', rage && !shielded);
-    let st = b.dying ? (S.bossDeath && S.bossDeath.stage === 'revive' ? '부활 중…' : '쓰러지는 중…') : shielded ? '방어막 — 피해를 ' + Math.round(b.shieldRed * 100) + '% 방어' : b.dashT > 0 ? '돌진 중!' : rage ? '분노 — 더 빠르고 강해졌다' : '패턴: ' + Object.keys(b.abil).map(k => k === 'debuff' ? b.abil.debuff.map(d => DBK[d.kind][0]).join('·') : PAT[k]).join(' · ');
+    let st = b.dying ? (S.bossDeath && S.bossDeath.stage === 'revive' ? '부활 중…' : '쓰러지는 중…') : shielded ? '방어막 — 피해를 ' + Math.round(b.shieldRed * 100) + '% 방어' : b.focusT > 0 ? '정신 집중 — 회복 중, 피해 ' + Math.round(b.abil.focus.red * 100) + '% 감소' : b.dashT > 0 ? '돌진 중!' : rage ? '분노 — 더 빠르고 강해졌다' : '패턴: ' + Object.keys(b.abil).map(k => k === 'debuff' ? b.abil.debuff.map(d => DBK[d.kind][0]).join('·') : PAT[k]).join(' · ');
     if (b.grow > 1.04) st += '  |  공격력 ×' + b.grow.toFixed(1) + (b.grow >= CFG.balance.bossGrowMax - 0.01 ? ' (최대)' : ' ↑');
     setText('bossState', st);
   }
@@ -626,7 +626,7 @@
 
   // ───────────── 이벤트 → 화면 효과 ─────────────
   // 이벤트 → 효과음 (위치가 있는 소리는 확대·거리에 따라 크기가 달라진다)
-  const SHOT_SND = { a: 'shotA', ea: 'shotEA', c: 'shotC', t: 'shotT', b: 'shotB', es: 'shotES' };
+  const SHOT_SND = { a: 'shotA', ea: 'shotEA', c: 'shotC', t: 'shotT', b: 'shotB', es: 'shotES', em: 'shotC' };
   function playEv(ev) {
     switch (ev.type) {
       case 'shot': A2.play(SHOT_SND[ev.c] || 'shotA', ev.x, ev.y); break;
@@ -656,6 +656,7 @@
       case 'bossSummon': A2.play('summon', ev.x, ev.y); break;
       case 'bossRage': A2.play('rage', ev.x, ev.y); break;
       case 'bossClone': case 'bossRoar': A2.play('rage', ev.x, ev.y); break;
+      case 'bossDrain': A2.play('rage', ev.x, ev.y); break;
       case 'bossAura': A2.play('shield', ev.x, ev.y); break;
       case 'bossFocus': A2.play('heal', ev.x, ev.y); break;
       case 'priceUp': A2.play('buy'); break;
@@ -749,6 +750,7 @@
       else if (ev.type === 'bossShield') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.6, c: '#8fd8ff' }); toast('보스가 방어막을 둘렀어요'); }
       else if (ev.type === 'bossSummon') { for (let k = 0; k < 3; k++) addFx({ k: 'ring', x: ev.x, y: ev.y, t: -k * 0.12, max: 0.7, c: '#ff6b6b', big: true }); toast('보스가 ' + (CFG.enemies[ev.kind] ? CFG.enemies[ev.kind].name : '졸개') + ' ' + ev.n + '마리를 불렀어요!'); }
       else if (ev.type === 'bossClone') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#7fa8ff' }); banner('분신 소환!'); }
+      else if (ev.type === 'bossDrain') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#8a3fd8' }); toast('암흑 기사단장이 어둠의 파동으로 생명을 빨아들입니다'); }
       else if (ev.type === 'bossAura') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.7, c: '#8fd8ff' }); toast('철벽 장군이 아군에게 방어막을 둘렀어요'); }
       else if (ev.type === 'bossRoar') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.7, c: '#ffb04a' }); toast('돌격왕의 함성! 주변 적이 빨라집니다'); }
       else if (ev.type === 'bossFocus') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#6fe08a' }); toast('광전사가 정신을 집중해 체력을 회복합니다 — 지금이 기회!'); }
@@ -935,6 +937,9 @@
       } else if (sh.color === 'c') { // 성 포탄
         ctx.fillStyle = '#2b3446'; ctx.strokeStyle = '#9fb4d6'; ctx.lineWidth = 1 / z; ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
         ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.beginPath(); ctx.arc(px - 1.5, py - 1.5, 1.6, 0, Math.PI * 2); ctx.fill();
+      } else if (sh.color === 'em') { // 소환사의 마법구
+        ctx.globalAlpha = 0.4; ctx.fillStyle = '#6fa8ff'; ctx.beginPath(); ctx.arc(px, py, 11, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 0.9;
+        ctx.fillStyle = '#cfe4ff'; ctx.strokeStyle = '#3f6fb5'; ctx.lineWidth = 1.5 / z; ctx.beginPath(); ctx.arc(px, py, 5.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.globalAlpha = 1;
       } else if (sh.color === 'es') { // 보스 포탄
         ctx.globalAlpha = 0.45; ctx.fillStyle = '#ff9f43'; ctx.beginPath(); ctx.arc(px, py, 13, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
         ctx.fillStyle = '#3a2418'; ctx.strokeStyle = '#ff7a2a'; ctx.lineWidth = 1.5 / z; ctx.beginPath(); ctx.arc(px, py, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
