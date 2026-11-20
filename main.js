@@ -208,7 +208,7 @@
   function setText(id, v) { if (last[id] !== v) { last[id] = v; $(id).textContent = v; } }
   const fmtTime = t => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
   // 보스 체력 바 (화면 위 가운데): 이름, 체력 숫자, 현재 상태, 가진 패턴
-  const PAT = { dash: '돌진', summon: '소환', artillery: '포격', shield: '방어막', rage: '분노', rush: '강습', blink: '순간이동', leap: '도약', siege: '원거리 포격' };
+  const PAT = { dash: '돌진', summon: '소환', artillery: '포격', shield: '방어막', rage: '분노', rush: '강습', blink: '순간이동', leap: '도약', siege: '원거리 포격', clone: '분신', aura: '철벽 수호', roar: '함성', focus: '정신 집중' };
   const DBK = { stun: ['기절', '#ffe14a'], poison: ['중독', '#7be04a'], weak: ['공격력 감소', '#ff6b6b'], wound: ['치유 감소', '#c77dff'] };
   // 보스 등장 컷신: 모습·이름·대사가 잠깐 나왔다가 사라진다 (게임은 멈추지 않는다)
   let biTimer = 0, biRaf = 0;
@@ -655,6 +655,9 @@
       case 'bossShield': A2.play('shield', ev.x, ev.y); break;
       case 'bossSummon': A2.play('summon', ev.x, ev.y); break;
       case 'bossRage': A2.play('rage', ev.x, ev.y); break;
+      case 'bossClone': case 'bossRoar': A2.play('rage', ev.x, ev.y); break;
+      case 'bossAura': A2.play('shield', ev.x, ev.y); break;
+      case 'bossFocus': A2.play('heal', ev.x, ev.y); break;
       case 'priceUp': A2.play('buy'); break;
       case 'crit': A2.play('crit', ev.x, ev.y); break;
       case 'bossCast': A2.play('cast', ev.x, ev.y); break;
@@ -745,6 +748,10 @@
       else if (ev.type === 'bossDash') addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.5, c: '#ffb21a' });
       else if (ev.type === 'bossShield') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.6, c: '#8fd8ff' }); toast('보스가 방어막을 둘렀어요'); }
       else if (ev.type === 'bossSummon') { for (let k = 0; k < 3; k++) addFx({ k: 'ring', x: ev.x, y: ev.y, t: -k * 0.12, max: 0.7, c: '#ff6b6b', big: true }); toast('보스가 ' + (CFG.enemies[ev.kind] ? CFG.enemies[ev.kind].name : '졸개') + ' ' + ev.n + '마리를 불렀어요!'); }
+      else if (ev.type === 'bossClone') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#7fa8ff' }); banner('분신 소환!'); }
+      else if (ev.type === 'bossAura') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.7, c: '#8fd8ff' }); toast('철벽 장군이 아군에게 방어막을 둘렀어요'); }
+      else if (ev.type === 'bossRoar') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.7, c: '#ffb04a' }); toast('돌격왕의 함성! 주변 적이 빨라집니다'); }
+      else if (ev.type === 'bossFocus') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#6fe08a' }); toast('광전사가 정신을 집중해 체력을 회복합니다 — 지금이 기회!'); }
       else if (ev.type === 'bossRage') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#ff3b1a' }); banner(ev.name + ' 분노!'); }
       else if (ev.type === 'over') { if (ev.win) showEnd(true); else startDefeat(); }
     }
@@ -873,13 +880,14 @@
       if (lite && e.team === 'e' && e.kind !== 'boss') { Figures.drawLite(ctx, e); if (e.elite) eliteMark(e, z); continue; }
       if (e.undead) { ctx.globalAlpha = 0.4 + 0.15 * Math.sin(now * 0.01); ctx.fillStyle = '#3ae68a'; ctx.beginPath(); ctx.ellipse(e.x, e.y + 6, e.r * 1.5, e.r * 0.7, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
       if (e.kind === 'boss') bossAura(e, now, z);
+      if (e.focusT > 0) { ctx.globalAlpha = 0.3 + 0.15 * Math.sin(now * 0.02); ctx.fillStyle = '#6fe08a'; ctx.beginPath(); ctx.arc(e.x, e.y - 6, e.r * (1.3 + 0.25 * Math.sin(now * 0.01)), 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
       if (e.dying) drawDyingBoss(e, now); else Figures.draw(ctx, e, now);
       if (e.elite) eliteMark(e, z);
       if (e.team === 'u' && e.ward > 0) { ctx.globalAlpha = 0.22 + 0.1 * Math.sin(now * 0.01) + (e.wardFx > 0 ? 0.3 : 0); ctx.strokeStyle = '#8fd8ff'; ctx.fillStyle = '#8fd8ff'; ctx.lineWidth = 1.6 / z; ctx.beginPath(); ctx.arc(e.x, e.y - 4, e.r * 1.5, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 0.8; ctx.stroke(); ctx.globalAlpha = 1; }
       if (e.team === 'e' && e.markT > 0) { ctx.strokeStyle = '#ff4a4a'; ctx.lineWidth = 1.6 / z; ctx.globalAlpha = 0.9; const my = e.y + Figures.headTop(e) - 8, mr = 5 + Math.sin(now * 0.02); ctx.beginPath(); ctx.arc(e.x, my, mr, 0, Math.PI * 2); ctx.moveTo(e.x - mr - 3, my); ctx.lineTo(e.x + mr + 3, my); ctx.moveTo(e.x, my - mr - 3); ctx.lineTo(e.x, my + mr + 3); ctx.stroke(); ctx.globalAlpha = 1; }
       if (e.team === 'e' && e.frozenT > 0) { ctx.globalAlpha = 0.45; ctx.fillStyle = '#bfe8ff'; ctx.strokeStyle = '#eaf8ff'; ctx.lineWidth = 1.5 / z; ctx.beginPath(); ctx.ellipse(e.x, e.y - 4, e.r * 1.3, e.r * 1.7, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.globalAlpha = 1; }
       if (e.team === 'u' && (e.stunT > 0 || e.poisonT > 0 || e.weakT > 0 || e.woundT > 0)) statusMarks(e, now, z);
-      if (e.kind === 'boss' && e.shieldT > 0) { ctx.globalAlpha = 0.28 + 0.12 * Math.sin(now * 0.012); ctx.fillStyle = '#8fd8ff'; ctx.beginPath(); ctx.arc(e.x, e.y - 6, e.r * 1.7, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 0.9; ctx.strokeStyle = '#d8f2ff'; ctx.lineWidth = 2.5 / z; ctx.stroke(); ctx.globalAlpha = 1; }
+      if (e.shieldT > 0) { ctx.globalAlpha = 0.28 + 0.12 * Math.sin(now * 0.012); ctx.fillStyle = '#8fd8ff'; ctx.beginPath(); ctx.arc(e.x, e.y - 6, e.r * 1.7, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 0.9; ctx.strokeStyle = '#d8f2ff'; ctx.lineWidth = 2.5 / z; ctx.stroke(); ctx.globalAlpha = 1; }
       if (e.hp < e.max || e.kind === 'boss') hpBar(e);
     }
     const p2 = performance.now(); ema('ents', p2 - p1);

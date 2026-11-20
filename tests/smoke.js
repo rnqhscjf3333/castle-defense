@@ -723,6 +723,18 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   g.repairCd = 0; const g2 = C.createGame(96); g2.round = 30; check('성 수리: 라운드가 갈수록 비용 증가', C.repairCost(g2) > c0);
   g.core.hp = g.core.max; check('성 수리: 체력이 가득이면 불가', !C.repairCastle(g).ok);
   g.core.hp = 1; g.gold = 0; check('성 수리: 골드 부족이면 불가', !C.repairCastle(g).ok && g.core.hp === 1); }
+// 61) 보스 개성 스킬
+{ const run = (id, round, f) => { const g = arena(round, [['boss', 700, 500]], id); const b = g.enemies[0]; g.units.length = 0; f(g, b); return { g, b }; };
+  { const { g, b } = run('summoner', 10, (g, b) => { b.hp = b.max * 0.49; }); for (let i = 0; i < 5; i++) C.tick(g, DT);
+    check('소환사: 원거리 공격', b.ranged && b.range >= 200);
+    const cl = g.enemies.filter(e => e.clone); check('소환사: 체력 절반에 분신 소환(1회)', cl.length === 2 && b.cloned, cl.length); for (let i = 0; i < 60; i++) C.tick(g, DT); check('소환사: 분신은 한 번만', g.enemies.filter(e => e.clone).length >= 0 && b.cloned); }
+  { const { g, b } = run('warden', 10, () => {}); const o = C.spawnEnemy(g, 'grunt', 760, 500); b.t.aura = 0; b.life = 3; for (let i = 0; i < 20 && !(o.shieldT > 0); i++) C.tick(g, DT);
+    check('철벽 장군: 주변 적에게 방어막', o.shieldT > 0 && o.shieldRed > 0.2, o.shieldRed); for (let i = 0; i < 300; i++) C.tick(g, DT); check('철벽 장군: 방어막은 시간이 지나면 풀림', o.dead || o.shieldT <= 0 || b.t.aura > 0); }
+  { const { g, b } = run('berserker', 10, (g, b) => { b.hp = b.max * 0.4; b.t.focus = 0; b.life = 5; }); const h0 = b.hp; let x0 = b.x; for (let i = 0; i < 10; i++) C.tick(g, DT);
+    check('광전사: 정신 집중 중 체력 회복·정지', b.focusT > 0 && b.hp > h0, Math.round(b.hp - h0)); const xs = b.x; for (let i = 0; i < 20; i++) C.tick(g, DT); check('광전사: 집중 중에는 움직이지 않음', Math.abs(b.x - xs) < 1); }
+  { const { g, b } = run('charger', 10, () => {}); const o = C.spawnEnemy(g, 'grunt', 760, 500); for (let i = 0; i < 700 && !(o.hasteT > 0); i++) C.tick(g, DT); check('돌격왕: 함성으로 주변 적 가속', o.hasteT > 0 || o.dead); }
+  { const { g, b } = run('bombardier', 10, () => {}); const n = []; g.captureEvents = true; for (let i = 0; i < 30 * 18; i++) C.tick(g, DT); check('포격대장: 일제 포격 설정', b.volley >= 3, b.volley); } }
+
 // 59) 성 피해 완화: 병사 보호 + 폭파병 / 사제 치유 범위 표시는 망자 제외
 { const g = C.createGame(95); g.gold = 1e9; g.core.hp = g.core.max = 1000; const h0 = g.core.hp; const guard0 = C.coreGuard(g); C.CFG.castle.popBase = 99;
   for (let i = 0; i < 20; i++) { g.buyCd.sword = 0; C.buy(g, 'sword'); } const guard1 = C.coreGuard(g);

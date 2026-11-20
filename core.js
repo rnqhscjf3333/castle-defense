@@ -89,11 +89,11 @@
     // 패턴 강도는 라운드에 맞춰 조정된다(scaleAbil). 풀 보스의 패턴 수치는 15라운드 기준.
     bossHp: { 5: 1300, 10: 4000, 15: 9000, 20: 17000, 25: 29000, 30: 32000, 35: 40000, 40: 58000, 45: 75000, 50: 175000 },
     bossPool: [
-      { id: 'charger', line: '전부 짓밟아 주마!',    name: '돌격왕',    look: { body: '#b5472a', head: '#e6c9a0', weapon: 'axe' },    abil: { dash: { cd: 7, dur: 1.4, mul: 3 }, debuff: [{ kind: 'stun', cd: 12, r: 105 }] } },
-      { id: 'summoner', line: '나의 종들이여, 일어나라!',   name: '소환사',    look: { body: '#3f6fb5', head: '#cfe0f0', weapon: 'staff' },  abil: { summon: { cd: 9, n: 4, kind: 'grunt' }, debuff: [{ kind: 'weak', cd: 12, r: 150 }] } },
-      { id: 'bombardier', line: '온 땅을 불바다로 만들어 주지!', name: '포격대장',  look: { body: '#6b7a3a', head: '#e0d6b0', weapon: 'cannon' }, abil: { artillery: { cd: 5, dmg: 60, radius: 90, count: 1, flight: 1.6 }, summon: { cd: 14, n: 2, kind: 'archer' }, debuff: [{ kind: 'poison', cd: 12, r: 135 }] } },
-      { id: 'warden', line: '이 성벽, 내가 부숴 주겠다.',     name: '철벽 장군', look: { body: '#6a737f', head: '#d8dde6', weapon: 'shield' }, abil: { shield: { cd: 12, dur: 4, red: 0.8 }, dash: { cd: 10, dur: 1.2, mul: 2.5 }, summon: { cd: 12, n: 3, kind: 'shield' }, debuff: [{ kind: 'wound', cd: 13, r: 170 }] } },
-      { id: 'berserker', line: '피가... 피가 끓는다!',  name: '광전사',    look: { body: '#a3252d', head: '#f0cfa8', weapon: 'twin' },   abil: { rage: { at: 0.5, speed: 1.4, rate: 1.5, dmg: 1.3 }, dash: { cd: 6, dur: 1.2, mul: 3 }, artillery: { cd: 7, dmg: 55, radius: 100, count: 1, flight: 1.5 }, debuff: [{ kind: 'stun', cd: 11, r: 95 }] } },
+      { id: 'charger', line: '전부 짓밟아 주마!',    name: '돌격왕',    look: { body: '#b5472a', head: '#e6c9a0', weapon: 'axe' },    abil: { dash: { cd: 7, dur: 1.4, mul: 3 }, roar: { cd: 14, r: 260, dur: 5, speed: 1.35 }, debuff: [{ kind: 'stun', cd: 12, r: 105 }] } },
+      { id: 'summoner', line: '나의 종들이여, 일어나라!',   name: '소환사',    look: { body: '#3f6fb5', head: '#cfe0f0', weapon: 'staff' },  ranged: { range: 250 }, abil: { summon: { cd: 9, n: 4, kind: 'grunt' }, clone: { at: 0.5, n: 2, hp: 0.07 }, debuff: [{ kind: 'weak', cd: 12, r: 150 }] } },
+      { id: 'bombardier', line: '온 땅을 불바다로 만들어 주지!', name: '포격대장',  look: { body: '#6b7a3a', head: '#e0d6b0', weapon: 'cannon' }, abil: { artillery: { cd: 5, dmg: 60, radius: 90, count: 1, flight: 1.6, barrage: 3 }, summon: { cd: 14, n: 2, kind: 'archer' }, debuff: [{ kind: 'poison', cd: 12, r: 135 }] } },
+      { id: 'warden', line: '이 성벽, 내가 부숴 주겠다.',     name: '철벽 장군', look: { body: '#6a737f', head: '#d8dde6', weapon: 'shield' }, abil: { shield: { cd: 12, dur: 4, red: 0.8 }, aura: { cd: 11, r: 230, dur: 5, red: 0.5 }, dash: { cd: 10, dur: 1.2, mul: 2.5 }, summon: { cd: 12, n: 3, kind: 'shield' }, debuff: [{ kind: 'wound', cd: 13, r: 170 }] } },
+      { id: 'berserker', line: '피가... 피가 끓는다!',  name: '광전사',    look: { body: '#a3252d', head: '#f0cfa8', weapon: 'twin' },   abil: { rage: { at: 0.5, speed: 1.4, rate: 1.5, dmg: 1.3 }, focus: { cd: 17, dur: 2.6, heal: 0.07 }, dash: { cd: 6, dur: 1.2, mul: 3 }, artillery: { cd: 7, dmg: 55, radius: 100, count: 1, flight: 1.5 }, debuff: [{ kind: 'stun', cd: 11, r: 95 }] } },
     ],
     // 1막 마지막(30라운드) 보스: 암흑 기사단장. 처치하면 연출과 함께 2막이 열린다.
     act1Boss: { id: 'darkknight', line: '어둠 앞에 무릎을 꿇어라.', name: '암흑 기사단장', look: { body: '#2b2f3f', head: '#2e3140', weapon: 'sword', style: 'darkknight' }, abil: { summon: { cd: 10, n: 2, kind: 'bomber' }, artillery: { cd: 6, dmg: 70, radius: 105, count: 2, flight: 1.5 }, shield: { cd: 16, dur: 3, red: 0.6 }, rage: { at: 0.35, speed: 1.3, rate: 1.4, dmg: 1.4 }, debuff: [{ kind: 'stun', cd: 13, r: 110 }, { kind: 'wound', cd: 15, r: 160 }] } },
@@ -832,7 +832,8 @@
       if (k === 'artillery') { a.dmg = Math.round(a.dmg * s); a.count = Math.max(1, Math.min(a.count + (r > ACT1_END ? 1 : 0), Math.ceil(r / 12))); }
       else if (k === 'summon') a.n = Math.max(2, Math.round(a.n * Math.min(1.8, s)));
       else if (k === 'dash') a.mul = 1 + (a.mul - 1) * Math.min(1, s + 0.35);
-      else if (k === 'shield') a.red = a.red * Math.min(1, 0.55 + 0.45 * s);
+      else if (k === 'shield' || k === 'aura') a.red = a.red * Math.min(1, 0.55 + 0.45 * s);
+      else if (k === 'clone') a.n = r >= 30 ? a.n + 1 : a.n;
       out[k] = a;
     }
     if (abil.debuff) out.debuff = abil.debuff.map(d => Object.assign({}, d));
@@ -917,7 +918,7 @@
       emit(S, { type: 'elite', x, y, kind });
     }
     if (bd) {
-      e.bossName = bd.name; e.look = bd.look; e.abil = (bd === CFG.finalBoss || bd === CFG.act1Boss) ? bd.abil : scaleAbil(bd.abil, r); e.t = {};
+      e.bossName = bd.name; e.look = bd.look; if (bd.ranged) { e.ranged = true; e.range = bd.ranged.range; } e.abil = (bd === CFG.finalBoss || bd === CFG.act1Boss) ? bd.abil : scaleAbil(bd.abil, r); e.t = {};
       for (const k in e.abil) if (!Array.isArray(e.abil[k])) e.t[k] = (e.abil[k].cd || 0) * 0.6; // 첫 패턴은 조금 일찍
       if (bd === CFG.finalBoss && r === MAX_ROUND) { const N = CFG.finalNerf; e.max = e.hp = Math.round(e.max * N.hp); e.max2 = Math.round(e.max / N.hp * N.hp2); e.dmg *= N.dmg; e.canRevive = true; }
       S.stats.seenB[bd.id] = 1;
@@ -935,7 +936,7 @@
   // 보스 체력이 0이 되면: 남은 졸개가 모두 쓰러지고, 시간이 멈춘 채 보스의 사망 모션이 흐른 뒤 라운드가 끝난다.
   // 50라운드 마왕은 여기서 한 번 더 부활한다 (체력이 다시 차오르며 모습이 바뀐다).
   function beginBossDeath(S, b) {
-    b.dying = true; b.hp = 0; b.shieldT = 0; b.dashT = 0; b.leapT = 0;
+    b.dying = true; b.hp = 0; b.shieldT = 0; b.dashT = 0; b.leapT = 0; b.focusT = 0;
     const revive = !!b.canRevive && !b.p2 && !S.endless;
     S.gold += b.gold; S.stats.earned += b.gold; S.kills++; S.stats.killBy.boss = (S.stats.killBy.boss || 0) + 1; if (!revive) S.stats.bossKills++;
     emit(S, { type: 'kill', x: b.x, y: b.y, boss: true });
@@ -1410,12 +1411,45 @@
         }
       });
     }
+    if (A.clone && !e.cloned && e.hp <= e.max * A.clone.at) { // 소환사: 체력이 절반이 되면 분신을 불러낸다
+      e.cloned = true; const n = A.clone.n;
+      for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2 + S.rng(), c = spawnEnemy(S, 'warlock', clamp(e.x + Math.cos(a) * 90, 20, W - 20), clamp(e.y + Math.sin(a) * 90, 20, H - 20)); c.clone = true; c.elite = true; c.max = c.hp = Math.max(1, Math.round(e.max * A.clone.hp)); c.dmg = e.dmg * 0.6; }
+      emit(S, { type: 'bossClone', x: e.x, y: e.y, n });
+    }
+    if (A.aura) { // 철벽 장군: 주변 적군에게 방어막을 씌운다
+      e.t.aura -= dt;
+      if (e.t.aura <= 0 && e.life > 2) {
+        e.t.aura = A.aura.cd; let n = 0;
+        for (const o of S.enemies) if (!o.dead && o !== e && !o.dying && Math.hypot(o.x - e.x, o.y - e.y) <= A.aura.r) { o.shieldT = A.aura.dur; o.shieldRed = A.aura.red; n++; }
+        emit(S, { type: 'bossAura', x: e.x, y: e.y, r: A.aura.r, n });
+      }
+    }
+    if (A.roar) { // 돌격왕: 함성으로 주변 적군을 빠르게 만든다
+      e.t.roar -= dt;
+      if (e.t.roar <= 0 && e.life > 2) {
+        e.t.roar = A.roar.cd;
+        for (const o of S.enemies) if (!o.dead && o !== e && !o.dying && Math.hypot(o.x - e.x, o.y - e.y) <= A.roar.r) { o.hasteT = A.roar.dur; o.hasteMul = A.roar.speed; }
+        emit(S, { type: 'bossRoar', x: e.x, y: e.y, r: A.roar.r });
+      }
+    }
+    if (A.focus) { // 광전사: 가만히 정신을 집중해 체력을 회복한다 (그동안은 공격·이동 불가)
+      if (e.focusT > 0) {
+        e.focusT -= dt; e.speedMul = 0;
+        e.hp = Math.min(e.max, e.hp + e.max * A.focus.heal * dt / A.focus.dur);
+        if (e.focusT <= 0) emit(S, { type: 'bossFocusEnd', x: e.x, y: e.y });
+      } else {
+        e.t.focus -= dt;
+        if (e.t.focus <= 0 && e.life > 3 && e.hp < e.max * 0.85) { e.focusT = A.focus.dur; e.t.focus = A.focus.cd; emit(S, { type: 'bossFocus', x: e.x, y: e.y, dur: A.focus.dur }); }
+        else if (e.t.focus <= 0) e.t.focus = 1;
+      }
+    }
     if (A.artillery) {
       e.t.artillery -= dt;
       if (e.t.artillery <= 0) {
-        e.t.artillery = A.artillery.cd;
+        e.t.artillery = A.artillery.cd; e.volley = (e.volley || 0) + 1;
+        const bar = A.artillery.barrage && e.volley % A.artillery.barrage === 0; // 포격대장: 몇 번에 한 번은 일제 포격
         const near = S.units.filter(u => !u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= 900);
-        for (let i = 0; i < A.artillery.count; i++) {
+        for (let i = 0, cn = A.artillery.count * (bar ? 3 : 1); i < cn; i++) {
           const tg = near.length ? near[Math.floor(S.rng() * near.length)] : S.core;
           const gt = { x: tg.x + (S.rng() - 0.5) * 40, y: tg.y + (S.rng() - 0.5) * 40, r: 0 }; // 떨어질 지점 (미리 표시된다)
           fire(S, e, gt, A.artillery.dmg * CFG.balance.enemyDmg * e.dmgMul, 0, 'es', { T: A.artillery.flight, aoe: A.artillery.radius });
@@ -1449,11 +1483,14 @@
     e.cd -= dt; e.age += dt;
     if (e.frozenT > 0) { e.frozenT -= dt; return; } // 절대영도: 얼어붙음
     const boost = enrageMul(e.age);
+    if (e.kind !== 'boss' && e.shieldT > 0) e.shieldT -= dt;
+    if (e.hasteT > 0) e.hasteT -= dt;
     if (e.age > ENRAGE_AFTER && !e.enr) { e.enr = true; if (S.enrageSaid !== S.round) { S.enrageSaid = S.round; emit(S, { type: 'enrage' }); } }
     if (e.abil) bossTick(S, e, dt);
+    if (e.focusT > 0) return; // 정신 집중 중
     if (e.kind === 'shaman') return updateShaman(S, e, dt);
     if (e.slowT > 0) e.slowT -= dt;
-    const c = S.core, spm = e.speedMul * (e.slowT > 0 ? 0.45 : 1) * (boost > 1 ? Math.min(1.5, 1 + (boost - 1) * 0.2) : 1), dmg = e.dmg * boost * e.dmgMul, cdTime = 1 / (e.rate * e.rateMul || 1);
+    const c = S.core, spm = e.speedMul * (e.hasteT > 0 ? e.hasteMul : 1) * (e.slowT > 0 ? 0.45 : 1) * (boost > 1 ? Math.min(1.5, 1 + (boost - 1) * 0.2) : 1), dmg = e.dmg * boost * e.dmgMul, cdTime = 1 / (e.rate * e.rateMul || 1);
     const tgt = nearest(S.gU, e.x, e.y, (e.abil && e.abil.rush && !e.rushDone) || e.dashT > 0 ? 1500 : e.aggro); // 등장 돌진 중에는 거리와 상관없이 가장 가까운 아군
     if (e.leapT > 0) return; // 도약 중
     if (e.abil && e.abil.siege && !(tgt && Math.hypot(tgt.x - e.x, tgt.y - e.y) < 110)) { moveToward(e, c.x, c.y, dt, e.abil.siege.dist, spm); return; } // 멀리서 포격만 하는 보스
