@@ -41,22 +41,22 @@
       undead: { name: '망자', cost: 0, hp: 40, atk: 6, rate: 1.0, range: 26, speed: 88, r: 9, buyCd: 1, aggro: 200, priceSteps: 0, line: 'none' }, // 사령 성 갈래가 되살린 임시 아군
       // 카드로만 얻는 유닛
       // 카드로 얻는 특수 유닛. line = 어느 직업 계열의 강화·전직을 받는지 (sword·archer·priest = 해당 직업, core = 성 강화)
-      golem:  { name: '골렘', hp: 1500, atk: 52, rate: 0.8, range: 40,  speed: 55,  r: 18, aggro: 220, priceSteps: 0, line: 'sword' }, // priceSteps: 소환하면 모든 유닛 가격이 이만큼 오른다 (직접 뽑는 유닛은 1, 특수 유닛은 모두 0)
-      legendsword:  { name: '검왕',   hp: 2600, atk: 150, rate: 1.4, range: 36,  speed: 105, r: 15, aggro: 320, priceSteps: 0, line: 'sword' },                 // 전설: 압도적인 전사
-      legendarcher: { name: '궁신',   hp: 650,  atk: 180, rate: 0.6, range: 380, speed: 90,  r: 13, aggro: 420, priceSteps: 0, line: 'archer', pierce: 3 },   // 전설: 압도적인 궁수
-      hero:   { name: '용사', hp: 560, atk: 62, rate: 1.3, range: 30,  speed: 100, r: 12, aggro: 260, priceSteps: 0, line: 'sword' },
+      golem:  { name: '골렘', hp: 1150, atk: 40, rate: 0.8, range: 40,  speed: 55,  r: 18, aggro: 220, priceSteps: 0, line: 'sword' }, // priceSteps: 소환하면 모든 유닛 가격이 이만큼 오른다 (직접 뽑는 유닛은 1, 특수 유닛은 모두 0)
+      legendsword:  { name: '검왕',   hp: 2000, atk: 115, rate: 1.4, range: 36,  speed: 105, r: 15, aggro: 320, priceSteps: 0, line: 'sword' },                 // 전설: 압도적인 전사
+      legendarcher: { name: '궁신',   hp: 500,  atk: 140, rate: 0.6, range: 380, speed: 90,  r: 13, aggro: 420, priceSteps: 0, line: 'archer', pierce: 3 },   // 전설: 압도적인 궁수
+      hero:   { name: '용사', hp: 430, atk: 48, rate: 1.3, range: 30,  speed: 100, r: 12, aggro: 260, priceSteps: 0, line: 'sword' },
       turret: { name: '포탑', hp: 300, atk: 18, rate: 1.5, range: 240, speed: 0,   r: 11, priceSteps: 0, line: 'core', static: true, shot: 't' },
-      marksman: { name: '명궁', hp: 280, atk: 66, rate: 0.7, range: 300, speed: 85, r: 11, aggro: 330, priceSteps: 0, line: 'archer', pierce: 1 },       // 긴 사거리·높은 공격력의 영웅 궁수 (화살이 1명 관통)
+      marksman: { name: '명궁', hp: 220, atk: 52, rate: 0.7, range: 300, speed: 85, r: 11, aggro: 330, priceSteps: 0, line: 'archer', pierce: 1 },       // 긴 사거리·높은 공격력의 영웅 궁수 (화살이 1명 관통)
       repeater: { name: '연노병', hp: 85, atk: 6, rate: 3.2, range: 190, speed: 88, r: 9, aggro: 250, priceSteps: 0, line: 'archer' },                    // 빠르게 연사하는 석궁병
       ballista: { name: '발리스타', hp: 380, atk: 52, rate: 0.45, range: 340, speed: 0, r: 13, priceSteps: 0, line: 'archer', static: true, shot: 'b', pierce: 2 }, // 설치형 대형 석궁 (적 2명 관통)
     },
     // 영웅 스킬: 영웅 등급 유닛이 쿨타임마다 자동 시전 (사거리 안에 적이 있을 때)
     heroSkill: {
-      legendsword:  { name: '질풍 돌진',  cd: 7, r: 420, kind: 'dash', mul: 7, w: 26, dist: 380, spd: 620 }, // 적진을 향해 돌진하며 지나가는 길의 적을 모두 벤다
-      legendarcher: { name: '천궁 폭우',  cd: 8, r: 420, kind: 'rain', mul: 0.9, rad: 125, dur: 4, every: 0.4 }, // 적 위에 화살비 지대를 만들어 잠시 동안 범위 피해
-      hero:     { name: '일섬',      cd: 5, r: 130, mul: 6.0 },              // 주변 적 전체에 큰 베기 피해
-      golem:    { name: '대지 강타',  cd: 7, r: 160, mul: 4.5, slow: 3 },     // 주변 적에게 피해 + 3초간 감속
-      marksman: { name: '일제 사격',  cd: 6, r: 340, mul: 4.5, n: 6 },        // 가까운 적 6명을 동시에 저격
+      legendsword:  { name: '질풍 돌진',  cd: 7, r: 420, kind: 'dash', mul: 5.5, w: 26, dist: 380, spd: 620 }, // 적진을 향해 돌진하며 지나가는 길의 적을 모두 벤다
+      legendarcher: { name: '천궁 폭우',  cd: 8, r: 420, kind: 'rain', mul: 0.75, rad: 125, dur: 4, every: 0.4 }, // 적 위에 화살비 지대를 만들어 잠시 동안 범위 피해
+      hero:     { name: '일섬',      cd: 5, r: 130, mul: 4.5 },              // 주변 적 전체에 큰 베기 피해
+      golem:    { name: '대지 강타',  cd: 7, r: 160, mul: 3.6, slow: 3 },     // 주변 적에게 피해 + 3초간 감속
+      marksman: { name: '일제 사격',  cd: 6, r: 340, mul: 3.6, n: 6 },        // 가까운 적 6명을 동시에 저격
     },
     enemies: {
       grunt:  { name: '돌격병', hp: 30, dmg: 6,  speed: 70, r: 9,  range: 20, rate: 1.0, gold: 4,   aggro: 110 },
@@ -107,7 +107,7 @@
       { id: 'r_knights', name: '용병 기사단', desc: '강력한 용병 용사 3명이 합류 (스킬 [일섬]) — 전군 강화와 같은 수준으로 강력', units: ['hero', 'hero', 'hero'] },
       { id: 'r_snipers', name: '저격 용병단', desc: '용병 명궁 3명이 합류 (스킬 [일제 사격])', units: ['marksman', 'marksman', 'marksman'] },
       { id: 'r_golem',   name: '철갑 용병단', desc: '거대한 용병 골렘 2명 + 용병 용사 2명이 합류', units: ['golem', 'golem', 'hero', 'hero'] },
-      { id: 'r_army',    name: '전군 강화',   desc: '검사·궁수·사제 모두 체력·공격력 강화 +2단계', up: 2 },
+      { id: 'r_army',    name: '전군 강화',   desc: '검사·궁수·사제 모두 체력·공격력 강화 +1단계', up: 1 },
       { id: 'r_fort',    name: '성 대개수', desc: '성이 즉시 2레벨 올라갑니다 (인구·체력·공격력·사거리 상승, 대포 추가) + 체력 완전 회복', castle: 2 },
     ],
     // 성 트리: 성 레벨 4·7·10에서 갈래를 고른다 (마탑 · 수호 · 사령 → 각각 공격형/방어형 → 최종형)
@@ -234,7 +234,7 @@
       shellCoreMul: 0.4,                              // 보스 포격이 성에 주는 피해 비율 (성벽이 튼튼하다)
       coreRepair: 0.04,                               // 라운드가 바뀔 때마다 성이 기본으로 복구하는 비율 (최대 체력 기준)
     },
-    economy: { costAll: 1.045, costType: 0.015 }, prodMax: 5, // (임시값: 1.05는 너무 쉽고 1.08은 어려웠음 — 밸런스는 나중에 재조정) // 유닛을 하나 뽑을 때마다 모든 유닛의 비용이 이 배율만큼 오른다 (인구 제한은 없다)
+    economy: { costAll: 1.035, costType: 0.01, costRound: 0.03 }, prodMax: 5, // (임시값: 1.05는 너무 쉽고 1.08은 어려웠음 — 밸런스는 나중에 재조정) // 유닛을 하나 뽑을 때마다 모든 유닛의 비용이 이 배율만큼 오른다 (인구 제한은 없다)
     healAfterRound: 0.30, // 새 라운드 시작 시 생존 유닛 회복 비율
     // 카드/강화 수치
     upPct: { hp: 0.30, atk: 0.15, rate: 0.10, speed: 0.12 },
@@ -366,7 +366,7 @@
   const enemySpeedMul = r => (r >= CFG.balance.lateFrom ? CFG.balance.lateSpeed : 1) * (r > ACT1_END ? CFG.balance.postSpeed : 1) * Math.min(1.5, 1 + 0.012 * endE(r));
   // 비용 = 기본 비용 × 배율^(지금까지 뽑은 유닛 수). 모든 유닛 종류가 함께 오른다.
   // 가격 = 기본가 × (전체 인구 × 2%) × (같은 종류 인구 × 4%): 한 종류만 계속 뽑으면 예전(6%씩)과 비슷하고, 병력을 잃으면 가격도 같이 내려가 복구하기 쉽다
-  const unitCostOf = (S, type) => { let all = 0, same = 0; for (const u of S.units) if (!u.dead && UNIT_TYPES.includes(u.type)) { all++; if (u.type === type) same++; } return Math.round(CFG.units[type].cost * Math.pow(CFG.economy.costAll, all) * Math.pow(1 + CFG.economy.costType, same)); };
+  const unitCostOf = (S, type) => { let all = 0, same = 0; for (const u of S.units) if (!u.dead && UNIT_TYPES.includes(u.type)) { all++; if (u.type === type) same++; } return Math.round(CFG.units[type].cost * (1 + CFG.economy.costRound * Math.max(0, S.round - 1)) * Math.pow(CFG.economy.costAll, all) * Math.pow(1 + CFG.economy.costType, same)); };
 
   // ───────────── 카드 정의 ─────────────
   const TN = { sword: '검사', archer: '궁수', priest: '사제' };
@@ -405,12 +405,12 @@
     { id: 'f_thorn',  cat: 'core', rar: 'rare',   max: 3, name: '가시 방벽',     desc: l => '성을 때린 적에게 그 피해의 ' + Math.round(V().thorn * 100 * l) + '% 반사' },
     // 특수 소환
     { id: 's_turret', cat: 'summon', rar: 'rare',   max: 3,  name: '자동 포탑',       desc: l => '성 옆에 자동 포탑 설치 (' + l + '/3) · 성 공격력·공속·사거리 강화를 받음' },
-    { id: 's_golem',  cat: 'summon', rar: 'epic',   max: 1,  name: '골렘 소환',       desc: () => '거대한 탱커 골렘을 영구 소환 · 검사 계열 · 스킬 [대지 강타]: 7초마다 주변 적에게 공격력 ×4.5 피해 + 3초 감속' },
-    { id: 's_hero',   cat: 'summon', rar: 'epic',   max: 1,  name: '용사 소환',       desc: () => '강력한 근접 영웅 용사를 영구 소환 · 검사 계열 · 스킬 [일섬]: 5초마다 주변 적 전체에 공격력 ×6 베기' },
+    { id: 's_golem',  cat: 'summon', rar: 'epic',   max: 1,  name: '골렘 소환',       desc: () => '거대한 탱커 골렘을 영구 소환 · 검사 계열 · 스킬 [대지 강타]: 7초마다 주변 적에게 공격력 ×3.6 피해 + 3초 감속' },
+    { id: 's_hero',   cat: 'summon', rar: 'epic',   max: 1,  name: '용사 소환',       desc: () => '강력한 근접 영웅 용사를 영구 소환 · 검사 계열 · 스킬 [일섬]: 5초마다 주변 적 전체에 공격력 ×4.5 베기' },
     // 궁수 계열 특수 유닛: 궁수 강화 카드와 궁수 전직(저격수·속사수 등)의 효과를 받는다
-    { id: 'l_sword',  cat: 'summon', rar: 'legend', max: 1, name: '전설 · 검왕 강림', desc: () => '압도적인 전사 검왕을 영구 소환 · 검사 계열 · 스킬 [질풍 돌진]: 7초마다 적진으로 돌진하며 지나가는 길의 적 모두에게 공격력 ×7' },
+    { id: 'l_sword',  cat: 'summon', rar: 'legend', max: 1, name: '전설 · 검왕 강림', desc: () => '압도적인 전사 검왕을 영구 소환 · 검사 계열 · 스킬 [질풍 돌진]: 7초마다 적진으로 돌진하며 지나가는 길의 적 모두에게 공격력 ×5.5' },
     { id: 'l_archer', cat: 'summon', rar: 'legend', max: 1, name: '전설 · 궁신 강림', desc: () => '압도적인 궁수 궁신을 영구 소환 · 궁수 계열 · 화살이 적 3명 관통 · 스킬 [천궁 폭우]: 8초마다 적 위에 4초간 화살비 지대를 만들어 범위 안 적에게 계속 피해' },
-    { id: 's_marksman',  cat: 'summon', rar: 'epic', max: 1, name: '명궁 소환',    desc: () => '사거리 300의 영웅 궁수를 영구 소환 · 궁수 계열 · 스킬 [일제 사격]: 6초마다 가까운 적 6명을 동시에 저격 (공격력 ×4.5)' },
+    { id: 's_marksman',  cat: 'summon', rar: 'epic', max: 1, name: '명궁 소환',    desc: () => '사거리 300의 영웅 궁수를 영구 소환 · 궁수 계열 · 스킬 [일제 사격]: 6초마다 가까운 적 6명을 동시에 저격 (공격력 ×3.6)' },
     { id: 's_repeaters', cat: 'summon', rar: 'rare', max: 3, name: '연노병 소환',  desc: l => '연노병 2명을 영구 소환 (' + l + '/3) · 초당 3발 이상 빠르게 쏘는 석궁병 · 궁수 계열 (궁수 강화·전직 효과를 받음)' },
     { id: 's_ballista',  cat: 'summon', rar: 'rare', max: 2, name: '발리스타 설치', desc: l => '대형 석궁 발리스타를 성 옆에 설치 (' + l + '/2) · 큰 화살이 적 2명을 관통 · 궁수 계열 (궁수 강화·전직 효과를 받음)' },
   ];

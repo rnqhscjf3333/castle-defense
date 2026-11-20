@@ -635,9 +635,9 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
 { const g = C.createGame(31); g.gold = 1e5; g.buyCd.sword = 0; const u = C.buy(g, 'sword').unit; const h0 = u.max, a0 = u.atk;
   for (let i = 0; i < 5; i++) { g.up.sword.hp++; g.up.sword.atk++; } const h5 = C.statsOf ? 0 : 0;
   g.jobs.offer = { reward: true, list: [{ reward: true, id: 'r_army' }] }; C.pickJob(g, 0);
-  check('전군 강화는 일반 강화 단계(up)를 건드리지 않고 bossUp만 올림', g.up.sword.hp === 5 && g.bossUp.hp === 2 && g.bossUp.atk === 2, JSON.stringify(g.bossUp));
+  check('전군 강화는 일반 강화 단계(up)를 건드리지 않고 bossUp만 올림', g.up.sword.hp === 5 && g.bossUp.hp === 1 && g.bossUp.atk === 1, JSON.stringify(g.bossUp));
   const m1 = u.max; g.jobs.offer = { reward: true, list: [{ reward: true, id: 'r_army' }] }; C.pickJob(g, 0);
-  check('일반 강화가 풀업이어도 보상 강화가 추가로 적용됨', g.bossUp.hp === 4 && u.max > m1 && u.max > h0, h0 + ' → ' + m1 + ' → ' + u.max); }
+  check('일반 강화가 풀업이어도 보상 강화가 추가로 적용됨', g.bossUp.hp === 2 && u.max > m1 && u.max > h0, h0 + ' → ' + m1 + ' → ' + u.max); }
 // 52) 전설 유닛 스킬: 검왕 돌진 · 궁신 화살비
 { const mk = id => { const g = C.createGame(41); g.cards.offer = [{ key: id, id, cat: 'summon', name: id }]; C.pickCard(g, 0); g.phase = 'round'; g.hold = true; g.queue = []; g.core.hp = g.core.max = 1e9; g.core.atk = 0; return g; };
   const g = mk('l_sword'), u = g.units.find(x => x.type === 'legendsword'); u.x = u.hx; u.y = u.hy;
