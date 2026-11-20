@@ -167,20 +167,17 @@
   const castleBtn = document.createElement('button'); castleBtn.className = 'btn panel ucard castlecard';
   castleBtn.innerHTML = '<div class="nm"><span class="nmt">성</span><span class="cnt"></span></div><div class="ds"></div><div class="cost"></div><span class="key">4</span>';
   castleBtn.addEventListener('click', () => doCastle());
+  castleBtn.insertAdjacentHTML('beforeend', '<div class="cdfill"></div>');
   $('units').appendChild(castleBtn);
-  const repairBtn = document.createElement('button'); repairBtn.className = 'btn panel ucard repaircard';
-  repairBtn.innerHTML = '<div class="nm"><span class="nmt">🔧 수리</span></div><div class="ds">성 체력 +10%</div><div class="cost"></div><span class="key">5</span><div class="cdfill"></div>';
-  repairBtn.addEventListener('click', () => doRepair());
-  $('units').appendChild(repairBtn);
-  const rb = { cost: repairBtn.querySelector('.cost'), cd: repairBtn.querySelector('.cdfill') };
   function doRepair() {
     if (!S || !running || paused) return;
     const r = C.repairCastle(S);
     if (!r.ok) { A2.play('deny'); toast(r.reason === 'gold' ? '골드가 부족해요' : r.reason === 'cooldown' ? '수리 쿨타임 중이에요' : r.reason === 'full' ? '성 체력이 가득 찼어요' : ''); }
   }
   const cb = { lv: castleBtn.querySelector('.cnt'), ds: castleBtn.querySelector('.ds'), cost: castleBtn.querySelector('.cost') };
-  function doCastle() {
+  function doCastle() { // 성이 최대 레벨이면 같은 버튼이 수리 버튼이 된다
     if (!S || !running || paused) return;
+    if (S.castle.lv >= CFG.castle.max) return doRepair();
     const r = C.upgradeCastle(S);
     if (!r.ok) { A2.play('deny'); toast(r.reason === 'max' ? '성이 최대 레벨입니다' : '골드가 부족해요'); }
   }
@@ -199,7 +196,7 @@
       return;
     }
     if (e.key === '1' || e.key === '2' || e.key === '3') doBuy(C.UNIT_TYPES[+e.key - 1]);
-    if (e.key === '4') doCastle(); else if (e.key === '5') doRepair();
+    if (e.key === '4') doCastle();
     else if (e.key === 'i' || e.key === 'I') $('btnInfo').click();
     else if (e.key === 'Escape') toggleModal('setMenu');
     else if (e.key === ' ') { e.preventDefault(); $('btnPause').click(); }
@@ -294,14 +291,17 @@
     if (b.grow > 1.04) st += '  |  공격력 ×' + b.grow.toFixed(1) + (b.grow >= CFG.balance.bossGrowMax - 0.01 ? ' (최대)' : ' ↑');
     setText('bossState', st);
   }
-  function updateRepairBtn() {
-    const cost = C.repairCost(S), cd = S.repairCd > 0 ? S.repairCd / CFG.repair.cd : 0, full = S.core.hp >= S.core.max - 0.5;
-    rb.cost.textContent = cost + 'G'; rb.cd.style.height = (cd * 100) + '%'; repairBtn.classList.toggle('off', S.gold < cost || full);
-  }
   function updateCastleBtn() {
-    const lv = S.castle.lv, max = lv >= CFG.castle.max, cost = C.castleCost(S), full = C.popCount(S) >= C.popCap(S);
-    const key = lv + '|' + (max ? 0 : cost) + '|' + S.core.cannons + '|' + (S.gold >= cost) + '|' + full;
-    if (cb.key === key) return; cb.key = key;
+    const lv = S.castle.lv, max = lv >= CFG.castle.max;
+    if (max) { // 최대 레벨: 수리 버튼 (골드로 성 체력 10% 회복, 쿨타임·누적 비용)
+      const rc = C.repairCost(S), cdp = S.repairCd > 0 ? S.repairCd / CFG.repair.cd : 0, hpFull = S.core.hp >= S.core.max - 0.5;
+      const k2 = 'R|' + rc + '|' + Math.round(cdp * 50) + '|' + (S.gold >= rc) + '|' + hpFull; if (cb.key === k2) return; cb.key = k2;
+      castleBtn.querySelector('.nmt').textContent = '🔧 성 수리'; cb.lv.textContent = 'Lv.' + lv; cb.ds.textContent = '성 체력 +10% · 쿨타임 ' + CFG.repair.cd + '초'; cb.cost.textContent = rc + 'G';
+      castleBtn.querySelector('.cdfill').style.height = (cdp * 100) + '%'; castleBtn.classList.toggle('off', S.gold < rc || hpFull); castleBtn.classList.remove('need'); return;
+    }
+    const cost = C.castleCost(S), full = C.popCount(S) >= C.popCap(S);
+    const key = lv + '|' + cost + '|' + S.core.cannons + '|' + (S.gold >= cost) + '|' + full;
+    if (cb.key === key) return; cb.key = key; castleBtn.querySelector('.nmt').textContent = '성';
     cb.lv.textContent = 'Lv.' + lv; cb.ds.textContent = max ? '최대 레벨 · 인구 제한 없음' : '인구 +' + C.popGain(lv + 1) + ' · 공격·체력↑' + (CFG.castle.cannonLv.includes(lv + 1) ? ' · 대포 +1' : '');
     cb.cost.textContent = max ? 'MAX' : cost + 'G'; castleBtn.classList.toggle('off', max || S.gold < cost); castleBtn.classList.toggle('need', full && !max);
   }
@@ -310,7 +310,7 @@
     const bi = C.bossInfo(S, S.round), nb = C.bossInfo(S, S.round + 1), rt = $('roundTxt');
     setText('roundTxt', '라운드 ' + Math.max(1, S.round) + (S.round > C.MAX_ROUND ? ' · 무한' : ' / ' + C.MAX_ROUND));
     rt.classList.toggle('boss', !!bi); rt.classList.toggle('nextboss', !bi && !!nb); rt.classList.toggle('act2', S.act === 2 && !bi && !nb);
-    updateBossBar(); updateCastleBtn(); updateRepairBtn();
+    updateBossBar(); updateCastleBtn();
     setText('timeTxt', fmtTime(S.t));
     setText('hpTxt', String(Math.ceil(c.hp)));
     setText('gold', S.dev ? '∞' : String(Math.floor(S.gold)));
