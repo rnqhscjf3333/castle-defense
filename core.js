@@ -197,7 +197,7 @@
       priest: {
         t1: [
           { id: 'cleric', name: '성직자', desc: '광륜의 치유사. 치유량 +45%, 치유 범위 +50', mods: { heal: 0.45, healRange: 50 } },
-          { id: 'bishop', name: '주교', desc: '주교관과 지팡이. 치유량 +12%, 쓰러진 아군을 라운드당 1회 부활', mods: { heal: 0.12, revive: 1 } },
+          { id: 'bishop', name: '주교', desc: '주교관과 지팡이. 치유량 +8%, 이 사제는 라운드마다 쓰러진 아군을 1회 부활 (체력 50%)', mods: { heal: 0.08, revive: 1 } },
         ],
         t2: {
           cleric: [
@@ -205,14 +205,15 @@
             { id: 'warden', name: '수호사제', desc: '푸른 등불의 수호자. 치유량 +20%, 치유한 아군에게 치유량의 80%만큼 보호막 (최대 체력의 30%까지)', mods: { heal: 0.2, ward: 0.8 } },
           ],
           bishop: [
-            { id: 'archbishop', name: '대주교', desc: '황금 십자 지팡이. 치유량 +18%, 부활 +1회', mods: { heal: 0.18, revive: 1 } },
-            { id: 'templar', name: '전투사제', desc: '철퇴와 갑옷의 성전사. 성스러운 구체로 사거리 170 안의 적을 직접 공격, 부활 +1회', mods: { revive: 1, smite: 1 } },
+            { id: 'archbishop', name: '대주교', desc: '황금 십자 지팡이. 치유량 +12%, 이 사제의 부활 +1회 (라운드당 2회)', mods: { heal: 0.12, revive: 1 } },
+            { id: 'templar', name: '전투사제', desc: '철퇴와 갑옷의 성전사. 체력 +30%. 성스러운 구체로 사거리 190 안의 적을 직접 공격(치유량의 170%), 이 사제의 부활 +1회', mods: { hp: 0.3, revive: 1, smite: 1 } },
           ],
         },
       },
     },
     shots: { arc: 0.28, arcMin: 12, arcMax: 110, minT: 0.22 }, // 포물선 투사체: 거리에 비례해 높이 솟았다 떨어진다
     arrowSpeed: 430, shellSpeed: 360, enemyArrowSpeed: 400,
+    repair: { heal: 0.10, base: 25, perRound: 14, step: 0.5, cd: 12 }, // 성 수리: 비용 = (base + perRound×라운드) × (1 + step×이번 라운드 사용 횟수)
     balance: {
       countBase: 8, countLinear: 3, countQuad: 0.08, // 라운드별 적 수 = base + linear·r + quad·r²
       hpSlope: 0.125, hpSlopeLate: 0.14, lateFrom: 20, // 체력 배율: 선형, lateFrom(대혼란) 이후 기울기 증가
@@ -248,7 +249,7 @@
     cardVals: {                       // 카드 수치 (설명 문구와 효과가 모두 여기서 읽는다)
       coreAtk: 0.40, coreRate: 0.25, coreRange: 45, fortHp: 600, repair: 0.15, thorn: 0.9,
       crit: 0.10, critMul: 2, archerRange: 0.12,
-      guard: 0.15, dodge: 0.12, hbuff: 0.12, hbuffT: 4, charge: 0.40, chargeRate: 0.15, revive: 0.70, pierce: 0.40, bomb: 4.0, bombStep: 1.5,
+      guard: 0.15, dodge: 0.12, hbuff: 0.12, hbuffT: 4, charge: 0.40, chargeRate: 0.15, revive: 0.5, pierce: 0.40, bomb: 4.0, bombStep: 1.5,
       auraHeal: 0.025, auraAtk: 0.08, auraDef: 0.08, auraDefCap: 0.40, auraSpd: 0.06, auraBoost: 0.15,
     },
     rerolls: 2,
@@ -544,7 +545,7 @@
     }
     const before = S.jobMods[o.type].revive;
     S.jobs[o.type].ids.push(o.id); S.jobs.offer = null;
-    recompute(S); S.reviveLeft += S.jobMods[o.type].revive - before;
+    recompute(S); if (o.type === 'priest') for (const u of S.units) if (u.type === 'priest' && !u.dead) u.rv += S.jobMods.priest.revive - before; rvSync(S);
     for (const u of S.units) if (lineOf(u.type) === o.type && !u.dead) refreshUnit(S, u);
     emit(S, { type: 'promote', unitType: o.type, className: o.className, name: o.name, tier: o.tier });
     return true;
@@ -699,7 +700,7 @@
       core: { x: CX, y: CY, hp: CFG.core.hp, max: CFG.core.hp, r: CFG.core.r, atk: CFG.core.atk, rate: CFG.core.rate, range: CFG.core.range, cd: 0, flash: 0, aim: -Math.PI / 2, swing: 0 },
       units: [], enemies: [], shots: [], shotPool: [],
       kills: 0, nextId: 1,
-      prod: [], spawnN: 0, buyCd: { sword: 0, archer: 0, priest: 0 },
+      prod: [], spawnN: 0, repairCd: 0, repairN: 0, buyCd: { sword: 0, archer: 0, priest: 0 },
       threat: 0, over: false, win: false,
       captureEvents: false, events: [], numQ: [],
       gU: makeGrid(48), gE: makeGrid(48), gA: makeGrid(48), seen: {},
@@ -739,7 +740,7 @@
       heal: st.heal, healRate: st.healRate, healRange: st.healRange,
       job: (S.jobs[lineOf(type)] && S.jobs[lineOf(type)].ids.length) ? S.jobs[lineOf(type)].ids[S.jobs[lineOf(type)].ids.length - 1] : null, jobTier: S.jobs[lineOf(type)] ? S.jobs[lineOf(type)].ids.length : 0,
       cd: 0, flash: 0, swing: 0, dead: false, ha, hr, hx: CX + Math.cos(ha) * hr, hy: CY + Math.sin(ha) * hr,
-      aura: 0, n: 0,
+      aura: 0, n: 0, rv: type === 'priest' ? S.jobMods.priest.revive : 0, // 사제마다 라운드당 부활 횟수
     };
     S.units.push(u);
     emit(S, { type: 'spawn', x: u.x, y: u.y });
@@ -753,6 +754,18 @@
   const popGain = lv => CFG.castle.popPer + (lv - 2); // lv 레벨로 올릴 때 늘어나는 인구
   const popCount = S => { let n = 0; for (const u of S.units) if (!u.dead && UNIT_TYPES.includes(u.type)) n++; return n; }; // 기본 3종만 인구에 포함
   const specialCount = S => { let n = 0; for (const u of S.units) if (!u.dead && !isStatic(u) && !UNIT_TYPES.includes(u.type)) n++; return n; }; // 특수 유닛(골렘·용사·전설 등)은 따로
+  // 성 수리: 골드로 성 체력을 최대치의 10%씩 회복. 라운드가 갈수록 비싸지고, 라운드 안에서 누를 때마다 더 비싸지며, 쿨타임이 있다
+  const repairCost = S => Math.round((CFG.repair.base + CFG.repair.perRound * Math.max(1, S.round)) * (1 + CFG.repair.step * (S.repairN || 0)));
+  function repairCastle(S) {
+    if (S.over || S.phase === 'over') return { ok: false, reason: 'over' };
+    if (S.repairCd > 0) return { ok: false, reason: 'cooldown' };
+    if (S.core.hp >= S.core.max - 0.5) return { ok: false, reason: 'full' };
+    const cost = repairCost(S); if (S.gold < cost) return { ok: false, reason: 'gold' };
+    S.gold -= cost; S.stats.spent += cost; S.repairN = (S.repairN || 0) + 1; S.repairCd = CFG.repair.cd;
+    S.core.hp = Math.min(S.core.max, S.core.hp + S.core.max * CFG.repair.heal); S.core.flash = 0;
+    emit(S, { type: 'castleRepair', x: S.core.x, y: S.core.y });
+    return { ok: true, cost };
+  }
   const castleCost = S => S.castle.lv >= CFG.castle.max ? Infinity : CFG.castle.cost[S.castle.lv - 1];
   function upgradeCastle(S, free) {
     if (S.over || S.castle.lv >= CFG.castle.max) return { ok: false, reason: 'max' };
@@ -848,9 +861,9 @@
     return { ok: !why.length, bound, why };
   }
   function startRound(S) {
-    S.phase = 'round'; S.round++; S.roundT = 0; S.clearT = 0;
+    S.phase = 'round'; S.round++; S.roundT = 0; S.clearT = 0; S.repairN = 0;
     const r = S.round;
-    S.reviveLeft = S.perks.revive + S.jobMods.priest.revive;
+    for (const u of S.units) if (u.type === 'priest') u.rv = S.jobMods.priest.revive; rvSync(S);
     if (r > 1) {
       S.gold += 15 + 2 * r; S.stats.earned += 15 + 2 * r;
       for (const u of S.units) if (!u.dead) u.hp = Math.min(u.max, u.hp + u.max * CFG.healAfterRound);
@@ -1006,8 +1019,9 @@
     tgt.hp -= dmg; tgt.flash = 0.1;
     if (S.captureEvents) numNote(S, tgt, dmg, crit ? 'c' : 'd');
     if (tgt.hp > 0) return;
-    if (tgt.team === 'u' && S.reviveLeft > 0 && !isStatic(tgt) && !tgt.undead && S.units.some(p => p.type === 'priest' && !p.dead && p !== tgt)) {
-      S.reviveLeft--; tgt.hp = tgt.max * V().revive; emit(S, { type: 'revive', x: tgt.x, y: tgt.y, ut: tgt.type, job: tgt.job, jt: tgt.jobTier }); return;
+    let rp = null; if (tgt.team === 'u' && !isStatic(tgt) && !tgt.undead) { let bd = 1e9; for (const p of S.units) if (p.type === 'priest' && !p.dead && p !== tgt && p.rv > 0) { const d = Math.hypot(p.x - tgt.x, p.y - tgt.y); if (d < bd) { bd = d; rp = p; } } }
+    if (rp) { // 살아 있는 사제가 직접 부활시킨다 (사제마다 라운드당 자기 횟수만큼, 가장 가까운 사제부터)
+      rp.rv--; rvSync(S); tgt.hp = tgt.max * V().revive; emit(S, { type: 'revive', x: tgt.x, y: tgt.y, ut: tgt.type, job: tgt.job, jt: tgt.jobTier }); return;
     }
     if (tgt.team === 'e' && tgt.kind === 'boss') { beginBossDeath(S, tgt); return; } // 보스는 사망 연출이 끝난 뒤에 쓰러진다
     tgt.dead = true;
@@ -1220,11 +1234,12 @@
       }
     }
   }
+  function rvSync(S) { let n = 0; for (const u of S.units) if (u.type === 'priest' && !u.dead) n += u.rv || 0; S.reviveLeft = n; }
   function priestSmite(S, u, dt) { // 전투사제: 성스러운 구체로 가까운 적을 공격
     u.sc = (u.sc || 0) - dt; if (u.sc > 0) return;
-    const t = nearest(S.gE, u.x, u.y, 170); if (!t) return;
-    u.sc = 1.25; u.swing = 0.3; u.aim = Math.atan2(t.y - u.y, t.x - u.x);
-    fire(S, u, t, u.heal * 1.15 * (1 + (u.aura ? S.aura.atk : 0)), CFG.arrowSpeed * 0.85, 'h');
+    const t = nearest(S.gE, u.x, u.y, 190); if (!t) return;
+    u.sc = 1.1; u.swing = 0.3; u.aim = Math.atan2(t.y - u.y, t.x - u.x);
+    fire(S, u, t, u.heal * 1.7 * (1 + (u.aura ? S.aura.atk : 0)), CFG.arrowSpeed * 0.85, 'h');
   }
   function castHeroSkill(S, u, atk) {
     const sk = CFG.heroSkill[u.type];
@@ -1475,6 +1490,7 @@
     if (S.cards.offer || S.jobs.offer || S.cOffer || S.cinematic) return; // 카드/전직/성 선택, 연출 중에는 시간이 멈춘다
     S.t += dt;
     for (const k in S.buyCd) if (S.buyCd[k] > 0) S.buyCd[k] -= dt;
+    if (S.repairCd > 0) S.repairCd -= dt;
     updateProd(S, dt);
 
     // 라운드 진행
@@ -1586,7 +1602,7 @@
 
   return {
     CFG, MAX_ROUND, ACT1_END, extraAngles, EXTRA_RING, ROUND_TIME, SPAWN_TIME, PREP_TIME, SPAWN_RING, UNIT_TYPES, CARD_DEFS,
-    createGame, tick, buy, devSetup, runSummary, ctNode, jobDef, coreGuard, hitCore, pickCastle, autoCastle, castleOptions, describeCastle, jobBack, classOptions, enqueue, cancelProd, goldBound, checkRun, upgradeCastle, castleCost, popCap, popGain, popCount, specialCount, endCinematic, jumpToRound, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo, drainEvents, pickCard, reroll, describeTaken, openCards,
+    createGame, tick, buy, repairCastle, repairCost, devSetup, runSummary, ctNode, jobDef, coreGuard, hitCore, pickCastle, autoCastle, castleOptions, describeCastle, jobBack, classOptions, enqueue, cancelProd, goldBound, checkRun, upgradeCastle, castleCost, popCap, popGain, popCount, specialCount, endCinematic, jumpToRound, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo, drainEvents, pickCard, reroll, describeTaken, openCards,
     unitCostOf, enemyCount, hpMul, dmgMul, mulberry32, damage,
   };
 });

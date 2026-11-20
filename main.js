@@ -168,6 +168,16 @@
   castleBtn.innerHTML = '<div class="nm"><span class="nmt">성</span><span class="cnt"></span></div><div class="ds"></div><div class="cost"></div><span class="key">4</span>';
   castleBtn.addEventListener('click', () => doCastle());
   $('units').appendChild(castleBtn);
+  const repairBtn = document.createElement('button'); repairBtn.className = 'btn panel ucard repaircard';
+  repairBtn.innerHTML = '<div class="nm"><span class="nmt">🔧 수리</span></div><div class="ds">성 체력 +10%</div><div class="cost"></div><span class="key">5</span><div class="cdfill"></div>';
+  repairBtn.addEventListener('click', () => doRepair());
+  $('units').appendChild(repairBtn);
+  const rb = { cost: repairBtn.querySelector('.cost'), cd: repairBtn.querySelector('.cdfill') };
+  function doRepair() {
+    if (!S || !running || paused) return;
+    const r = C.repairCastle(S);
+    if (!r.ok) { A2.play('deny'); toast(r.reason === 'gold' ? '골드가 부족해요' : r.reason === 'cooldown' ? '수리 쿨타임 중이에요' : r.reason === 'full' ? '성 체력이 가득 찼어요' : ''); }
+  }
   const cb = { lv: castleBtn.querySelector('.cnt'), ds: castleBtn.querySelector('.ds'), cost: castleBtn.querySelector('.cost') };
   function doCastle() {
     if (!S || !running || paused) return;
@@ -189,7 +199,7 @@
       return;
     }
     if (e.key === '1' || e.key === '2' || e.key === '3') doBuy(C.UNIT_TYPES[+e.key - 1]);
-    if (e.key === '4') doCastle();
+    if (e.key === '4') doCastle(); else if (e.key === '5') doRepair();
     else if (e.key === 'i' || e.key === 'I') $('btnInfo').click();
     else if (e.key === 'Escape') toggleModal('setMenu');
     else if (e.key === ' ') { e.preventDefault(); $('btnPause').click(); }
@@ -284,6 +294,10 @@
     if (b.grow > 1.04) st += '  |  공격력 ×' + b.grow.toFixed(1) + (b.grow >= CFG.balance.bossGrowMax - 0.01 ? ' (최대)' : ' ↑');
     setText('bossState', st);
   }
+  function updateRepairBtn() {
+    const cost = C.repairCost(S), cd = S.repairCd > 0 ? S.repairCd / CFG.repair.cd : 0, full = S.core.hp >= S.core.max - 0.5;
+    rb.cost.textContent = cost + 'G'; rb.cd.style.height = (cd * 100) + '%'; repairBtn.classList.toggle('off', S.gold < cost || full);
+  }
   function updateCastleBtn() {
     const lv = S.castle.lv, max = lv >= CFG.castle.max, cost = C.castleCost(S), full = C.popCount(S) >= C.popCap(S);
     const key = lv + '|' + (max ? 0 : cost) + '|' + S.core.cannons + '|' + (S.gold >= cost) + '|' + full;
@@ -296,7 +310,7 @@
     const bi = C.bossInfo(S, S.round), nb = C.bossInfo(S, S.round + 1), rt = $('roundTxt');
     setText('roundTxt', '라운드 ' + Math.max(1, S.round) + (S.round > C.MAX_ROUND ? ' · 무한' : ' / ' + C.MAX_ROUND));
     rt.classList.toggle('boss', !!bi); rt.classList.toggle('nextboss', !bi && !!nb); rt.classList.toggle('act2', S.act === 2 && !bi && !nb);
-    updateBossBar(); updateCastleBtn();
+    updateBossBar(); updateCastleBtn(); updateRepairBtn();
     setText('timeTxt', fmtTime(S.t));
     setText('hpTxt', String(Math.ceil(c.hp)));
     setText('gold', S.dev ? '∞' : String(Math.floor(S.gold)));
@@ -518,7 +532,7 @@
     else { const k = Math.min(5, 52 / (r * (look ? 2.2 : 2.6))) * 2; c2.translate(72, 92 - r * 0.2 * k / 2); c2.scale(k, k); }
     try { Figures.draw(c2, fake, 0); } catch (e) {} return cv2;
   }
-  let metaTab = 'codex', codexSel = null;
+  let metaTab = 'codex', codexSel = null, listScroll = 0;
   const SKILL_TXT = { dash: '적진으로 돌진하며 지나가는 길의 적 모두를 벤다', rain: '적 위에 화살비 지대를 만들어 범위 안 적에게 계속 피해' };
   function codexDetail(key) {
     const [k, a, b] = key.split(':'); let img = '', name = '', desc = '', rows = [], extra = '';
@@ -598,11 +612,11 @@
     return h + (rounds.size ? '' : '<div class="d">기록이 없어요.</div>');
   }
   $('metaBody').addEventListener('click', e => {
-    if (e.target.closest('#codexBack')) { codexSel = null; renderMeta(); return; }
-    const cc = e.target.closest('.cc[data-det]'); if (cc) { if (cc.classList.contains('lock')) { toast('아직 만나지 못했어요'); return; } codexSel = cc.dataset.det; renderMeta(); $('metaBody').scrollTop = 0; return; }
-    if (e.target.closest('#rankBack')) { renderMeta(); return; }
-    const rr = e.target.closest('tr[data-ri]'); if (rr) { const g = rankList[+rr.dataset.ri]; if (g) { const d = g.d || g.detail || {}; $('metaBody').innerHTML = gameDetail(Object.assign({}, g, d, { name: g.name, at: g.at || Date.now() }), 'rankBack'); $('metaBody').scrollTop = 0; } return; }
-    if (e.target.closest('#statBack')) { statDetail = null; renderMeta(); return; } const tr = e.target.closest('tr[data-gi]'); if (tr) { statDetail = +tr.dataset.gi; renderMeta(); $('metaBody').scrollTop = 0; } });
+    if (e.target.closest('#codexBack')) { codexSel = null; renderMeta(); $('metaBody').scrollTop = listScroll; return; }
+    const cc = e.target.closest('.cc[data-det]'); if (cc) { if (cc.classList.contains('lock')) { toast('아직 만나지 못했어요'); return; } listScroll = $('metaBody').scrollTop; codexSel = cc.dataset.det; renderMeta(); $('metaBody').scrollTop = 0; return; }
+    if (e.target.closest('#rankBack')) { rankScroll = listScroll; renderMeta(); return; }
+    const rr = e.target.closest('tr[data-ri]'); if (rr) { const g = rankList[+rr.dataset.ri]; if (g) { listScroll = $('metaBody').scrollTop; const d = g.d || g.detail || {}; $('metaBody').innerHTML = gameDetail(Object.assign({}, g, d, { name: g.name, at: g.at || Date.now() }), 'rankBack'); $('metaBody').scrollTop = 0; } return; }
+    if (e.target.closest('#statBack')) { statDetail = null; renderMeta(); $('metaBody').scrollTop = listScroll; return; } const tr = e.target.closest('tr[data-gi]'); if (tr) { listScroll = $('metaBody').scrollTop; statDetail = +tr.dataset.gi; renderMeta(); $('metaBody').scrollTop = 0; } });
   function openMeta(tab) { metaTab = tab; statDetail = null; codexSel = null; openModal('metaPanel'); renderMeta(); }
   $('metaTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { metaTab = b.dataset.t; statDetail = null; codexSel = null; renderMeta(); $('metaBody').scrollTop = 0; } });
   Meta.onUnlock(list => { for (const a of list) { toast('🏆 업적 달성: ' + a.name); } A2.play('ui'); });
@@ -632,6 +646,7 @@
       case 'castlePulse': A2.play('heal', CX, CY); break;
       case 'raise': A2.play('cast', ev.x, ev.y); break;
       case 'castlePick': A2.play('job'); break;
+      case 'castleRepair': A2.play('heal', CX, CY); break;
       case 'bossDying': A2.play('bigBoom', ev.x, ev.y); break;
       case 'bossRevive': A2.alarm(); A2.play('rage'); break;
       case 'bossGone': A2.play('bigBoom', ev.x, ev.y); A2.play('boom', ev.x, ev.y); break;
@@ -672,6 +687,7 @@
       else if (ev.type === 'undeadFade') addFx({ k: 'burst', x: ev.x, y: ev.y, t: 0, max: 0.4, c: '#3ae68a' });
       else if (ev.type === 'marked') addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.35, c: '#ff5a5a', r: 16 });
       else if (ev.type === 'fireTick') { for (let i = 0; i < 2; i++) { const a = Math.random() * 6.283, rr = Math.sqrt(Math.random()) * ev.r; addFx({ k: 'burst', x: ev.x + Math.cos(a) * rr, y: ev.y + Math.sin(a) * rr, t: 0, max: 0.4, c: i ? '#ffd23a' : '#ff7a1a' }); } }
+      else if (ev.type === 'castleRepair') { addFx({ k: 'heal', x: ev.x, y: ev.y, t: 0, max: 0.9 }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.7, c: '#7dff9a', r: 60, big: true }); }
       else if (ev.type === 'castlePick') banner('성: ' + ev.name, true);
       else if (ev.type === 'lastStand') banner('불사 결계 발동! 성이 되살아났다', true);
       else if (ev.type === 'bossRevive') { banner('더이상!! 참지!! 않겠다!!', true); for (let i = 0; i < 3; i++) addFx({ k: 'ring', x: ev.x, y: ev.y, t: -i * 0.35, max: 1.1, c: i % 2 ? '#ff7a3a' : '#ff2a4a', r: ev.r * 3, big: true }); }
@@ -1162,7 +1178,7 @@
     showRank(null);
   }
   // 랭킹 표: 서버가 있으면 서버 순위, 없으면 이 브라우저의 개인 기록
-  let rankList = [];
+  let rankList = [], rankScroll = null;
   async function showRank(mine) {
     const box = $('rankbox'); if (!box) return; box.innerHTML = '<p>랭킹 불러오는 중…</p>';
     const r = await Net.top(10); if (!$('rankbox')) return;
@@ -1171,6 +1187,7 @@
     const rows = r.list.map((e, i) => { const me = mine != null && !hit && e.score === mine; if (me) hit = true; return '<tr class="clk' + (me ? ' me' : '') + '" data-ri="' + i + '"><td>' + (i + 1) + '</td><td>' + esc(e.name) + '' + '</td><td>' + (e.win ? '클리어' : e.round + '라운드') + '</td><td>' + fmtTime(e.time) + '</td></tr>'; }).join('');
     box.innerHTML = '<div class="rankhead">' + (r.server ? '전체 랭킹' : (Net.configured ? '서버에 연결하지 못해 내 기록만 표시' : '내 기록 (서버 미설정)')) + '</div>'
       + (rows ? '<table class="rank"><tr><th>#</th><th>이름</th><th>기록</th><th>시간</th></tr>' + rows + '</table>' : '<p>아직 기록이 없어요.</p>');
+    if (rankScroll !== null) { const mb = $('metaBody'); if (mb) mb.scrollTop = rankScroll; rankScroll = null; }
   }
   // 모드 전환: 왼쪽 위 라운드 표시 아래에서 언제든 바꿀 수 있다 (기본: 성 주변 방어 / 자유: 범위 안의 적을 멀리까지 추격)
   function syncModeBar() { if (!S) return; for (const b of document.querySelectorAll('#modeBar button')) b.classList.toggle('on', b.dataset.mode === S.mode); }

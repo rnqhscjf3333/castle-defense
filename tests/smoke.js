@@ -706,14 +706,23 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
 { const g = C.createGame(91); g.gold = 1e9; g.phase = 'round'; g.hold = true; g.queue = []; g.core.hp = g.core.max = 1e9; g.core.atk = 0;
   for (let i = 0; i < 3; i++) { g.buyCd.priest = 0; C.buy(g, 'priest'); } for (let i = 0; i < 4; i++) { g.buyCd.sword = 0; C.buy(g, 'sword'); }
   for (const id of ['bishop']) { const o = C.jobOptions(g).find(x => x.id === id); g.jobs.offer = { boss: 't', list: [o] }; C.pickJob(g, 0); }
-  g.reviveLeft = g.perks.revive + g.jobMods.priest.revive; const pool = g.reviveLeft;
-  check('주교가 3명이어도 부활 횟수는 직업 수치 그대로 (사제 수에 곱해지지 않음)', pool === 1 && g.jobMods.priest.revive === 1, 'pool ' + pool);
-  const sw = g.units.filter(u => u.type === 'sword'); C.damage(g, sw[0], 1e9); C.damage(g, sw[1], 1e9);
-  check('죽음 2번 중 첫 번째만 부활 (부활 풀 1)', !sw[0].dead && sw[0].hp > 0 && sw[1].dead && g.reviveLeft === 0);
+  const pool = g.reviveLeft;
+  check('주교 3명이면 부활 횟수는 사제마다 1회씩 합쳐서 3회', pool === 3 && g.units.filter(u => u.type === 'priest').every(p => p.rv === 1), 'pool ' + pool);
+  const sw = g.units.filter(u => u.type === 'sword'); for (const x of sw) C.damage(g, x, 1e9);
+  check('죽음 4번 중 3번까지 부활 (사제 3명 × 1회)', sw.filter(x => !x.dead).length === 3 && sw[3].dead && g.reviveLeft === 0);
   const g2 = C.createGame(92); g2.gold = 1e9; g2.phase = 'round'; g2.hold = true; g2.queue = []; g2.core.hp = g2.core.max = 1e9; g2.buyCd.priest = 0; C.buy(g2, 'priest'); g2.buyCd.priest = 0; C.buy(g2, 'priest');
-  const u = C.buy(g2, 'sword').unit; g2.reviveLeft = 5; g2.cnodes = []; const ud = (() => { g2.core.cpath = 'necro'; g2.cpar = JSON.parse(JSON.stringify(C.CFG.castleTree.roots[2].par)); g2.cpar.raise.chance = 1; const e = C.spawnEnemy(g2, 'grunt', 1700, 1500); C.damage(g2, e, 1e9); return g2.units.find(x => x.undead); })();
+  const u = C.buy(g2, 'sword').unit; for (const p of g2.units) if (p.type === 'priest') p.rv = 5; g2.reviveLeft = 10; g2.cnodes = []; const ud = (() => { g2.core.cpath = 'necro'; g2.cpar = JSON.parse(JSON.stringify(C.CFG.castleTree.roots[2].par)); g2.cpar.raise.chance = 1; const e = C.spawnEnemy(g2, 'grunt', 1700, 1500); C.damage(g2, e, 1e9); return g2.units.find(x => x.undead); })();
   ud.hp = ud.max * 0.3; const uh0 = ud.hp; g2.aura = g2.aura || {}; for (let i = 0; i < 90; i++) C.tick(g2, DT); check('사제는 망자를 치유하지 않음', !ud.dead && ud.hp <= uh0 + 1e-6, Math.round(uh0) + '→' + Math.round(ud.hp));
-  C.damage(g2, ud, 1e9); check('망자는 죽어도 사제가 부활시키지 않음 (부활 횟수도 안 씀)', ud.dead && g2.reviveLeft === 5); }
+  C.damage(g2, ud, 1e9); check('망자는 죽어도 사제가 부활시키지 않음 (부활 횟수도 안 씀)', ud.dead && g2.units.filter(p => p.type === 'priest').every(p => p.rv === 5)); }
+// 60) 성 수리: 10% 회복, 쓸 때마다 비싸짐, 쿨타임
+{ const g = C.createGame(95); g.gold = 1e6; g.phase = 'round'; g.round = 10; g.core.hp = g.core.max * 0.3;
+  const c0 = C.repairCost(g), h0 = g.core.hp, r1 = C.repairCastle(g);
+  check('성 수리: 최대 체력 10% 회복 + 골드 소모', r1.ok && Math.abs(g.core.hp - h0 - g.core.max * 0.1) < 1e-6 && g.gold === 1e6 - c0, 'cost ' + c0);
+  check('성 수리: 쿨타임 중에는 불가', !C.repairCastle(g).ok && C.repairCastle(g).reason === 'cooldown');
+  check('성 수리: 누를 때마다 비용 증가', C.repairCost(g) > c0, c0 + '→' + C.repairCost(g));
+  g.repairCd = 0; const g2 = C.createGame(96); g2.round = 30; check('성 수리: 라운드가 갈수록 비용 증가', C.repairCost(g2) > c0);
+  g.core.hp = g.core.max; check('성 수리: 체력이 가득이면 불가', !C.repairCastle(g).ok);
+  g.core.hp = 1; g.gold = 0; check('성 수리: 골드 부족이면 불가', !C.repairCastle(g).ok && g.core.hp === 1); }
 // 59) 성 피해 완화: 병사 보호 + 폭파병 / 사제 치유 범위 표시는 망자 제외
 { const g = C.createGame(95); g.gold = 1e9; g.core.hp = g.core.max = 1000; const h0 = g.core.hp; const guard0 = C.coreGuard(g); C.CFG.castle.popBase = 99;
   for (let i = 0; i < 20; i++) { g.buyCd.sword = 0; C.buy(g, 'sword'); } const guard1 = C.coreGuard(g);
