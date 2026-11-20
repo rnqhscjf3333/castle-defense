@@ -10,7 +10,7 @@
 
   // 업적: val(M, C) 이 goal 이상이면 달성
   const nUnits = () => Object.keys(M.codex.units).filter(k => k !== 'undead').length, nEn = () => Object.keys(M.codex.enemies).length + Object.keys(M.codex.bosses).length;
-  let UNIT_ALL = 11, ENEMY_ALL = 27; try { const F = window.CastleCore.CFG; ENEMY_ALL = Object.keys(F.enemies).length - 1 + F.bossPool.length + 2; UNIT_ALL = window.CastleCore.UNIT_TYPES.length + 8; } catch (e) {}
+  let UNIT_ALL = 11, ENEMY_ALL = 27; try { const F = window.CastleCore.CFG; ENEMY_ALL = Object.keys(F.enemies).length - 1 + F.bossPool.length + 2 + 4; UNIT_ALL = window.CastleCore.UNIT_TYPES.length + 8; } catch (e) {}
   // 쉬운 업적부터 아주 어려운 업적까지 (모드와 무관한 기록만 센다)
   const ACH = [
     { id: 'k1', name: '첫 사냥', desc: '몬스터 100마리 처치', goal: 100, val: () => M.tot.kills },
@@ -43,6 +43,7 @@
     { id: 'r9', name: '끝을 모르는 자', desc: '120라운드 도달', goal: 120, val: () => M.best.round },
     { id: 'r10', name: '영원의 파수꾼', desc: '150라운드 도달', goal: 150, val: () => M.best.round },
     { id: 'w1', name: '마왕 토벌', desc: '마왕을 처치해 50라운드 클리어', goal: 1, val: () => M.tot.wins },
+    { id: 'w5', name: '용 사냥꾼', desc: '재앙의 용을 쓰러뜨려 게임 클리어', goal: 1, val: () => M.tot.clears || 0 },
     { id: 'w2', name: '마왕 사냥꾼', desc: '마왕 토벌 5번', goal: 5, val: () => M.tot.wins },
     { id: 'w3', name: '마왕의 천적', desc: '마왕 토벌 15번', goal: 15, val: () => M.tot.wins },
     { id: 'w4', name: '마왕 학살자', desc: '마왕 토벌 40번', goal: 40, val: () => M.tot.wins },
@@ -83,6 +84,7 @@
     const b = M.best, pop = C.popCount(S);
     b.round = Math.max(b.round, S.round); b.kills = Math.max(b.kills || 0, S.kills); b.pop = Math.max(b.pop, pop); b.castle = Math.max(b.castle, S.castle.lv);
     if ((S.endless || S.win) && !run.won) { run.won = true; M.tot.wins++; }
+    if (S.win && !run.cleared) { run.cleared = true; M.tot.clears = (M.tot.clears || 0) + 1; }
     if (S.mode in b) b[S.mode] = Math.max(b[S.mode], S.round);
     if (st.bossKills !== (run.boss || 0)) { M.tot.bossKills += st.bossKills - (run.boss || 0); run.boss = st.bossKills; }
     return check();

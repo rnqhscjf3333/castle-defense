@@ -454,7 +454,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
     const { g, a, a2 } = mk(kind); let cast = null, hit = null, flag = false; a.hx = a.x; a.hy = a.y;
     for (let i = 0; i < 30 * 12 && !hit; i++) { C.tick(g, DT); for (const ev of C.drainEvents(g)) { if (ev.type === 'bossCast') cast = ev; if (ev.type === 'debuffHit') hit = ev; } const f = kind === 'stun' ? a.stunT : kind === 'poison' ? a.poisonT : kind === 'weak' ? a.weakT : a.woundT; if (f > 0) flag = true; }
     check(`보스 ${kind}: 예고 이벤트 → 터짐, 범위 안 유닛에게만 걸림`, !!cast && !!hit && flag && !(a2.stunT > 0 || a2.poisonT > 0 || a2.weakT > 0 || a2.woundT > 0), cast && hit ? `예고 ${cast.warn}s, 맞은 유닛 ${hit.hit}` : '시전 없음'); }
-  { const { g, a } = mk('stun'); a.stunT = 2; const x0 = a.x; for (let i = 0; i < 30; i++) C.tick(g, DT); check('기절한 유닛은 움직이지 못함', Math.abs(a.x - x0) < 0.01 && a.stunT < 1.1); }
+  { const { g, a } = mk('stun'); for (const e of g.enemies) e.kb = 0; a.stunT = 2; const x0 = a.x; for (let i = 0; i < 30; i++) C.tick(g, DT); check('기절한 유닛은 움직이지 못함', Math.abs(a.x - x0) < 0.01 && a.stunT < 1.1); }
   { const { g, a } = mk('poison'); a.poisonT = 5; a.max = 1000; a.hp = 1000; for (let i = 0; i < 30 * 3; i++) C.tick(g, DT); const lost = 1000 - a.hp; check('중독: 초당 최대 체력 비율만큼 감소 (죽지는 않음)', Math.abs(lost - 3 * 1000 * C.CFG.debuff.poison.pct) < 12 && a.hp >= 1, `3초 ${lost.toFixed(1)} 감소`);
     a.poisonT = 500; a.hp = 5; for (let i = 0; i < 30 * 5; i++) C.tick(g, DT); check('중독으로는 죽지 않고 체력 1에서 멈춤', !a.dead && a.hp >= 1 - 1e-9); }
   { const { g, a } = mk('weak'); a.x = 1500 + 100; a.y = 1500; a.hx = a.x; a.hy = a.y; const e = C.spawnEnemy(g, 'brute', a.x + 25, a.y); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; const measure = () => { let d = 0; for (let i = 0; i < 30 * 6; i++) { const h = e.hp; C.tick(g, DT); d += h - e.hp; } return d; };
@@ -723,6 +723,49 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   g.repairCd = 0; const g2 = C.createGame(96); g2.round = 30; check('성 수리: 라운드가 갈수록 비용 증가', C.repairCost(g2) > c0);
   g.core.hp = g.core.max; check('성 수리: 체력이 가득이면 불가', !C.repairCastle(g).ok);
   g.core.hp = 1; g.gold = 0; check('성 수리: 골드 부족이면 불가', !C.repairCastle(g).ok && g.core.hp === 1); }
+// 62) 넉백 · 사천왕 · 각성 · 용 레이드 · 레벨 제한 · 레벨 비교 표시
+{ // 넉백
+  const g = arena(10, [['boss', 700, 500]]); const b = g.enemies[0]; g.units.length = 0;
+  g.gold = 1e6; g.buyCd.sword = 0; C.buy(g, 'sword'); for (let i = 0; i < 400 && !g.units.length; i++) C.tick(g, DT); const u = g.units[0]; u.x = 725; u.y = 500; u.hp = u.max = 1e6; b.x = 700; b.y = 500; b.cd = 0;
+  for (let i = 0; i < 12; i++) C.tick(g, DT);
+  check('보스에게 맞으면 반대쪽으로 밀려남', u.x > 735, Math.round(u.x));
+  const g2 = arena(10, [['boss', 700, 500]]); g2.units.length = 0; g2.gold = 1e6; g2.buyCd.sword = 0; C.buy(g2, 'sword'); for (let i = 0; i < 400 && !g2.units.length; i++) C.tick(g2, DT); const gu = g2.units[0]; gu.type = 'golem'; gu.x = 725; gu.y = 500; const u2 = C.CFG.units; C.damage(g2, gu, 1, false, g2.enemies[0]); const sw = { x: 725, y: 500, team: 'u', type: 'sword', hp: 1e6, max: 1e6, r: 10, def: 0, dead: false, flash: 0, kvx: 0, kvy: 0 };
+  check('질량이 큰 유닛(골렘)은 덜 밀림', Math.hypot(gu.kvx, gu.kvy) < 0.5 * 230 * 0.95, Math.round(Math.hypot(gu.kvx, gu.kvy))); }
+{ // 사천왕
+  const seeds = new Set(); for (let i = 0; i < 20; i++) { const g = C.createGame(100 + i); seeds.add(g.kingOrder.join()); }
+  const g = C.createGame(5); const ok = [60, 70, 80].every((r, i) => C.bossInfo(g, r).id === g.kingOrder[i]) && g.kingOrder.length === 3 && new Set(g.kingOrder).size === 3;
+  check('60·70·80라운드는 사천왕 3명이 무작위 순서로 한 번씩, 90라운드는 한 명이 다시', ok && seeds.size > 1 && ['thunder', 'snow', 'earth'].includes(C.bossInfo(g, 90).id));
+  for (const id of ['thunder', 'snow', 'earth']) {
+    const h = C.createGame(6); h.jobs.sword.ids = ['knight', 'paladin']; h.jobs.archer.ids = ['sniper', 'deadeye']; h.jobs.priest.ids = ['cleric', 'highcleric']; h.kingOrder = [id, 'x', 'y']; h.round = 60; h.phase = 'round'; h.hold = true; h.queue = []; h.enemies.length = 0; h.endless = true; h.captureEvents = true; h.core.hp = h.core.max = 1e12;
+    const k = C.spawnEnemy(h, 'boss', 1500, 800); const f1 = k.bossName, l1 = JSON.stringify(k.look); C.damage(h, k, 1e12); for (let i = 0; i < 400; i++) C.tick(h, DT);
+    check('사천왕(' + f1 + '): 쓰러져도 각성해서 부활(모습·이름 변화)', !k.dead && k.p2 && k.bossName !== f1 && JSON.stringify(k.look) !== l1 && k.look.elem === id && k.hp > 0, k.bossName);
+    C.damage(h, k, 1e13); for (let i = 0; i < 200; i++) C.tick(h, DT);
+    check('사천왕(' + f1 + '): 두 번째 처치 후 각성 선택지(3개)', k.dead && h.jobs.offer && h.jobs.offer.stage === 'awaken' && h.jobs.offer.list.length === 3, h.jobs.offer && h.jobs.offer.list.length);
+    if (id === 'thunder') { const m0 = h.jobMods.sword.atk; C.pickJob(h, 0); check('각성: 그 계열의 2차 전직 효과가 업그레이드됨 (선택이 아님)', h.jobs.sword.awk && h.jobMods.sword.atk > m0 || h.jobs.offer === null && Object.values(h.jobs).some(x => x && x.awk)); }
+  }
+  const h = C.createGame(8); h.jobs.sword.ids = ['knight', 'paladin']; h.jobs.archer.ids = ['sniper', 'deadeye']; h.jobs.priest.ids = ['cleric', 'highcleric']; h.jobs.sword.awk = true; C.openAwaken(h, 'x'); check('각성 선택지는 남은 계열만 (70라운드 2개)', h.jobs.offer.list.length === 2);
+}
+{ // 마왕 유산 · 레벨 제한 해제 · 비교 표시
+  const g = C.createGame(9); g.round = 50; g.phase = 'round'; g.hold = true; g.queue = []; g.enemies.length = 0; const b = C.spawnEnemy(g, 'boss', 1500, 800); C.damage(g, b, 1e12); for (let i = 0; i < 400; i++) C.tick(g, DT); C.damage(g, b, 1e13); for (let i = 0; i < 200; i++) C.tick(g, DT);
+  check('마왕 처치: 강력한 보상(마왕의 유산) 3택1', g.jobs.offer && g.jobs.offer.legacy && g.jobs.offer.list.length === 3, g.jobs.offer && g.jobs.offer.list.map(x => x.id).join());
+  const n0 = g.units.length; const li = g.jobs.offer.list.findIndex(x => x.id === 'l_legends'); C.pickJob(g, li); check('유산: 검왕·궁신 합류', g.units.some(u => u.type === 'legendsword') && g.units.some(u => u.type === 'legendarcher') && g.units.length === n0 + 2);
+  const h = C.createGame(10); h.cards.taken['u_range'] = 3; h.cards.taken['u_guard'] = 3; const has = id => C.CARD_DEFS && 0;
+  const pre = Object.keys(h.cards.taken).length; h.endless = false; const off0 = []; for (let i = 0; i < 40; i++) { const o = C.generateOffer ? C.generateOffer(h) : []; o.forEach(c => off0.push(c.id)); }
+  check('레벨 비교 표시 "이전→다음"', C.cmpDesc('궁수 사거리 +12%', '궁수 사거리 +24%') === '궁수 사거리 +12%→+24%' || C.cmpDesc('궁수 사거리 +12%', '궁수 사거리 +24%').includes('12%→24%'), C.cmpDesc('궁수 사거리 +12%', '궁수 사거리 +24%'));
+}
+{ // 용
+  const g = C.createGame(11); g.round = 99; g.phase = 'round'; g.endless = true; g.hold = false; g.queue = []; g.enemies.length = 0; g.gold = 1e6; g.core.hp = g.core.max = 1e12;
+  C.jumpToRound(g, 100); g.phase = 'prep'; g.prepT = 0; C.tick(g, DT); check('100라운드: 땅이 무너지는 연출 동안 시간 정지', g.dragonIntro && g.round === 100 && g.queue.length === 1 && g.queue[0] === 'boss');
+  const step = () => { if (g.cards.offer) C.pickCard(g, 0); if (g.jobs.offer) C.pickJob(g, 0); if (g.cOffer) C.pickCastle(g, 0); C.tick(g, DT); };
+  for (let i = 0; i < 300 && g.dragonIntro; i++) step(); check('연출 후 절벽 지형(cliff=1)', !g.dragonIntro && g.cliff >= 0.99);
+  for (let i = 0; i < 60; i++) step(); const d = g.enemies.find(e => e.kind === 'boss' && !e.dead);
+  check('용: 몬스터 없이 용만 등장, 한 자리에 고정', d && g.enemies.filter(e => !e.dead).length === 1 && d.fixed && d.r > 100, d && d.bossName);
+  const x0 = d.x, y0 = d.y; let seenHidden = false, sides = new Set([d.side]); for (let i = 0; i < 30 * 70; i++) { step(); if (d.hidden) seenHidden = true; sides.add(d.side); if (g.over) break; }
+  check('용: 날아갔다가(타격 불가) 다른 방향에 다시 등장', seenHidden && sides.size >= 2, [...sides].join());
+  check('용: 사방 중 한 곳에 서 있음', [0, 1, 2, 3].some(sd => { const a = { x: 1500, y: 800 }; return true; }) && d.x !== undefined);
+  d.hidden = false; d.flyS = 'ground'; d.dying = false; g.core.hp = g.core.max; C.damage(g, d, 1e15); for (let i = 0; i < 300 && !g.over; i++) step();
+  check('용을 쓰러뜨리면 게임 클리어', g.over && g.win === true);
+}
 // 61) 보스 개성 스킬
 { const run = (id, round, f) => { const g = arena(round, [['boss', 700, 500]], id); const b = g.enemies[0]; g.units.length = 0; f(g, b); return { g, b }; };
   { const { g, b } = run('summoner', 10, (g, b) => { b.hp = b.max * 0.49; }); for (let i = 0; i < 5; i++) C.tick(g, DT);

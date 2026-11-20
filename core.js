@@ -11,6 +11,7 @@
 
   // ───────────── 설정값 (초기값: 밸런스 시뮬레이터로 조정 예정) ─────────────
   const W = 3000, H = 3000, CX = W / 2, CY = H / 2;
+  const FINAL_ROUND = 100;  // 용과 싸우는 진짜 마지막 라운드 (용을 쓰러뜨리면 게임 클리어)
   const MAX_ROUND = 50;     // 마왕이 나오는 마지막 라운드
   const ACT1_END = 30;      // 1막의 마지막 라운드 (이 라운드의 보스를 처치하면 2막이 열린다)
   const ROUND_TIME = 40;   // 한 라운드 최대 시간(초). 적이 남아도 다음 라운드가 시작된다.
@@ -101,6 +102,54 @@
     finalBoss: { id: 'overlord', line: '모든 것은 이 어둠 속에서 끝난다.', name: '마왕', r: 38, look: { body: '#2a2438', head: '#ebe6f4', weapon: 'sword', crown: true, style: 'overlord' }, abil: { summon: { cd: 7, n: 4, kind: 'bomber' }, artillery: { cd: 5, dmg: 130, radius: 115, count: 2, flight: 1.4 }, shield: { cd: 12, dur: 3.5, red: 0.7 }, rage: { at: 0.4, speed: 1.4, rate: 1.5, dmg: 1.5 }, dash: { cd: 9, dur: 1.2, mul: 2.5 }, debuff: [{ kind: 'stun', cd: 10, r: 120 }, { kind: 'poison', cd: 11, r: 150 }, { kind: 'weak', cd: 13, r: 170 }, { kind: 'wound', cd: 14, r: 170 }] } },
     // 마왕(50라운드): 1·2형태. 체력·공격을 너프하는 대신 한 번 쓰러져도 각성해서 부활한다
     finalNerf: { hp: 0.6, dmg: 0.78, hp2: 0.6, cdMul: 0.85, rageAt: 0.5, reviveT: 3.4, r: 44, name: '각성한 마왕', look: { body: '#7a1424', head: '#ecd2c4', weapon: 'sword', crown: true, p2: true, style: 'overlord' } },
+    // 50라운드 클리어 뒤에는 강화 카드의 레벨 제한이 이만큼 풀린다 (아래 목록의 카드만)
+    capBonus: 2, capLift: ['u_charge', 'u_pierce', 'u_crit', 'u_range', 'u_aoeheal', 'u_hbuff', 'a_heal', 'a_atk', 'a_def', 'a_spd', 'a_rad', 'f_repair', 'f_thorn'],
+    // 2차 전직 각성 (사천왕 처치: 60·70·80라운드에 한 계열씩 업그레이드). 2차 전직 효과에 아래 수치가 한 번 더 더해진다.
+    awaken: {
+      paladin:     { name: '각성 팔라딘',   desc: '체력 +50%·방어 +6%·초당 회복 +3% 추가', mods: { hp: 0.5, def: 0.06, regen: 0.03 } },
+      warlord:     { name: '각성 워로드',   desc: '체력 +40%·공격력 +30%·반사 +30% 추가', mods: { hp: 0.4, atk: 0.3, reflect: 0.3 } },
+      blademaster: { name: '각성 검성',     desc: '공격력 +60%·광역 베기 +30%·연속 공격 +10% 추가', mods: { atk: 0.6, cleave: 0.3, dbl: 0.1 } },
+      berserker:   { name: '각성 버서커',   desc: '공격력 +80%·광역 베기 +30%·광폭화 +80% 추가', mods: { atk: 0.8, cleave: 0.3, berserk: 0.8 } },
+      deadeye:     { name: '각성 명사수',   desc: '공격력 +50%·관통 +1 추가', mods: { atk: 0.5, pierce: 1 } },
+      gunner:      { name: '각성 포격수',   desc: '공격력 +35%·폭발 피해 +40% 추가', mods: { atk: 0.35, splash: 0.4 } },
+      stormarcher: { name: '각성 폭풍사수', desc: '공격 속도 +40%·치명타 확률 +15% 추가', mods: { rate: 0.4, crit: 0.15 } },
+      hunter:      { name: '각성 사냥꾼',   desc: '공격력 +30%·이동 속도 +20%·표식 피해 +30% 추가', mods: { atk: 0.3, speed: 0.2, mark: 0.3 } },
+      highcleric:  { name: '각성 대성직자', desc: '치유량 +30%·치유 속도 +15% 추가', mods: { heal: 0.3, healRate: 0.15 } },
+      warden:      { name: '각성 수호사제', desc: '치유량 +20%·보호막 +80% 추가', mods: { heal: 0.2, ward: 0.8 } },
+      archbishop:  { name: '각성 대주교',   desc: '치유량 +12%·축복 한 단계 더 (공격력 +8%·받는 피해 -5%) 추가', mods: { heal: 0.12, bless: 1 } },
+      templar:     { name: '각성 전투사제', desc: '체력 +30%·치유량(성스러운 구체 피해) +40% 추가', mods: { hp: 0.3, heal: 0.4 } },
+    },
+    // 50라운드 마왕 처치 보상: 사천왕에 맞설 수 있도록 아주 강력한 보상 중 하나
+    legacy: [
+      { id: 'l_army',    name: '마왕의 유산 · 전군 각성', desc: '검사·궁수·사제 모두 체력·공격력 강화 +3단계', up: 3 },
+      { id: 'l_legends', name: '마왕의 유산 · 전설의 동료', desc: '전설의 검왕과 궁신이 함께 싸웁니다 (둘 다 합류)', units: ['legendsword', 'legendarcher'] },
+      { id: 'l_fort',    name: '마왕의 유산 · 성의 부활', desc: '성이 즉시 3레벨 올라가고(최대까지) 체력 완전 회복, 성 최대 체력 +30%·공격력 +50% 영구 강화', castle: 3, coreUp: true },
+    ],
+    // 넉백: 보스·강한 적에게 맞으면 공격이 온 반대쪽으로 밀려난다 (질량이 큰 유닛은 덜 밀림)
+    kb: { decay: 5.2, max: 950, stagger: 0.35, basic: { boss: 230, ogre: 200, brute: 150, boar: 150, direwolf: 90, elite: 110 }, mass: { golem: 0.35, legendsword: 0.5, hero: 0.8, legendarcher: 0.8, marksman: 0.9 } },
+    // 사천왕 (60·70·80라운드에 무작위 순서로 한 명씩, 90라운드는 한 명이 다시 나온다). 마왕처럼 쓰러지면 속성에 맞는 모습으로 각성해 부활한다.
+    kingHp: 2.0,           // 사천왕 한 형태의 체력 = 무한 모드 보스 기본 체력 × 이 값
+    kings: {
+      thunder: { id: 'thunder', elem: 'thunder', line: '번개가 너희의 심장을 꿰뚫으리라.', name: '뇌왕', r: 36,
+        look: { body: '#3a3320', head: '#f1ead2', weapon: 'sword', crown: true, style: 'overlord', elem: 'thunder' },
+        abil: { bolt: { cd: 6, n: 4, r: 90, warn: 0.9, mul: 1.7, stun: 0.8, kb: 300 }, summon: { cd: 10, n: 3, kind: 'wolf' }, shield: { cd: 15, dur: 3, red: 0.6 }, debuff: [{ kind: 'weak', cd: 13, r: 160 }] },
+        awaken: { name: '각성한 뇌왕', r: 42, reviveT: 3.4, look: { body: '#f3d21a', head: '#fff6c8', weapon: 'sword', crown: true, style: 'overlord', elem: 'thunder', p2: true } },
+        abil2: { bolt: { cd: 4, n: 8, r: 100, warn: 0.8, mul: 2.0, stun: 1.0, kb: 380 }, dash: { cd: 8, dur: 1.0, mul: 3.2, shock: { r: 190, kb: 460, mul: 1.6 } }, rage: { at: 0.4, speed: 1.4, rate: 1.4, dmg: 1.3 }, debuff: [{ kind: 'stun', cd: 11, r: 130 }] } },
+      snow: { id: 'snow', elem: 'snow', line: '모든 것이 얼어붙는 고요함을 선물하마.', name: '설왕', r: 36,
+        look: { body: '#2c4256', head: '#eaf6ff', weapon: 'sword', crown: true, style: 'overlord', elem: 'snow' },
+        abil: { frost: { cd: 8, count: 2, r: 150, warn: 1.2, dur: 5, mul: 0.5 }, artillery: { cd: 6, dmg: 95, radius: 95, count: 2, flight: 1.5 }, summon: { cd: 11, n: 3, kind: 'ghost' }, shield: { cd: 15, dur: 3, red: 0.6 }, debuff: [{ kind: 'wound', cd: 14, r: 165 }] },
+        awaken: { name: '각성한 설왕', r: 42, reviveT: 3.4, look: { body: '#8fd8ff', head: '#ffffff', weapon: 'sword', crown: true, style: 'overlord', elem: 'snow', p2: true } },
+        abil2: { frost: { cd: 6, count: 3, r: 185, warn: 1.1, dur: 6, mul: 0.7 }, blizzard: { cd: 15, r: 560, warn: 1.8, dur: 5, kb: 260, mul: 0.8 }, artillery: { cd: 5, dmg: 110, radius: 100, count: 3, flight: 1.4 }, rage: { at: 0.4, speed: 1.3, rate: 1.4, dmg: 1.3 }, debuff: [{ kind: 'stun', cd: 12, r: 130 }, { kind: 'weak', cd: 12, r: 170 }] } },
+      earth: { id: 'earth', elem: 'earth', line: '이 대지가 너희의 무덤이 될 것이다.', name: '토왕', r: 40,
+        look: { body: '#4a3622', head: '#e9d8bd', weapon: 'sword', crown: true, style: 'overlord', elem: 'earth' },
+        abil: { dash: { cd: 7, dur: 1.2, mul: 3.2, shock: { r: 200, kb: 520, mul: 1.8 } }, stomp: { cd: 10, r: 230, warn: 0.8, kb: 460, mul: 1.5 }, shield: { cd: 14, dur: 4, red: 0.7 }, summon: { cd: 12, n: 3, kind: 'shield' }, debuff: [{ kind: 'stun', cd: 12, r: 120 }] },
+        awaken: { name: '각성한 토왕', r: 46, reviveT: 3.4, look: { body: '#a0662e', head: '#f6e6c8', weapon: 'sword', crown: true, style: 'overlord', elem: 'earth', p2: true } },
+        abil2: { dash: { cd: 5, dur: 1.2, mul: 3.4, shock: { r: 260, kb: 640, mul: 2.4 } }, stomp: { cd: 7, r: 300, warn: 0.7, kb: 560, mul: 2.0 }, quake: { cd: 9, n: 7, r: 100, warn: 1.0, mul: 2.2, kb: 420 }, rage: { at: 0.4, speed: 1.3, rate: 1.4, dmg: 1.4 }, debuff: [{ kind: 'wound', cd: 12, r: 160 }] } },
+    },
+    // 100라운드: 거대한 용 (몬스터 없이 용과의 1:1 레이드). 성 둘레를 빼고 땅이 무너져 절벽이 된다. 용은 네 방향 중 한 곳에 고정되어 있다가 날아올랐다가 다른 곳에 내려앉는다.
+    dragon: { id: 'dragon', line: '대지는 사라지고… 오직 불길만이 남으리라.', name: '재앙의 용', r: 118, dragon: true, hpMul: 5, anchorX: 430, anchorY: 330,
+      look: { style: 'dragon', body: '#a3262a', head: '#d9482c' },
+      abil: { artillery: { cd: 5, dmg: 85, radius: 100, count: 3, flight: 1.5 }, breath: { cd: 11, len: 560, half: 0.3, warn: 1.4, mul: 3, kb: 380 }, tail: { cd: 7, r: 215, warn: 0.7, mul: 2.2, kb: 720 }, gust: { cd: 16, r: 760, warn: 1.0, kb: 540 }, meteor: { cd: 9, n: 8, r: 85, warn: 1.0, mul: 2.0, at: 0.5, kb: 320 }, fly: { first: 24, every: 32, up: 1.2, away: 6, land: 0.6 }, rage: { at: 0.3, speed: 1, rate: 1.3, dmg: 1.4 } } },
     bossDeathT: 2.8,       // 보스 사망 연출 길이(초): 이 동안 시간이 멈추고 카메라가 보스를 비춘다
     // 보스 보상: 전직이 모두 끝난 뒤(35라운드~)에는 보스를 처치하면 이 중 3가지가 제시된다
     rewards: [
@@ -427,21 +476,29 @@
   const DEF = Object.fromEntries(CARD_DEFS.map(d => [d.id, d]));
   const AURA_IDS = ['a_heal', 'a_atk', 'a_def', 'a_spd'];
 
-  function genericText(def, type, lv) {
+  function genericText(def, type, lv, cap) {
     const p = Math.round(CFG.upPct[def.generic] * 100 * lv * (type === 'priest' ? 2 : 1));
     const priest = type === 'priest';
     const stat = def.generic === 'atk' && priest ? '치유량' : def.generic === 'rate' && priest ? '치유 속도' : STAT_NAME[def.generic];
-    return { name: TN[type] + ' · ' + stat, desc: TN[type] + ' ' + stat + ' +' + p + '% (Lv ' + lv + '/' + def.max + ')' };
+    return { name: TN[type] + ' · ' + stat, desc: TN[type] + ' ' + stat + ' +' + p + '% (Lv ' + lv + '/' + (cap || def.max) + ')' };
   }
   function makeCard(S, def, type) {
     const key = type && def.generic ? def.id + ':' + type : def.id;
     const lv = (S.cards.taken[key] || 0) + 1;
     let name, desc;
-    if (def.generic) ({ name, desc } = genericText(def, type, lv));
-    else { name = def.name; desc = def.desc(lv) + (def.max > 1 && def.max < 99 ? ' (Lv ' + lv + '/' + def.max + ')' : ''); }
+    const cap = capOf(S, def);
+    if (def.generic) { ({ name, desc } = genericText(def, type, lv, cap)); if (lv > 1) desc = cmpDesc(genericText(def, type, lv - 1, cap).desc.replace(/ \(Lv.*$/, ''), desc.replace(/ \(Lv.*$/, '')) + ' (Lv ' + lv + '/' + cap + ')'; }
+    else { name = def.name; let d0 = def.desc(lv); if (lv > 1) { try { d0 = cmpDesc(def.desc(lv - 1), d0); } catch (e) {} } desc = d0 + (cap > 1 && cap < 99 ? ' (Lv ' + lv + '/' + cap + ')' : ''); }
     return { key, id: def.id, cat: def.cat, rar: def.rar, type: type || def.type || null, name, desc, lv };
   }
   const taken = (S, id) => S.cards.taken[id] || 0;
+  // 레벨 제한: 50라운드 클리어 뒤(무한 모드)에는 일부 강화의 제한이 풀린다
+  const capOf = (S, def) => def.max + (S.endless && (def.generic || CFG.capLift.includes(def.id)) ? CFG.capBonus : 0);
+  // 레벨업 비교 표시: 이전 레벨 설명과 다음 레벨 설명의 숫자를 비교해 "이전 → 다음"으로 보여 준다
+  function cmpDesc(prev, next) {
+    const re = /\d+(?:\.\d+)?%?/g, a = prev.match(re) || [], b = next.match(re) || []; if (!a.length || a.length !== b.length) return next;
+    let i = 0; return next.replace(re, t => { const o = a[i++]; return o !== t ? o + '→' + t : t; });
+  }
 
   // 지금 나올 수 있는 카드 후보
   function eligible(S) {
@@ -450,8 +507,8 @@
     for (const def of CARD_DEFS) {
       if (def.rar === 'legend' || def.id === 'c_atk' || def.id === 'c_rate' || def.id === 'c_range' || def.id === 'f_hp') continue; // 성 능력치는 이제 성 업그레이드로 올린다 // 전설 카드는 아래 generateOffer에서 따로 (아주 낮은 확률)
       if (def.generic) {
-        for (const t of UNIT_TYPES) if (taken(S, def.id + ':' + t) < def.max) out.push({ def, type: t, w: owned.includes(t) ? 3 : 1 });
-      } else if (taken(S, def.id) < def.max) {
+        for (const t of UNIT_TYPES) if (taken(S, def.id + ':' + t) < capOf(S, def)) out.push({ def, type: t, w: owned.includes(t) ? 3 : 1 });
+      } else if (taken(S, def.id) < capOf(S, def)) {
         if (def.needsAura && !AURA_IDS.some(a => taken(S, a) > 0)) continue;
         // 유닛 특성은 해당 유닛을 이미 가진 경우에 더 자주 나온다
         out.push({ def, type: def.type || null, w: def.type && owned.includes(def.type) ? 3 : 1 });
@@ -517,6 +574,15 @@
     const ids = S.jobs[type].ids, j = CFG.jobs[type], defs = ids.length === 0 ? j.t1 : ids.length === 1 ? (j.t2[ids[0]] || []) : [];
     return defs.map(d => ({ type, className: CFG.units[type].name, tier: ids.length + 1, id: d.id, name: d.name, desc: d.desc }));
   }
+  // 사천왕(60·70·80라운드) 처치: 아직 각성하지 않은 계열 중 하나를 골라 2차 전직을 각성시킨다 (선택지가 줄어든다)
+  function openAwaken(S, bossName) {
+    const list = UNIT_TYPES.filter(t => S.jobs[t].ids.length >= 2 && !S.jobs[t].awk && CFG.awaken[S.jobs[t].ids[1]]).map(t => { const id = S.jobs[t].ids[1], a = CFG.awaken[id]; return { type: t, className: CFG.units[t].name, tier: 3, id: 'awk_' + id, jobId: id, name: a.name, desc: a.desc, awaken: true }; });
+    if (!list.length) return false;
+    S.jobs.offer = { boss: bossName, stage: 'awaken', list }; return true;
+  }
+  function openLegacy(S, bossName) {
+    S.jobs.offer = { boss: bossName, reward: true, legacy: true, list: CFG.legacy.map(r => ({ type: 'reward', reward: true, className: '마왕의 유산', tier: 0, id: r.id, name: r.name, desc: r.desc })) };
+  }
   function openJobs(S, bossName) {
     const tier = promoTier(S), lines = tier ? UNIT_TYPES.filter(t => S.jobs[t].ids.length === tier - 1 && classOptions(S, t).length) : [];
     if (lines.length) {
@@ -537,11 +603,17 @@
     }
     logEv(S, ['j', S.round, o.className + ' · ' + o.name, S.jobs.offer.list.map(x => x.className + ' · ' + x.name)]);
     if (o.reward) { // 보상: 용병 소환 / 전군 강화 / 성 보강
-      const d = CFG.rewards.find(r => r.id === o.id); S.jobs.offer = null;
+      const d = CFG.rewards.concat(CFG.legacy).find(r => r.id === o.id); S.jobs.offer = null;
       if (d.units) for (const t of d.units) { const u = addUnit(S, t); u.x = CX + (S.rng() - 0.5) * 160; u.y = CY + 100 + S.rng() * 60; }
       if (d.up) { S.bossUp.hp += d.up; S.bossUp.atk += d.up; for (const u of S.units) if (!u.dead) refreshUnit(S, u); }
       if (d.castle) { for (let i = 0; i < d.castle; i++) upgradeCastle(S, true); S.core.hp = S.core.max; }
+      if (d.coreUp) { S.legacyFort = (S.legacyFort || 0) + 1; recompute(S); S.core.hp = S.core.max; }
       emit(S, { type: 'reward', name: o.name }); return true;
+    }
+    if (o.awaken) { // 각성: 선택이 아니라 업그레이드 — 2차 전직 효과가 한 번 더 더해진다
+      S.jobs[o.type].awk = true; S.jobs.offer = null; const before2 = S.jobMods[o.type].revive; recompute(S);
+      for (const u of S.units) if (lineOf(u.type) === o.type && !u.dead) { refreshUnit(S, u); if (o.type === 'priest' && u.type === 'priest') u.rv += S.jobMods.priest.revive - before2; } rvSync(S);
+      emit(S, { type: 'promote', unitType: o.type, className: o.className, name: o.name, tier: 3, awaken: true }); return true;
     }
     const before = S.jobMods[o.type].revive;
     S.jobs[o.type].ids.push(o.id); S.jobs.offer = null;
@@ -560,7 +632,7 @@
   function endCinematic(S) { if (S.cinematic) { const k = S.cinematic.kind; S.cinematic = null; emit(S, { type: k === 'endless' ? 'endlessGo' : 'act2start' }); } }
   // (테스트/디버그) r라운드가 다음 틱에 시작되도록 점프한다
   function jumpToRound(S, r) {
-    S.round = r - 1; S.phase = 'round'; S.roundT = ROUND_TIME; S.pools.length = 0; S.rain.length = 0; S.queue = []; S.enemies.length = 0; S.shots.length = 0; S.zones.length = 0;
+    S.round = r - 1; S.phase = 'round'; S.roundT = ROUND_TIME; S.pools.length = 0; S.rain.length = 0; S.strikes.length = 0; S.cliff = 0; S.dragonIntro = null; S.queue = []; S.enemies.length = 0; S.shots.length = 0; S.zones.length = 0;
     if (r > ACT1_END) S.act = 2;
     return S;
   }
@@ -629,6 +701,7 @@
     c.atk = b.atk * (1 + v.coreAtk * L('c_atk') + K.atk * kl);
     c.rate = b.rate * (1 + v.coreRate * L('c_rate') + K.rate * kl);
     c.range = b.range + v.coreRange * L('c_range') + K.range * kl;
+    { const lf = S.legacyFort || 0; if (lf) { c.max *= 1 + 0.3 * lf; c.atk *= 1 + 0.5 * lf; } } // 마왕의 유산 · 성의 부활
     const boost = 1 + v.auraBoost * L('a_rad');
     S.aura = { heal: v.auraHeal * L('a_heal') * boost, atk: v.auraAtk * L('a_atk') * boost, def: Math.min(v.auraDefCap, v.auraDef * L('a_def') * boost), spd: v.auraSpd * L('a_spd') * boost, r: CFG.auraBase,
                on: AURA_IDS.some(a => L(a) > 0) };
@@ -647,6 +720,7 @@
   function jobModsOf(S, type) {
     const m = zeroMods(), ids = S.jobs[type] ? S.jobs[type].ids : [];
     for (const id of ids) { const d = jobDef(type, id); if (!d) continue; for (const k in d.mods) m[k] += d.mods[k]; }
+    if (S.jobs[type] && S.jobs[type].awk && ids[1] && CFG.awaken[ids[1]]) { const a = CFG.awaken[ids[1]].mods; for (const k in a) m[k] += a[k]; } // 2차 전직 각성
     return m;
   }
   const lineOf = type => (CFG.units[type] && CFG.units[type].line) || type; // 어느 직업 계열의 강화를 받는가
@@ -693,7 +767,7 @@
     const S = {
       mode: mode === 'free' ? 'free' : 'normal', // free: 유닛이 성 주변에 머물지 않고 범위 안의 적을 어디까지든 쫓아간다
       seed: seed >>> 0, rng: mulberry32(seed >>> 0),
-      t: 0, phase: 'prep', prepT: PREP_TIME, round: 0, roundT: 0, clearT: 0, zones: [], pools: [], rain: [],
+      t: 0, phase: 'prep', prepT: PREP_TIME, round: 0, roundT: 0, clearT: 0, zones: [], pools: [], rain: [], strikes: [], cliff: 0, dragonIntro: null,
       queue: [], spawnT: 0, spawnGap: 1, spawnPts: 2, extraPts: 0, fallen: [], endless: false, castle: { lv: 1 },
       gold: CFG.startGold, buyCount: 0,
       stats: { earned: CFG.startGold, spent: 0, killBy: {}, made: {}, seenE: {}, seenB: {}, peakPop: 0, bossKills: 0 }, // 기록·도감·업적·부정 확인용 집계
@@ -709,11 +783,12 @@
       up: { sword: { hp: 0, atk: 0, rate: 0, speed: 0 }, archer: { hp: 0, atk: 0, rate: 0, speed: 0 }, priest: { hp: 0, atk: 0, rate: 0, speed: 0 } },
       aura: null, perks: null, bombCd: 8, reviveLeft: 0, jobMods: null, biasNow: 0.08, coreDmgBy: {},
       cnodes: [], cOffer: null, cpar: null, log: [], act: 1, cinematic: null, bossDeath: null, // act 2: 30라운드 보스 처치 후. cinematic: 연출이 진행되는 동안 시간이 멈춘다
-      jobs: { sword: { ids: [] }, archer: { ids: [] }, priest: { ids: [] }, offer: null },
+      jobs: { sword: { ids: [], awk: false }, archer: { ids: [], awk: false }, priest: { ids: [], awk: false }, offer: null },
     };
     // 일반 보스 5종의 등장 순서 (게임마다 무작위, 한 번씩)
     const shuffled = () => { const o = CFG.bossPool.map((_, i) => i); for (let i = o.length - 1; i > 0; i--) { const j = Math.floor(S.rng() * (i + 1)); [o[i], o[j]] = [o[j], o[i]]; } return o; };
     S.bossOrder = shuffled(); S.bossOrder2 = shuffled(); // 1막(5~25라운드)과 2막(35~45라운드)의 보스 순서
+    { const kr = mulberry32((S.seed | 0) + 7777), ks = ['thunder', 'snow', 'earth']; for (let i = 2; i > 0; i--) { const j = Math.floor(kr() * (i + 1)); [ks[i], ks[j]] = [ks[j], ks[i]]; } S.kingOrder = ks; S.kingRep = Math.floor(kr() * 3); } // 사천왕 등장 순서 (60·70·80라운드, 90라운드는 한 명이 다시)
     recompute(S);
     return S;
   }
@@ -815,11 +890,14 @@
   function bossDefFor(S, r) {
     if (r === MAX_ROUND) return CFG.finalBoss;
     if (r === ACT1_END) return CFG.act1Boss;
+    if (r === FINAL_ROUND) return CFG.dragon;
+    if (r > MAX_ROUND && r >= 60 && r <= 90 && r % 10 === 0) return CFG.kings[r === 90 ? S.kingOrder[S.kingRep] : S.kingOrder[(r - 60) / 10]];
     if (r > MAX_ROUND) return r % 5 === 0 ? CFG.bossPool[(r / 5) % CFG.bossPool.length] : null; // 무한 모드: 5라운드마다 보스 (마왕은 50라운드에만 나온다)
     if (r % 5 !== 0 || r < 5 || r > 45) return null;
     return r < ACT1_END ? CFG.bossPool[S.bossOrder[r / 5 - 1]] : CFG.bossPool[S.bossOrder2[(r - 35) / 5]];
   }
-  const bossBaseHp = r => CFG.bossHp[r] || (r > MAX_ROUND ? CFG.endless.bossBase * Math.pow(endF(r), CFG.endless.bossExp) * (r % 10 === 0 ? CFG.endless.marMul : 1) : CFG.bossHp[MAX_ROUND]);
+  const endBase = r => CFG.endless.bossBase * Math.pow(endF(r), CFG.endless.bossExp);
+  const bossBaseHp = r => r === FINAL_ROUND ? endBase(r) * CFG.dragon.hpMul : (r > MAX_ROUND && r <= 90 && r % 10 === 0) ? endBase(r) * CFG.kingHp : CFG.bossHp[r] || (r > MAX_ROUND ? CFG.endless.bossBase * Math.pow(endF(r), CFG.endless.bossExp) * (r % 10 === 0 ? CFG.endless.marMul : 1) : CFG.bossHp[MAX_ROUND]);
   const bossInfo = (S, r) => { const d = bossDefFor(S, r); return d ? Object.assign({ hp: bossBaseHp(r) }, d) : null; };
   // 풀 보스의 패턴 수치를 라운드에 맞춰 조정 (15라운드 = 기준). 일찍 나오면 약하게, 늦게 나오면 강하게.
   const SUMMON_UP = { grunt: 'captain', shield: 'ironshield', archer: 'crossbow', bomber: 'sapper', shaman: 'warlock' }; // 소환 졸개의 강화형
@@ -882,10 +960,12 @@
     }
     const boss = bossDefFor(S, r);
     if (boss) q.unshift('boss'); // 보스 라운드에는 시작과 동시에 보스가 나온다
+    if (r === FINAL_ROUND) { q.length = 0; q.push('boss'); S.dragonIntro = { t: 0, dur: 8 }; S.zones.length = 0; S.strikes.length = 0; emit(S, { type: 'dragonIntro' }); } // 마지막 라운드: 몬스터 없이 용과의 1:1 레이드
     S.queue = q; S.spawnGap = SPAWN_TIME / q.length; S.spawnT = 0;
     let text = '라운드 ' + r;
     if (r === 10) text += ' · 스폰 지점 증가';
     if (r === 20) text += ' · 대혼란';
+    if (r === FINAL_ROUND) text = '최종 라운드';
     if (r === MAX_ROUND + 1) { text = '🩸 무한 모드 · 하늘이 붉게 물든다'; emit(S, { type: 'notice', text: '마왕을 쓰러뜨렸다! 이제부터 끝없이 강해지는 적을 버텨라' }); }
     else if (r > MAX_ROUND) text += ' · 무한';
     emit(S, boss ? { type: 'banner', text: '⚠ 보스 라운드 · ' + boss.name, boss: true } : { type: 'banner', text });
@@ -893,6 +973,10 @@
     if (next) emit(S, { type: 'notice', text: '다음 라운드 보스: ' + next.name });
     if (r >= 2) openCards(S, (r - 1) % 5 === 0); // 라운드를 넘길 때마다 업그레이드 선택 (보스 클리어 직후엔 희귀 이상 보장)
   }
+  const isKing = bd => !!(bd && CFG.kings[bd.id] === bd);
+  // 용이 서 있을 수 있는 네 자리 (성 기준 상·하·좌·우)
+  function dragonAnchor(side) { const D = CFG.dragon, dx = [0, 0, -D.anchorX, D.anchorX][side], dy = [-D.anchorY, D.anchorY, 0, 0][side]; return { x: CX + dx, y: CY + dy }; }
+  function placeDragon(e) { const a = dragonAnchor(e.side); e.x = a.x; e.y = a.y; }
   // 적 한 마리 만들기. x,y를 주지 않으면 스폰 지점에서 나온다.
   function spawnEnemy(S, kind, x, y) {
     const cfg = CFG.enemies[kind], r = S.round;
@@ -910,17 +994,20 @@
       speed: cfg.speed * enemySpeedMul(r), r: (bd && bd.r) || cfg.r, gold: cfg.gold, aggro: cfg.aggro,
       cd: 0, age: 0, flash: 0, swing: 0, dead: false,
       ranged: !!cfg.ranged, blast: cfg.blast || 0, healRange: cfg.healRange || 0, healPct: cfg.healPct || 0, healRate: cfg.healRate || 0, keep: cfg.keep || 0,
-      speedMul: 1, rateMul: 1, dmgMul: 1, shieldT: 0, shieldRed: 0, dashT: 0,
+      speedMul: 1, rateMul: 1, dmgMul: 1, shieldT: 0, shieldRed: 0, dashT: 0, kvx: 0, kvy: 0, kb: bd ? (bd.dragon ? 0 : CFG.kb.basic.boss) : (CFG.kb.basic[kind] || 0),
       air: !!cfg.air, rres: cfg.rres || 1, mres: cfg.mres || 1, rush: cfg.rush || 0, poison: cfg.poison || 0,
     };
     if (elite) { // 엘리트: 체력·공격·크기·보상 상향
+      e.kb = Math.max(e.kb, CFG.kb.basic.elite);
       e.elite = true; e.max = e.hp = Math.round(e.hp * E.hp); e.dmg *= E.dmg; e.r = Math.round(e.r * E.size * 10) / 10; e.gold = Math.round(e.gold * E.gold); e.speed *= E.speed;
       emit(S, { type: 'elite', x, y, kind });
     }
     if (bd) {
-      e.bossName = bd.name; e.look = bd.look; if (bd.ranged) { e.ranged = true; e.range = bd.ranged.range; } e.abil = (bd === CFG.finalBoss || bd === CFG.act1Boss) ? bd.abil : scaleAbil(bd.abil, r); e.t = {};
+      e.bossName = bd.name; e.look = bd.look; if (bd.ranged) { e.ranged = true; e.range = bd.ranged.range; } e.abil = (bd === CFG.finalBoss || bd === CFG.act1Boss || isKing(bd) || bd.dragon) ? bd.abil : scaleAbil(bd.abil, r); e.t = {};
       for (const k in e.abil) if (!Array.isArray(e.abil[k])) e.t[k] = (e.abil[k].cd || 0) * 0.6; // 첫 패턴은 조금 일찍
       if (bd === CFG.finalBoss && r === MAX_ROUND) { const N = CFG.finalNerf; e.max = e.hp = Math.round(e.max * N.hp); e.max2 = Math.round(e.max / N.hp * N.hp2); e.dmg *= N.dmg; e.canRevive = true; }
+      if (isKing(bd)) { e.king = bd; e.canRevive = true; e.max = e.hp = Math.round(e.max * 0.55); e.max2 = Math.round(e.max * 1.15); }
+      if (bd.dragon) { e.fixed = true; e.side = Math.floor(S.rng() * 4); placeDragon(e); e.flyS = 'ground'; e.lift = 0; e.t.fly = bd.abil.fly.first; }
       S.stats.seenB[bd.id] = 1;
       emit(S, { type: 'bossSpawn', name: bd.name, id: bd.id, line: bd.line, look: bd.look, r: e.r });
     }
@@ -936,11 +1023,11 @@
   // 보스 체력이 0이 되면: 남은 졸개가 모두 쓰러지고, 시간이 멈춘 채 보스의 사망 모션이 흐른 뒤 라운드가 끝난다.
   // 50라운드 마왕은 여기서 한 번 더 부활한다 (체력이 다시 차오르며 모습이 바뀐다).
   function beginBossDeath(S, b) {
-    b.dying = true; b.hp = 0; b.shieldT = 0; b.dashT = 0; b.leapT = 0; b.focusT = 0;
-    const revive = !!b.canRevive && !b.p2 && !S.endless;
+    b.dying = true; b.hp = 0; b.shieldT = 0; b.dashT = 0; b.leapT = 0; b.focusT = 0; b.hidden = false; b.lift = 0;
+    const revive = !!b.canRevive && !b.p2 && (!S.endless || !!b.king);
     S.gold += b.gold; S.stats.earned += b.gold; S.kills++; S.stats.killBy.boss = (S.stats.killBy.boss || 0) + 1; if (!revive) S.stats.bossKills++;
     emit(S, { type: 'kill', x: b.x, y: b.y, boss: true });
-    if (!revive) S.queue.length = 0; S.zones.length = 0; S.pools.length = 0; S.rain.length = 0;
+    if (!revive) S.queue.length = 0; S.zones.length = 0; S.pools.length = 0; S.rain.length = 0; S.strikes.length = 0;
     if (!revive) for (const o of S.enemies) if (!o.dead && o !== b) { o.dead = true; emit(S, { type: 'kill', x: o.x, y: o.y, boss: false, wipe: true }); }
     S.bossDeath = { b, t: 0, dur: CFG.bossDeathT, stage: 'die', revive, t0: 0 };
     emit(S, { type: 'bossDying', x: b.x, y: b.y, r: b.r, name: b.bossName, id: b.kind, dur: CFG.bossDeathT, revive });
@@ -953,20 +1040,23 @@
     delete out.rush; return out;
   }
   function stepBossDeath(S, dt) {
-    const D = S.bossDeath, b = D.b, N = CFG.finalNerf; D.t += dt;
+    const D = S.bossDeath, b = D.b, N = b.king ? b.king.awaken : CFG.finalNerf; D.t += dt;
     if (D.stage === 'die') {
       if (D.t < D.dur) return;
       if (D.revive) { // 각성: 모습이 바뀌고 체력이 0에서 다시 차오른다
         D.stage = 'revive'; D.t0 = D.t; b.p2 = true; b.flash = 0; b.bossName = N.name; b.look = N.look; b.r = N.r; b.max = b.max2; b.hp = 0; b.gold = 0;
-        b.abil = p2Abil(b.abil); b.t = {}; for (const k in b.abil) if (!Array.isArray(b.abil[k])) b.t[k] = (b.abil[k].cd || 0) * 0.6;
+        b.abil = b.king ? JSON.parse(JSON.stringify(b.king.abil2)) : p2Abil(b.abil); b.t = {}; for (const k in b.abil) if (!Array.isArray(b.abil[k])) b.t[k] = (b.abil[k].cd || 0) * 0.6;
         b.life = 0; b.enraged = false; b.rushDone = true; b.age = 0; b.enr = false; b.cd = 1;
         emit(S, { type: 'bossRevive', x: b.x, y: b.y, r: b.r, name: b.bossName, dur: N.reviveT });
         return;
       }
       b.dead = true; S.bossDeath = null; emit(S, { type: 'bossGone', x: b.x, y: b.y, r: b.r });
+      if (b.fixed && S.round === FINAL_ROUND) { S.win = true; S.over = true; emit(S, { type: 'over', win: true }); return; } // 용을 쓰러뜨렸다: 게임 클리어
       if (S.round === ACT1_END && S.act === 1) { S.act = 2; S.cinematic = { name: b.bossName, kind: 'act2' }; emit(S, { type: 'act2', boss: b.bossName }); } // 1막 마지막 보스 처치 → 연출 후 2막
       if (S.round === MAX_ROUND && !S.endless) reviveForEndless(S, b); // 마왕 처치 → 연출과 함께 무한 모드가 시작된다
-      openJobs(S, b.bossName); // 보스를 처치하면 전직 선택
+      if (S.round === MAX_ROUND) openLegacy(S, b.bossName); // 마왕: 사천왕에 맞설 강력한 보상
+      else if (isKing(b.king) && [60, 70, 80].includes(S.round) && openAwaken(S, b.bossName)) { /* 각성 선택 */ }
+      else openJobs(S, b.bossName); // 보스를 처치하면 전직 선택
       return;
     }
     const p = Math.min(1, (D.t - D.t0) / N.reviveT); b.hp = b.max * p * (2 - p); // 체력 바가 빠르게 차올랐다가 천천히 가득 찬다
@@ -1000,8 +1090,47 @@
     }
     q.length = w;
   }
+  // ───────────── 넉백 ─────────────
+  // (cx,cy)에서 멀어지는 방향으로 속도를 준다. 질량이 큰 유닛은 덜 밀리고, 보스·설치형은 밀리지 않는다.
+  function knock(S, t, cx, cy, power, stagger) {
+    if (!power || t.dead || t.dying || t.kind === 'boss' || (t.team === 'u' && CFG.units[t.type].static)) return;
+    const K = CFG.kb, mass = t.team === 'u' ? (K.mass[t.type] || 1) : (t.air ? 0.6 : 1);
+    let dx = t.x - cx, dy = t.y - cy, d = Math.hypot(dx, dy); if (d < 1) { const a = S.rng() * 6.283; dx = Math.cos(a); dy = Math.sin(a); d = 1; }
+    const v = power * mass * (1 - Math.min(0.5, d / 1200)); // 멀수록 약하게
+    t.kvx = (t.kvx || 0) + dx / d * v; t.kvy = (t.kvy || 0) + dy / d * v;
+    const m = Math.hypot(t.kvx, t.kvy); if (m > K.max) { t.kvx *= K.max / m; t.kvy *= K.max / m; }
+    if (t.team === 'u' && power >= 250 && stagger !== 0) t.stunT = Math.max(t.stunT || 0, (stagger === undefined ? K.stagger : stagger) * mass); // 크게 밀리면 잠깐 휘청인다
+  }
+  function stepKnock(S, o, dt) {
+    if (!o.kvx && !o.kvy) return;
+    o.x = clamp(o.x + o.kvx * dt, 10, W - 10); o.y = clamp(o.y + o.kvy * dt, 10, H - 10);
+    const f = Math.exp(-CFG.kb.decay * dt); o.kvx *= f; o.kvy *= f; if (Math.hypot(o.kvx, o.kvy) < 18) { o.kvx = 0; o.kvy = 0; }
+    const bx = o.x - CX, by = o.y - CY, bd = Math.hypot(bx, by), bmin = CFG.core.blockR + (o.r || 9) * 0.6; if (bd < bmin && bd > 0.5) { o.x = CX + bx / bd * bmin; o.y = CY + by / bd * bmin; }
+  }
+  // ───────────── 예고 후 터지는 공격 (낙뢰·냉기·지진·용의 숨결 …) ─────────────
+  // shape: 'circle' (기본) | 'cone' (ang·half·len) — 예고 시간(t)이 지나면 범위 안 아군에게 피해·넉백·기절·냉기
+  function addStrike(S, e, o) {
+    const k = Object.assign({ shape: 'circle', t: 1, w: 1, mul: 1, kb: 0, stun: 0, chill: 0, kind: 'bolt', from: e, r: 80 }, o); k.w = k.t; S.strikes.push(k);
+    emit(S, { type: 'strikeWarn', x: k.x, y: k.y, r: k.r, t: k.t, kind: k.kind, shape: k.shape, ang: k.ang, half: k.half, len: k.len });
+  }
+  function resolveStrike(S, k) {
+    const e = k.from, base = e && !e.dead ? e.dmg * (e.dmgMul || 1) * k.mul : 0; let hit = 0;
+    for (const u of S.units) {
+      if (u.dead) continue; let inside;
+      if (k.shape === 'cone') { const dx = u.x - k.x, dy = u.y - k.y, d = Math.hypot(dx, dy); inside = d <= k.len + u.r && Math.abs(wrapAngle(Math.atan2(dy, dx) - k.ang)) <= k.half + (u.r / Math.max(40, d)); }
+      else inside = Math.hypot(u.x - k.x, u.y - k.y) <= k.r + u.r;
+      if (!inside) continue; hit++;
+      if (base > 0) damage(S, u, base, false, e);
+      if (k.stun) u.stunT = Math.max(u.stunT || 0, k.stun);
+      if (k.chill) u.chillT = Math.max(u.chillT || 0, k.chill);
+      if (k.kb) knock(S, u, k.shape === 'cone' ? k.x : k.x, k.shape === 'cone' ? k.y : k.y, k.kb);
+    }
+    if (k.shape !== 'cone' && Math.hypot(S.core.x - k.x, S.core.y - k.y) <= k.r + S.core.r && base > 0) hitCore(S, base * CFG.balance.shellCoreMul, k.kind === 'fire' ? '용의 불길' : '사천왕 공격');
+    emit(S, { type: 'strikeHit', x: k.x, y: k.y, r: k.r, kind: k.kind, shape: k.shape, ang: k.ang, half: k.half, len: k.len, hit });
+  }
   function damage(S, tgt, dmg, crit, src) {
-    if (tgt.dead || tgt.dying) return;
+    if (tgt.dead || tgt.dying || tgt.hidden) return;
+    if (src && src.kb && tgt.team === 'u' && !src.dead) knock(S, tgt, src.x, src.y, src.kb); // 강한 적의 공격: 반대쪽으로 밀려난다
     if (src && tgt.team === 'u' && !src.dead) { tgt.rv = src; tgt.rvT = 6; } // 맞은 유닛이 때린 적을 기억 (자유 모드 반격용)
     if (CFG.dmgVar) dmg *= 1 + (S.rng() * 2 - 1) * CFG.dmgVar; // 공격력 ±N% 오차
     if (tgt.team === 'e' && tgt.shieldT > 0) dmg *= 1 - tgt.shieldRed; // 보스 방어막 동안 피해 감소
@@ -1063,7 +1192,7 @@
   // 도착한 투사체 처리
   function resolveShot(S, s) {
     if (s.aoe) { // 보스 포격: 떨어진 지점 주변 범위 피해
-      for (const u of S.units) if (!u.dead && Math.hypot(u.x - s.t.x, u.y - s.t.y) <= s.aoe + u.r) damage(S, u, s.dmg, false, s.from);
+      for (const u of S.units) if (!u.dead && Math.hypot(u.x - s.t.x, u.y - s.t.y) <= s.aoe + u.r) { damage(S, u, s.dmg, false, s.from); knock(S, u, s.t.x, s.t.y, 280); }
       if (Math.hypot(S.core.x - s.t.x, S.core.y - s.t.y) <= s.aoe + S.core.r) hitCore(S, s.dmg * CFG.balance.shellCoreMul, '보스 포격');
       emit(S, { type: 'boom', x: s.t.x, y: s.t.y, r: s.aoe, big: true, enemy: true });
     } else if (s.t === S.core) hitCore(S, s.dmg, '화살(사수)');
@@ -1270,7 +1399,7 @@
       for (let i = 0; i < sk.n; i++) { const a = nearestExcl(S.gE, u.x, u.y, sk.r, seen), b = nearestExcl(S.gA, u.x, u.y, sk.r, seen), t = !b ? a : !a ? b : (Math.hypot(a.x - u.x, a.y - u.y) <= Math.hypot(b.x - u.x, b.y - u.y) ? a : b); if (!t) break; seen.add(t); list.push(t); }
       for (const t of list) { damage(S, t, atk * sk.mul * (t.rres || 1)); emit(S, { type: 'heroSkill', kind: u.type, x: u.x, y: u.y, tx: t.x, ty: t.y }); }
     } else {
-      eachNear(S.gE, u.x, u.y, sk.r, o => { damage(S, o, atk * sk.mul * (o.mres || 1)); if (sk.slow) o.slowT = sk.slow; });
+      eachNear(S.gE, u.x, u.y, sk.r, o => { damage(S, o, atk * sk.mul * (o.mres || 1)); if (sk.slow) { o.slowT = sk.slow; knock(S, o, u.x, u.y, 260); } }); // 대지 강타: 적을 밀어낸다
       emit(S, { type: 'heroSkill', kind: u.type, x: u.x, y: u.y, r: sk.r });
     }
     u.swing = 0.4;
@@ -1351,11 +1480,25 @@
       if (!e.enraged) { e.enraged = true; emit(S, { type: 'bossRage', name: e.bossName, x: e.x, y: e.y }); }
       e.speedMul *= A.rage.speed; e.rateMul = A.rage.rate; e.dmgMul *= A.rage.dmg;
     }
+    if (A.fly) { // 용: 날아올랐다가 상·하·좌·우 중 다른 한 곳에 내려앉는다 (날아가 있는 동안은 공격할 수 없고 하늘에서 불덩이가 쏟아진다)
+      const F = A.fly;
+      if (e.flyS === 'up') { e.flyT -= dt; e.lift = 1 - Math.max(0, e.flyT) / F.up; e.speedMul = 0; if (e.flyT <= 0) { e.flyS = 'away'; e.flyT = F.away; e.hidden = true; e.t.barrage = 0.6; e.landWarn = false; emit(S, { type: 'dragonAway', x: e.x, y: e.y }); } return; }
+      if (e.flyS === 'away') {
+        e.flyT -= dt; e.t.barrage -= dt; e.speedMul = 0;
+        if (e.t.barrage <= 0) { e.t.barrage = 0.7; const us = S.units.filter(u => !u.dead), pk = us.length ? us[Math.floor(S.rng() * us.length)] : S.core; addStrike(S, e, { x: pk.x + (S.rng() - 0.5) * 60, y: pk.y + (S.rng() - 0.5) * 60, r: 90, t: 1.0, mul: 1.8, kind: 'fire', kb: 300 }); }
+        if (!e.landWarn && e.flyT <= 1.2) { e.landWarn = true; let ns; do ns = Math.floor(S.rng() * 4); while (ns === e.side); e.nextSide = ns; const a = dragonAnchor(ns); addStrike(S, e, { x: a.x, y: a.y, r: 290, t: 1.2, mul: 3, kind: 'rock', kb: 680 }); emit(S, { type: 'dragonLandWarn', x: a.x, y: a.y }); }
+        if (e.flyT <= 0) { e.side = e.nextSide; placeDragon(e); e.hidden = false; e.flyS = 'land'; e.flyT = F.land; e.lift = 1; emit(S, { type: 'dragonLand', x: e.x, y: e.y }); }
+        return;
+      }
+      if (e.flyS === 'land') { e.flyT -= dt; e.lift = Math.max(0, e.flyT / F.land); e.speedMul = 0; if (e.flyT <= 0) { e.flyS = 'ground'; e.lift = 0; e.t.fly = F.every; } return; }
+      e.t.fly -= dt; if (e.nextFlyHp === undefined) e.nextFlyHp = e.max * 0.75;
+      if (e.t.fly <= 0 || e.hp <= e.nextFlyHp) { if (e.hp <= e.nextFlyHp) e.nextFlyHp -= e.max * 0.25; e.flyS = 'up'; e.flyT = F.up; emit(S, { type: 'dragonUp', x: e.x, y: e.y }); }
+    }
     if (A.rush && !e.rushDone) { // 등장하자마자 가장 가까운 아군에게 돌진, 닿으면 충격파로 주변 아군을 기절시킨다 (아군이 없으면 성)
       e.speedMul *= A.rush.mul; const rt = nearest(S.gU, e.x, e.y, 1500);
       if ((rt ? Math.hypot(rt.x - e.x, rt.y - e.y) - rt.r - e.r <= 24 : Math.hypot(e.x - CX, e.y - CY) <= A.rush.until) || e.life > 7) {
         e.rushDone = true;
-        for (const u of S.units) if (!u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= A.rush.r + u.r) u.stunT = Math.max(u.stunT || 0, A.rush.stun);
+        for (const u of S.units) if (!u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= A.rush.r + u.r) { u.stunT = Math.max(u.stunT || 0, A.rush.stun); knock(S, u, e.x, e.y, 520, 0); }
         emit(S, { type: 'bossShock', x: e.x, y: e.y, r: A.rush.r });
       }
     }
@@ -1374,7 +1517,7 @@
       if (e.leapT > 0) {
         e.leapT -= dt; e.speedMul = 0; const k = Math.min(1, dt / Math.max(0.03, e.leapT + dt)); e.x += (e.leapX - e.x) * k; e.y += (e.leapY - e.y) * k;
         if (e.leapT <= 0) {
-          for (const u of S.units) if (!u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= A.leap.r + u.r) { damage(S, u, e.dmg * e.dmgMul * A.leap.mul, false, e); u.stunT = Math.max(u.stunT || 0, 0.8); }
+          for (const u of S.units) if (!u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= A.leap.r + u.r) { damage(S, u, e.dmg * e.dmgMul * A.leap.mul, false, e); u.stunT = Math.max(u.stunT || 0, 0.8); knock(S, u, e.x, e.y, 480, 0); }
           emit(S, { type: 'bossShock', x: e.x, y: e.y, r: A.leap.r });
         }
       } else {
@@ -1388,7 +1531,7 @@
       }
     }
     if (A.dash) {
-      if (e.dashT > 0) { e.dashT -= dt; e.speedMul *= A.dash.mul; }
+      if (e.dashT > 0) { e.dashT -= dt; e.speedMul *= A.dash.mul; if (e.dashT <= 0 && A.dash.shock) addStrike(S, e, { x: e.x, y: e.y, r: A.dash.shock.r, t: 0.3, mul: A.dash.shock.mul, kb: A.dash.shock.kb, kind: 'rock' }); } // 돌진이 끝나면 충격파로 주변을 밀쳐낸다
       else { e.t.dash -= dt; if (e.t.dash <= 0) { e.dashT = A.dash.dur; e.t.dash = A.dash.cd; emit(S, { type: 'bossDash', x: e.x, y: e.y }); } }
     }
     if (A.shield) {
@@ -1420,6 +1563,43 @@
           emit(S, { type: 'bossCast', x: tg.x, y: tg.y, r: d.r, kind: d.kind, warn, bx: e.x, by: e.y });
         }
       });
+    }
+    const spots = (n, jit, range) => { const us = S.units.filter(u => !u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= range), out = []; for (let i = 0; i < n; i++) { const pk = us.length ? us[Math.floor(S.rng() * us.length)] : S.core; out.push({ x: clamp(pk.x + (S.rng() - 0.5) * jit, 20, W - 20), y: clamp(pk.y + (S.rng() - 0.5) * jit, 20, H - 20) }); } return out; };
+    if (A.bolt) { // 뇌왕: 아군 머리 위로 낙뢰
+      e.t.bolt -= dt;
+      if (e.t.bolt <= 0 && e.life > 1.5) { e.t.bolt = A.bolt.cd; for (const p of spots(A.bolt.n, 90, 1000)) addStrike(S, e, { x: p.x, y: p.y, r: A.bolt.r, t: A.bolt.warn, mul: A.bolt.mul, stun: A.bolt.stun, kb: A.bolt.kb, kind: 'bolt' }); }
+    }
+    if (A.frost) { // 설왕: 아군이 모인 곳을 얼려 느리게 만든다
+      e.t.frost -= dt;
+      if (e.t.frost <= 0 && e.life > 1.5) { e.t.frost = A.frost.cd; for (const p of spots(A.frost.count, 60, 1000)) addStrike(S, e, { x: p.x, y: p.y, r: A.frost.r, t: A.frost.warn, mul: A.frost.mul, chill: A.frost.dur, kind: 'ice' }); }
+    }
+    if (A.blizzard) { // 설왕(각성): 눈보라가 넓은 범위를 휩쓸며 밀어내고 얼린다
+      e.t.blizzard -= dt;
+      if (e.t.blizzard <= 0 && e.life > 2) { e.t.blizzard = A.blizzard.cd; addStrike(S, e, { x: e.x, y: e.y, r: A.blizzard.r, t: A.blizzard.warn, mul: A.blizzard.mul, chill: A.blizzard.dur, kb: A.blizzard.kb, kind: 'ice' }); }
+    }
+    if (A.stomp) { // 토왕: 발을 굴러 주변 아군을 밀쳐낸다
+      e.t.stomp -= dt;
+      if (e.t.stomp <= 0 && e.life > 2) { if (!S.units.some(u => !u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= A.stomp.r + u.r)) e.t.stomp = 1; else { e.t.stomp = A.stomp.cd; addStrike(S, e, { x: e.x, y: e.y, r: A.stomp.r, t: A.stomp.warn, mul: A.stomp.mul, kb: A.stomp.kb, kind: 'rock' }); } }
+    }
+    if (A.quake) { // 토왕(각성): 아군 발밑이 솟구친다
+      e.t.quake -= dt;
+      if (e.t.quake <= 0 && e.life > 2) { e.t.quake = A.quake.cd; for (const p of spots(A.quake.n, 110, 1000)) addStrike(S, e, { x: p.x, y: p.y, r: A.quake.r, t: A.quake.warn, mul: A.quake.mul, kb: A.quake.kb, kind: 'rock' }); }
+    }
+    if (A.breath) { // 용: 불길을 뿜는다 (부채꼴 범위, 예고 후 발사)
+      e.t.breath -= dt; if (e.breathT > 0) e.breathT -= dt;
+      if (e.t.breath <= 0 && e.life > 2) { const tg = nearestUnit(S, e.x, e.y, 1000); if (!tg) e.t.breath = 1.5; else { e.t.breath = A.breath.cd; const ang = Math.atan2(tg.y - e.y, tg.x - e.x); addStrike(S, e, { shape: 'cone', x: e.x, y: e.y, ang, half: A.breath.half, len: A.breath.len, r: A.breath.len, t: A.breath.warn, mul: A.breath.mul, kb: A.breath.kb, kind: 'fire' }); e.breathT = A.breath.warn + 0.5; } }
+    }
+    if (A.tail) { // 용: 가까이 붙은 아군을 꼬리로 쓸어 날려 버린다
+      e.t.tail -= dt;
+      if (e.t.tail <= 0) { const R = A.tail.r + e.r * 0.6; if (!S.units.some(u => !u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= R + u.r)) e.t.tail = 0.6; else { e.t.tail = A.tail.cd; addStrike(S, e, { x: e.x, y: e.y, r: R, t: A.tail.warn, mul: A.tail.mul, kb: A.tail.kb, kind: 'rock' }); } }
+    }
+    if (A.gust) { // 용: 날갯짓으로 모두를 밀어낸다
+      e.t.gust -= dt;
+      if (e.t.gust <= 0 && e.life > 3) { e.t.gust = A.gust.cd; addStrike(S, e, { x: e.x, y: e.y, r: A.gust.r, t: A.gust.warn, mul: 0, kb: A.gust.kb, kind: 'wind' }); }
+    }
+    if (A.meteor && e.hp <= e.max * A.meteor.at) { // 용(체력 절반 이하): 하늘에서 불덩이가 떨어진다
+      e.t.meteor -= dt;
+      if (e.t.meteor <= 0) { e.t.meteor = A.meteor.cd; for (const p of spots(A.meteor.n, 200, 1200)) addStrike(S, e, { x: p.x, y: p.y, r: A.meteor.r, t: A.meteor.warn + S.rng() * 0.5, mul: A.meteor.mul, kb: A.meteor.kb, kind: 'fire' }); }
     }
     if (A.clone && !e.cloned && e.hp <= e.max * A.clone.at) { // 소환사: 체력이 절반이 되면 분신을 불러낸다
       e.cloned = true; const n = A.clone.n;
@@ -1483,7 +1663,7 @@
   }
   function explode(S, e) {
     const R = e.blast;
-    for (const u of S.units) if (!u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= R + u.r) damage(S, u, e.dmg, false, e);
+    for (const u of S.units) if (!u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= R + u.r) { damage(S, u, e.dmg, false, e); knock(S, u, e.x, e.y, 300); }
     if (Math.hypot(S.core.x - e.x, S.core.y - e.y) <= R + S.core.r) hitCore(S, e.dmg, '폭파병');
     emit(S, { type: 'boom', x: e.x, y: e.y, r: R, enemy: true });
     e.dead = true; // 자폭: 골드/처치 수 없음
@@ -1511,6 +1691,7 @@
     if (e.age > ENRAGE_AFTER && !e.enr) { e.enr = true; if (S.enrageSaid !== S.round) { S.enrageSaid = S.round; emit(S, { type: 'enrage' }); } }
     if (e.abil) bossTick(S, e, dt);
     if (e.focusT > 0) return; // 정신 집중 중
+    if (e.fixed) return; // 용: 제자리에 고정 (스킬만 쓴다)
     if (e.kind === 'shaman') return updateShaman(S, e, dt);
     if (e.slowT > 0) e.slowT -= dt;
     const c = S.core, spm = e.speedMul * (e.hasteT > 0 ? e.hasteMul : 1) * (e.slowT > 0 ? 0.45 : 1) * (boost > 1 ? Math.min(1.5, 1 + (boost - 1) * 0.2) : 1), dmg = e.dmg * boost * e.dmgMul, cdTime = 1 / (e.rate * e.rateMul || 1);
@@ -1545,6 +1726,7 @@
   function tick(S, dt) {
     if (S.over) return;
     if (S.dev && S.gold < 1e8) S.gold = DEV_GOLD; // 개발자 모드: 골드 무한
+    if (S.dragonIntro) { const D = S.dragonIntro; D.t += dt; S.cliff = Math.min(1, D.t / (D.dur * 0.85)); if (D.t >= D.dur) S.dragonIntro = null; return; } // 100라운드: 땅이 무너지는 연출 동안 시간이 멈춘다
     if (S.bossDeath) { stepBossDeath(S, dt); return; } // 보스 사망·부활 연출 중에는 시간이 멈춘다
     checkCastleChoice(S);
     if (S.cards.offer || S.jobs.offer || S.cOffer || S.cinematic) return; // 카드/전직/성 선택, 연출 중에는 시간이 멈춘다
@@ -1576,7 +1758,7 @@
       if (u.aura && A.heal > 0 && !u.undead && u.hp < u.max) u.hp = Math.min(u.max, u.hp + u.max * A.heal * dt);
       gridAdd(S.gU, u);
     }
-    for (const e of S.enemies) if (!e.dead) gridAdd(e.air ? S.gA : S.gE, e); // 공중형은 따로: 근접·성·범위 공격은 닿지 않고 궁수 계열·포탑만 겨눈다
+    for (const e of S.enemies) if (!e.dead && !e.hidden) gridAdd(e.air ? S.gA : S.gE, e); // 공중형은 따로: 근접·성·범위 공격은 닿지 않고 궁수 계열·포탑만 겨눈다
 
     // 위협 방향 (성에서 가장 가까운 적 쪽, 부드럽게 회전)
     let near = null, nd = 1500;
@@ -1601,6 +1783,8 @@
     const bias = S.biasNow;
     for (const u of S.units) {
       if (u.dead) continue;
+      if (u.kvx || u.kvy) stepKnock(S, u, dt);
+      if (u.chillT > 0) u.chillT -= dt;
       u.flash = Math.max(0, u.flash - dt); u.swing = Math.max(0, u.swing - dt); if (u.wardFx > 0) u.wardFx -= dt; if (u.hbT > 0) u.hbT -= dt; if (u.blT > 0) u.blT -= dt;
       if (u.undead && (u.ttl -= dt) <= 0) { u.dead = true; emit(S, { type: 'undeadFade', x: u.x, y: u.y }); continue; }
       if (u.stunT > 0 || u.poisonT > 0 || u.weakT > 0 || u.woundT > 0) {
@@ -1613,12 +1797,14 @@
       if (jm && jm.regen && u.hp < u.max) u.hp = Math.min(u.max, u.hp + u.max * jm.regen * dt);
       const a = S.threat + wrapAngle(u.ha - S.threat) * (1 - bias);
       u.hx = CX + Math.cos(a) * u.hr + Math.sin(S.t * 0.6 + u.id * 1.7) * CFG.ai.sway; u.hy = CY + Math.sin(a) * u.hr + Math.cos(S.t * 0.5 + u.id * 2.3) * CFG.ai.sway;
-      if (u.type === 'priest') updatePriest(S, u, dt); else updateFighter(S, u, dt);
+      const udt = u.chillT > 0 ? dt * 0.55 : dt; // 냉기: 이동·공격이 느려진다
+      if (u.type === 'priest') updatePriest(S, u, udt); else updateFighter(S, u, udt);
       u.x = clamp(u.x, 10, W - 10); u.y = clamp(u.y, 10, H - 10);
       // 성 원형에는 들어올 수 없다: 반지름 안이면 바깥으로 밀어낸다 (유닛당 거리 계산 한 번이라 매우 싸다)
       const bx = u.x - CX, by = u.y - CY, bd = Math.hypot(bx, by), bmin = CFG.core.blockR + u.r * 0.6;
       if (bd < bmin) { if (bd < 1) { u.x = CX + bmin; } else { u.x = CX + bx / bd * bmin; u.y = CY + by / bd * bmin; } }
     }
+    for (let i = S.strikes.length - 1; i >= 0; i--) { const k = S.strikes[i]; k.t -= dt; if (k.t > 0) continue; S.strikes.splice(i, 1); resolveStrike(S, k); }
     // 보스 상태이상 구역: 예고 시간이 지나면 범위 안의 아군에게 걸린다
     for (let i = S.zones.length - 1; i >= 0; i--) {
       const z = S.zones[i]; z.t -= dt; if (z.t > 0) continue;
@@ -1639,7 +1825,7 @@
       const pl = S.pools[i]; pl.t -= dt; if (pl.t <= 0) { S.pools.splice(i, 1); continue; }
       for (const u of S.units) if (!u.dead && Math.hypot(u.x - pl.x, u.y - pl.y) <= pl.r + u.r * 0.5) u.poisonT = Math.max(u.poisonT || 0, 1.5);
     }
-    for (const e of S.enemies) { if (e.dead) continue; if (e.markT > 0) e.markT -= dt; e.flash = Math.max(0, e.flash - dt); e.swing = Math.max(0, e.swing - dt); updateEnemy(S, e, dt); }
+    for (const e of S.enemies) { if (e.dead) continue; if (e.kvx || e.kvy) stepKnock(S, e, dt); if (e.markT > 0) e.markT -= dt; e.flash = Math.max(0, e.flash - dt); e.swing = Math.max(0, e.swing - dt); updateEnemy(S, e, dt); }
     separate(S.units, S.gU); separate(S.enemies, S.gE);
 
     // 투사체 (포물선)
@@ -1662,7 +1848,7 @@
 
   return {
     CFG, MAX_ROUND, ACT1_END, extraAngles, EXTRA_RING, ROUND_TIME, SPAWN_TIME, PREP_TIME, SPAWN_RING, UNIT_TYPES, CARD_DEFS,
-    createGame, tick, buy, repairCastle, repairCost, devSetup, runSummary, ctNode, jobDef, coreGuard, hitCore, pickCastle, autoCastle, castleOptions, describeCastle, jobBack, classOptions, enqueue, cancelProd, goldBound, checkRun, upgradeCastle, castleCost, popCap, popGain, popCount, specialCount, endCinematic, jumpToRound, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo, drainEvents, pickCard, reroll, describeTaken, openCards,
+    createGame, tick, buy, openAwaken, openLegacy, cmpDesc, FINAL_ROUND, repairCastle, repairCost, devSetup, runSummary, ctNode, jobDef, coreGuard, hitCore, pickCastle, autoCastle, castleOptions, describeCastle, jobBack, classOptions, enqueue, cancelProd, goldBound, checkRun, upgradeCastle, castleCost, popCap, popGain, popCount, specialCount, endCinematic, jumpToRound, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo, drainEvents, pickCard, reroll, describeTaken, openCards,
     unitCostOf, enemyCount, hpMul, dmgMul, mulberry32, damage,
   };
 });
