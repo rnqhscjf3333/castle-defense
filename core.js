@@ -197,7 +197,7 @@
       priest: {
         t1: [
           { id: 'cleric', name: '성직자', desc: '광륜의 치유사. 치유량 +45%, 치유 범위 +50', mods: { heal: 0.45, healRange: 50 } },
-          { id: 'bishop', name: '주교', desc: '주교관과 지팡이. 치유량 +8%, 이 사제는 라운드마다 쓰러진 아군을 1회 부활 (체력 50%)', mods: { heal: 0.08, revive: 1 } },
+          { id: 'bishop', name: '주교', desc: '주교관과 지팡이. 치유량 +8%', mods: { heal: 0.08 } },
         ],
         t2: {
           cleric: [
@@ -205,8 +205,8 @@
             { id: 'warden', name: '수호사제', desc: '푸른 등불의 수호자. 치유량 +20%, 치유한 아군에게 치유량의 80%만큼 보호막 (최대 체력의 30%까지)', mods: { heal: 0.2, ward: 0.8 } },
           ],
           bishop: [
-            { id: 'archbishop', name: '대주교', desc: '황금 십자 지팡이. 치유량 +12%, 이 사제의 부활 +1회 (라운드당 2회)', mods: { heal: 0.12, revive: 1 } },
-            { id: 'templar', name: '전투사제', desc: '철퇴와 갑옷의 성전사. 체력 +30%. 성스러운 구체로 사거리 190 안의 적을 직접 공격(치유량의 170%), 이 사제의 부활 +1회', mods: { hp: 0.3, revive: 1, smite: 1 } },
+            { id: 'archbishop', name: '대주교', desc: '황금 십자 지팡이. 치유량 +12%, 이 사제는 라운드마다 쓰러진 아군을 1회 부활 (체력 50%)', mods: { heal: 0.12, revive: 1 } },
+            { id: 'templar', name: '전투사제', desc: '철퇴와 갑옷의 성전사. 체력 +30%. 성스러운 구체로 사거리 190 안의 적을 직접 공격(치유량의 170%)', mods: { hp: 0.3, smite: 1 } },
           ],
         },
       },

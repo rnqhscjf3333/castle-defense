@@ -241,8 +241,8 @@ function killBoss(g) { const b = g.enemies.find(e => e.kind === 'boss'); b.hp = 
   const give = id => { const o = C.jobOptions(g).find(x => x.id === id); g.jobs.offer = { boss: 't', list: [o] }; C.pickJob(g, 0); };
   give('sniper'); check('저격수: 사거리 +60, 공격력 상승', ar.range === r0 + 60 && ar.atk > C.CFG.units.archer.atk * 1.5, `${r0}→${ar.range}`);
   give('deadeye'); check('명사수: 관통(화살이 뒤의 적을 맞힘) 효과 합산', g.jobMods.archer.pierce === 1);
-  give('bishop'); const rl = g.reviveLeft; check('주교: 부활 횟수 즉시 +1', rl >= 1, 'reviveLeft=' + rl);
-  give('archbishop'); check('대주교: 부활 +1 더 (라운드당 2회)', g.jobMods.priest.revive === 2);
+  give('bishop'); check('주교: 부활 없음', g.reviveLeft === 0 && g.jobMods.priest.revive === 0);
+  give('archbishop'); check('대주교: 부활 1회 (즉시 반영)', g.jobMods.priest.revive === 1 && g.reviveLeft >= 1, 'reviveLeft=' + g.reviveLeft);
   const pr2 = g.units.find(u => u.type === 'priest'); check('주교 계열: 치유량 증가', pr2.heal > heal0, `${heal0}→${pr2.heal.toFixed(1)}`);
   const g2 = C.createGame(42); g2.gold = 1e7; g2.buyCd.priest = 0; C.buy(g2, 'priest'); const p2 = g2.units[0], hr = p2.healRange;
   g2.jobs.offer = { boss: 't', list: [C.jobOptions(g2).find(x => x.id === 'cleric')] }; C.pickJob(g2, 0); check('성직자: 치유 범위 +50', p2.healRange === hr + 50, `${hr}→${p2.healRange}`);
@@ -705,9 +705,9 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
 // 58) 사제 부활: 망자는 부활 대상이 아니고, 주교가 여럿이어도 죽음 한 번에 한 번만 부활
 { const g = C.createGame(91); g.gold = 1e9; g.phase = 'round'; g.hold = true; g.queue = []; g.core.hp = g.core.max = 1e9; g.core.atk = 0;
   for (let i = 0; i < 3; i++) { g.buyCd.priest = 0; C.buy(g, 'priest'); } for (let i = 0; i < 4; i++) { g.buyCd.sword = 0; C.buy(g, 'sword'); }
-  for (const id of ['bishop']) { const o = C.jobOptions(g).find(x => x.id === id); g.jobs.offer = { boss: 't', list: [o] }; C.pickJob(g, 0); }
+  for (const id of ['bishop', 'archbishop']) { const o = C.jobOptions(g).find(x => x.id === id); g.jobs.offer = { boss: 't', list: [o] }; C.pickJob(g, 0); }
   const pool = g.reviveLeft;
-  check('주교 3명이면 부활 횟수는 사제마다 1회씩 합쳐서 3회', pool === 3 && g.units.filter(u => u.type === 'priest').every(p => p.rv === 1), 'pool ' + pool);
+  check('대주교 3명이면 부활 횟수는 사제마다 1회씩 합쳐서 3회', pool === 3 && g.units.filter(u => u.type === 'priest').every(p => p.rv === 1), 'pool ' + pool);
   const sw = g.units.filter(u => u.type === 'sword'); for (const x of sw) C.damage(g, x, 1e9);
   check('죽음 4번 중 3번까지 부활 (사제 3명 × 1회)', sw.filter(x => !x.dead).length === 3 && sw[3].dead && g.reviveLeft === 0);
   const g2 = C.createGame(92); g2.gold = 1e9; g2.phase = 'round'; g2.hold = true; g2.queue = []; g2.core.hp = g2.core.max = 1e9; g2.buyCd.priest = 0; C.buy(g2, 'priest'); g2.buyCd.priest = 0; C.buy(g2, 'priest');
