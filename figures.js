@@ -23,44 +23,53 @@
   // 재앙의 용: 정면을 보는 거대한 용. 날갯짓·불길 입김·날아오르는 높이(e.lift)를 그린다.
   function dragon(ctx, e, s) {
     s *= 0.55; // 판정 반지름(r)에 맞춰 몸집을 줄여 그린다
-    const fl = e.flash > 0, t = (typeof performance !== 'undefined' ? performance.now() : 0) * 0.004, lift = e.lift || 0, flap = Math.sin(t * (lift > 0 ? 2.2 : 1)) * (lift > 0 ? 7 : 3.2);
+    const fl = e.flash > 0, t = (typeof performance !== 'undefined' ? performance.now() : 0) * 0.004, lift = e.lift || 0, flap = Math.sin(t * (lift > 0 ? 2.2 : 1)) * (lift > 0 ? 8 : 3.4);
     ctx.save();
-    ctx.globalAlpha = 0.28 * (1 - lift * 0.6); ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(0, 11 * s, (16 - lift * 6) * s, (4 - lift) * s, 0, 0, TAU); ctx.fill(); ctx.globalAlpha = 1; // 바닥 그림자
+    ctx.globalAlpha = 0.3 * (1 - lift * 0.6); ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(0, 11 * s, (18 - lift * 6) * s, (4 - lift) * s, 0, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
     ctx.translate(0, -lift * 26 * s);
-    const L = '#2a0608', RED = fl ? FLASH : '#a3262a', RED2 = fl ? FLASH : '#c4402e', BELLY = fl ? FLASH : '#e8b86a', WING = fl ? FLASH : '#6e1418', MEM = fl ? FLASH : '#8f1d22';
-    ctx.lineJoin = 'round'; ctx.lineWidth = 1.1 * s; ctx.strokeStyle = L;
-    // 꼬리
-    ctx.strokeStyle = L; ctx.lineWidth = 4.2 * s; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(8 * s, 8 * s); ctx.bezierCurveTo(26 * s, 12 * s, 30 * s, 2 * s + flap * 0.4 * s, 22 * s, -4 * s); ctx.stroke();
-    ctx.strokeStyle = RED; ctx.lineWidth = 3 * s; ctx.beginPath(); ctx.moveTo(8 * s, 8 * s); ctx.bezierCurveTo(26 * s, 12 * s, 30 * s, 2 * s + flap * 0.4 * s, 22 * s, -4 * s); ctx.stroke();
-    ctx.fillStyle = fl ? FLASH : '#e8b86a'; tri(ctx, 20 * s, -5 * s, 26 * s, -9 * s, 24 * s, -1 * s); ctx.fill();
-    // 날개 (좌우)
+    const L = '#0e0305', SC = fl ? FLASH : '#4a0d14', SC2 = fl ? FLASH : '#7a1a1e', BELLY = fl ? FLASH : '#c98a4a', MEM = fl ? FLASH : '#3a0a12', BONE = fl ? FLASH : '#cfc3a4', GLOW = '#ff7a1a';
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.strokeStyle = L;
+    // 가시 꼬리
+    ctx.lineWidth = 5.4 * s; ctx.beginPath(); ctx.moveTo(6 * s, 8 * s); ctx.bezierCurveTo(28 * s, 14 * s, 34 * s, 0, 24 * s + flap * 0.3 * s, -8 * s); ctx.stroke();
+    ctx.strokeStyle = SC; ctx.lineWidth = 3.6 * s; ctx.beginPath(); ctx.moveTo(6 * s, 8 * s); ctx.bezierCurveTo(28 * s, 14 * s, 34 * s, 0, 24 * s + flap * 0.3 * s, -8 * s); ctx.stroke();
+    ctx.fillStyle = BONE; ctx.strokeStyle = L; ctx.lineWidth = 0.9 * s; tri(ctx, 20 * s, -6 * s, 30 * s, -16 * s, 27 * s, -3 * s); ctx.fill(); ctx.stroke(); tri(ctx, 23 * s, -9 * s, 17 * s, -17 * s, 28 * s, -10 * s); ctx.fill(); ctx.stroke();
+    // 박쥐 날개: 뼈대 손가락 + 찢어진 막
     for (const k of [-1, 1]) {
-      const f = flap * (k === 1 ? 1 : 1);
-      ctx.fillStyle = MEM; ctx.strokeStyle = L; ctx.lineWidth = 1 * s;
-      ctx.beginPath(); ctx.moveTo(k * 7 * s, -16 * s); ctx.lineTo(k * 40 * s, (-38 + f) * s); ctx.lineTo(k * 31 * s, (-20 + f * 0.6) * s); ctx.lineTo(k * 42 * s, (-12 + f * 0.4) * s); ctx.lineTo(k * 28 * s, (-5 + f * 0.2) * s); ctx.lineTo(k * 31 * s, 5 * s); ctx.lineTo(k * 9 * s, -1 * s); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle = WING; ctx.lineWidth = 1.6 * s; ctx.beginPath(); ctx.moveTo(k * 7 * s, -16 * s); ctx.lineTo(k * 40 * s, (-38 + f) * s); ctx.moveTo(k * 8 * s, -12 * s); ctx.lineTo(k * 42 * s, (-12 + f * 0.4) * s); ctx.moveTo(k * 9 * s, -8 * s); ctx.lineTo(k * 31 * s, 5 * s); ctx.stroke();
+      const f = flap, tipX = k * 47 * s, tipY = (-44 + f) * s;
+      ctx.fillStyle = MEM; ctx.strokeStyle = L; ctx.lineWidth = 1.1 * s;
+      ctx.beginPath(); ctx.moveTo(k * 8 * s, -17 * s); ctx.lineTo(tipX, tipY); ctx.quadraticCurveTo(k * 44 * s, (-28 + f * 0.8) * s, k * 40 * s, (-22 + f * 0.7) * s); ctx.quadraticCurveTo(k * 38 * s, (-16 + f * 0.5) * s, k * 44 * s, (-12 + f * 0.4) * s); ctx.quadraticCurveTo(k * 33 * s, (-10 + f * 0.3) * s, k * 36 * s, (-3 + f * 0.2) * s); ctx.quadraticCurveTo(k * 24 * s, -4 * s, k * 26 * s, 7 * s); ctx.lineTo(k * 9 * s, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = BONE; ctx.lineWidth = 1.5 * s; ctx.beginPath(); ctx.moveTo(k * 8 * s, -17 * s); ctx.lineTo(tipX, tipY); ctx.moveTo(k * 22 * s, (-30 + f * 0.9) * s); ctx.lineTo(k * 44 * s, (-12 + f * 0.4) * s); ctx.moveTo(k * 18 * s, -22 * s); ctx.lineTo(k * 26 * s, 7 * s); ctx.stroke();
+      ctx.fillStyle = BONE; tri(ctx, tipX, tipY, tipX + k * 4 * s, tipY + 3 * s, tipX + k * 1 * s, tipY + 7 * s); ctx.fill();
     }
-    // 몸통과 배
-    ctx.fillStyle = RED; ctx.strokeStyle = L; ctx.lineWidth = 1.2 * s; ctx.beginPath(); ctx.ellipse(0, -5 * s, 14 * s, 17 * s, 0, 0, TAU); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = BELLY; ctx.beginPath(); ctx.ellipse(0, -3 * s, 8.4 * s, 13 * s, 0, 0, TAU); ctx.fill();
-    ctx.strokeStyle = fl ? FLASH : '#b98a3c'; ctx.lineWidth = 0.9 * s; for (let i = -3; i <= 3; i++) { ctx.beginPath(); ctx.arc(0, (i * 3.4 - 3) * s, 7 * s, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke(); }
-    // 다리·발톱
-    for (const k of [-1, 1]) { ctx.fillStyle = RED2; ctx.strokeStyle = L; ctx.lineWidth = 1.1 * s; ctx.beginPath(); ctx.ellipse(k * 9 * s, 9 * s, 5.4 * s, 3.8 * s, 0, 0, TAU); ctx.fill(); ctx.stroke(); ctx.fillStyle = fl ? FLASH : '#f4ecd8'; for (const c of [-1.8, 0, 1.8]) { tri(ctx, (k * 9 + c) * s - 0.9 * s, 11.6 * s, (k * 9 + c) * s, 14.6 * s, (k * 9 + c) * s + 0.9 * s, 11.6 * s); ctx.fill(); } }
-    // 앞발
-    for (const k of [-1, 1]) { ctx.strokeStyle = L; ctx.lineWidth = 3.6 * s; ctx.beginPath(); ctx.moveTo(k * 11 * s, -10 * s); ctx.lineTo(k * 15 * s, 0); ctx.stroke(); ctx.strokeStyle = RED2; ctx.lineWidth = 2.4 * s; ctx.beginPath(); ctx.moveTo(k * 11 * s, -10 * s); ctx.lineTo(k * 15 * s, 0); ctx.stroke(); }
-    // 목과 머리
-    ctx.fillStyle = RED2; ctx.strokeStyle = L; ctx.lineWidth = 1.2 * s; ctx.beginPath(); ctx.ellipse(0, -22 * s, 7 * s, 8 * s, 0, 0, TAU); ctx.fill(); ctx.stroke();
-    const breath = e.breathT > 0, jaw = breath ? 3.4 : 0.6;
-    ctx.fillStyle = RED; ctx.beginPath(); ctx.ellipse(0, -30 * s, 10.5 * s, 8.6 * s, 0, 0, TAU); ctx.fill(); ctx.stroke(); // 머리
-    ctx.fillStyle = RED2; ctx.beginPath(); ctx.ellipse(0, (-24 + jaw * 0.2) * s, 7 * s, 4.6 * s, 0, 0, TAU); ctx.fill(); ctx.stroke(); // 주둥이
-    if (breath) { ctx.fillStyle = '#2a0608'; ctx.beginPath(); ctx.ellipse(0, (-23 + jaw * 0.6) * s, 5 * s, jaw * 0.9 * s, 0, 0, TAU); ctx.fill(); const g = ctx.createRadialGradient(0, -23 * s, 1 * s, 0, -23 * s, 16 * s); g.addColorStop(0, 'rgba(255,250,170,.95)'); g.addColorStop(0.5, 'rgba(255,130,30,.6)'); g.addColorStop(1, 'rgba(255,60,10,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, -23 * s, 16 * s, 0, TAU); ctx.fill(); }
-    ctx.fillStyle = '#1a0406'; for (const k of [-1, 1]) { ctx.beginPath(); ctx.arc(k * 2.4 * s, -24.6 * s, 0.8 * s, 0, TAU); ctx.fill(); } // 콧구멍
-    // 눈 (노란 눈 + 세로 동공 + 성난 눈썹)
-    for (const k of [-1, 1]) { ctx.fillStyle = fl ? FLASH : '#ffd84a'; ctx.beginPath(); ctx.ellipse(k * 4.6 * s, -31 * s, 2.5 * s, 1.9 * s, k * 0.3, 0, TAU); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#1a0406'; ctx.fillRect(k * 4.6 * s - 0.4 * s, -32.6 * s, 0.8 * s, 3.2 * s); ctx.strokeStyle = L; ctx.lineWidth = 1.3 * s; ctx.beginPath(); ctx.moveTo(k * 1.6 * s, -34.4 * s); ctx.lineTo(k * 7.4 * s, -32.6 * s); ctx.stroke(); }
-    // 뿔과 머리 가시
-    ctx.fillStyle = fl ? FLASH : '#f0e6c8'; ctx.strokeStyle = L; ctx.lineWidth = 1 * s;
-    for (const k of [-1, 1]) { ctx.beginPath(); ctx.moveTo(k * 6 * s, -35 * s); ctx.quadraticCurveTo(k * 13 * s, -41 * s, k * 12 * s, -50 * s); ctx.quadraticCurveTo(k * 9 * s, -42 * s, k * 3.4 * s, -36 * s); ctx.closePath(); ctx.fill(); ctx.stroke(); }
-    ctx.fillStyle = RED2; tri(ctx, -2 * s, -37.6 * s, 0, -44 * s, 2 * s, -37.6 * s); ctx.fill(); ctx.stroke();
+    // 몸통과 배 비늘
+    ctx.fillStyle = SC; ctx.strokeStyle = L; ctx.lineWidth = 1.3 * s; ctx.beginPath(); ctx.ellipse(0, -5 * s, 13 * s, 18 * s, 0, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = BELLY; ctx.beginPath(); ctx.ellipse(0, -3 * s, 7.4 * s, 14 * s, 0, 0, TAU); ctx.fill();
+    ctx.strokeStyle = fl ? FLASH : '#8a5a26'; ctx.lineWidth = 0.9 * s; for (let i = -4; i <= 4; i++) { ctx.beginPath(); ctx.arc(0, (i * 3 - 3) * s, 6.4 * s, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke(); }
+    // 등 가시 (목에서 몸통까지)
+    ctx.fillStyle = BONE; ctx.strokeStyle = L; ctx.lineWidth = 0.8 * s; for (let i = 0; i < 5; i++) { const yy = (-14 + i * 4.4) * s; tri(ctx, -13 * s + i * 0.2 * s, yy, -17.5 * s, yy - 2 * s, -13 * s, yy + 2.4 * s); ctx.fill(); ctx.stroke(); tri(ctx, 13 * s - i * 0.2 * s, yy, 17.5 * s, yy - 2 * s, 13 * s, yy + 2.4 * s); ctx.fill(); ctx.stroke(); }
+    // 다리·갈고리 발톱
+    for (const k of [-1, 1]) { ctx.fillStyle = SC2; ctx.strokeStyle = L; ctx.lineWidth = 1.1 * s; ctx.beginPath(); ctx.ellipse(k * 9.5 * s, 9 * s, 5.6 * s, 3.8 * s, 0, 0, TAU); ctx.fill(); ctx.stroke(); ctx.fillStyle = BONE; for (const c of [-2.2, 0, 2.2]) { tri(ctx, (k * 9.5 + c) * s - 1 * s, 11.4 * s, (k * 9.5 + c + k * 0.6) * s, 16 * s, (k * 9.5 + c) * s + 1 * s, 11.4 * s); ctx.fill(); ctx.stroke(); } }
+    for (const k of [-1, 1]) { ctx.strokeStyle = L; ctx.lineWidth = 4 * s; ctx.beginPath(); ctx.moveTo(k * 11 * s, -10 * s); ctx.lineTo(k * 15 * s, 1 * s); ctx.stroke(); ctx.strokeStyle = SC2; ctx.lineWidth = 2.6 * s; ctx.beginPath(); ctx.moveTo(k * 11 * s, -10 * s); ctx.lineTo(k * 15 * s, 1 * s); ctx.stroke(); ctx.fillStyle = BONE; tri(ctx, k * 15 * s - 1.4 * s, 1 * s, k * 15 * s + k * 0.8 * s, 6 * s, k * 15 * s + 1.4 * s, 1 * s); ctx.fill(); }
+    // 가늘고 긴 목 (S자 느낌의 비늘 마디)
+    ctx.fillStyle = SC2; ctx.strokeStyle = L; ctx.lineWidth = 1.2 * s; ctx.beginPath(); ctx.moveTo(-6 * s, -14 * s); ctx.quadraticCurveTo(-5 * s, -24 * s, -4.4 * s, -30 * s); ctx.lineTo(4.4 * s, -30 * s); ctx.quadraticCurveTo(5 * s, -24 * s, 6 * s, -14 * s); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = fl ? FLASH : '#3a0a10'; ctx.lineWidth = 0.9 * s; for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo(-5 * s, (-17 - i * 3) * s); ctx.lineTo(5 * s, (-17 - i * 3) * s); ctx.stroke(); }
+    // 머리: 각진 쐐기형 + 길게 튀어나온 주둥이
+    const breath = e.breathT > 0, jaw = breath ? 5 : 0.8;
+    ctx.fillStyle = SC; ctx.strokeStyle = L; ctx.lineWidth = 1.3 * s;
+    ctx.beginPath(); ctx.moveTo(-9 * s, -39 * s); ctx.lineTo(-11 * s, -33 * s); ctx.lineTo(-5 * s, -26 * s); ctx.lineTo(-3.4 * s, -22 * s); ctx.lineTo(3.4 * s, -22 * s); ctx.lineTo(5 * s, -26 * s); ctx.lineTo(11 * s, -33 * s); ctx.lineTo(9 * s, -39 * s); ctx.lineTo(0, -41 * s); ctx.closePath(); ctx.fill(); ctx.stroke();
+    // 아래턱 + 송곳니
+    ctx.fillStyle = SC2; ctx.beginPath(); ctx.moveTo(-4.4 * s, (-24 + jaw * 0.2) * s); ctx.lineTo(0, (-20 + jaw) * s); ctx.lineTo(4.4 * s, (-24 + jaw * 0.2) * s); ctx.closePath(); ctx.fill(); ctx.stroke();
+    if (breath) { ctx.fillStyle = '#2a0608'; ctx.beginPath(); ctx.ellipse(0, (-22 + jaw * 0.4) * s, 3.6 * s, jaw * 0.7 * s, 0, 0, TAU); ctx.fill(); const g = ctx.createRadialGradient(0, -22 * s, 1 * s, 0, -22 * s, 18 * s); g.addColorStop(0, 'rgba(255,250,170,.95)'); g.addColorStop(0.5, 'rgba(255,130,30,.6)'); g.addColorStop(1, 'rgba(255,60,10,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, -22 * s, 18 * s, 0, TAU); ctx.fill(); }
+    ctx.fillStyle = BONE; ctx.strokeStyle = L; ctx.lineWidth = 0.7 * s; for (const k of [-1, 1]) { tri(ctx, k * 3.2 * s - 0.9 * s, (-23) * s, k * 3 * s, (-18.4 + (breath ? 1.5 : 0)) * s, k * 3.2 * s + 0.9 * s, (-23) * s); ctx.fill(); ctx.stroke(); }
+    // 콧구멍 + 콧김
+    ctx.fillStyle = GLOW; for (const k of [-1, 1]) { ctx.beginPath(); ctx.ellipse(k * 1.7 * s, -24.4 * s, 0.8 * s, 1.2 * s, k * 0.4, 0, TAU); ctx.fill(); }
+    // 눈: 가늘게 찢어진 불타는 눈 + 이마 주름
+    for (const k of [-1, 1]) { ctx.fillStyle = fl ? FLASH : '#ffb21a'; ctx.beginPath(); ctx.moveTo(k * 2.4 * s, -33.2 * s); ctx.lineTo(k * 8.6 * s, -36.4 * s); ctx.lineTo(k * 7 * s, -31.4 * s); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#1a0406'; ctx.fillRect(k * 5.6 * s - 0.4 * s, -35 * s, 0.8 * s, 2.8 * s); }
+    ctx.strokeStyle = fl ? FLASH : '#2a0508'; ctx.lineWidth = 0.9 * s; ctx.beginPath(); ctx.moveTo(-3 * s, -38 * s); ctx.lineTo(0, -35 * s); ctx.lineTo(3 * s, -38 * s); ctx.stroke();
+    // 길게 뒤로 휘어진 뿔 + 뺨 가시
+    ctx.fillStyle = BONE; ctx.strokeStyle = L; ctx.lineWidth = 1 * s;
+    for (const k of [-1, 1]) { ctx.beginPath(); ctx.moveTo(k * 5.4 * s, -40 * s); ctx.quadraticCurveTo(k * 16 * s, -45 * s, k * 21 * s, -58 * s); ctx.quadraticCurveTo(k * 12 * s, -50 * s, k * 3 * s, -37.6 * s); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.moveTo(k * 10 * s, -36 * s); ctx.lineTo(k * 18 * s, -37 * s); ctx.lineTo(k * 10.6 * s, -32 * s); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.moveTo(k * 8 * s, -30 * s); ctx.lineTo(k * 14 * s, -28 * s); ctx.lineTo(k * 6 * s, -26.6 * s); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+    tri(ctx, -2 * s, -40.6 * s, 0, -48 * s, 2 * s, -40.6 * s); ctx.fill(); ctx.stroke();
     ctx.restore();
   }
 

@@ -704,8 +704,8 @@
       if (ev.type === 'banner') banner(ev.text, ev.boss);
       else if (ev.type === 'shot') { /* 소리만 있는 이벤트 */ }
       else if (ev.type === 'crit') addFx({ k: 'crit', x: ev.x, y: ev.y, t: 0, max: 0.4, c: '#ffd23f' });
-      else if (ev.type === 'bossCast') { addFx({ k: 'zone', x: ev.x, y: ev.y, r: ev.r, t: 0, max: ev.warn, c: DBK[ev.kind][1] }); toast('보스가 ' + DBK[ev.kind][0] + ' 광역기를 시전!'); }
-      else if (ev.type === 'debuffHit') addFx({ k: 'boom', x: ev.x, y: ev.y, r: ev.r, t: 0, max: 0.4, big: false, enemy: true, c: DBK[ev.kind][1] });
+      else if (ev.type === 'bossCast') { addFx({ k: 'zone', x: ev.x, y: ev.y, r: ev.r, t: 0, max: ev.warn, c: DBK[ev.kind][1], kind: ev.kind }); toast('보스가 ' + DBK[ev.kind][0] + ' 광역기를 시전!'); }
+      else if (ev.type === 'debuffHit') { addFx({ k: 'impact', x: ev.x, y: ev.y, r: ev.r, kind: ev.kind, t: 0, max: 0.9 }); if (ev.kind === 'stun') addShake(9, 0.3); addFx({ k: 'boom', x: ev.x, y: ev.y, r: ev.r, t: 0, max: 0.4, big: false, enemy: true, c: DBK[ev.kind][1] }); }
       else if (ev.type === 'roundClear') banner('라운드 ' + ev.round + ' 클리어!');
       else if (ev.type === 'castleBlast') {
         const col = JOBC[ev.cfin] || JOBC[ev.cvar] || JOBC.arcane, dl = -ev.k * 0.28;
@@ -788,8 +788,6 @@
       else if (ev.type === 'castleAwaken') { banner('성채 각성!', true); for (let i = 0; i < 4; i++) addFx({ k: 'ring', x: CX, y: CY, t: -i * 0.12, max: 1.0, c: '#ffe27a', big: true, r: 200 }); addShake(8, 0.5); }
       else if (ev.type === 'dragonIntro') { { const zf = Math.min(vw / 1500, vh / 1250); cam.zoom = Math.max(minZoom(), Math.min(cam.zoom, zf)); centerOnCore(); clampCam(); } banner('땅이 갈라진다…', true); toast('성 주변만 남기고 모든 땅이 무너진다'); }
       else if (ev.type === 'dragonUp') { banner('용이 하늘로 날아오른다!', true); addShake(10, 0.6); }
-      else if (ev.type === 'dragonAway') toast('하늘에서 불덩이가 쏟아져요 — 표시된 곳을 피하세요');
-      else if (ev.type === 'dragonLandWarn') toast('용이 내려앉을 자리가 표시됐어요 — 비켜서세요!');
       else if (ev.type === 'dragonLand') { banner('용이 다시 내려앉았다!', true); addShake(16, 0.7); }
       else if (ev.type === 'bossRage') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#ff3b1a' }); banner(ev.name + ' 분노!'); }
       else if (ev.type === 'over') { if (ev.win) showEnd(true); else startDefeat(); }
@@ -875,6 +873,66 @@
     if (e.weakT > 0) { ctx.fillStyle = '#ff6b6b'; ctx.beginPath(); ctx.moveTo(x - 4 * s, y - 3 * s); ctx.lineTo(x + 4 * s, y - 3 * s); ctx.lineTo(x, y + 4 * s); ctx.fill(); x += 12 * s; }
     if (e.chillT > 0) { ctx.strokeStyle = '#8fd8ff'; ctx.lineWidth = 1.6 * s; for (let i = 0; i < 3; i++) { const a = i * 1.047; ctx.beginPath(); ctx.moveTo(x - Math.cos(a) * 4.5 * s, y - Math.sin(a) * 4.5 * s); ctx.lineTo(x + Math.cos(a) * 4.5 * s, y + Math.sin(a) * 4.5 * s); ctx.stroke(); } x += 12 * s; }
     if (e.woundT > 0) { ctx.fillStyle = '#c77dff'; ctx.fillRect(x - 1.5 * s, y - 4 * s, 3 * s, 8 * s); ctx.fillRect(x - 4 * s, y - 1.5 * s, 8 * s, 3 * s); }
+  }
+
+  // 하늘에서 떨어지는 물체: p(0→1)에 따라 그림자가 커지고 물체가 내려온다. 기절=거대한 망치, 중독=독약통, 약화=저주의 해골, 상처=가시 창, 얼음=고드름, 바위=바윗덩이, 불=운석
+  function drawFall(ctx, kind, x, y, r, p, src) {
+    const sz = Math.max(16, Math.min(r * 0.55, 90)), e = p * p, dy = (1 - e) * (420 + r), a = Math.min(1, p * 4);
+    if (p > 0.97) return;
+    ctx.save(); ctx.globalAlpha = 0.35 * e; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(x, y, sz * (0.4 + 0.8 * e), sz * (0.2 + 0.4 * e), 0, 0, 6.283); ctx.fill();
+    ctx.globalAlpha = a; ctx.translate(x, y - dy); ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(1.5, sz * 0.07);
+    if (kind === 'stun') { // 거대한 망치
+      ctx.rotate(Math.sin(p * 9) * 0.05); ctx.fillStyle = '#8a5a2a'; ctx.strokeStyle = '#2a1608'; ctx.fillRect(-sz * 0.09, -sz * 1.5, sz * 0.18, sz * 1.5); ctx.strokeRect(-sz * 0.09, -sz * 1.5, sz * 0.18, sz * 1.5);
+      ctx.fillStyle = '#9aa3b0'; ctx.strokeStyle = '#2b303a'; ctx.fillRect(-sz * 0.62, -sz * 0.5, sz * 1.24, sz * 0.62); ctx.strokeRect(-sz * 0.62, -sz * 0.5, sz * 1.24, sz * 0.62);
+      ctx.fillStyle = '#ffe14a'; ctx.fillRect(-sz * 0.62, -sz * 0.5, sz * 1.24, sz * 0.12); ctx.fillStyle = '#c9d2de'; ctx.fillRect(-sz * 0.56, -sz * 0.36, sz * 0.2, sz * 0.4);
+    } else if (kind === 'poison') { // 독약통
+      ctx.rotate(0.25 + p * 3); ctx.fillStyle = 'rgba(190,240,255,.55)'; ctx.strokeStyle = '#2a4a2a'; ctx.beginPath(); ctx.ellipse(0, 0, sz * 0.5, sz * 0.55, 0, 0, 6.283); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#6fe03a'; ctx.beginPath(); ctx.ellipse(0, sz * 0.12, sz * 0.43, sz * 0.4, 0, 0, 6.283); ctx.fill();
+      ctx.fillStyle = 'rgba(190,240,255,.55)'; ctx.fillRect(-sz * 0.17, -sz * 0.9, sz * 0.34, sz * 0.4); ctx.strokeRect(-sz * 0.17, -sz * 0.9, sz * 0.34, sz * 0.4);
+      ctx.fillStyle = '#8a5a2a'; ctx.fillRect(-sz * 0.22, -sz * 1.05, sz * 0.44, sz * 0.18);
+      ctx.fillStyle = '#e8ffd0'; ctx.font = '900 ' + sz * 0.5 + 'px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('☠', 0, sz * 0.25);
+    } else if (kind === 'weak') { // 저주의 해골
+      ctx.fillStyle = '#e8e2d2'; ctx.strokeStyle = '#2a1010'; ctx.beginPath(); ctx.arc(0, -sz * 0.1, sz * 0.62, 0, 6.283); ctx.fill(); ctx.stroke(); ctx.fillRect(-sz * 0.33, sz * 0.3, sz * 0.66, sz * 0.38); ctx.strokeRect(-sz * 0.33, sz * 0.3, sz * 0.66, sz * 0.38);
+      ctx.fillStyle = '#d02020'; for (const k of [-1, 1]) { ctx.beginPath(); ctx.ellipse(k * sz * 0.27, -sz * 0.1, sz * 0.17, sz * 0.2, 0, 0, 6.283); ctx.fill(); }
+      ctx.strokeStyle = 'rgba(255,60,60,.7)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, sz * 0.95, 0, 6.283); ctx.stroke();
+    } else if (kind === 'wound') { // 가시 창
+      ctx.fillStyle = '#c77dff'; ctx.strokeStyle = '#2a1040'; ctx.beginPath(); ctx.moveTo(0, sz * 1.1); ctx.lineTo(-sz * 0.3, -sz * 0.3); ctx.lineTo(0, -sz * 0.9); ctx.lineTo(sz * 0.3, -sz * 0.3); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#e8c8ff'; for (const k of [-1, 1]) { ctx.beginPath(); ctx.moveTo(k * sz * 0.25, -sz * 0.1); ctx.lineTo(k * sz * 0.62, -sz * 0.4); ctx.lineTo(k * sz * 0.3, sz * 0.3); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+    } else if (kind === 'ice') { // 거대한 고드름
+      ctx.fillStyle = '#d8f4ff'; ctx.strokeStyle = '#4f9ccc'; ctx.beginPath(); ctx.moveTo(0, sz * 1.1); ctx.lineTo(-sz * 0.34, -sz * 0.6); ctx.lineTo(sz * 0.34, -sz * 0.6); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.beginPath(); ctx.moveTo(-sz * 0.1, -sz * 0.5); ctx.lineTo(0, sz * 0.8); ctx.lineTo(-sz * 0.2, -sz * 0.5); ctx.fill();
+    } else if (kind === 'rock') { // 바윗덩이
+      ctx.rotate(p * 4); ctx.fillStyle = '#8a6a44'; ctx.strokeStyle = '#3a2a16'; ctx.beginPath(); for (let i = 0; i < 9; i++) { const an = i / 9 * 6.283, rr = sz * (0.62 + ((i * 5) % 3) * 0.14); ctx.lineTo(Math.cos(an) * rr, Math.sin(an) * rr); } ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#6b4e2c'; ctx.beginPath(); ctx.arc(sz * 0.15, sz * 0.1, sz * 0.25, 0, 6.283); ctx.fill();
+    } else { // 운석
+      const g = ctx.createRadialGradient(0, 0, 2, 0, 0, sz * 1.1); g.addColorStop(0, '#fff1a0'); g.addColorStop(0.45, '#ff8a2a'); g.addColorStop(1, 'rgba(200,40,10,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, sz * 1.1, 0, 6.283); ctx.fill(); ctx.fillStyle = '#4a1a0a'; ctx.beginPath(); ctx.arc(0, 0, sz * 0.5, 0, 6.283); ctx.fill();
+      ctx.globalAlpha = a * 0.5; ctx.fillStyle = '#ff7a1a'; ctx.beginPath(); ctx.moveTo(-sz * 0.4, 0); ctx.lineTo(0, -sz * 2.4); ctx.lineTo(sz * 0.4, 0); ctx.fill();
+    }
+    ctx.restore();
+  }
+  // 광역 상태이상이 땅에 닿는 순간의 효과
+  function drawImpact(ctx, f, p, z) {
+    const a = 1 - p, r = f.r, x = f.x, y = f.y;
+    ctx.save();
+    if (f.kind === 'stun') { // 충격파 + 갈라진 땅 + 별
+      ctx.globalAlpha = a * 0.7; ctx.strokeStyle = '#fff2a0'; ctx.lineWidth = 8 / z * a + 2 / z; ctx.beginPath(); ctx.arc(x, y, r * (0.2 + 0.8 * Math.min(1, p * 2.2)), 0, 6.283); ctx.stroke();
+      ctx.globalAlpha = a; ctx.strokeStyle = '#3a2a14'; ctx.lineWidth = 3 / z; ctx.beginPath(); for (let i = 0; i < 8; i++) { const an = i * 0.785 + 0.3; ctx.moveTo(x, y); ctx.lineTo(x + Math.cos(an) * r * 0.45, y + Math.sin(an) * r * 0.35); ctx.lineTo(x + Math.cos(an + 0.15) * r * 0.75, y + Math.sin(an + 0.15) * r * 0.6); } ctx.stroke();
+      ctx.fillStyle = '#ffe14a'; ctx.font = '900 ' + 22 / z + 'px sans-serif'; ctx.textAlign = 'center'; for (let i = 0; i < 5; i++) { const an = i * 1.256 + p * 3; ctx.fillText('★', x + Math.cos(an) * r * 0.55, y + Math.sin(an) * r * 0.4 - p * 40 / z); }
+    } else if (f.kind === 'poison') { // 약병이 깨져 튀는 독
+      ctx.globalAlpha = a * 0.55; ctx.fillStyle = '#6fe03a'; ctx.beginPath(); ctx.arc(x, y, r * (0.3 + 0.7 * Math.min(1, p * 2.5)), 0, 6.283); ctx.fill();
+      ctx.globalAlpha = a; ctx.fillStyle = '#a8ff6a'; for (let i = 0; i < 12; i++) { const an = i * 0.524 + 0.2, d = r * 0.85 * Math.min(1, p * 2.2) * (0.6 + (i % 3) * 0.2); ctx.beginPath(); ctx.arc(x + Math.cos(an) * d, y + Math.sin(an) * d * 0.8 - Math.sin(p * 3.1) * 26 / z, (5 - (i % 3)) / z * 1.3, 0, 6.283); ctx.fill(); }
+      ctx.fillStyle = 'rgba(190,240,255,.8)'; for (let i = 0; i < 6; i++) { const an = i * 1.05 + 0.5, d = r * 0.4 * Math.min(1, p * 3); ctx.beginPath(); ctx.moveTo(x + Math.cos(an) * d, y + Math.sin(an) * d - 4); ctx.lineTo(x + Math.cos(an) * d + 6, y + Math.sin(an) * d + 4); ctx.lineTo(x + Math.cos(an) * d - 5, y + Math.sin(an) * d + 5); ctx.fill(); }
+    } else if (f.kind === 'weak') { // 붉은 저주 문양
+      ctx.globalAlpha = a * 0.6; ctx.strokeStyle = '#ff4a4a'; ctx.lineWidth = 4 / z; ctx.beginPath(); ctx.arc(x, y, r * (0.4 + 0.6 * Math.min(1, p * 2)), 0, 6.283); ctx.stroke();
+      ctx.beginPath(); for (let i = 0; i < 5; i++) { const an = -1.57 + i * 2.513, rr = r * 0.7 * Math.min(1, p * 2.4); ctx.lineTo(x + Math.cos(an) * rr, y + Math.sin(an) * rr); } ctx.closePath(); ctx.stroke();
+      ctx.fillStyle = '#ff6b6b'; ctx.globalAlpha = a; for (let i = 0; i < 8; i++) { const an = i * 0.785, d = r * 0.8 * p; ctx.fillRect(x + Math.cos(an) * d - 3, y + Math.sin(an) * d * 0.8 - p * 30 / z - 3, 6, 6); }
+    } else { // wound: 보랏빛 가시가 솟아오름
+      ctx.globalAlpha = a * 0.4; ctx.fillStyle = '#b060ff'; ctx.beginPath(); ctx.arc(x, y, r * (0.3 + 0.7 * Math.min(1, p * 3)), 0, 6.283); ctx.fill();
+      ctx.globalAlpha = a; ctx.fillStyle = '#e0b8ff'; ctx.strokeStyle = '#5a2a90'; ctx.lineWidth = 1.5 / z; const h = 40 * Math.min(1, p * 4) * (1 - p * 0.4);
+      for (let i = 0; i < 12; i++) { const an = i * 0.524 + 0.1, d = r * (0.3 + 0.55 * ((i * 7) % 5) / 5), bx = x + Math.cos(an) * d, by = y + Math.sin(an) * d * 0.8; ctx.beginPath(); ctx.moveTo(bx - 5, by); ctx.lineTo(bx, by - h); ctx.lineTo(bx + 5, by); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+    }
+    ctx.restore();
   }
   const STRIKE_COL = { bolt: '#ffe14a', ice: '#8fd8ff', rock: '#c28a52', fire: '#ff6a2a', wind: '#d8f2ff' };
   // ── 100라운드: 성 주변만 남기고 땅이 무너져 절벽이 된다 ──
@@ -1081,6 +1139,7 @@
         ctx.globalAlpha = 0.9; ctx.lineWidth = 3 / z; ctx.setLineDash([10 / z, 7 / z]); ctx.stroke(); ctx.setLineDash([]);
         if (f.shape !== 'cone') { ctx.globalAlpha = 0.55; ctx.lineWidth = 2 / z; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (1 - p), 0, Math.PI * 2); ctx.stroke(); }
         else { ctx.globalAlpha = 0.5; ctx.lineWidth = 2 / z; ctx.beginPath(); ctx.arc(f.x, f.y, f.len * p, f.ang - f.half, f.ang + f.half); ctx.stroke(); }
+        if (f.shape !== 'cone' && f.kind !== 'bolt' && f.kind !== 'wind') { ctx.globalAlpha = 1; drawFall(ctx, f.kind, f.x, f.y, f.r, p, 'strike'); }
         if (f.kind === 'bolt') { ctx.globalAlpha = 0.8; ctx.fillStyle = '#fff6b0'; ctx.beginPath(); ctx.arc(f.x, f.y, 5 + 4 * pu, 0, Math.PI * 2); ctx.fill(); }
         ctx.globalAlpha = 1;
       }
@@ -1117,7 +1176,9 @@
         const pu = 0.5 + 0.5 * Math.sin(now * 0.02); ctx.globalAlpha = 0.16 + 0.14 * pu; ctx.fillStyle = f.c; ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill();
         ctx.globalAlpha = 0.9; ctx.strokeStyle = f.c; ctx.lineWidth = 3 / z; ctx.setLineDash([10 / z, 7 / z]); ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
         ctx.globalAlpha = 0.5; ctx.lineWidth = 2 / z; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (1 - p), 0, Math.PI * 2); ctx.stroke();
+        ctx.globalAlpha = 1; drawFall(ctx, f.kind, f.x, f.y, f.r, p, 'zone');
       }
+      else if (f.k === 'impact') drawImpact(ctx, f, p, z);
       else if (f.k === 'num') { // 피해/치유 숫자: 적 피해(노랑) · 치명타(주황, 크게) · 아군 피해(빨강) · 치유(초록)
         const crit = f.n === 'c', big = crit ? 18 : 12, pop = crit ? 1 + 0.5 * Math.max(0, 1 - p * 6) : 1;
         ctx.globalAlpha = p > 0.6 ? 1 - (p - 0.6) / 0.4 : 1; const fs = Math.round(big * pop / z * 10) / 10;
@@ -1494,5 +1555,5 @@
   if (!params.get('bot') && !params.get('notitle')) showTitle(); else $('overlay').classList.add('hidden');
   if (params.get('bot')) { $('overlay').classList.add('hidden'); newGame(); const warp = +params.get('warp') || 0; for (let i = 0; i < warp / STEP && !S.over; i++) { botAct(); C.tick(S, STEP); } if (+params.get('round')) { C.jumpToRound(S, +params.get('round')); C.tick(S, STEP); } C.drainEvents(S); if (S.over) showEnd(S.win); cam.zoom = +params.get('zoom') || 0.5; clampCam(); }
   requestAnimationFrame(frame);
-  window.__game = { toast, Meta, get S() { return S; }, cam, CastleCore: C, get bossArrows() { return bossArrows; }, get enemyArrows() { return enemyArrows; }, perf, get liteMode() { return liteMode; }, get drawnCount() { return drawnCount; }, get renderScale() { return renderScale; }, get fxPoolSize() { return fxPool.length; }, uiRects, skipCinematic: () => $('cineSkip').click() };
+  window.__game = { toast, addFx, Meta, get S() { return S; }, cam, CastleCore: C, get bossArrows() { return bossArrows; }, get enemyArrows() { return enemyArrows; }, perf, get liteMode() { return liteMode; }, get drawnCount() { return drawnCount; }, get renderScale() { return renderScale; }, get fxPoolSize() { return fxPool.length; }, uiRects, skipCinematic: () => $('cineSkip').click() };
 })();
