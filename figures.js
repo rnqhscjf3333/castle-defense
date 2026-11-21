@@ -609,6 +609,26 @@
   // 전설 유닛: 용사/명궁 그림에 보랏빛·청록 색을 입혀 크게 그린다
   const UBASE = { legendsword: 'hero', legendarcher: 'marksman', undead: 'sword' };
   const UPAL = { undead: { body: '#4a8a5a', legs: '#254a30', head: '#a9d6b0', belt: '#7dffb0' }, legendsword: { body: '#7a1fa8', legs: '#3a0f5a', head: '#f3cfa6', belt: '#ff6bff' }, legendarcher: { body: '#9b3fe8', legs: '#2d1a78', head: '#f3cfa6', belt: '#e0b0ff' } };
+
+  // 각성한 전직 유닛: 계열별 색(검=진홍·금, 궁=청록·백, 사제=금·분홍)의 기운 + 빛의 날개 + 후광 + 맴도는 빛 입자
+  const AWC = { sword: ['#ff5a3a', '#ffd86a', '#fff1c8'], archer: ['#3adfc0', '#c8fff2', '#ffffff'], priest: ['#ffd86a', '#ffc8e8', '#fffbe8'] };
+  function awakeBack(ctx, e, s, now) {
+    const c = AWC[e.type] || AWC.sword, t = now * 0.004 + (e.id || e.x) * 0.01, pu = 0.5 + 0.5 * Math.sin(t * 1.3), flap = Math.sin(t * 1.6) * 2.2 * s;
+    ctx.save(); ctx.globalAlpha = 0.3 + 0.12 * pu; ctx.fillStyle = c[0]; ctx.beginPath(); ctx.ellipse(0, 10 * s, 11 * s, 4 * s, 0, 0, TAU); ctx.fill();
+    ctx.globalAlpha = 0.55; ctx.strokeStyle = c[1]; ctx.lineWidth = 0.9 * s; ctx.beginPath(); ctx.ellipse(0, 10 * s, 11 * s + pu * s, 4 * s + pu * 0.4 * s, 0, 0, TAU); ctx.stroke();
+    for (const k of [-1, 1]) { // 빛의 날개 (몸 뒤)
+      ctx.globalAlpha = 0.62; const g = ctx.createLinearGradient(0, 0, k * 18 * s, -8 * s); g.addColorStop(0, c[2]); g.addColorStop(1, c[0]);
+      ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(k * 3 * s, 0); ctx.quadraticCurveTo(k * 14 * s, (-16 + flap / s) * s, k * 20 * s, (-13 + flap / s) * s); ctx.quadraticCurveTo(k * 15 * s, -8 * s, k * 17 * s, -3 * s); ctx.quadraticCurveTo(k * 11 * s, -3 * s, k * 12 * s, 2 * s); ctx.quadraticCurveTo(k * 7 * s, 0, k * 3 * s, 4 * s); ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+  }
+  function awakeFront(ctx, e, s, now) {
+    const c = AWC[e.type] || AWC.sword, t = now * 0.004 + (e.id || e.x) * 0.01, hy = -9 * s - (e.jobTier ? 8 * s : 0);
+    ctx.save(); ctx.globalAlpha = 0.9; ctx.strokeStyle = c[1]; ctx.lineWidth = 1.3 * s; ctx.beginPath(); ctx.ellipse(0, hy - 6 * s, 6 * s, 1.8 * s, 0, 0, TAU); ctx.stroke(); // 후광
+    ctx.globalAlpha = 0.35; ctx.strokeStyle = c[0]; ctx.lineWidth = 2.6 * s; ctx.stroke();
+    for (let i = 0; i < 4; i++) { const a = t + i * 1.571, ph = (t * 0.6 + i * 0.25) % 1; ctx.globalAlpha = (1 - ph) * 0.9; ctx.fillStyle = i % 2 ? c[1] : c[2]; ctx.beginPath(); ctx.arc(Math.cos(a) * 9 * s, 2 * s - ph * 16 * s, 0.9 * s, 0, TAU); ctx.fill(); }
+    ctx.restore();
+  }
   // 개체 하나 그리기. unitScale: 판정 반지름 대비 그림 크기 배율
   function draw(ctx, e, now) {
     track(e, now);
@@ -617,7 +637,10 @@
     if (!fn) return;
     const s = (e.r / 10) * 1.25;
     ctx.save(); ctx.translate(e.x, e.y - 3 * s); // 발이 판정 중심 근처에 오도록
+    const aw = e.team === 'u' && e.awk && e.job && !e.flash;
+    if (aw) awakeBack(ctx, e, s, now);
     fn(ctx, e, s);
+    if (aw) awakeFront(ctx, e, s, now);
     ctx.restore();
   }
   // 적이 아주 많을 때/멀리서 볼 때 쓰는 간단한 그림: 몸통(네모) + 머리(동그라미)만, 무기·그림자·방향 애니메이션 없음

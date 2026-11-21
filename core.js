@@ -759,7 +759,7 @@
     const s = statsOf(S, u.type);
     if (s.max > u.max) u.hp += s.max - u.max;
     u.max = s.max; u.atk = s.atk; u.rate = s.rate; u.speed = s.speed; u.heal = s.heal; u.healRate = s.healRate; u.range = s.range; u.healRange = s.healRange;
-    const ids = S.jobs[lineOf(u.type)] ? S.jobs[lineOf(u.type)].ids : []; u.job = ids.length ? ids[ids.length - 1] : null; u.jobTier = ids.length;
+    const ids = S.jobs[lineOf(u.type)] ? S.jobs[lineOf(u.type)].ids : []; u.job = ids.length ? ids[ids.length - 1] : null; u.jobTier = ids.length; u.awk = !!(S.jobs[lineOf(u.type)] && S.jobs[lineOf(u.type)].awk);
     if (u.hp > u.max) u.hp = u.max;
   }
   function describeTaken(S) {
@@ -823,7 +823,7 @@
       id: S.nextId++, type, team: 'u', x, y,
       hp: st.max, max: st.max, atk: st.atk, rate: st.rate, range: st.range, speed: st.speed, r: cfg.r,
       heal: st.heal, healRate: st.healRate, healRange: st.healRange,
-      job: (S.jobs[lineOf(type)] && S.jobs[lineOf(type)].ids.length) ? S.jobs[lineOf(type)].ids[S.jobs[lineOf(type)].ids.length - 1] : null, jobTier: S.jobs[lineOf(type)] ? S.jobs[lineOf(type)].ids.length : 0,
+      job: (S.jobs[lineOf(type)] && S.jobs[lineOf(type)].ids.length) ? S.jobs[lineOf(type)].ids[S.jobs[lineOf(type)].ids.length - 1] : null, jobTier: S.jobs[lineOf(type)] ? S.jobs[lineOf(type)].ids.length : 0, awk: !!(S.jobs[lineOf(type)] && S.jobs[lineOf(type)].awk),
       cd: 0, flash: 0, swing: 0, dead: false, ha, hr, hx: CX + Math.cos(ha) * hr, hy: CY + Math.sin(ha) * hr,
       aura: 0, n: 0, rv: type === 'priest' ? S.jobMods.priest.revive : 0, // 사제마다 라운드당 부활 횟수
     };

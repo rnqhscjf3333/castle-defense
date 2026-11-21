@@ -275,7 +275,7 @@
   }
 
   function drawCastle(ctx, c, now) {
-    const hp = c.max ? c.hp / c.max : 1, t = now * 0.001, flash = c.flash > 0, lv = c.lv || 1, nc = c.cannons || 1;
+    const hp = c.max ? c.hp / c.max : 1, t = now * 0.001, flash = c.flash > 0, lv = c.lv || 1, nc = c.cannons || 1, awk = !!c.awk;
     ctx.save(); ctx.translate(c.x, c.y);
     // 성 레벨: 3레벨부터 바깥 성벽 고리, 5레벨부터 금장식, 7레벨부터 대리석 빛깔 (레벨이 오를수록 웅장해진다)
     if (lv >= 3) { ctx.strokeStyle = lv >= 7 ? '#e8dfc2' : '#aab2c2'; ctx.lineWidth = 7; ctx.beginPath(); ctx.arc(0, 0, 76, 0, TAU); ctx.stroke(); ctx.strokeStyle = 'rgba(40,46,58,.55)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(0, 0, 79.5, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.arc(0, 0, 72.5, 0, TAU); ctx.stroke();
@@ -285,7 +285,7 @@
     // 안뜰 바닥
     ctx.fillStyle = '#6b6f78'; ctx.fillRect(-46, -46, 92, 92);
     // 성벽 4면 (두께 12) + 총안(톱니)
-    const wall = lv >= 7 ? '#d8d2bd' : lv >= 4 ? '#aeb8cc' : '#9aa1b0', wallD = '#6f7686', wallL = lv >= 5 ? '#ffe39a' : '#b9bfcc';
+    const wall = awk ? '#fbf3da' : lv >= 7 ? '#d8d2bd' : lv >= 4 ? '#aeb8cc' : '#9aa1b0', wallD = '#6f7686', wallL = awk ? '#ffd34a' : lv >= 5 ? '#ffe39a' : '#b9bfcc';
     ctx.fillStyle = wall; ctx.strokeStyle = '#4a505e'; ctx.lineWidth = 1.5;
     for (const [x, y, w, h] of [[-46, -46, 92, 12], [-46, 34, 92, 12], [-46, -46, 12, 92], [34, -46, 12, 92]]) { ctx.fillRect(x, y, w, h); ctx.strokeRect(x, y, w, h); }
     ctx.fillStyle = wallL; for (let i = -40; i <= 40; i += 14) { ctx.fillRect(i - 3, -49, 6, 5); ctx.fillRect(i - 3, 44, 6, 5); ctx.fillRect(-49, i - 3, 5, 6); ctx.fillRect(44, i - 3, 5, 6); }
@@ -298,7 +298,7 @@
     // 중앙 본성(키프): 몸체 + 위에서 본 사각뿔 지붕
     ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.fillRect(-20, -14, 46, 46);
     ctx.fillStyle = '#a3a9b8'; ctx.strokeStyle = '#4a505e'; ctx.lineWidth = 1.5; ctx.fillRect(-22, -22, 44, 44); ctx.strokeRect(-22, -22, 44, 44);
-    const rc = lv >= 6 ? ['#d8a82a', '#b98a1a', '#9a7010', '#c89a20'] : lv >= 3 ? ['#4a6ab0', '#3a5a9a', '#2f4a82', '#4163a8'] : ['#b04a4a', '#8f3a3a', '#7a3030', '#a24141'];
+    const rc = awk ? ['#fff0b0', '#f2c94a', '#d9a526', '#f7dc7a'] : lv >= 6 ? ['#d8a82a', '#b98a1a', '#9a7010', '#c89a20'] : lv >= 3 ? ['#4a6ab0', '#3a5a9a', '#2f4a82', '#4163a8'] : ['#b04a4a', '#8f3a3a', '#7a3030', '#a24141'];
     const roof = [[rc[0], [-22, -22], [22, -22]], [rc[1], [22, -22], [22, 22]], [rc[2], [22, 22], [-22, 22]], [rc[3], [-22, 22], [-22, -22]]];
     for (const [col, a, b] of roof) { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.closePath(); ctx.fill(); }
     ctx.strokeStyle = '#3a1818'; ctx.lineWidth = 1; ctx.beginPath(); for (const [, a] of roof) { ctx.moveTo(0, 0); ctx.lineTo(a[0], a[1]); } ctx.stroke();
@@ -326,6 +326,14 @@
       castleMods(ctx, c, t);
       for (let i = 1; i < Math.min(nc, 4); i++) { const [x, y] = [[46, -46], [-46, 46], [46, 46]][i - 1]; castleCaster(ctx, c, t, x, y - 13, 0.78, i % 2 ? 0.3 : -0.3); }
       castleCaster(ctx, c, t, 0, 4, 1, 0);
+    }
+    if (awk) { // 각성한 성채: 룬 고리, 모서리 탑 위의 떠다니는 수정, 본성 위의 빛기둥과 왕관
+      ctx.save(); ctx.rotate(t * 0.25); ctx.strokeStyle = 'rgba(255,226,120,.85)'; ctx.lineWidth = 2; ctx.setLineDash([10, 8]); ctx.beginPath(); ctx.arc(0, 0, 90, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = '#fff3b0'; for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; ctx.save(); ctx.translate(Math.cos(a) * 90, Math.sin(a) * 90); ctx.rotate(a + Math.PI / 4); ctx.fillRect(-2.6, -2.6, 5.2, 5.2); ctx.restore(); } ctx.restore();
+      for (const [x, y] of [[-46, -46], [46, -46], [-46, 46], [46, 46]]) { const by = y - 30 + Math.sin(t * 2 + x) * 3; ctx.fillStyle = 'rgba(255,230,140,.35)'; ctx.beginPath(); ctx.arc(x, by, 9, 0, TAU); ctx.fill(); ctx.fillStyle = '#7fe8ff'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, by - 8); ctx.lineTo(x + 5, by); ctx.lineTo(x, by + 8); ctx.lineTo(x - 5, by); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+      const g = ctx.createLinearGradient(0, -120, 0, 0); g.addColorStop(0, 'rgba(255,240,170,0)'); g.addColorStop(1, 'rgba(255,240,170,.55)'); ctx.fillStyle = g; ctx.fillRect(-14, -120, 28, 120);
+      ctx.fillStyle = '#ffd34a'; ctx.strokeStyle = '#8a5a08'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-17, -26); ctx.lineTo(-17, -40); ctx.lineTo(-9, -32); ctx.lineTo(0, -46); ctx.lineTo(9, -32); ctx.lineTo(17, -40); ctx.lineTo(17, -26); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#ff5a8a'; ctx.beginPath(); ctx.arc(0, -34, 3, 0, TAU); ctx.fill();
     }
     // 중앙 깃대 + 큰 깃발 (펄럭임)
     // 손상: 금, 연기, 불
