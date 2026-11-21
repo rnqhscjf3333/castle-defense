@@ -184,7 +184,10 @@
   }
   $('btnPause').addEventListener('click', () => { if (!running && !S) return; toggleModal('setMenu'); });
   $('btnInfo').addEventListener('click', () => { if (!S) return; toggleModal('infoPanel'); if (!$('infoPanel').classList.contains('hidden')) renderInfo(); });
-  const setSpeed = v => { speed = v; for (const b of document.querySelectorAll('#speedBar button')) b.classList.toggle('on', +b.dataset.sp === v); };
+  let shownSp = 0; // 보스전에는 자동으로 1배속, 끝나면 고른 배속으로 돌아간다
+  const effSpeed = () => (S && !S.over && (S.dragonIntro || S.bossDeath || S.enemies.some(e => e.kind === 'boss' && !e.dead))) ? 1 : speed;
+  const showSpeed = v => { if (v === shownSp) return; shownSp = v; for (const b of document.querySelectorAll('#speedBar button')) b.classList.toggle('on', +b.dataset.sp === v); };
+  const setSpeed = v => { speed = v; showSpeed(effSpeed()); };
   for (const b of document.querySelectorAll('#speedBar button')) b.addEventListener('click', () => setSpeed(+b.dataset.sp));
   window.addEventListener('keydown', e => {
     if (e.repeat) return;
@@ -1536,13 +1539,13 @@
     adaptResolution(now - prev);
     const dt = Math.min(0.1, (now - prev) / 1000); prev = now;
     if (S && running && !paused && !intro) {
-      acc += dt * speed; if (shakeT > 0) shakeT -= dt;
+      const sp = effSpeed(); showSpeed(sp); acc += dt * sp; if (shakeT > 0) shakeT -= dt;
       let n = 0;
       const k0 = performance.now();
-      while (acc >= STEP && n < 8 * speed) { if (window.__bot) botAct(); C.tick(S, STEP); acc -= STEP; n++; if (S.over) break; }
+      while (acc >= STEP && n < 8 * sp) { if (window.__bot) botAct(); C.tick(S, STEP); acc -= STEP; n++; if (S.over) break; }
       ema('tick', performance.now() - k0);
       if (acc > STEP * 8) acc = 0;
-      for (let i = fx.length - 1; i >= 0; i--) { const f = fx[i]; f.t += dt * speed; if (f.t >= f.max) { if (f.k === 'num') numFx--; fx[i] = fx[fx.length - 1]; fx.pop(); fxPool.push(f); } } // 끝난 효과는 풀로 돌려보낸다
+      for (let i = fx.length - 1; i >= 0; i--) { const f = fx[i]; f.t += dt * sp; if (f.t >= f.max) { if (f.k === 'num') numFx--; fx[i] = fx[fx.length - 1]; fx.pop(); fxPool.push(f); } } // 끝난 효과는 풀로 돌려보낸다
     }
     if (S) {
       if (!paused) updateDeathCam(dt);

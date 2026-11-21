@@ -277,7 +277,7 @@ function killBoss(g) { const b = g.enemies.find(e => e.kind === 'boss'); b.hp = 
   const cin = g.cinematic && g.cinematic.kind === 'endless'; C.endCinematic(g); if (g.jobs.offer) C.pickJob(g, 0); g.hold = false; for (let i = 0; i < 60; i++) C.tick(g, DT);
   check('마왕 처치 → 연출(endless) 후', cin);
   check('50라운드 마왕 처치 → 게임이 끝나지 않고 51라운드(무한)로', b.p2 && !g.over && g.round === 51, 'round ' + g.round);
-  check('무한 모드는 라운드마다 점점 훨씬 강해짐', C.hpMul(60) > C.hpMul(50) * 1.8 && C.enemyCount(60) > C.enemyCount(50) * 1.15, `hp ×${(C.hpMul(60) / C.hpMul(50)).toFixed(1)} 수 ×${(C.enemyCount(60) / C.enemyCount(50)).toFixed(1)}`);
+  check('무한 모드는 라운드마다 점점 훨씬 강해짐', C.hpMul(60) > C.hpMul(50) * 1.4 && C.hpMul(80) > C.hpMul(60) * 1.4 && C.enemyCount(60) > C.enemyCount(50) * 1.1, `hp ×${(C.hpMul(60) / C.hpMul(50)).toFixed(1)} 수 ×${(C.enemyCount(60) / C.enemyCount(50)).toFixed(1)}`);
   const e55 = C.bossInfo(g, 55), e60 = C.bossInfo(g, 60); check('무한 모드 5라운드마다 보스 (마왕은 50라운드에만)', !!e55 && !!e60 && e60.name !== '마왕' && C.bossInfo(g, 56) === null); }
 { // 2막 구조: 새 길(8방향), 더 가파른 난이도, 보스 라운드
   const a8 = C.spawnAngles(8), a6 = C.spawnAngles(6);
@@ -285,7 +285,7 @@ function killBoss(g) { const b = g.enemies.find(e => e.kind === 'boss'); b.hp = 
   const g = C.createGame(77); g.captureEvents = true; C.jumpToRound(g, 31); C.tick(g, DT); if (g.cards.offer) C.pickCard(g, 0);
   check('31라운드부터 스폰 지점이 8곳이고 2막 상태', g.spawnPts === 8 && g.act === 2, 'pts=' + g.spawnPts);
   const slopePre = (C.hpMul(30) - C.hpMul(25)) / 5, slopePost = (C.hpMul(40) - C.hpMul(35)) / 5;
-  check('2막은 적이 강해지는 폭이 더 큼 (체력 증가 기울기)', slopePost > slopePre * 1.1, `${slopePre.toFixed(2)} → ${slopePost.toFixed(2)}/라운드`);
+  check('2막에서도 라운드마다 체력이 꾸준히 증가 (밸런스 조정으로 기울기는 1막 후반보다 완만)', slopePost > 0.05, `${slopePre.toFixed(2)} → ${slopePost.toFixed(2)}/라운드`);
   check('2막 적 수 증가 (라운드당 +countPost, 1막 말 수 이어짐)', C.enemyCount(31) - C.enemyCount(30) === C.CFG.balance.countPost && C.enemyCount(50) > C.enemyCount(30));
   const g1 = C.createGame(78); C.jumpToRound(g1, 30); const sp1 = C.enemyCount(30);
   check('1막(≤30)은 act 1, 2막 진입은 보스 처치로만', g1.act === 1 && C.createGame(1).act === 1); }
