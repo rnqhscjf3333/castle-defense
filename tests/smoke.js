@@ -380,7 +380,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   const sm5 = arena(5, [['boss', 1500, 800]], 'summoner').enemies[0], sm25 = arena(25, [['boss', 1500, 800]], 'summoner').enemies[0];
   check('소환사 졸개 수도 라운드에 따라 늘어남', sm5.abil.summon.n < sm25.abil.summon.n, `${sm5.abil.summon.n} → ${sm25.abil.summon.n}`);
   const fin = arena(30, [['boss', 1500, 800]]).enemies[0]; check('암흑 기사단장(30라운드)은 패턴 8종(상태이상·강습·순간이동·암흑 흡수 포함) 고정 수치', Object.keys(fin.abil).length === 8 && fin.abil.artillery.dmg === C.CFG.act1Boss.abil.artillery.dmg);
-  const fin50 = arena(50, [['boss', 1500, 800]]).enemies[0]; check('마왕(50라운드)은 패턴 9종(상태이상 4가지·강습·순간이동·도약) 고정 수치, 더 큼', Object.keys(fin50.abil).length === 9 && fin50.abil.artillery.count === 2 && fin50.r > 33 && fin50.bossName === '마왕'); }
+  const fin50 = arena(50, [['boss', 1500, 800]]).enemies[0]; check('마왕(50라운드)은 패턴 9종(상태이상 4가지·강습·순간이동·도약) 고정 수치, 더 큼', Object.keys(fin50.abil).length === 10 && !!fin50.abil.sword && !fin50.abil.drain && fin50.abil.artillery.count === 2 && fin50.r > 33 && fin50.bossName === '마왕'); }
 
 // 23) 졸개 소환: 성 가까이 왔을 때만, 보스 앞(성 방향)에 나온다
 { const g = arena(10, [['boss', 1500, 1500 - 1000]], 'summoner'); g.core.atk = 0; g.core.hp = g.core.max = 1e9; const b = g.enemies[0]; b.speed = 0; delete b.abil.blink; let early = 0;
@@ -734,7 +734,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
 { // 사천왕
   const seeds = new Set(); for (let i = 0; i < 20; i++) { const g = C.createGame(100 + i); seeds.add(g.kingOrder.join()); }
   const g = C.createGame(5); const ok = [60, 70, 80].every((r, i) => C.bossInfo(g, r).id === g.kingOrder[i]) && g.kingOrder.length === 3 && new Set(g.kingOrder).size === 3;
-  check('60·70·80라운드는 사천왕 3명이 무작위 순서로 한 번씩, 90라운드는 한 명이 다시', ok && seeds.size > 1 && ['thunder', 'snow', 'earth'].includes(C.bossInfo(g, 90).id));
+  check('60·70·80라운드는 사천왕 3명이 무작위 순서로 한 번씩, 90라운드는 일반 보스', ok && seeds.size > 1 && !['thunder', 'snow', 'earth'].includes(C.bossInfo(g, 90).id));
   for (const id of ['thunder', 'snow', 'earth']) {
     const h = C.createGame(6); h.jobs.sword.ids = ['knight', 'paladin']; h.jobs.archer.ids = ['sniper', 'deadeye']; h.jobs.priest.ids = ['cleric', 'highcleric']; h.kingOrder = [id, 'x', 'y']; h.round = 60; h.phase = 'round'; h.hold = true; h.queue = []; h.enemies.length = 0; h.endless = true; h.captureEvents = true; h.core.hp = h.core.max = 1e12;
     const k = C.spawnEnemy(h, 'boss', 1500, 800); const f1 = k.bossName, l1 = JSON.stringify(k.look); C.damage(h, k, 1e12); for (let i = 0; i < 400; i++) C.tick(h, DT);
@@ -784,7 +784,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   const o51 = run(51); check('51라운드: 다음 사천왕의 기운(속성)과 대사 이벤트', g.omen === kingAt(60) && o51.length === 1 && o51[0].line.includes('마왕은 사천왕 중 최약체'), o51[0] && o51[0].line);
   const o55 = run(55); check('52~59라운드: 기운은 유지되고 대사는 없음', g.omen === kingAt(60) && o55.length === 0);
   const o61 = run(61); check('61라운드: 방금 쓰러뜨린 사천왕이 최약체였다는 대사', g.omen === kingAt(70) && o61.length === 1 && o61[0].line.includes(C.bossInfo(g, 60).name + '은 사천왕 중 최약체'), o61[0] && o61[0].line);
-  const o91 = run(91); check('91라운드: 용의 대사, 기운은 용(dragon)', g.omen === 'dragon' && o91.length === 1 && o91[0].id === 'dragon');
+  const o91 = run(91); check('91라운드: 기운은 용(dragon), 대사는 81라운드에서만', g.omen === 'dragon' && o91.length === 0);
   run(60); check('사천왕 라운드(60)에는 기운 없음', g.omen === null);
   check('90라운드 사천왕은 80라운드와 다른 사람', kingAt(90) !== kingAt(80)); }
 // 61) 보스 개성 스킬
@@ -796,7 +796,10 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
     check('철벽 장군: 주변 적에게 방어막', o.shieldT > 0 && o.shieldRed > 0.2, o.shieldRed); for (let i = 0; i < 300; i++) C.tick(g, DT); check('철벽 장군: 방어막은 시간이 지나면 풀림', o.dead || o.shieldT <= 0 || b.t.aura > 0); }
   { const { g, b } = run('berserker', 10, (g, b) => { b.hp = b.max * 0.4; b.t.focus = 0; b.life = 5; }); const h0 = b.hp; let x0 = b.x; for (let i = 0; i < 10; i++) C.tick(g, DT);
     check('광전사: 정신 집중 중 체력 회복·정지', b.focusT > 0 && b.hp > h0, Math.round(b.hp - h0)); const xs = b.x; for (let i = 0; i < 20; i++) C.tick(g, DT); check('광전사: 집중 중에는 움직이지 않음', Math.abs(b.x - xs) < 1); { const h1 = b.hp; C.damage(g, b, 1000); const lost = h1 - b.hp; check('광전사: 집중 중 피해 감소', lost < 700 && lost > 300, Math.round(lost)); } }
-  { const g = arena(30, [['boss', 700, 500]]); const b = g.enemies[0]; g.units.length = 0; b.t.drain = 0; b.life = 5; b.hp = b.max * 0.5; g.gold = 1e6; C.buy(g, 'sword'); for (let i = 0; i < 400 && !g.units.length; i++) C.tick(g, DT); const su = g.units[0]; su.x = 720; su.y = 500; su.hp = su.max = 1e6; b.t.drain = 0; b.life = 5; b.hp = b.max * 0.5; const h0 = b.hp; for (let i = 0; i < 3; i++) C.tick(g, DT); check('암흑 기사단장: 암흑 흡수로 아군 피해·보스 회복', b.abil.drain && b.hp > h0, Math.round(b.hp - h0)); }
+  { const g = arena(30, [['boss', 700, 500]]); const b = g.enemies[0]; g.units.length = 0; b.t.sword = 0; b.life = 5; b.speed = 0; g.gold = 1e6; C.buy(g, 'sword'); for (let i = 0; i < 400 && !g.units.length; i++) C.tick(g, DT); const su = g.units[0]; su.hp = su.max = 1e6; const hp0 = su.hp; let warn = null, hit = null; b.t.sword = 0;
+    for (let i = 0; i < 90 && !hit; i++) { su.x = 1000; su.y = 500; su.hx = su.x; su.hy = su.y; C.tick(g, DT); for (const ev of C.drainEvents(g)) { if (ev.type === 'strikeWarn' && ev.kind === 'slash') warn = ev; if (ev.type === 'strikeHit' && ev.kind === 'slash') hit = ev; } }
+    check('암흑 기사단장: 검기(일직선 예고 후 발사)로 직선상 아군 피해', !!warn && warn.shape === 'line' && !!hit && su.hp < hp0, hit && hit.hit); check('암흑 기사단장은 암흑 흡수를 쓰지 않음', !b.abil.drain && !!b.abil.sword); }
+  { const g = arena(50, [['boss', 700, 500]]); const b = g.enemies[0]; g.units.length = 0; b.abil = { drain: { cd: 11, r: 280, mul: 1.8, heal: 0.015, cap: 0.06 } }; b.t.drain = 0; b.life = 5; b.hp = b.max * 0.5; g.gold = 1e6; C.buy(g, 'sword'); for (let i = 0; i < 400 && !g.units.length; i++) C.tick(g, DT); const su = g.units[0]; su.x = 720; su.y = 500; su.hp = su.max = 1e6; b.t.drain = 0; b.life = 5; b.hp = b.max * 0.5; const h0 = b.hp; C.drainEvents(g); for (let i = 0; i < 3; i++) C.tick(g, DT); const dv = C.drainEvents(g).find(e => e.type === 'bossDrain'); check('마왕(2형태) 암흑 흡수: 아군 피해·보스 회복·병사 위치 이벤트', b.hp > h0 && !!dv && dv.pts.length >= 1, Math.round(b.hp - h0)); }
   { const g = C.createGame(77); g.gold = 1e7; g.phase = 'round'; g.hold = true; g.queue = []; for (const t of ['sword', 'priest']) { g.buyCd[t] = 0; C.buy(g, t); } for (let i = 0; i < 400 && g.units.length < 2; i++) C.tick(g, DT);
     const pr = g.units.find(u => u.type === 'priest'), sw = g.units.find(u => u.type === 'sword'); sw.x = pr.x + 30; sw.y = pr.y; const give = id => { const o = C.jobOptions(g).find(x => x.id === id); g.jobs.offer = { boss: 't', list: [o] }; C.pickJob(g, 0); };
     give('bishop'); for (let i = 0; i < 20; i++) C.tick(g, DT); check('주교: 주변 아군에게 축복(공격력↑·피해 감소)', sw.blT > 0 && sw.blA > 0 && sw.blD > 0, sw.blA);

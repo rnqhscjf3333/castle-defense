@@ -105,9 +105,9 @@
       { id: 'berserker', line: '피가... 피가 끓는다!',  name: '광전사',    look: { body: '#a3252d', head: '#f0cfa8', weapon: 'twin' },   abil: { rage: { at: 0.5, speed: 1.4, rate: 1.5, dmg: 1.3 }, focus: { cd: 17, dur: 2.6, heal: 0.07, red: 0.5 }, dash: { cd: 6, dur: 1.2, mul: 3 }, artillery: { cd: 7, dmg: 55, radius: 100, count: 1, flight: 1.5 }, debuff: [{ kind: 'stun', cd: 11, r: 95 }] } },
     ],
     // 1막 마지막(30라운드) 보스: 암흑 기사단장. 처치하면 연출과 함께 2막이 열린다.
-    act1Boss: { id: 'darkknight', line: '어둠 앞에 무릎을 꿇어라.', name: '암흑 기사단장', look: { body: '#2b2f3f', head: '#2e3140', weapon: 'sword', style: 'darkknight' }, abil: { summon: { cd: 10, n: 2, kind: 'bomber' }, artillery: { cd: 6, dmg: 70, radius: 105, count: 2, flight: 1.5 }, drain: { cd: 12, r: 170, mul: 2.2, heal: 0.015, cap: 0.05 }, shield: { cd: 16, dur: 3, red: 0.6 }, rage: { at: 0.35, speed: 1.3, rate: 1.4, dmg: 1.4 }, debuff: [{ kind: 'stun', cd: 13, r: 110 }, { kind: 'wound', cd: 15, r: 160 }] } },
+    act1Boss: { id: 'darkknight', line: '어둠 앞에 무릎을 꿇어라.', name: '암흑 기사단장', look: { body: '#2b2f3f', head: '#2e3140', weapon: 'sword', style: 'darkknight' }, abil: { summon: { cd: 10, n: 2, kind: 'bomber' }, artillery: { cd: 6, dmg: 70, radius: 105, count: 2, flight: 1.5 }, sword: { cd: 9, len: 900, width: 110, warn: 1.1, mul: 2.4, kb: 320 }, shield: { cd: 16, dur: 3, red: 0.6 }, rage: { at: 0.35, speed: 1.3, rate: 1.4, dmg: 1.4 }, debuff: [{ kind: 'stun', cd: 13, r: 110 }, { kind: 'wound', cd: 15, r: 160 }] } },
     // 최종 보스(50라운드): 마왕
-    finalBoss: { id: 'overlord', line: '모든 것은 이 어둠 속에서 끝난다.', name: '마왕', r: 38, look: { body: '#2a2438', head: '#ebe6f4', weapon: 'sword', crown: true, style: 'overlord' }, abil: { summon: { cd: 7, n: 4, kind: 'bomber' }, artillery: { cd: 5, dmg: 130, radius: 115, count: 2, flight: 1.4 }, shield: { cd: 12, dur: 3.5, red: 0.7 }, rage: { at: 0.4, speed: 1.4, rate: 1.5, dmg: 1.5 }, dash: { cd: 9, dur: 1.2, mul: 2.5 }, debuff: [{ kind: 'stun', cd: 10, r: 120 }, { kind: 'poison', cd: 11, r: 150 }, { kind: 'weak', cd: 13, r: 170 }, { kind: 'wound', cd: 14, r: 170 }] } },
+    finalBoss: { id: 'overlord', line: '모든 것은 이 어둠 속에서 끝난다.', name: '마왕', r: 38, look: { body: '#2a2438', head: '#ebe6f4', weapon: 'sword', crown: true, style: 'overlord' }, abil: { summon: { cd: 7, n: 4, kind: 'bomber' }, artillery: { cd: 5, dmg: 130, radius: 115, count: 2, flight: 1.4 }, sword: { cd: 10, len: 1100, width: 150, warn: 1.1, mul: 3, kb: 420 }, shield: { cd: 12, dur: 3.5, red: 0.7 }, rage: { at: 0.4, speed: 1.4, rate: 1.5, dmg: 1.5 }, dash: { cd: 9, dur: 1.2, mul: 2.5 }, debuff: [{ kind: 'stun', cd: 10, r: 120 }, { kind: 'poison', cd: 11, r: 150 }, { kind: 'weak', cd: 13, r: 170 }, { kind: 'wound', cd: 14, r: 170 }] } },
     // 마왕(50라운드): 1·2형태. 체력·공격을 너프하는 대신 한 번 쓰러져도 각성해서 부활한다
     finalNerf: { hp: 0.6, dmg: 0.78, hp2: 0.6, cdMul: 0.85, rageAt: 0.5, reviveT: 3.4, r: 44, name: '각성한 마왕', look: { body: '#7a1424', head: '#ecd2c4', weapon: 'sword', crown: true, p2: true, style: 'overlord' } },
     // 50라운드 클리어 뒤에는 강화 카드의 레벨 제한이 이만큼 풀린다 (아래 목록의 카드만)
@@ -135,7 +135,7 @@
     ],
     // 넉백: 보스·강한 적에게 맞으면 공격이 온 반대쪽으로 밀려난다 (질량이 큰 유닛은 덜 밀림)
     kb: { decay: 5.2, max: 950, stagger: 0.35, basic: { boss: 230, ogre: 200, brute: 150, boar: 150, direwolf: 90, rockgiant: 300, stormwolf: 90, elite: 110 }, mass: { golem: 0.35, legendsword: 0.5, hero: 0.8, legendarcher: 0.8, marksman: 0.9 } },
-    // 사천왕 (60·70·80라운드에 무작위 순서로 한 명씩, 90라운드는 한 명이 다시 나온다). 마왕처럼 쓰러지면 속성에 맞는 모습으로 각성해 부활한다.
+    // 사천왕 (60·70·80라운드에 무작위 순서로 한 명씩. 90라운드는 일반 보스). 마왕처럼 쓰러지면 속성에 맞는 모습으로 각성해 부활한다.
     kingHp: 2.0,           // 사천왕 한 형태의 체력 = 무한 모드 보스 기본 체력 × 이 값
     kings: {
       thunder: { id: 'thunder', elem: 'thunder', line: '번개가 너희의 심장을 꿰뚫으리라.', name: '뇌왕', r: 36,
@@ -904,13 +904,13 @@
     if (r === MAX_ROUND) return CFG.finalBoss;
     if (r === ACT1_END) return CFG.act1Boss;
     if (r === FINAL_ROUND) return CFG.dragon;
-    if (r > MAX_ROUND && r >= 60 && r <= 90 && r % 10 === 0) return CFG.kings[r === 90 ? S.kingOrder[S.kingRep] : S.kingOrder[(r - 60) / 10]];
+    if (r > MAX_ROUND && r >= 60 && r <= 80 && r % 10 === 0) return CFG.kings[S.kingOrder[(r - 60) / 10]];
     if (r > MAX_ROUND) return r % 5 === 0 ? CFG.bossPool[(r / 5) % CFG.bossPool.length] : null; // 무한 모드: 5라운드마다 보스 (마왕은 50라운드에만 나온다)
     if (r % 5 !== 0 || r < 5 || r > 45) return null;
     return r < ACT1_END ? CFG.bossPool[S.bossOrder[r / 5 - 1]] : CFG.bossPool[S.bossOrder2[(r - 35) / 5]];
   }
   const endBase = r => CFG.endless.bossBase * Math.pow(endF(r), CFG.endless.bossExp);
-  const bossBaseHp = r => r === FINAL_ROUND ? endBase(r) * CFG.dragon.hpMul : (r > MAX_ROUND && r <= 90 && r % 10 === 0) ? endBase(r) * CFG.kingHp : CFG.bossHp[r] || (r > MAX_ROUND ? CFG.endless.bossBase * Math.pow(endF(r), CFG.endless.bossExp) * (r % 10 === 0 ? CFG.endless.marMul : 1) : CFG.bossHp[MAX_ROUND]);
+  const bossBaseHp = r => r === FINAL_ROUND ? endBase(r) * CFG.dragon.hpMul : (r > MAX_ROUND && r <= 80 && r % 10 === 0) ? endBase(r) * CFG.kingHp : CFG.bossHp[r] || (r > MAX_ROUND ? CFG.endless.bossBase * Math.pow(endF(r), CFG.endless.bossExp) * (r % 10 === 0 ? CFG.endless.marMul : 1) : CFG.bossHp[MAX_ROUND]);
   const bossInfo = (S, r) => { const d = bossDefFor(S, r); return d ? Object.assign({ hp: bossBaseHp(r) }, d) : null; };
   // 풀 보스의 패턴 수치를 라운드에 맞춰 조정 (15라운드 = 기준). 일찍 나오면 약하게, 늦게 나오면 강하게.
   const SUMMON_UP = { grunt: 'captain', shield: 'ironshield', archer: 'crossbow', bomber: 'sapper', shaman: 'warlock' }; // 소환 졸개의 강화형
@@ -976,8 +976,8 @@
     // 사천왕의 기운: 다음 사천왕(용) 등장 라운드까지 맵 가장자리에 그 속성의 기운이 뜬다. 51·61·71·81·91라운드에는 다음 상대가 직접 한마디 한다.
     S.omen = null;
     if (r > MAX_ROUND && r < FINAL_ROUND && r % 10 !== 0) {
-      const nx = Math.ceil(r / 10) * 10, nb = bossDefFor(S, nx); S.omen = nb ? nb.id : null;
-      if (r % 10 === 1 && nb) {
+      const nx = r > 80 ? FINAL_ROUND : Math.ceil(r / 10) * 10, nb = bossDefFor(S, nx); S.omen = nb ? nb.id : null;
+      if (r % 10 === 1 && r <= 81 && nb) {
         const pv = r === MAX_ROUND + 1 ? CFG.finalBoss.name : bossDefFor(S, r - 1).name, LN = { thunder: '번개처럼 끝내 주마. {p}은 사천왕 중 최약체였을 뿐이다!', snow: '…고요히 얼려 주지. {p}은 사천왕 중 최약체였다.', earth: '크크… {p}은 사천왕 중 최약체였지. 이 대지가 너희의 무덤이 될 것이다.', dragon: '사천왕 따위가 내 앞에 서겠느냐. {p}은 사천왕 중 최약체였다… 이제 내가 간다.' };
         emit(S, { type: 'omen', id: nb.id, name: nb.name, line: (LN[nb.id] || LN.thunder).replace('{p}', pv), look: nb.look, r: nb.id === 'dragon' ? 40 : nb.r });
       }
@@ -1058,7 +1058,7 @@
     const N = CFG.finalNerf, out = {};
     for (const k in abil) { const a = abil[k]; out[k] = Array.isArray(a) ? a.map(d => Object.assign({}, d, { cd: d.cd * N.cdMul })) : Object.assign({}, a, a.cd ? { cd: a.cd * N.cdMul } : {}); }
     if (out.rage) out.rage = Object.assign({}, out.rage, { at: N.rageAt });
-    delete out.rush; return out;
+    delete out.rush; delete out.sword; out.drain = { cd: 11 * N.cdMul, r: 280, mul: 1.8, heal: 0.015, cap: 0.06 }; return out;
   }
   function stepBossDeath(S, dt) {
     const D = S.bossDeath, b = D.b, N = b.king ? b.king.awaken : CFG.finalNerf; D.t += dt;
@@ -1132,22 +1132,24 @@
   // shape: 'circle' (기본) | 'cone' (ang·half·len) — 예고 시간(t)이 지나면 범위 안 아군에게 피해·넉백·기절·냉기
   function addStrike(S, e, o) {
     const k = Object.assign({ shape: 'circle', t: 1, w: 1, mul: 1, kb: 0, stun: 0, chill: 0, kind: 'bolt', from: e, r: 80 }, o); k.w = k.t; S.strikes.push(k);
-    emit(S, { type: 'strikeWarn', x: k.x, y: k.y, r: k.r, t: k.t, kind: k.kind, shape: k.shape, ang: k.ang, half: k.half, len: k.len });
+    emit(S, { type: 'strikeWarn', x: k.x, y: k.y, r: k.r, t: k.t, kind: k.kind, shape: k.shape, ang: k.ang, half: k.half, len: k.len, w2: k.w2 });
   }
   function resolveStrike(S, k) {
     const e = k.from, base = e && !e.dead ? e.dmg * (e.dmgMul || 1) * k.mul : 0; let hit = 0;
     for (const u of S.units) {
       if (u.dead) continue; let inside;
       if (k.shape === 'cone') { const dx = u.x - k.x, dy = u.y - k.y, d = Math.hypot(dx, dy); inside = d <= k.len + u.r && Math.abs(wrapAngle(Math.atan2(dy, dx) - k.ang)) <= k.half + (u.r / Math.max(40, d)); }
+      else if (k.shape === 'line') { const dx = u.x - k.x, dy = u.y - k.y, ca = Math.cos(k.ang), sa = Math.sin(k.ang), al = dx * ca + dy * sa, pe = Math.abs(-dx * sa + dy * ca); inside = al >= -u.r && al <= k.len + u.r && pe <= k.w2 / 2 + u.r; }
       else inside = Math.hypot(u.x - k.x, u.y - k.y) <= k.r + u.r;
       if (!inside) continue; hit++;
       if (base > 0) damage(S, u, base, false, e);
       if (k.stun) u.stunT = Math.max(u.stunT || 0, k.stun);
       if (k.chill) u.chillT = Math.max(u.chillT || 0, k.chill);
-      if (k.kb) knock(S, u, k.shape === 'cone' ? k.x : k.x, k.shape === 'cone' ? k.y : k.y, k.kb);
+      if (k.kb) knock(S, u, k.x, k.y, k.kb);
     }
-    if (k.shape !== 'cone' && Math.hypot(S.core.x - k.x, S.core.y - k.y) <= k.r + S.core.r && base > 0) hitCore(S, base * CFG.balance.shellCoreMul, k.kind === 'fire' ? '용의 불길' : '사천왕 공격');
-    emit(S, { type: 'strikeHit', x: k.x, y: k.y, r: k.r, kind: k.kind, shape: k.shape, ang: k.ang, half: k.half, len: k.len, hit });
+    if (k.shape === 'line') { const dx = S.core.x - k.x, dy = S.core.y - k.y, al = dx * Math.cos(k.ang) + dy * Math.sin(k.ang), pe = Math.abs(-dx * Math.sin(k.ang) + dy * Math.cos(k.ang)); if (al >= 0 && al <= k.len + S.core.r && pe <= k.w2 / 2 + S.core.r && base > 0) hitCore(S, base * CFG.balance.shellCoreMul, '검기'); }
+    if (k.shape !== 'cone' && k.shape !== 'line' && Math.hypot(S.core.x - k.x, S.core.y - k.y) <= k.r + S.core.r && base > 0) hitCore(S, base * CFG.balance.shellCoreMul, k.kind === 'fire' ? '용의 불길' : '사천왕 공격');
+    emit(S, { type: 'strikeHit', x: k.x, y: k.y, r: k.r, kind: k.kind, shape: k.shape, ang: k.ang, half: k.half, len: k.len, w2: k.w2, hit });
   }
   function damage(S, tgt, dmg, crit, src) {
     if (tgt.dead || tgt.dying || tgt.hidden) return;
@@ -1607,9 +1609,13 @@
       e.t.quake -= dt;
       if (e.t.quake <= 0 && e.life > 2) { e.t.quake = A.quake.cd; for (const p of spots(A.quake.n, 110, 1000)) addStrike(S, e, { x: p.x, y: p.y, r: A.quake.r, t: A.quake.warn, mul: A.quake.mul, kb: A.quake.kb, kind: 'rock' }); }
     }
-    if (A.breath) { // 용: 불길을 뿜는다 (부채꼴 범위, 예고 후 발사)
+    if (A.sword) { // 암흑 기사단장·마왕(1형태): 거대한 검기를 일직선으로 쏜다 (예고 후 발사)
+      e.t.sword -= dt;
+      if (e.t.sword <= 0 && e.life > 2) { const tg = nearestUnit(S, e.x, e.y, A.sword.len); if (!tg) e.t.sword = 1.5; else { e.t.sword = A.sword.cd; const ang = Math.atan2(tg.y - e.y, tg.x - e.x); addStrike(S, e, { shape: 'line', x: e.x, y: e.y, ang, len: A.sword.len, w2: A.sword.width, r: A.sword.width, t: A.sword.warn, mul: A.sword.mul, kb: A.sword.kb, kind: 'slash' }); } }
+    }
+    if (A.breath) { // 용: 입에서 불길을 뿜는다 (부채꼴 범위, 예고 후 발사)
       e.t.breath -= dt; if (e.breathT > 0) e.breathT -= dt;
-      if (e.t.breath <= 0 && e.life > 2) { const tg = nearestUnit(S, e.x, e.y, 1000); if (!tg) e.t.breath = 1.5; else { e.t.breath = A.breath.cd; const ang = Math.atan2(tg.y - e.y, tg.x - e.x); addStrike(S, e, { shape: 'cone', x: e.x, y: e.y, ang, half: A.breath.half, len: A.breath.len, r: A.breath.len, t: A.breath.warn, mul: A.breath.mul, kb: A.breath.kb, kind: 'fire' }); e.breathT = A.breath.warn + 0.5; } }
+      if (e.t.breath <= 0 && e.life > 2) { const tg = nearestUnit(S, e.x, e.y, 1000); if (!tg) e.t.breath = 1.5; else { e.t.breath = A.breath.cd; const my = e.y - e.r * 1.1, ang = Math.atan2(tg.y - my, tg.x - e.x); addStrike(S, e, { shape: 'cone', x: e.x, y: my, ang, half: A.breath.half, len: A.breath.len, r: A.breath.len, t: A.breath.warn, mul: A.breath.mul, kb: A.breath.kb, kind: 'fire' }); e.breathT = A.breath.warn + 0.5; } }
     }
     if (A.tail) { // 용: 가까이 붙은 아군을 꼬리로 쓸어 날려 버린다
       e.t.tail -= dt;
@@ -1645,7 +1651,7 @@
           e.t.drain = A.drain.cd;
           for (const u of vs) damage(S, u, e.dmg * e.dmgMul * A.drain.mul, false, e);
           e.hp = Math.min(e.max, e.hp + e.max * Math.min(A.drain.cap, A.drain.heal * vs.length));
-          emit(S, { type: 'bossDrain', x: e.x, y: e.y, r: A.drain.r, n: vs.length });
+          emit(S, { type: 'bossDrain', x: e.x, y: e.y, r: A.drain.r, n: vs.length, pts: vs.slice(0, 40).map(u => ({ x: u.x, y: u.y })) });
         }
       }
     }
