@@ -481,11 +481,14 @@
   for (const id of MODALS) $(id).addEventListener('click', e => { if (e.target === $(id)) closeModals(); });
   $('sResume').addEventListener('click', closeModals);
   // 소리: 배경음악·효과음 따로 슬라이더로 조절
-  function syncVol() { const st = A2.state; $('sMus').value = Math.round(st.music * 100); $('sSfx').value = Math.round(st.sfx * 100); $('sMusV').textContent = $('sMus').value; $('sSfxV').textContent = $('sSfx').value; }
+  function syncNick() { const i = $('sNick'); if (i && document.activeElement !== i) i.value = Net.name(); }
+  function syncVol() { syncNick(); const st = A2.state; $('sMus').value = Math.round(st.music * 100); $('sSfx').value = Math.round(st.sfx * 100); $('sMusV').textContent = $('sMus').value; $('sSfxV').textContent = $('sSfx').value; }
   const volInput = (id, set) => { const el = $(id); el.addEventListener('input', () => { A2.init(); if (A2.state.muted) A2.setMuted(false); set(+el.value / 100); $(id + 'V').textContent = el.value; }); };
   volInput('sMus', v => A2.setMusic(v)); volInput('sSfx', v => A2.setSfx(v));
   $('sSfx').addEventListener('change', () => A2.play('kill')); // 놓았을 때 효과음 미리듣기
   function recordAbandon() { if (S && running && !S.over && S.round >= 2 && !S.dev) { Meta.finish(S, C, 0); Net.sendLog(S, 'abandon', true); } }
+  $('sNick').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') $('sNickSave').click(); }); $('sNick').addEventListener('keyup', e => e.stopPropagation());
+  $('sNickSave').addEventListener('click', () => { const v = Net.setName($('sNick').value); if (v) { $('sNick').value = v; toast('닉네임을 "' + v + '"(으)로 바꿨어요'); } else toast('닉네임을 입력해 주세요'); });
   $('sRestart').addEventListener('click', () => { closeModals(); recordAbandon(); newGame(); });
   $('sMenu').addEventListener('click', () => { closeModals(); recordAbandon(); running = false; showTitle(); });
   $('btnToMenu').addEventListener('click', () => { $('overlay').classList.add('hidden'); running = false; showTitle(); openMenu(); });
@@ -1579,7 +1582,27 @@
   $('mRank').addEventListener('click', e => { e.stopPropagation(); openMeta('rank'); });
   $('tDev').addEventListener('click', e => { e.stopPropagation(); devRoundSet(+store.get('cd-devround') || 30); openModal('devPanel'); });
   $('tSet').addEventListener('click', e => { e.stopPropagation(); openModal('setMenu'); });
-  $('mHow').addEventListener('click', e => { e.stopPropagation(); $('howto').classList.remove('hidden'); });
+  $('mHow').addEventListener('click', e => { e.stopPropagation(); drawHowImgs(); $('howto').classList.remove('hidden'); });
+  let howDrawn = false;
+  function drawHowImgs() { // 게임 방법의 번호별 그림은 게임 안의 실제 그림을 그대로 쓴다
+    if (howDrawn) return; howDrawn = true;
+    const put = (cv, src) => { const c2 = cv.getContext('2d'); c2.clearRect(0, 0, 144, 144); if (src instanceof HTMLCanvasElement) c2.drawImage(src, 0, 0); };
+    const U = t => portrait('u', t, CFG.units[t]), E = (k, c) => portrait('e', k, c || CFG.enemies[k]);
+    const castleCv = lv => { const cv2 = document.createElement('canvas'); cv2.width = cv2.height = 144; const c2 = cv2.getContext('2d'); c2.translate(72, 80); c2.scale(0.62, 0.62); Scenery.drawCastle(c2, { x: 0, y: 0, lv, cannons: 3, max: 1, hp: 1, flash: 0, swing: 0 }, 0); return cv2; };
+    const mk = {
+      castle: () => castleCv(8), castleup: () => castleCv(12),
+      view: () => { const cv2 = document.createElement('canvas'); cv2.width = cv2.height = 144; const c2 = cv2.getContext('2d'); c2.font = '64px serif'; c2.textAlign = 'center'; c2.fillText('🖐️', 72, 90); return cv2; },
+      units: () => { const cv2 = document.createElement('canvas'); cv2.width = cv2.height = 144; const c2 = cv2.getContext('2d'); [['sword', 0], ['archer', 1], ['priest', 2]].forEach(([t, i]) => c2.drawImage(U(t), i * 40 - 8, 30, 80, 80)); return cv2; },
+      gold: () => { const cv2 = document.createElement('canvas'); cv2.width = cv2.height = 144; const c2 = cv2.getContext('2d'); c2.font = '64px serif'; c2.textAlign = 'center'; c2.fillText('💰', 72, 90); return cv2; },
+      cards: () => { const cv2 = document.createElement('canvas'); cv2.width = cv2.height = 144; const c2 = cv2.getContext('2d'); c2.font = '64px serif'; c2.textAlign = 'center'; c2.fillText('🃏', 72, 90); return cv2; },
+      boss: () => portrait('e', 'boss', CFG.enemies.boss, Object.assign({ r: CFG.act1Boss.r || 30 }, CFG.act1Boss.look)),
+      dragon: () => { const cv2 = document.createElement('canvas'); cv2.width = cv2.height = 144; const im = new Image(); im.onload = () => { const c2 = cv2.getContext('2d'), k = Math.min(144 / im.width, 144 / im.height); c2.drawImage(im, (144 - im.width * k) / 2, (144 - im.height * k) / 2, im.width * k, im.height * k); const t = document.querySelector('#howto .hi[data-hi=dragon]'); if (t) { const c3 = t.getContext('2d'); c3.clearRect(0, 0, 144, 144); c3.drawImage(cv2, 0, 0); } }; im.src = 'assets/dragon_2.webp'; return cv2; },
+      mode: () => { const cv2 = document.createElement('canvas'); cv2.width = cv2.height = 144; const c2 = cv2.getContext('2d'); c2.font = '64px serif'; c2.textAlign = 'center'; c2.fillText('🛡️', 72, 90); return cv2; },
+      speed: () => { const cv2 = document.createElement('canvas'); cv2.width = cv2.height = 144; const c2 = cv2.getContext('2d'); c2.font = '64px serif'; c2.textAlign = 'center'; c2.fillText('⏩', 72, 90); return cv2; },
+      rank: () => { const cv2 = document.createElement('canvas'); cv2.width = cv2.height = 144; const c2 = cv2.getContext('2d'); c2.font = '64px serif'; c2.textAlign = 'center'; c2.fillText('🏆', 72, 90); return cv2; },
+    };
+    for (const cv of document.querySelectorAll('#howto .hi')) { try { put(cv, mk[cv.dataset.hi]()); } catch (err) {} }
+  }
   $('howClose').addEventListener('click', () => $('howto').classList.add('hidden'));
   $('mQuit').addEventListener('click', e => { e.stopPropagation(); window.close(); setTimeout(() => { $('tMsg').textContent = '브라우저에서는 직접 종료할 수 없어요. 탭이나 창을 닫아 주세요.'; }, 150); });
 
