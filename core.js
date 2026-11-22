@@ -1037,7 +1037,7 @@
       if (!bd.dragon) e.speed = Math.max(e.speed, CFG.bossSpeed); // 보스는 광전사처럼 빠르게 달려온다
       if (bd === CFG.finalBoss && r === MAX_ROUND) { const N = CFG.finalNerf; e.max = e.hp = Math.round(e.max * N.hp); e.max2 = Math.round(e.max / N.hp * N.hp2); e.dmg *= N.dmg; e.canRevive = true; }
       if (isKing(bd)) { e.king = bd; e.canRevive = true; e.max = e.hp = Math.round(e.max * 0.55); e.max2 = Math.round(e.max * CFG.kingP2.hp); }
-      if (bd.dragon) { e.fixed = true; e.vr = bd.vr; e.side = 0; placeDragon(e); e.flyS = 'ground'; e.lift = 0; if (bd.abil.fly) e.t.fly = bd.abil.fly.first; }
+      if (bd.dragon) { e.fixed = true; e.riseT = e.riseDur = 4.2; emit(S, { type: 'dragonRise', x: x, y: y, dur: 4.2 }); e.vr = bd.vr; e.side = 0; placeDragon(e); e.flyS = 'ground'; e.lift = 0; if (bd.abil.fly) e.t.fly = bd.abil.fly.first; }
       S.stats.seenB[bd.id] = 1;
       emit(S, { type: 'bossSpawn', name: bd.name, id: bd.id, line: bd.line, look: bd.look, r: e.r });
     }
@@ -1168,7 +1168,7 @@
     emit(S, { type: 'strikeHit', x: k.x, y: k.y, r: k.r, kind: k.kind, shape: k.shape, ang: k.ang, half: k.half, len: k.len, w2: k.w2, hit });
   }
   function damage(S, tgt, dmg, crit, src) {
-    if (tgt.dead || tgt.dying || tgt.hidden) return;
+    if (tgt.dead || tgt.dying || tgt.hidden || tgt.riseT > 0) return;
     if (src && src.kb && tgt.team === 'u' && !src.dead) knock(S, tgt, src.x, src.y, src.kb);
     if (src && src.chill && tgt.team === 'u') tgt.chillT = Math.max(tgt.chillT || 0, src.chill); // 서리 궁수: 맞으면 느려진다 // 강한 적의 공격: 반대쪽으로 밀려난다
     if (src && tgt.team === 'u' && !src.dead) { tgt.rv = src; tgt.rvT = 6; } // 맞은 유닛이 때린 적을 기억 (자유 모드 반격용)
@@ -1755,6 +1755,7 @@
     if (e.kind !== 'boss' && e.shieldT > 0) e.shieldT -= dt;
     if (e.hasteT > 0) e.hasteT -= dt;
     if (e.age > ENRAGE_AFTER && !e.enr) { e.enr = true; if (S.enrageSaid !== S.round) { S.enrageSaid = S.round; emit(S, { type: 'enrage' }); } }
+    if (e.riseT > 0) { e.riseT -= dt; e.life = 0; return; } // 용이 땅 아래에서 솟아오르는 동안은 움직이지도 공격하지도 못한다
     if (e.abil) bossTick(S, e, dt);
     if (e.focusT > 0) return; // 정신 집중 중
     if (e.fixed) return; // 용: 제자리에 고정 (스킬만 쓴다)

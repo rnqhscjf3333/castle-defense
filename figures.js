@@ -25,8 +25,9 @@
     s *= 0.55; // 판정 반지름(r)에 맞춰 몸집을 줄여 그린다
     const fl = e.flash > 0, t = (typeof performance !== 'undefined' ? performance.now() : 0) * 0.004, lift = e.lift || 0, flap = Math.sin(t * (lift > 0 ? 2.2 : 1)) * (lift > 0 ? 8 : 3.4);
     ctx.save();
+    ctx.beginPath(); ctx.rect(-90 * s, -130 * s, 180 * s, 136 * s); ctx.clip(); // 허리 아래는 절벽 아래에 있어 보이지 않는다
+    if (e.riseT > 0) { const k = Math.max(0, e.riseT / (e.riseDur || 4.2)), sh = Math.sin((typeof performance !== 'undefined' ? performance.now() : 0) * 0.05) * 1.2 * s * k; ctx.translate(sh, Math.pow(k, 1.6) * 92 * s); } // 땅 아래에서 부들부들 떨며 솟아오른다
     ctx.translate(0, -lift * 26 * s);
-    ctx.beginPath(); ctx.rect(-90 * s, -100 * s, 180 * s, 106 * s); ctx.clip(); // 허리 아래는 절벽 아래에 있어 보이지 않는다
     const L = '#0e0305', SC = fl ? FLASH : '#4a0d14', SC2 = fl ? FLASH : '#7a1a1e', BELLY = fl ? FLASH : '#c98a4a', MEM = fl ? FLASH : '#3a0a12', BONE = fl ? FLASH : '#cfc3a4', GLOW = '#ff7a1a';
     ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.strokeStyle = L;
     // 가시 꼬리

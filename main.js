@@ -29,7 +29,7 @@
   function addFx(o) {
     if (fx.length >= 300) return;
     const f = fxPool.length ? fxPool.pop() : {};
-    f.ang = o.ang; f.half = o.half; f.len = o.len; f.kind = o.kind; f.shape = o.shape; f.k = o.k; f.x = o.x; f.y = o.y; f.tx = o.tx; f.ty = o.ty; f.t = o.t || 0; f.max = o.max; f.c = o.c; f.r = o.r; f.big = o.big; f.enemy = o.enemy; f.small = o.small; f.v = o.v; f.n = o.n; f.a = o.a; f.w2 = o.w2;
+    f.ang = o.ang; f.half = o.half; f.len = o.len; f.kind = o.kind; f.shape = o.shape; f.k = o.k; f.x = o.x; f.y = o.y; f.tx = o.tx; f.ty = o.ty; f.t = o.t || 0; f.max = o.max; f.c = o.c; f.r = o.r; f.big = o.big; f.enemy = o.enemy; f.small = o.small; f.v = o.v; f.n = o.n; f.a = o.a; f.w2 = o.w2; f.grow = o.grow;
     fx.push(f);
   }
   const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
@@ -683,6 +683,7 @@
       case 'strikeWarn': A2.play('cast', ev.x, ev.y); break;
       case 'strikeHit': A2.play(ev.kind === 'bolt' || ev.kind === 'fire' ? 'bigBoom' : 'boom', ev.x, ev.y); break;
       case 'dragonIntro': A2.alarm(); A2.play('rumble'); break;
+      case 'dragonRise': A2.play('bigBoom', ev.x, ev.y); A2.play('rage'); break;
       case 'dragonUp': case 'dragonLand': A2.play('bigBoom', ev.x, ev.y); break;
       case 'bossRage': A2.play('rage', ev.x, ev.y); break;
       case 'bossClone': case 'bossRoar': A2.play('rage', ev.x, ev.y); break;
@@ -790,6 +791,9 @@
       else if (ev.type === 'strikeHit') { addFx({ k: 'strikeH', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, w2: ev.w2, t: 0, max: ev.shape === 'cone' ? 0.7 : ev.shape === 'line' ? 0.6 : 0.55 }); if (ev.kind !== 'ice' || ev.r > 300) addShake(ev.kind === 'wind' ? 5 : ev.r > 250 ? 12 : 6, 0.3); }
       else if (ev.type === 'omen') { if (ev.id !== 'dragon') showBossIntro({ name: ev.name, line: ev.line, look: ev.look, r: ev.r, long: true, omen: ev.id }); toast(ev.id === 'dragon' ? '용의 기운이 맵 가장자리에 감돕니다' : '사천왕의 기운이 맵 가장자리에 감돕니다'); }
       else if (ev.type === 'castleAwaken') { banner('성채 각성!', true); for (let i = 0; i < 4; i++) addFx({ k: 'ring', x: CX, y: CY, t: -i * 0.12, max: 1.0, c: '#ffe27a', big: true, r: 200 }); addShake(8, 0.5); }
+      else if (ev.type === 'dragonRise') { banner('재앙의 용이 모습을 드러낸다!!', true); flash('#ff3a1a', 0.45); addShake(14, 1.2); // 단상 가장자리에 충격파와 먼지·불씨가 터진다
+        for (let i = 0; i < 4; i++) addFx({ k: 'ring', x: ev.x, y: ev.y + 40, t: -i * 0.45, max: 1.3, c: i % 2 ? '#ff7a3a' : '#ffd9a0', grow: 420 + i * 80, big: true });
+        for (let i = 0; i < 26; i++) addFx({ k: 'burst', x: ev.x + (Math.random() - 0.5) * 760, y: ev.y + 20 + Math.random() * 60, t: -Math.random() * 0.6, max: 0.9 + Math.random() * 0.8, c: i % 3 ? '#8a6a44' : '#ff8a2a', big: i % 4 === 0 }); }
       else if (ev.type === 'dragonIntro') { { const zf = Math.min(vw / 1500, vh / 1250); cam.zoom = Math.max(minZoom(), Math.min(cam.zoom, zf)); centerOnCore(); clampCam(); } banner('땅이 갈라진다…', true); toast('성 주변만 남기고 모든 땅이 무너진다'); }
       else if (ev.type === 'dragonUp') { banner('용이 하늘로 날아오른다!', true); addShake(10, 0.6); }
       else if (ev.type === 'dragonLand') { banner('용이 다시 내려앉았다!', true); addShake(16, 0.7); }
@@ -997,6 +1001,7 @@
     ctx.save(); safePath(ctx, 0); ctx.clip(); Scenery.drawGround(ctx, x0, y0, x1, y1); if (TH.tint) { ctx.fillStyle = TH.tint; ctx.fillRect(x0 - 60, y0 - 60, x1 - x0 + 120, y1 - y0 + 120); } ctx.restore(); // 남은 땅만 다시 풀밭으로 (속성에 맞게 물들인다)
     ctx.restore();
   }
+  let risePulse = 0;
   let dragonFramed = 0; // 용 등장 때 화면을 맞춘 보스
   let omLast = null; // 직전에 떠 있던 사천왕의 기운 (등장 후에도 잠시 남는다)
   const OMEN_COL = { thunder: '#ffd814', snow: '#6fd0ff', earth: '#b8803c', dragon: '#ff5a1a' };
@@ -1167,7 +1172,7 @@
         ctx.globalAlpha = a * 0.9; ctx.strokeStyle = '#9fdcff'; ctx.lineWidth = 2 / z; ctx.beginPath(); ctx.ellipse(f.x, f.y + 3, 16 * (0.6 + p * 0.6), 7 * (0.6 + p * 0.6), 0, 0, Math.PI * 2); ctx.stroke();
         ctx.fillStyle = '#e8f7ff'; for (let i = 0; i < 6; i++) { const an = i * 1.047 + p * 2, rx = Math.cos(an) * 12, ry = -p * 46 - (i % 3) * 6; ctx.fillRect(f.x + rx - 1, f.y + ry, 2, 2); }
       }
-      else if (f.k === 'ring') { ctx.globalAlpha = 1 - p; ctx.strokeStyle = f.c; ctx.lineWidth = (f.big ? 4 : 2) / z; ctx.beginPath(); ctx.arc(f.x, f.y, 6 + p * (f.big ? 60 : 24), 0, Math.PI * 2); ctx.stroke(); }
+      else if (f.k === 'ring') { ctx.globalAlpha = 1 - p; ctx.strokeStyle = f.c; ctx.lineWidth = (f.big ? 4 : 2) / z; ctx.beginPath(); ctx.arc(f.x, f.y, 6 + p * (f.grow || (f.big ? 60 : 24)), 0, Math.PI * 2); ctx.stroke(); }
       else if (f.k === 'line') { ctx.globalAlpha = 1 - p; ctx.strokeStyle = f.c; ctx.lineWidth = (f.small ? 1.5 : 3) / z; ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(f.tx, f.ty); ctx.stroke(); }
       else if (f.k === 'beam') { // 사제 치유 광선: 누가 누구를 치유하는지 보이도록 굵은 빛줄기 + 끝점 광채
         const a = 1 - p, w = (f.small ? 2.2 : 4) / z, pulse = 0.75 + 0.25 * Math.sin(now * 0.03);
@@ -1612,6 +1617,8 @@
     if (S) {
       if (!paused) updateDeathCam(dt);
       if (S.cinematic && !cine) startCine(S.cinematic.name, S.cinematic.kind);
+      { const rd = S.enemies.find(e => e.fixed && e.riseT > 0 && !e.dead); // 용이 솟아오르는 동안: 계속 흔들리고 단상 가장자리에서 먼지·바위 조각이 튄다
+        if (rd && !paused) { risePulse += dt; if (risePulse > 0.08) { risePulse = 0; addShake(7 + 6 * (rd.riseT / rd.riseDur), 0.3); if (fx.length < 200) addFx({ k: 'burst', x: rd.x + (Math.random() - 0.5) * 700, y: rd.y + 10 + Math.random() * 50, t: 0, max: 0.6 + Math.random() * 0.5, c: Math.random() < 0.5 ? '#8a6a44' : '#ffb04a', big: Math.random() < 0.3 }); } } }
       if (!S.dragonIntro) { const dg = S.enemies.find(e => e.kind === 'boss' && e.fixed && !e.dead); // 용이 나타나면 머리까지 보이도록 한 번 화면을 맞춘다 (이후엔 자유롭게 움직일 수 있다)
         if (dg && dragonFramed !== dg.id) { dragonFramed = dg.id; const vrr = dg.vr || dg.r, x0 = Math.min(CX - 300, dg.x - vrr * 3.3), x1 = Math.max(CX + 300, dg.x + vrr * 3.3), y0 = Math.min(CY - 300, dg.y - vrr * 4.2), y1 = Math.max(CY + 300, CY + 480);
           cam.zoom = Math.max(minZoom(), Math.min(1, vw / (x1 - x0 + 120), vh / (y1 - y0 + 120))); cam.x = (x0 + x1) / 2; cam.y = (y0 + y1) / 2; clampCam(); } }
