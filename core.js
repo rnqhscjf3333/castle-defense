@@ -778,7 +778,7 @@
     const S = {
       mode: mode === 'free' ? 'free' : 'normal', // free: 유닛이 성 주변에 머물지 않고 범위 안의 적을 어디까지든 쫓아간다
       seed: seed >>> 0, rng: mulberry32(seed >>> 0),
-      t: 0, phase: 'prep', prepT: PREP_TIME, round: 0, roundT: 0, clearT: 0, zones: [], pools: [], rain: [], strikes: [], cliff: 0, dragonIntro: null,
+      t: 0, phase: 'prep', prepT: PREP_TIME, round: 0, roundT: 0, clearT: 0, zones: [], pools: [], rain: [], strikes: [], cliff: 0, cliffTheme: null, dragonIntro: null,
       queue: [], spawnT: 0, spawnGap: 1, spawnPts: 2, extraPts: 0, fallen: [], endless: false, castle: { lv: 1 },
       gold: CFG.startGold, buyCount: 0,
       stats: { earned: CFG.startGold, spent: 0, killBy: {}, made: {}, seenE: {}, seenB: {}, peakPop: 0, bossKills: 0 }, // 기록·도감·업적·부정 확인용 집계
@@ -954,6 +954,7 @@
     return { ok: !why.length, bound, why };
   }
   function startRound(S) {
+    S.cliff = 0; S.cliffTheme = null;
     S.phase = 'round'; S.round++; S.roundT = 0; S.clearT = 0; S.repairN = 0;
     const r = S.round;
     for (const u of S.units) if (u.type === 'priest') u.rv = S.jobMods.priest.revive; rvSync(S);
@@ -1067,14 +1068,14 @@
     const D = S.bossDeath, b = D.b, N = b.king ? b.king.awaken : CFG.finalNerf; D.t += dt;
     if (D.stage === 'die') {
       if (D.t < D.dur) return;
-      if (D.revive) { // 각성: 모습이 바뀌고 체력이 0에서 다시 차오른다
-        D.stage = 'revive'; D.t0 = D.t; b.p2 = true; b.flash = 0; b.bossName = N.name; b.look = N.look; b.r = N.r; b.max = b.max2; b.hp = 0; b.gold = 0;
+      if (D.revive) { // 각성: 모습이 바뀌고 체력이 0에서 다시 차오른다 (땅도 보스의 속성에 맞게 무너진다)
+        D.stage = 'revive'; S.cliffTheme = b.king ? b.king.id : 'dark'; D.t0 = D.t; b.p2 = true; b.flash = 0; b.bossName = N.name; b.look = N.look; b.r = N.r; b.max = b.max2; b.hp = 0; b.gold = 0;
         b.abil = b.king ? JSON.parse(JSON.stringify(b.king.abil2)) : p2Abil(b.abil); b.t = {}; for (const k in b.abil) if (!Array.isArray(b.abil[k])) b.t[k] = (b.abil[k].cd || 0) * 0.6;
         b.life = 0; b.enraged = false; b.rushDone = true; b.age = 0; b.enr = false; b.cd = 1;
         emit(S, { type: 'bossRevive', x: b.x, y: b.y, r: b.r, name: b.bossName, dur: N.reviveT });
         return;
       }
-      b.dead = true; S.bossDeath = null; emit(S, { type: 'bossGone', x: b.x, y: b.y, r: b.r });
+      if (!b.fixed) { S.cliff = 0; S.cliffTheme = null; } b.dead = true; S.bossDeath = null; emit(S, { type: 'bossGone', x: b.x, y: b.y, r: b.r });
       if (b.fixed && S.round === FINAL_ROUND) { S.win = true; S.over = true; emit(S, { type: 'over', win: true }); return; } // 용을 쓰러뜨렸다: 게임 클리어
       if (S.round === ACT1_END && S.act === 1) { S.act = 2; S.cinematic = { name: b.bossName, kind: 'act2' }; emit(S, { type: 'act2', boss: b.bossName }); } // 1막 마지막 보스 처치 → 연출 후 2막
       if (S.round === MAX_ROUND && !S.endless) reviveForEndless(S, b); // 마왕 처치 → 연출과 함께 무한 모드가 시작된다
@@ -1083,6 +1084,7 @@
       else openJobs(S, b.bossName); // 보스를 처치하면 전직 선택
       return;
     }
+    S.cliff = Math.min(1, (D.t - D.t0) / (N.reviveT * 0.85));
     const p = Math.min(1, (D.t - D.t0) / N.reviveT); b.hp = b.max * p * (2 - p); // 체력 바가 빠르게 차올랐다가 천천히 가득 찬다
     if (p >= 1) { b.hp = b.max; b.dying = false; S.bossDeath = null; emit(S, { type: 'bossRevived', x: b.x, y: b.y, name: b.bossName }); }
   }

@@ -726,7 +726,7 @@
       else if (ev.type === 'castleRepair') { addFx({ k: 'heal', x: ev.x, y: ev.y, t: 0, max: 0.9 }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.7, c: '#7dff9a', r: 60, big: true }); }
       else if (ev.type === 'castlePick') banner('성: ' + ev.name, true);
       else if (ev.type === 'lastStand') banner('불사 결계 발동! 성이 되살아났다', true);
-      else if (ev.type === 'bossRevive') { banner(ev.name === '각성한 마왕' ? '더이상!! 참지!! 않겠다!!' : ev.name + '!! 이제부터가 진짜다!!', true); for (let i = 0; i < 3; i++) addFx({ k: 'ring', x: ev.x, y: ev.y, t: -i * 0.35, max: 1.1, c: i % 2 ? '#ff7a3a' : '#ff2a4a', r: ev.r * 3, big: true }); }
+      else if (ev.type === 'bossRevive') { { const zf = Math.min(vw / 1500, vh / 1250); cam.zoom = Math.max(minZoom(), Math.min(cam.zoom, zf)); centerOnCore(); clampCam(); } toast('성 주변만 남기고 땅이 무너진다'); banner(ev.name === '각성한 마왕' ? '더이상!! 참지!! 않겠다!!' : ev.name + '!! 이제부터가 진짜다!!', true); for (let i = 0; i < 3; i++) addFx({ k: 'ring', x: ev.x, y: ev.y, t: -i * 0.35, max: 1.1, c: i % 2 ? '#ff7a3a' : '#ff2a4a', r: ev.r * 3, big: true }); }
       else if (ev.type === 'bossRevived') { banner('최후의 결전!', true); addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#ffffff', big: true }); }
       else if (ev.type === 'bossGone') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.9, c: '#ffffff', r: ev.r * 3.5, big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: -0.1, max: 1, c: '#ffd166', r: ev.r * 2.5, big: true }); for (let k = 0; k < 14; k++) addFx({ k: 'dust', x: ev.x + (Math.random() - 0.5) * ev.r * 2.4, y: ev.y + (Math.random() - 0.5) * ev.r * 1.6, t: 0, max: 1.3, r: 14 + Math.random() * 18 }); }
       else if (ev.type === 'bossWipe') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.9, c: '#ffffff', big: true }); toast('남은 적이 모두 쓰러졌어요'); }
@@ -949,15 +949,31 @@
     c.rect(cx - DR.anchorX, cy - BR_W, DR.anchorX * 2, BR_W * 2); c.rect(cx - BR_W, cy - DR.anchorY, BR_W * 2, DR.anchorY * 2);
   }
   const CRACKS = (() => { let a = 12345; const r = () => { a = (a * 1664525 + 1013904223) >>> 0; return a / 4294967296; }, out = []; for (let i = 0; i < 90; i++) { const x = r() * W, y = r() * H, pts = [[x, y]]; for (let k = 0; k < 4; k++) { const l = pts[pts.length - 1]; pts.push([l[0] + (r() - 0.5) * 120, l[1] + (r() - 0.3) * 90]); } out.push(pts); } return out; })();
+  // 무너진 땅의 배경: 용(기본)·마왕(어둠)·설왕(얼음과 눈)·뇌왕(폭풍)·토왕(용암)마다 다르다
+  const CLIFF_TH = {
+    dragon: { bg: ['#2a1318', '#0e070c'], c1: [255, 90, 30], c2: [255, 200, 90], side: ['#4a3828', '#6a5238', '#85694a'], edge: '#2a1c10', tint: null },
+    dark:   { bg: ['#1a0828', '#030107'], c1: [150, 40, 230], c2: [235, 170, 255], side: ['#1e1428', '#30224a', '#46326a'], edge: '#08040e', tint: 'rgba(40,10,70,0.30)' },
+    snow:   { bg: ['#12385a', '#050f1c'], c1: [90, 190, 255], c2: [235, 250, 255], side: ['#5f95b8', '#98c4e0', '#d2eaf8'], edge: '#27526f', tint: 'rgba(225,244,255,0.38)' },
+    thunder:{ bg: ['#241c40', '#06050f'], c1: [255, 210, 40], c2: [255, 255, 190], side: ['#3c3a50', '#575470', '#767294'], edge: '#16141f', tint: 'rgba(255,230,90,0.10)' },
+    earth:  { bg: ['#4a1a06', '#150602'], c1: [255, 110, 20], c2: [255, 210, 80], side: ['#4a3420', '#6e4e2e', '#8e6a40'], edge: '#24160a', tint: 'rgba(120,70,20,0.22)' },
+  };
+  function cliffFx(th, now, x0, y0, x1, y1, z) { // 허공에 떠도는 입자 (배경 속성에 따라 다르다)
+    const w = x1 - x0 + 120, h = y1 - y0 + 120;
+    if (th === 'snow') { ctx.fillStyle = '#ffffff'; for (let i = 0; i < 70; i++) { const sp = 40 + (i * 37) % 60, px = x0 - 60 + ((i * 193.7 + now * 0.012 * (sp / 60) + Math.sin(now * 0.001 + i) * 20) % w + w) % w, py = y0 - 60 + ((i * 331.3 + now * 0.05 * (sp / 60)) % h); ctx.globalAlpha = 0.55 + 0.4 * ((i * 7) % 3) / 2; ctx.beginPath(); ctx.arc(px, py, (1.5 + (i % 3)) / Math.sqrt(z) * 1.3, 0, 6.283); ctx.fill(); } ctx.globalAlpha = 1; }
+    else if (th === 'dark') { for (let i = 0; i < 26; i++) { const ph = (now * 0.00012 * (0.6 + (i % 5) * 0.2) + i * 0.137) % 1, px = x0 - 60 + ((i * 271.9) % w), py = y0 - 60 + h * (1 - ph); ctx.globalAlpha = Math.sin(ph * 3.14) * 0.55; ctx.fillStyle = i % 4 ? '#7a2ab8' : '#c01a3a'; ctx.beginPath(); ctx.arc(px, py, (3 + i % 4) / Math.sqrt(z), 0, 6.283); ctx.fill(); } ctx.globalAlpha = 1; for (let i = 0; i < 5; i++) { const px = x0 - 60 + ((i * 523.1 + now * 0.01) % w), py = y0 + h * (0.15 + 0.17 * i), g = ctx.createRadialGradient(px, py, 0, px, py, 220); g.addColorStop(0, 'rgba(70,20,110,0.28)'); g.addColorStop(1, 'rgba(70,20,110,0)'); ctx.fillStyle = g; ctx.fillRect(px - 220, py - 220, 440, 440); } } // 검붉은 불씨와 보랏빛 안개
+    else if (th === 'thunder') { const k = Math.floor(now / 900), ph = (now % 900) / 900; if (ph < 0.22) { const r = n => { const s = Math.sin(k * 91.7 + n * 12.9) * 43758.5; return s - Math.floor(s); }; ctx.strokeStyle = 'rgba(255,250,190,' + (1 - ph / 0.22) + ')'; ctx.lineWidth = 3 / z; ctx.lineJoin = 'miter'; for (let b = 0; b < 2; b++) { let px = x0 + r(b) * (x1 - x0), py = y0 - 40; ctx.beginPath(); ctx.moveTo(px, py); while (py < y1 + 40) { px += (r(py * 0.01 + b) - 0.5) * 90; py += 55 + r(px * 0.01) * 40; ctx.lineTo(px, py); } ctx.stroke(); } ctx.fillStyle = 'rgba(255,240,150,' + 0.12 * (1 - ph / 0.22) + ')'; ctx.fillRect(x0 - 60, y0 - 60, w, h); } }
+    else { for (let i = 0; i < 34; i++) { const ph = (now * 0.0002 * (0.5 + (i % 5) * 0.25) + i * 0.173) % 1, px = x0 - 60 + ((i * 311.3 + Math.sin(now * 0.002 + i) * 14) % w), py = y0 - 60 + h * (1 - ph); ctx.globalAlpha = Math.sin(ph * 3.14) * 0.9; ctx.fillStyle = i % 3 ? '#ff8a2a' : '#ffd860'; ctx.beginPath(); ctx.arc(px, py, (1.6 + i % 3) / Math.sqrt(z), 0, 6.283); ctx.fill(); } ctx.globalAlpha = 1; } // 불씨
+  }
   function drawCliff(now, x0, y0, x1, y1, z) {
-    const k = S.cliff, e = 1 - Math.pow(1 - k, 2), Rt = (1 - e) * 2100; // 가장자리부터 안쪽으로 무너져 들어온다
+    const TH = CLIFF_TH[S.cliffTheme] || CLIFF_TH.dragon, k = S.cliff, e = 1 - Math.pow(1 - k, 2), Rt = (1 - e) * 2100; // 가장자리부터 안쪽으로 무너져 들어온다
     ctx.save(); ctx.beginPath(); ctx.rect(x0 - 60, y0 - 60, x1 - x0 + 120, y1 - y0 + 120); ctx.arc(CX, CY, Rt, 0, Math.PI * 2); ctx.clip('evenodd');
-    const g = ctx.createRadialGradient(CX, CY, 300, CX, CY, 1500); g.addColorStop(0, '#2a1318'); g.addColorStop(1, '#0e070c'); ctx.fillStyle = g; ctx.fillRect(x0 - 60, y0 - 60, x1 - x0 + 120, y1 - y0 + 120);
-    ctx.lineCap = 'round'; ctx.lineJoin = 'round'; const pu = 0.55 + 0.45 * Math.sin(now * 0.004);
-    for (const c of CRACKS) { if (c[0][0] < x0 - 130 || c[0][0] > x1 + 130 || c[0][1] < y0 - 130 || c[0][1] > y1 + 130) continue; ctx.beginPath(); ctx.moveTo(c[0][0], c[0][1]); for (let i = 1; i < c.length; i++) ctx.lineTo(c[i][0], c[i][1]); ctx.strokeStyle = 'rgba(255,90,30,' + (0.35 * pu) + ')'; ctx.lineWidth = 7 / z; ctx.stroke(); ctx.strokeStyle = 'rgba(255,200,90,' + (0.7 * pu) + ')'; ctx.lineWidth = 2 / z; ctx.stroke(); }
-    ctx.fillStyle = '#4a3828'; safePath(ctx, 46); ctx.fill(); ctx.fillStyle = '#6a5238'; safePath(ctx, 26); ctx.fill(); ctx.fillStyle = '#85694a'; safePath(ctx, 10); ctx.fill(); // 절벽의 옆면 (아래로 깊게)
-    ctx.strokeStyle = '#2a1c10'; ctx.lineWidth = 14; ctx.lineJoin = 'round'; safePath(ctx, 0); ctx.stroke(); // 벼랑 끝선 (안쪽 절반은 아래에서 땅이 덮는다)
-    ctx.save(); safePath(ctx, 0); ctx.clip(); Scenery.drawGround(ctx, x0, y0, x1, y1); ctx.restore(); // 남은 땅만 다시 풀밭으로
+    const g = ctx.createRadialGradient(CX, CY, 300, CX, CY, 1500); g.addColorStop(0, TH.bg[0]); g.addColorStop(1, TH.bg[1]); ctx.fillStyle = g; ctx.fillRect(x0 - 60, y0 - 60, x1 - x0 + 120, y1 - y0 + 120);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round'; const pu = 0.55 + 0.45 * Math.sin(now * 0.004), c1 = TH.c1.join(','), c2 = TH.c2.join(',');
+    cliffFx(S.cliffTheme, now, x0, y0, x1, y1, z);
+    for (const c of CRACKS) { if (c[0][0] < x0 - 130 || c[0][0] > x1 + 130 || c[0][1] < y0 - 130 || c[0][1] > y1 + 130) continue; ctx.beginPath(); ctx.moveTo(c[0][0], c[0][1]); for (let i = 1; i < c.length; i++) ctx.lineTo(c[i][0], c[i][1]); ctx.strokeStyle = 'rgba(' + c1 + ',' + (0.35 * pu) + ')'; ctx.lineWidth = 7 / z; ctx.stroke(); ctx.strokeStyle = 'rgba(' + c2 + ',' + (0.7 * pu) + ')'; ctx.lineWidth = 2 / z; ctx.stroke(); }
+    ctx.fillStyle = TH.side[0]; safePath(ctx, 46); ctx.fill(); ctx.fillStyle = TH.side[1]; safePath(ctx, 26); ctx.fill(); ctx.fillStyle = TH.side[2]; safePath(ctx, 10); ctx.fill(); // 절벽의 옆면 (아래로 깊게)
+    ctx.strokeStyle = TH.edge; ctx.lineWidth = 14; ctx.lineJoin = 'round'; safePath(ctx, 0); ctx.stroke(); // 벼랑 끝선 (안쪽 절반은 아래에서 땅이 덮는다)
+    ctx.save(); safePath(ctx, 0); ctx.clip(); Scenery.drawGround(ctx, x0, y0, x1, y1); if (TH.tint) { ctx.fillStyle = TH.tint; ctx.fillRect(x0 - 60, y0 - 60, x1 - x0 + 120, y1 - y0 + 120); } ctx.restore(); // 남은 땅만 다시 풀밭으로 (속성에 맞게 물들인다)
     ctx.restore();
   }
   const OMEN_COL = { thunder: '#ffd814', snow: '#6fd0ff', earth: '#b8803c', dragon: '#ff5a1a' };
@@ -967,7 +983,7 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.fillStyle = COL.bg; ctx.fillRect(0, 0, vw, vh);
     const z = cam.zoom;
-    let shx = 0, shy = 0; if (S.dragonIntro) { const k = Math.min(1, S.dragonIntro.t / 1.2) * (S.dragonIntro.t > S.dragonIntro.dur - 0.8 ? 0.3 : 1); shx = (Math.random() - 0.5) * 9 * k; shy = (Math.random() - 0.5) * 9 * k; } else if (shakeT > 0) { const k = Math.min(1, shakeT / 0.3); shx = (Math.random() - 0.5) * shakeA * k; shy = (Math.random() - 0.5) * shakeA * k; }
+    let shx = 0, shy = 0; if (S.bossDeath && S.bossDeath.stage === 'revive' && S.cliff > 0 && S.cliff < 1) { shx = (Math.random() - 0.5) * 8; shy = (Math.random() - 0.5) * 8; } else if (S.dragonIntro) { const k = Math.min(1, S.dragonIntro.t / 1.2) * (S.dragonIntro.t > S.dragonIntro.dur - 0.8 ? 0.3 : 1); shx = (Math.random() - 0.5) * 9 * k; shy = (Math.random() - 0.5) * 9 * k; } else if (shakeT > 0) { const k = Math.min(1, shakeT / 0.3); shx = (Math.random() - 0.5) * shakeA * k; shy = (Math.random() - 0.5) * shakeA * k; }
     ctx.setTransform(dpr * z, 0, 0, dpr * z, (vw / 2 - cam.x * z + shx) * dpr, (vh / 2 - cam.y * z + shy) * dpr);
     const x0 = Math.max(0, cam.x - vw / 2 / z), x1 = Math.min(W, cam.x + vw / 2 / z), y0 = Math.max(0, cam.y - vh / 2 / z), y1 = Math.min(H, cam.y + vh / 2 / z);
     // 맵 바닥: 풀밭, 흙길, 돌바닥 광장, 덤불·바위·꽃 (조각으로 캐시)
