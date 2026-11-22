@@ -109,7 +109,8 @@
     // 최종 보스(50라운드): 마왕
     finalBoss: { id: 'overlord', line: '모든 것은 이 어둠 속에서 끝난다.', name: '마왕', r: 38, look: { body: '#2a2438', head: '#ebe6f4', weapon: 'sword', crown: true, style: 'overlord' }, abil: { summon: { cd: 11, n: 3, kind: 'bomber' }, artillery: { cd: 5, dmg: 130, radius: 115, count: 2, flight: 1.4 }, sword: { cd: 10, len: 1100, width: 150, warn: 1.1, mul: 3, kb: 420 }, shield: { cd: 12, dur: 3.5, red: 0.7 }, rage: { at: 0.4, speed: 1.4, rate: 1.5, dmg: 1.5 }, dash: { cd: 9, dur: 1.2, mul: 2.5 }, debuff: [{ kind: 'stun', cd: 10, r: 120 }, { kind: 'poison', cd: 11, r: 150 }, { kind: 'weak', cd: 13, r: 170 }, { kind: 'wound', cd: 14, r: 170 }] } },
     // 마왕(50라운드): 1·2형태. 체력·공격을 너프하는 대신 한 번 쓰러져도 각성해서 부활한다
-    finalNerf: { hp: 0.3, dmg: 0.65, hp2: 0.6, cdMul: 0.85, rageAt: 0.5, reviveT: 3.4, r: 44, name: '각성한 마왕', look: { body: '#7a1424', head: '#ecd2c4', weapon: 'sword', crown: true, p2: true, style: 'overlord' } },
+    bossSpeed: 105,
+    finalNerf: { hp: 0.55, dmg: 0.65, hp2: 1.0, cdMul: 0.85, rageAt: 0.5, reviveT: 3.4, r: 44, name: '각성한 마왕', look: { body: '#7a1424', head: '#ecd2c4', weapon: 'sword', crown: true, p2: true, style: 'overlord' } },
     // 50라운드 클리어 뒤에는 강화 카드의 레벨 제한이 이만큼 풀린다 (아래 목록의 카드만)
     capBonus: 2, capLift: ['u_charge', 'u_pierce', 'u_crit', 'u_range', 'u_aoeheal', 'u_hbuff', 'a_heal', 'a_atk', 'a_def', 'a_spd', 'a_rad', 'f_repair', 'f_thorn'],
     // 2차 전직 각성 (사천왕 처치: 60·70·80라운드에 한 계열씩 업그레이드). 2차 전직 효과에 아래 수치가 한 번 더 더해진다.
@@ -314,7 +315,7 @@
     castle: { max: 10, extra: 3, costExtra: [10000, 15000, 22000], awk: { hp: 0.5, atk: 0.6, rate: 0.25, range: 60, cannons: 2 }, cost: [220, 380, 640, 1000, 1550, 2350, 3500, 5000, 7000], popBase: 8, popPer: 3, hp: 350, atk: 0.16, range: 22, rate: 0.06, cannonLv: [3, 5, 7] },
     // 엘리트: 일반 몬스터가 일정 확률로 훨씬 강하고 크게 나온다. 확률은 라운드가 갈수록 커져 최대 max
     elite: { from: 3, perRound: 0.0025, max: 0.10, hp: 3, dmg: 1.6, size: 1.35, gold: 4, speed: 1.05 },
-    endless: { hpLin: 0.045, hpQuad: 0.00024, cnt: 0.009, bossBase: 60000, bossExp: 0.6, marMul: 0.9 }, // 무한 모드(51라운드~) 난이도 곡선: 체력 배율 1+lin·n+quad·n², 적 수 +cnt·n (n = 50라운드 이후 지난 라운드)
+    endless: { hpLin: 0.047, hpQuad: 0.00026, cnt: 0.0095, bossBase: 60000, bossExp: 0.6, marMul: 0.9 }, // 무한 모드(51라운드~) 난이도 곡선: 체력 배율 1+lin·n+quad·n², 적 수 +cnt·n (n = 50라운드 이후 지난 라운드)
     dmgVar: 0.15,                     // 모든 공격 피해에 공격력 ±15% 오차
     legendChance: 0.007,              // 30라운드 이후, 카드 한 칸마다 전설 카드가 나올 확률 (아주 낮음)
     rarityWeight: { common: 70, rare: 25, epic: 5 },
@@ -1026,6 +1027,7 @@
     if (bd) {
       e.bossName = bd.name; e.look = bd.look; if (bd.ranged) { e.ranged = true; e.range = bd.ranged.range; } e.abil = (bd === CFG.finalBoss || bd === CFG.act1Boss || isKing(bd) || bd.dragon) ? bd.abil : scaleAbil(bd.abil, r); e.t = {};
       for (const k in e.abil) if (!Array.isArray(e.abil[k])) e.t[k] = (e.abil[k].cd || 0) * 0.6; // 첫 패턴은 조금 일찍
+      if (!bd.dragon) e.speed = Math.max(e.speed, CFG.bossSpeed); // 보스는 광전사처럼 빠르게 달려온다
       if (bd === CFG.finalBoss && r === MAX_ROUND) { const N = CFG.finalNerf; e.max = e.hp = Math.round(e.max * N.hp); e.max2 = Math.round(e.max / N.hp * N.hp2); e.dmg *= N.dmg; e.canRevive = true; }
       if (isKing(bd)) { e.king = bd; e.canRevive = true; e.max = e.hp = Math.round(e.max * 0.55); e.max2 = Math.round(e.max * 1.15); }
       if (bd.dragon) { e.fixed = true; e.side = Math.floor(S.rng() * 4); placeDragon(e); e.flyS = 'ground'; e.lift = 0; e.t.fly = bd.abil.fly.first; }
@@ -1048,11 +1050,11 @@
     const revive = !!b.canRevive && !b.p2 && (!S.endless || !!b.king);
     S.gold += b.gold; S.stats.earned += b.gold; S.kills++; S.stats.killBy.boss = (S.stats.killBy.boss || 0) + 1; if (!revive) S.stats.bossKills++;
     emit(S, { type: 'kill', x: b.x, y: b.y, boss: true });
-    if (!revive) S.queue.length = 0; S.zones.length = 0; S.pools.length = 0; S.rain.length = 0; S.strikes.length = 0;
-    if (!revive) for (const o of S.enemies) if (!o.dead && o !== b) { o.dead = true; emit(S, { type: 'kill', x: o.x, y: o.y, boss: false, wipe: true }); }
+    S.queue.length = 0; S.zones.length = 0; S.pools.length = 0; S.rain.length = 0; S.strikes.length = 0;
+    for (const o of S.enemies) if (!o.dead && o !== b) { o.dead = true; emit(S, { type: 'kill', x: o.x, y: o.y, boss: false, wipe: true }); }
     S.bossDeath = { b, t: 0, dur: CFG.bossDeathT, stage: 'die', revive, t0: 0 };
     emit(S, { type: 'bossDying', x: b.x, y: b.y, r: b.r, name: b.bossName, id: b.kind, dur: CFG.bossDeathT, revive });
-    if (!revive) emit(S, { type: 'bossWipe', x: b.x, y: b.y });
+    emit(S, { type: 'bossWipe', x: b.x, y: b.y });
   }
   function p2Abil(abil) {
     const N = CFG.finalNerf, out = {};
@@ -1286,8 +1288,9 @@
   function raiseUndead(S, e) { // 사령: 처치한 일반 적이 일정 확률로 망자가 되어 잠시 아군으로 싸운다
     const R = S.cpar.raise; if (!R || e.kind === 'boss' || (e.elite && !R.elite) || e.blast || S.rng() >= R.chance) return;
     let n = 0; for (const u of S.units) if (!u.dead && u.undead) n++; if (n >= R.max) return;
-    const u = addUnit(S, 'undead'); u.undead = true; u.ttl = R.dur; u.x = e.x; u.y = e.y;
-    u.max = u.hp = Math.min(6000, Math.max(30, e.max * R.hp)); u.atk = Math.max(3, e.dmg * R.atk); u.r = Math.max(8, Math.min(14, e.r)); u.tint = e.elite ? 1 : 0;
+    const u = addUnit(S, 'undead'); u.undead = true; u.ttl = R.dur; u.x = e.x; u.y = e.y; // 망자의 능력은 쓰러진 적의 능력에 비례한다
+    u.max = u.hp = Math.min(6000, Math.max(30, e.max * R.hp)); u.atk = Math.max(3, e.dmg * R.atk); u.r = Math.max(8, Math.min(24, e.r)); u.tint = e.elite ? 1 : 0;
+    u.speed = Math.max(55, Math.min(140, e.speed * 1.05)); u.rate = Math.max(0.6, Math.min(2.2, e.rate || 1)); u.range = Math.max(24, Math.min(44, e.range || 26)); u.zk = e.kind;
     if (R.bounty) { S.gold += e.gold * R.bounty; S.stats.earned += e.gold * R.bounty; }
     emit(S, { type: 'raise', x: e.x, y: e.y });
   }

@@ -346,7 +346,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
 { const g = arena(15, [['boss', 1500, 1500 - 600]], 'bombardier'); g.gold = 1e6; g.buyCd.sword = 0; C.buy(g, 'sword'); let sh = null; const b = g.enemies[0];
   for (let i = 0; i < 30 * 14 && !sh; i++) { C.tick(g, DT); sh = g.shots.find(s => s.aoe); }
   const d = sh && Math.hypot(sh.sx - b.x, sh.sy - b.y);
-  check('포격대장 포탄은 어깨 대포 끝(약 85px, 높이 34)에서 출발', sh && Math.abs(d - 85) < 1.5 && sh.h0 === 34, 'd=' + (d && d.toFixed(1))); }
+  check('포격대장 포탄은 어깨 대포 끝(약 85px, 높이 34)에서 출발', sh && Math.abs(d - 85) < 5 && sh.h0 === 34, 'd=' + (d && d.toFixed(1))); }
 { const g = arena(25, [['boss', 1500, 1500 - 600]], 'berserker'); g.gold = 1e6; g.buyCd.sword = 0; C.buy(g, 'sword'); let sh = null; const b = g.enemies[0]; b.t.dash = 99;
   for (let i = 0; i < 30 * 14 && !sh; i++) { C.tick(g, DT); sh = g.shots.find(s => s.aoe); }
   check('대포 없는 보스(광전사)는 머리 위(높이 62)에서 던지듯 발사', sh && sh.h0 === 62 && Math.hypot(sh.sx - b.x, sh.sy - b.y) < 3 /* 같은 틱에 보스가 조금 움직이므로 오차 허용 */); }

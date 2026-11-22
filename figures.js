@@ -196,6 +196,28 @@
 
   // ───────────── 유닛 ─────────────
   const UNIT = {
+    undead(ctx, e, s) { // 좀비: 구부정한 자세, 앞으로 뻗은 두 팔, 찢어진 옷, 드러난 갈비뼈, 빛나는 눈
+      const fl = e.flash > 0, d = e._dir, t = (e._walk || 0), lurch = e._moving ? Math.sin(t * 0.9) * 0.6 * s : 0;
+      ctx.save(); ctx.rotate(d * 0.12); // 앞으로 기울인다
+      const h = body(ctx, e, { s, body: '#5a6a4a', legs: '#2c3622', head: '#9cc08a', line: '#10180c', eye: '#c8ff3a', angry: true, bw: 12.5, bh: 13 });
+      if (!fl) {
+        ctx.fillStyle = '#2a1a14'; for (let i = 0; i < 3; i++) { const bx = -4 * s + i * 4 * s; tri(ctx, bx, 10 * s, bx + 2 * s, 10 * s, bx + 1 * s + (i - 1) * 0.5 * s, (13 + (i % 2) * 1.5) * s); ctx.fill(); } // 찢어진 옷자락
+        ctx.strokeStyle = '#e8e2c8'; ctx.lineWidth = 0.9 * s; for (let i = 0; i < 3; i++) { const ry = (-0.5 + i * 2.6) * s + h.bob; ctx.beginPath(); ctx.moveTo(-d * 0.5 * s - 2.4 * s, ry); ctx.lineTo(-d * 0.5 * s + 2.4 * s, ry); ctx.stroke(); } // 갈비뼈
+        ctx.fillStyle = '#7a1a1a'; circle(ctx, -d * 3.6 * s, 4.4 * s + h.bob, 1.5 * s); ctx.fill(); // 상처
+        ctx.fillStyle = '#4a5a2a'; circle(ctx, d * 2.4 * s, h.hyHead + 2.4 * s, 1.1 * s); ctx.fill(); circle(ctx, -d * 2.8 * s, h.hyHead - 2.8 * s, 0.9 * s); ctx.fill(); // 썩은 반점
+        ctx.strokeStyle = '#10180c'; ctx.lineWidth = 0.8 * s; ctx.beginPath(); ctx.moveTo(d * 1 * s - 2 * s, h.hyHead + 2.8 * s); ctx.lineTo(d * 1 * s + 2 * s, h.hyHead + 2.8 * s); ctx.stroke(); // 벌어진 입
+        ctx.strokeStyle = '#b8b090'; ctx.lineWidth = 0.7 * s; for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(d * 1 * s + i * 1.1 * s, h.hyHead + 2.8 * s); ctx.lineTo(d * 1 * s + i * 1.1 * s, h.hyHead + 3.8 * s); ctx.stroke(); } // 이빨
+        ctx.strokeStyle = '#3a3a2a'; ctx.lineWidth = 0.9 * s; ctx.beginPath(); ctx.moveTo(-2.6 * s, h.hyHead - 5 * s); ctx.lineTo(-1 * s, h.hyHead - 7.6 * s); ctx.moveTo(1 * s, h.hyHead - 5.4 * s); ctx.lineTo(2.6 * s, h.hyHead - 7 * s); ctx.stroke(); // 헝클어진 머리칼
+      }
+      // 앞으로 뻗은 두 팔 (공격할 때 앞으로 찌른다)
+      const a = e.swing > 0 ? e._face : (e._dir > 0 ? 0.1 : Math.PI - 0.1), lunge = e.swing > 0 ? 3 * s : 0;
+      for (const k of [-1, 1]) {
+        const sx = -d * 1.5 * s + k * 0 * s, sy = -0.8 * s + h.bob + k * 1.8 * s, len = 11 * s + lunge + (k > 0 ? lurch : -lurch), ex = sx + Math.cos(a) * len, ey = sy + Math.sin(a) * len + k * 0.6 * s;
+        line(ctx, sx, sy, ex, ey, 2.5 * s, fl ? FLASH : '#7aa06a'); line(ctx, sx, sy, sx + (ex - sx) * 0.45, sy + (ey - sy) * 0.45, 2.6 * s, fl ? FLASH : '#5a6a4a'); // 소매 + 맨살
+        if (!fl) { ctx.fillStyle = '#9cc08a'; circle(ctx, ex, ey, 1.6 * s); ctx.fill(); line(ctx, ex, ey, ex + Math.cos(a - 0.5) * 2.6 * s, ey + Math.sin(a - 0.5) * 2.6 * s, 0.8 * s, '#d8d0b0'); line(ctx, ex, ey, ex + Math.cos(a + 0.5) * 2.6 * s, ey + Math.sin(a + 0.5) * 2.6 * s, 0.8 * s, '#d8d0b0'); } // 손톱
+      }
+      ctx.restore();
+    },
     sword(ctx, e, s) {
       const h = body(ctx, e, { s, body: '#4f86d9', legs: '#2f4a7a', head: '#f3cfa6', line: '#14213d', belt: '#d8b04a' });
       const fl = e.flash > 0, J = e.job, od = -e._dir;
@@ -607,7 +629,7 @@
     wyrmling: { wing: '#8a1f24', body: '#c4402e' },
   };
   // 전설 유닛: 용사/명궁 그림에 보랏빛·청록 색을 입혀 크게 그린다
-  const UBASE = { legendsword: 'hero', legendarcher: 'marksman', undead: 'sword' };
+  const UBASE = { legendsword: 'hero', legendarcher: 'marksman' };
   const UPAL = { undead: { body: '#4a8a5a', legs: '#254a30', head: '#a9d6b0', belt: '#7dffb0' }, legendsword: { body: '#7a1fa8', legs: '#3a0f5a', head: '#f3cfa6', belt: '#ff6bff' }, legendarcher: { body: '#9b3fe8', legs: '#2d1a78', head: '#f3cfa6', belt: '#e0b0ff' } };
 
   // 각성한 전직 유닛: 계열별 색(검=진홍·금, 궁=청록·백, 사제=금·분홍)의 기운 + 빛의 날개 + 후광 + 맴도는 빛 입자

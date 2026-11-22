@@ -729,7 +729,7 @@
       else if (ev.type === 'bossRevive') { banner(ev.name === '각성한 마왕' ? '더이상!! 참지!! 않겠다!!' : ev.name + '!! 이제부터가 진짜다!!', true); for (let i = 0; i < 3; i++) addFx({ k: 'ring', x: ev.x, y: ev.y, t: -i * 0.35, max: 1.1, c: i % 2 ? '#ff7a3a' : '#ff2a4a', r: ev.r * 3, big: true }); }
       else if (ev.type === 'bossRevived') { banner('최후의 결전!', true); addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#ffffff', big: true }); }
       else if (ev.type === 'bossGone') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.9, c: '#ffffff', r: ev.r * 3.5, big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: -0.1, max: 1, c: '#ffd166', r: ev.r * 2.5, big: true }); for (let k = 0; k < 14; k++) addFx({ k: 'dust', x: ev.x + (Math.random() - 0.5) * ev.r * 2.4, y: ev.y + (Math.random() - 0.5) * ev.r * 1.6, t: 0, max: 1.3, r: 14 + Math.random() * 18 }); }
-      else if (ev.type === 'bossWipe') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.9, c: '#ffffff', big: true }); toast('보스 처치! 남은 적이 모두 쓰러졌어요'); }
+      else if (ev.type === 'bossWipe') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.9, c: '#ffffff', big: true }); toast('남은 적이 모두 쓰러졌어요'); }
       else if (ev.type === 'kill') { addFx({ k: 'burst', x: ev.x, y: ev.y, t: 0, max: ev.boss ? 0.8 : 0.3, c: ev.boss ? '#c77dff' : '#ff8a5c', big: ev.boss }); }
       else if (ev.type === 'udead') {
         addFx({ k: 'burst', x: ev.x, y: ev.y, t: 0, max: 0.4, c: '#8fb7ff' });
