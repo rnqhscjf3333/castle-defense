@@ -29,7 +29,7 @@
   function addFx(o) {
     if (fx.length >= 300) return;
     const f = fxPool.length ? fxPool.pop() : {};
-    f.ang = o.ang; f.half = o.half; f.len = o.len; f.kind = o.kind; f.shape = o.shape; f.k = o.k; f.x = o.x; f.y = o.y; f.tx = o.tx; f.ty = o.ty; f.t = o.t || 0; f.max = o.max; f.c = o.c; f.r = o.r; f.big = o.big; f.enemy = o.enemy; f.small = o.small; f.v = o.v; f.n = o.n; f.a = o.a; f.w2 = o.w2; f.grow = o.grow;
+    f.ang = o.ang; f.half = o.half; f.len = o.len; f.kind = o.kind; f.shape = o.shape; f.k = o.k; f.x = o.x; f.y = o.y; f.tx = o.tx; f.ty = o.ty; f.t = o.t || 0; f.max = o.max; f.c = o.c; f.r = o.r; f.big = o.big; f.enemy = o.enemy; f.small = o.small; f.v = o.v; f.n = o.n; f.a = o.a; f.w2 = o.w2; f.grow = o.grow; f.claw = o.claw;
     fx.push(f);
   }
   const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
@@ -794,8 +794,8 @@
       else if (ev.type === 'bossAura') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.7, c: '#8fd8ff' }); toast((ev.name || '보스') + '이(가) 주변 적에게 방어막을 둘렀어요'); }
       else if (ev.type === 'bossRoar') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.7, c: '#ffb04a' }); toast('돌격왕의 함성! 주변 적이 빨라집니다'); }
       else if (ev.type === 'bossFocus') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#6fe08a' }); toast((ev.name || '보스') + '이(가) 정신을 집중해 체력을 회복합니다'); }
-      else if (ev.type === 'strikeWarn') addFx({ k: 'strikeW', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, w2: ev.w2, t: 0, max: Math.max(0.2, ev.t) });
-      else if (ev.type === 'strikeHit') { addFx({ k: 'strikeH', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, w2: ev.w2, t: 0, max: ev.shape === 'cone' ? 0.7 : ev.shape === 'line' ? 0.6 : 0.55 }); if (ev.kind !== 'ice' || ev.r > 300) addShake(ev.kind === 'wind' ? 5 : ev.r > 250 ? 12 : 6, 0.3); }
+      else if (ev.type === 'strikeWarn') addFx({ k: 'strikeW', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, w2: ev.w2, claw: ev.claw, t: 0, max: Math.max(0.2, ev.t) });
+      else if (ev.type === 'strikeHit') { addFx({ k: 'strikeH', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, w2: ev.w2, claw: ev.claw, t: 0, max: ev.shape === 'cone' ? 0.7 : ev.shape === 'line' ? 0.6 : 0.55 }); if (ev.kind !== 'ice' || ev.r > 300) addShake(ev.kind === 'wind' ? 5 : ev.r > 250 ? 12 : 6, 0.3); }
       else if (ev.type === 'omen') { if (ev.id !== 'dragon') showBossIntro({ name: ev.name, line: ev.line, look: ev.look, r: ev.r, long: true, omen: ev.id }); toast(ev.id === 'dragon' ? '용의 기운이 맵 가장자리에 감돕니다' : '사천왕의 기운이 맵 가장자리에 감돕니다'); }
       else if (ev.type === 'castleAwaken') { banner('성채 각성!', true); for (let i = 0; i < 4; i++) addFx({ k: 'ring', x: CX, y: CY, t: -i * 0.12, max: 1.0, c: '#ffe27a', big: true, r: 200 }); addShake(8, 0.5); }
       else if (ev.type === 'dragonRise') { banner(ev.back ? '용이 다시 돌아왔다!!' : '재앙의 용이 모습을 드러낸다!!', true); flash('#ff3a1a', 0.45); addShake(14, 1.2); // 단상 가장자리에 충격파와 먼지·불씨가 터진다
@@ -1209,6 +1209,20 @@
         ctx.lineCap = 'round'; ctx.globalAlpha = a * 0.35; ctx.strokeStyle = f.c; ctx.lineWidth = w * 3.2; ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(f.tx, f.ty); ctx.stroke();
         ctx.globalAlpha = a * pulse; ctx.strokeStyle = '#eafff1'; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(f.tx, f.ty); ctx.stroke();
         ctx.globalAlpha = a * 0.55; ctx.fillStyle = f.c; ctx.beginPath(); ctx.arc(f.tx, f.ty, (f.small ? 6 : 11) / z * (0.6 + 0.4 * p), 0, Math.PI * 2); ctx.fill(); ctx.lineCap = 'butt';
+      }
+      else if (f.k === 'strikeW' && f.claw) { // 마왕의 손톱: 가늘고 긴 갈퀴 모양 예고
+        const pu = 0.5 + 0.5 * Math.sin(now * 0.025), w = f.w2 / 2; ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.ang);
+        ctx.globalAlpha = 0.16 + 0.16 * pu; ctx.fillStyle = '#c8203a'; ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(f.len * 0.4, -w * 1.3, f.len, 0); ctx.quadraticCurveTo(f.len * 0.4, w * 1.3, 0, 0); ctx.fill();
+        ctx.globalAlpha = 0.85; ctx.strokeStyle = '#ff6a7a'; ctx.lineWidth = 2 / z; ctx.setLineDash([12 / z, 8 / z]); ctx.stroke(); ctx.setLineDash([]);
+        ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.moveTo(f.len * p, -w * 0.6); ctx.lineTo(f.len * p, w * 0.6); ctx.stroke(); ctx.restore(); ctx.globalAlpha = 1;
+      }
+      else if (f.k === 'strikeH' && f.claw) { // 손톱 자국: 굽은 검붉은 상처가 빠르게 길게 그어진다
+        const a = 1 - p, hd = f.len * Math.min(1, p * 3.2), w = f.w2 / 2; ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.ang); ctx.lineCap = 'round';
+        const g = ctx.createLinearGradient(0, 0, hd, 0); g.addColorStop(0, 'rgba(70,0,12,' + 0.9 * a + ')'); g.addColorStop(1, 'rgba(255,60,90,' + 0.9 * a + ')');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(hd * 0.4, -w * 1.1, hd, 0); ctx.quadraticCurveTo(hd * 0.4, w * 0.35, 0, 0); ctx.fill();
+        ctx.globalAlpha = a; ctx.strokeStyle = '#fff0f2'; ctx.lineWidth = 3 / z; ctx.beginPath(); ctx.moveTo(hd * 0.05, -2); ctx.quadraticCurveTo(hd * 0.4, -w * 0.7, hd, 0); ctx.stroke();
+        ctx.globalAlpha = a * 0.7; ctx.strokeStyle = '#ff3a5a'; ctx.lineWidth = 2 / z; for (let i = 0; i < 7; i++) { const d = hd * (0.2 + 0.11 * i), yy = -w * (0.25 + 0.5 * Math.sin(i * 1.7)) * 0.5; ctx.beginPath(); ctx.moveTo(d, yy); ctx.lineTo(d - 22, yy + 10 + (i % 3) * 3); ctx.stroke(); }
+        ctx.restore(); ctx.globalAlpha = 1; ctx.lineCap = 'butt';
       }
       else if (f.k === 'strikeW') { // 사천왕·용의 예고 범위 (원형 또는 부채꼴)
         const col = STRIKE_COL[f.kind] || '#ff6a2a', pu = 0.5 + 0.5 * Math.sin(now * 0.025);

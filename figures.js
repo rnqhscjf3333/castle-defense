@@ -554,7 +554,7 @@
         line(ctx, gx - d * 2 * s, gy, gx - d * 2 * s + Math.cos(ang) * 14 * s, gy + Math.sin(ang) * 14 * s, 3 * s, fl ? '#fff' : '#d0d6e2');
       } else if (weapon === 'claws') { // 마왕(2형태): 양손에 길게 자란 검붉은 손톱
         for (const sd of [1, -1]) { const hx = sd * gx, base2 = sd > 0 ? ang : Math.PI - ang;
-          for (let i = -1; i <= 1; i++) { const a2 = base2 + i * 0.25, ex = hx + Math.cos(a2) * 27 * s, ey = gy + Math.sin(a2) * 27 * s; ctx.fillStyle = fl ? FLASH : '#f4ead6'; ctx.strokeStyle = '#3a0810'; ctx.lineWidth = 0.9 * s; tri(ctx, hx + Math.cos(a2 + 1.57) * 2 * s, gy + Math.sin(a2 + 1.57) * 1.6 * s, ex, ey, hx - Math.cos(a2 + 1.57) * 2 * s, gy - Math.sin(a2 + 1.57) * 2 * s); ctx.fill(); ctx.stroke(); } }
+          for (let i = -1; i <= 1; i++) { const a2 = base2 + i * 0.22, ex = hx + Math.cos(a2) * 40 * s, ey = gy + Math.sin(a2) * 40 * s; ctx.fillStyle = fl ? FLASH : '#f4ead6'; ctx.strokeStyle = '#3a0810'; ctx.lineWidth = 0.9 * s; tri(ctx, hx + Math.cos(a2 + 1.57) * 2 * s, gy + Math.sin(a2 + 1.57) * 1.6 * s, ex, ey, hx - Math.cos(a2 + 1.57) * 2 * s, gy - Math.sin(a2 + 1.57) * 2 * s); ctx.fill(); ctx.stroke(); } }
       } else if (weapon === 'hammer') { // 토왕(2형태): 바위로 된 거대한 망치
         const c1 = Math.cos(ang), s1 = Math.sin(ang), n1 = -s1, n2 = c1, ex = gx + c1 * 30 * s, ey = gy + s1 * 30 * s;
         line(ctx, gx - c1 * 4 * s, gy - s1 * 4 * s, ex, ey, 3.4 * s, fl ? FLASH : '#5a3a1a');

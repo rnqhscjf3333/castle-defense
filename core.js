@@ -1079,7 +1079,7 @@
     const N = CFG.finalNerf, out = {};
     for (const k in abil) { const a = abil[k]; out[k] = Array.isArray(a) ? a.map(d => Object.assign({}, d, { cd: d.cd * N.cdMul })) : Object.assign({}, a, a.cd ? { cd: a.cd * N.cdMul } : {}); }
     if (out.rage) out.rage = Object.assign({}, out.rage, { at: N.rageAt });
-    delete out.rush; delete out.sword; out.claw = { cd: 7 * N.cdMul, len: 820, width: 72, warn: 0.9, mul: 2.6, n: 3, spread: 0.3, kb: 380 }; out.drain = { cd: 11 * N.cdMul, r: 280, mul: 1.8, heal: 0.015, cap: 0.06 }; return out;
+    delete out.rush; delete out.sword; out.claw = { cd: 7 * N.cdMul, len: 820, width: 56, warn: 0.9, mul: 2.6, n: 3, spread: 0.24, kb: 380 }; out.drain = { cd: 11 * N.cdMul, r: 280, mul: 1.8, heal: 0.015, cap: 0.06 }; return out;
   }
   function stepBossDeath(S, dt) {
     const D = S.bossDeath, b = D.b, N = b.king ? b.king.awaken : CFG.finalNerf; D.t += dt;
@@ -1173,7 +1173,7 @@
     if (e && k.kb && !(k.shape === 'circle' && Math.hypot(k.x - e.x, k.y - e.y) <= 60)) k.kb *= CFG.balance.farKb || 0.35; // 보스 주변에 쓰는 광역기가 아니면 밀치는 힘을 줄인다
     if (e && (e.kind === 'boss' || e.king || e.dragon)) bossSay(S, e, k);
     S.strikes.push(k);
-    emit(S, { type: 'strikeWarn', x: k.x, y: k.y, r: k.r, t: k.t, kind: k.kind, shape: k.shape, ang: k.ang, half: k.half, len: k.len, w2: k.w2 });
+    emit(S, { type: 'strikeWarn', x: k.x, y: k.y, r: k.r, t: k.t, kind: k.kind, shape: k.shape, ang: k.ang, half: k.half, len: k.len, w2: k.w2, claw: k.claw });
   }
   function resolveStrike(S, k) {
     const e = k.from, base = e && !e.dead ? e.dmg * (e.dmgMul || 1) * k.mul : 0; let hit = 0;
@@ -1190,7 +1190,7 @@
     }
     if (k.shape === 'line') { const dx = S.core.x - k.x, dy = S.core.y - k.y, al = dx * Math.cos(k.ang) + dy * Math.sin(k.ang), pe = Math.abs(-dx * Math.sin(k.ang) + dy * Math.cos(k.ang)); if (al >= 0 && al <= k.len + S.core.r && pe <= k.w2 / 2 + S.core.r && base > 0) hitCore(S, base * CFG.balance.shellCoreMul, k.kind === 'slash' ? '검기' : '사천왕 공격'); }
     if (k.shape !== 'cone' && k.shape !== 'line' && Math.hypot(S.core.x - k.x, S.core.y - k.y) <= k.r + S.core.r && base > 0) hitCore(S, base * CFG.balance.shellCoreMul, k.kind === 'fire' ? '용의 불길' : '사천왕 공격');
-    emit(S, { type: 'strikeHit', x: k.x, y: k.y, r: k.r, kind: k.kind, shape: k.shape, ang: k.ang, half: k.half, len: k.len, w2: k.w2, hit });
+    emit(S, { type: 'strikeHit', x: k.x, y: k.y, r: k.r, kind: k.kind, shape: k.shape, ang: k.ang, half: k.half, len: k.len, w2: k.w2, claw: k.claw, hit });
   }
   function damage(S, tgt, dmg, crit, src) {
     if (tgt.dead || tgt.dying || tgt.hidden || tgt.riseT > 0) return;
@@ -1664,7 +1664,7 @@
     }
     if (A.claw) { // 각성한 마왕: 긴 손톱으로 부채꼴로 세 줄기를 긋는다
       e.t.claw -= dt;
-      if (e.t.claw <= 0 && e.life > 2) { const tg = nearestUnit(S, e.x, e.y, A.claw.len); if (!tg) e.t.claw = 1.5; else { e.t.claw = A.claw.cd; const base = Math.atan2(tg.y - e.y, tg.x - e.x); for (let i = 0; i < A.claw.n; i++) addStrike(S, e, { shape: 'line', x: e.x, y: e.y, ang: base + (i - (A.claw.n - 1) / 2) * A.claw.spread, len: A.claw.len, w2: A.claw.width, r: A.claw.width, t: A.claw.warn, mul: A.claw.mul, kb: A.claw.kb, kind: 'slash' }); } }
+      if (e.t.claw <= 0 && e.life > 2) { const tg = nearestUnit(S, e.x, e.y, A.claw.len); if (!tg) e.t.claw = 1.5; else { e.t.claw = A.claw.cd; const base = Math.atan2(tg.y - e.y, tg.x - e.x); for (let i = 0; i < A.claw.n; i++) addStrike(S, e, { shape: 'line', x: e.x, y: e.y, ang: base + (i - (A.claw.n - 1) / 2) * A.claw.spread, len: A.claw.len, w2: A.claw.width, r: A.claw.width, t: A.claw.warn + i * 0.14, mul: A.claw.mul, kb: A.claw.kb, kind: 'slash', claw: true }); } }
     }
     if (A.lance) { // 각성한 뇌왕: 번개 창을 가까운 아군 둘에게 꽂아 관통시킨다
       e.t.lance -= dt;
