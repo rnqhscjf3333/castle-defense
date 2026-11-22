@@ -638,7 +638,7 @@
     S.core.hp = Math.max(S.core.hp, S.core.max * 0.7);
     emit(S, { type: 'endlessStart', n });
   }
-  function endCinematic(S) { if (S.cinematic) { const k = S.cinematic.kind; S.cinematic = null; emit(S, { type: k === 'endless' ? 'endlessGo' : 'act2start' }); } }
+  function endCinematic(S) { if (S.cinematic) { const k = S.cinematic.kind; S.cinematic = null; emit(S, { type: k === 'endless' ? 'endlessGo' : k === 'dragon' ? 'dragonCineEnd' : 'act2start' }); } }
   // (테스트/디버그) r라운드가 다음 틱에 시작되도록 점프한다
   function jumpToRound(S, r) {
     S.round = r - 1; S.phase = 'round'; S.roundT = ROUND_TIME; S.pools.length = 0; S.rain.length = 0; S.strikes.length = 0; S.cliff = 0; S.dragonIntro = null; S.queue = []; S.enemies.length = 0; S.shots.length = 0; S.zones.length = 0;
@@ -980,6 +980,7 @@
       const nx = r > 80 ? FINAL_ROUND : Math.ceil(r / 10) * 10, nb = bossDefFor(S, nx); S.omen = nb ? nb.id : null;
       if (r % 10 === 1 && r <= 81 && nb) {
         const pv = r === MAX_ROUND + 1 ? CFG.finalBoss.name : bossDefFor(S, r - 1).name, LN = { thunder: '번개처럼 끝내 주마. {p}은 사천왕 중 최약체였을 뿐이다!', snow: '…고요히 얼려 주지. {p}은 사천왕 중 최약체였다.', earth: '크크… {p}은 사천왕 중 최약체였지. 이 대지가 너희의 무덤이 될 것이다.', dragon: '사천왕 따위가 내 앞에 서겠느냐. {p}은 사천왕 중 최약체였다… 이제 내가 간다.' };
+        if (nb.id === 'dragon' && r === 81) S.cinematic = { name: nb.name, kind: 'dragon' }; // 사천왕이 모두 쓰러지면 용이 깨어나는 만화 컷신 (시간이 멈춘다)
         emit(S, { type: 'omen', id: nb.id, name: nb.name, line: (LN[nb.id] || LN.thunder).replace('{p}', pv), look: nb.look, r: nb.id === 'dragon' ? 40 : nb.r });
       }
     }

@@ -787,13 +787,13 @@
       else if (ev.type === 'bossFocus') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#6fe08a' }); toast('광전사가 정신을 집중해 체력을 회복합니다 — 지금이 기회!'); }
       else if (ev.type === 'strikeWarn') addFx({ k: 'strikeW', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, w2: ev.w2, t: 0, max: Math.max(0.2, ev.t) });
       else if (ev.type === 'strikeHit') { addFx({ k: 'strikeH', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, w2: ev.w2, t: 0, max: ev.shape === 'cone' ? 0.7 : ev.shape === 'line' ? 0.6 : 0.55 }); if (ev.kind !== 'ice' || ev.r > 300) addShake(ev.kind === 'wind' ? 5 : ev.r > 250 ? 12 : 6, 0.3); }
-      else if (ev.type === 'omen') { showBossIntro({ name: ev.name, line: ev.line, look: ev.look, r: ev.r, long: true }); toast('사천왕의 기운이 맵 가장자리에 감돕니다'); }
+      else if (ev.type === 'omen') { if (ev.id !== 'dragon') showBossIntro({ name: ev.name, line: ev.line, look: ev.look, r: ev.r, long: true }); toast(ev.id === 'dragon' ? '용의 기운이 맵 가장자리에 감돕니다' : '사천왕의 기운이 맵 가장자리에 감돕니다'); }
       else if (ev.type === 'castleAwaken') { banner('성채 각성!', true); for (let i = 0; i < 4; i++) addFx({ k: 'ring', x: CX, y: CY, t: -i * 0.12, max: 1.0, c: '#ffe27a', big: true, r: 200 }); addShake(8, 0.5); }
       else if (ev.type === 'dragonIntro') { { const zf = Math.min(vw / 1500, vh / 1250); cam.zoom = Math.max(minZoom(), Math.min(cam.zoom, zf)); centerOnCore(); clampCam(); } banner('땅이 갈라진다…', true); toast('성 주변만 남기고 모든 땅이 무너진다'); }
       else if (ev.type === 'dragonUp') { banner('용이 하늘로 날아오른다!', true); addShake(10, 0.6); }
       else if (ev.type === 'dragonLand') { banner('용이 다시 내려앉았다!', true); addShake(16, 0.7); }
       else if (ev.type === 'bossRage') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#ff3b1a' }); banner(ev.name + ' 분노!'); }
-      else if (ev.type === 'over') { if (ev.win) showEnd(true); else startDefeat(); }
+      else if (ev.type === 'over') { if (ev.win) setTimeout(() => { if (!S || !S.win) return; if (params.get('nocine') || !running) showEnd(true); else playComic('ending', () => showEnd(true)); }, 600); else startDefeat(); }
     }
   }
 
@@ -1308,7 +1308,7 @@
   function cineSetText(txt) { const el = $('cineText'); el.classList.remove('show'); setTimeout(() => { if (!cine) return; el.textContent = txt; el.classList.add('show'); }, 380); }
   function startCine(name, kind) { // 1막 끝(30R)·마왕 처치(50R): 만화 컷신을 보여 주고, 끝나면 다음 막/무한 모드로
     cine = { comic: true, kind };
-    playComic(kind === 'endless' ? 'endless' : 'act2', () => { if (!cine) return; cine = null; if (kind !== 'endless') Scenery.setAct(2, true); C.endCinematic(S); });
+    playComic(kind === 'endless' ? 'endless' : kind === 'dragon' ? 'dragon' : 'act2', () => { if (!cine) return; cine = null; if (kind === 'act2') Scenery.setAct(2, true); C.endCinematic(S); });
     return;
     cine = { t0: performance.now(), step: -1, swapped: kind === 'endless', kind };
     $('cineTitle').textContent = name + ' 처치!'; $('cineText').textContent = ''; $('cineText').classList.remove('show'); $('cineTitle').classList.remove('show');
@@ -1430,10 +1430,13 @@
   const COMIC_POS = {
     act2: [[1.13, 1.71, 56.75], [56.94, 1.81, 41.99], [0.5, 48.39, 44.77], [44.39, 48.59, 54.6]],
     endless: [[1.07, 1.92, 59.08], [59.77, 1.71, 39.28], [0.69, 48.39, 43.19], [43.38, 48.39, 55.55]],
+    dragon: [[0.72, 1.17, 51.5], [48.76, 1.17, 50.59], [0.72, 47.66, 44.53], [41.08, 47.66, 58.33]], // 1536×1024 원본 기준
+    ending: [[0.91, 1.46, 52.99], [49.93, 1.46, 49.22], [0.91, 50.59, 48.37], [47.98, 50.59, 51.17]],
   };
   function playComic(name, done) {
     if (name === 'opening') $('comicStage').innerHTML = OPENING_HTML;
-    else $('comicStage').innerHTML = COMIC_POS[name].map((p, i) => '<img class="cp" data-i="' + (i + 1) + '" src="assets/' + name + '_' + (i + 1) + '.webp?v=2" alt="" style="left:' + p[0] + '%;top:' + p[1] + '%;width:' + p[2] + '%">').join('');
+    const wide = name === 'dragon' || name === 'ending'; $('comicStage').style.aspectRatio = wide ? '1536 / 1024' : ''; $('comicStage').style.width = wide ? 'min(97vw, calc((100vh - 62px) * 1.5))' : '';
+    if (name !== 'opening') $('comicStage').innerHTML = COMIC_POS[name].map((p, i) => '<img class="cp" data-i="' + (i + 1) + '" src="assets/' + name + '_' + (i + 1) + '.webp?v=2" alt="" style="left:' + p[0] + '%;top:' + p[1] + '%;width:' + p[2] + '%">').join('');
     const el = $('comic'), imgs = Array.from(el.querySelectorAll('.cp')); let idx = 0, over = false; comicOn = true;
     const wait = Promise.all(imgs.map(im => im.complete ? 1 : new Promise(r => { im.onload = im.onerror = r; })));
     document.body.classList.add('comicOn'); imgs.forEach(im => im.classList.remove('in')); el.classList.remove('hidden', 'out', 'shake', 'rumble'); $('comicHint').textContent = '화면을 터치하면 다음 컷 ▶';
@@ -1445,6 +1448,8 @@
       opening: [null, () => { A2.play('page'); }, () => { A2.play('page'); flash('go'); }, rumble, horn],
       act2: [null, () => { A2.play('page'); }, () => { A2.play('rage'); flash('red'); }, horn, rumble],
       endless: [null, () => { A2.play('page'); }, () => { A2.play('page'); flash('go'); }, rumble, horn],
+      dragon: [null, () => { A2.play('page'); }, () => { A2.play('rage'); flash('red'); }, () => { A2.play('rage'); }, rumble],
+      ending: [null, () => { A2.play('page'); }, () => { A2.play('page'); flash('go'); }, () => { A2.play('page'); }, horn],
     };
     if (name !== 'opening') FX[name][4] = ((f) => () => { f(); $('comicHint').textContent = endHint; })(FX[name][4]);
     const fxOf = FX[name];
