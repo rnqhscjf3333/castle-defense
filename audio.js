@@ -20,6 +20,26 @@
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     applyVol(); startMusic();
   }
+  // ── 음악 파일 (assets/bgm): 장면에 맞춰 바꿔 튼다. 파일 트랙이 켜져 있으면 합성 배경음은 쉰다 ──
+  const BGM = { menu: 'assets/bgm/menu.mp3', game: 'assets/bgm/game.mp3', boss: 'assets/bgm/boss.mp3', king2: 'assets/bgm/king2.mp3', dragon: 'assets/bgm/dragon.mp3' };
+  const bgm = { want: null, cur: null, els: {}, fade: {}, timer: 0 };
+  function bgmEl(n) { if (!bgm.els[n]) { const a = new Audio(BGM[n]); a.loop = true; a.preload = 'auto'; bgm.els[n] = a; bgm.fade[n] = 0; } return bgm.els[n]; }
+  function bgmTick() {
+    let busy = false;
+    for (const n in bgm.els) {
+      const a = bgm.els[n], on = bgm.want === n, f = bgm.fade[n], nf = on ? Math.min(1, f + 0.04) : Math.max(0, f - 0.05); bgm.fade[n] = nf;
+      a.volume = Math.max(0, Math.min(1, (st.muted ? 0 : st.music) * nf * 0.8));
+      if (on && a.paused) { const p = a.play(); if (p && p.catch) p.catch(() => {}); }
+      if (!on && nf <= 0 && !a.paused) { a.pause(); a.currentTime = 0; }
+      if (nf > 0) busy = true;
+    }
+    bgm.cur = bgm.want && BGM[bgm.want] ? bgm.want : null;
+    if (!busy && !bgm.want) { clearInterval(bgm.timer); bgm.timer = 0; }
+  }
+  function setTrack(n, silent) { bgm.silent = !!silent; // n: menu | game | boss | king2 | dragon | null(파일 음악 없음 → 합성 음악)
+    if (n && !BGM[n]) n = null; if (bgm.want === n && bgm.timer) return;
+    bgm.want = n; if (n) bgmEl(n); if (!bgm.timer) { bgm.timer = setInterval(bgmTick, 60); } bgmTick();
+  }
   function applyVol() { if (!ctx) return; master.gain.value = st.muted ? 0 : 1; sfxBus.gain.value = st.sfx; musBus.gain.value = st.music * 0.5; }
   function setView(v) { view = v; }
 
@@ -151,17 +171,17 @@
     mus.timer = setInterval(() => {
       if (!ctx || ctx.state !== 'running') return;
       const m = MODES[mus.mode];
-      while (mus.next < ctx.currentTime + 0.35) { if (!st.muted && st.music > 0) scheduleStep(m, mus.step, mus.next); mus.step++; mus.next += 60 / m.bpm / 2; }
+      while (mus.next < ctx.currentTime + 0.35) { if (!st.muted && st.music > 0 && !bgm.cur && !bgm.silent) scheduleStep(m, mus.step, mus.next); mus.step++; mus.next += 60 / m.bpm / 2; }
     }, 100);
   }
   function setMood(mode) { if (MODES[mode] && mus.mode !== mode) { mus.mode = mode; mus.step = Math.ceil(mus.step / 32) * 32; } }
 
-  window.addEventListener('pointerdown', init, { passive: true });
+  window.addEventListener('pointerdown', init, { passive: true }); window.addEventListener('pointerdown', () => { if (bgm.want) bgmTick(); }, { passive: true });
   window.addEventListener('keydown', init, { passive: true });
   document.addEventListener('visibilitychange', () => { if (!ctx) return; if (document.hidden) ctx.suspend(); else ctx.resume(); });
 
   window.Audio2 = {
-    init, play, alarm, setView, setMood,
+    init, play, alarm, setView, setMood, setTrack, get track() { return bgm.want; },
     get state() { return st; }, get ready() { return !!ctx && ctx.state === 'running'; },
     setMuted(b) { st.muted = !!b; save(); applyVol(); }, toggleMute() { this.setMuted(!st.muted); return st.muted; },
     setSfx(v) { st.sfx = Math.max(0, Math.min(1, v)); save(); applyVol(); }, setMusic(v) { st.music = Math.max(0, Math.min(1, v)); save(); applyVol(); },

@@ -246,7 +246,15 @@ body.introOn #btnPause, body.introOn #feed, body.introOn #hud, body.introOn #uni
 @media (max-width: 520px) { #units .ucard { width: 80px; } #tools { top: calc(max(5px, env(safe-area-inset-top)) + 90px); } #hud { min-width: 128px; } #hud .row { font-size: 11px; } }
 
 table.rank .rmsg { font-size: 11px; color: var(--muted); font-weight: 400; margin-top: 1px; word-break: break-all; }
-#nickModal .panel { max-width: 340px; text-align: center; } #nickModal input { width: 100%; box-sizing: border-box; padding: 10px; margin: 8px 0; font-size: 16px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255,255,255,.06); color: var(--ink); } 
+#nickModal .nk { width: 100%; max-width: 360px; padding: 26px 22px 20px; text-align: center; border-color: rgba(255,209,102,.45); box-shadow: 0 10px 40px rgba(0,0,0,.55), 0 0 40px rgba(255,190,70,.12); animation: nkIn .35s ease; }
+@keyframes nkIn { from { opacity: 0; transform: translateY(14px) scale(.96); } to { opacity: 1; transform: none; } }
+#nickModal .nk-ic { font-size: 44px; line-height: 1; margin-bottom: 6px; filter: drop-shadow(0 4px 8px rgba(0,0,0,.5)); } #nickModal h2 { margin: 4px 0 6px; font-size: 20px; }
+#nickModal .nk-sub { margin: 0 0 14px; color: var(--muted); font-size: 13px; line-height: 1.55; }
+#nickModal .nk-field { position: relative; } #nickModal #nickIn { width: 100%; box-sizing: border-box; padding: 13px 52px 13px 14px; font-size: 18px; font-weight: 700; text-align: center; border-radius: 12px; border: 2px solid var(--line); background: rgba(255,255,255,.07); color: var(--ink); outline: none; transition: border-color .15s, box-shadow .15s; }
+#nickModal #nickIn:focus { border-color: #ffd166; box-shadow: 0 0 0 3px rgba(255,209,102,.2); } #nickModal #nickCnt { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--muted); }
+#nickModal #nickErr { min-height: 18px; margin-top: 6px; font-size: 12px; color: #ff9a9a; }
+#nickModal .nk-row { display: flex; gap: 8px; margin-top: 6px; } #nickModal .nk-row button { flex: 1; padding: 12px 8px; font-size: 15px; border-radius: 12px; cursor: pointer; border: 1px solid var(--line); background: rgba(255,255,255,.06); color: var(--ink); }
+#nickModal .nk-row button.main { flex: 1.4; font-weight: 800; color: #2a1400; border-color: #fff1b0; background: linear-gradient(180deg, #ffd96a, #f1a62a); box-shadow: 0 3px 0 #8a5412; } #nickModal .nk-row button:disabled { opacity: .4; cursor: default; box-shadow: none; }
 table.rank .mtag { font-size: 10px; color: #ffd166; border: 1px solid #ffd16688; border-radius: 4px; padding: 0 3px; margin-left: 3px; }
 /* 오프닝 만화 컷신: 가로 화면은 4컷 페이지, 세로(모바일)는 컷이 위에서 아래로 쌓인다 */
 #comic { position: fixed; top: 0; left: 0; width: 100%; height: 100%; height: 100dvh; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; z-index: 60; padding-bottom: 0; background: radial-gradient(circle at 50% 40%, #fbf6e6, #efe4c4); display: flex; align-items: center; justify-content: center; overflow: hidden; touch-action: manipulation; cursor: pointer; transition: opacity .6s; }
@@ -469,13 +477,13 @@ body.comicOn { overflow: hidden; }
   </div>
 </div>
 
-<script src="core.js?v=20261122j"></script>
-<script src="figures.js?v=20261122j"></script>
-<script src="scenery.js?v=20261122j"></script>
-<script src="config.js?v=20261122j"></script>
-<script src="meta.js?v=20261122j"></script>
-<script src="net.js?v=20261122j"></script>
-<script src="audio.js?v=20261122j"></script>
-<script src="main.js?v=20261122j"></script>
+<script src="core.js?v=20261122k"></script>
+<script src="figures.js?v=20261122k"></script>
+<script src="scenery.js?v=20261122k"></script>
+<script src="config.js?v=20261122k"></script>
+<script src="meta.js?v=20261122k"></script>
+<script src="net.js?v=20261122k"></script>
+<script src="audio.js?v=20261122k"></script>
+<script src="main.js?v=20261122k"></script>
 </body>
 </html>

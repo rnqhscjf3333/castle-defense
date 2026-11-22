@@ -1560,10 +1560,20 @@
   // 닉네임이 저장돼 있지 않으면 시작 전에 입력받는다
   function ensureNick(cb) {
     if (Net.name() || params.get('bot') || params.get('nonick')) { cb(); return; }
-    let el = $('nickModal'); if (!el) { el = document.createElement('div'); el.id = 'nickModal'; el.className = 'modal'; el.innerHTML = '<div class="panel"><h2>닉네임을 정해 주세요</h2><p class="mhint">랭킹에 이 이름으로 올라가요 (최대 12자, 나중에 랭킹 등록 때 바꿀 수 있어요)</p><input id="nickIn" maxlength="12" placeholder="닉네임" autocomplete="off"><button id="nickOk" class="main">시작</button></div>'; document.body.appendChild(el); }
-    el.classList.remove('hidden'); const inp = $('nickIn'); setTimeout(() => inp.focus(), 50);
-    const ok = () => { const v = Net.setName(inp.value); if (!v) { inp.focus(); return; } el.classList.add('hidden'); cb(); };
-    $('nickOk').onclick = ok; inp.onkeydown = e => { e.stopPropagation(); if (e.key === 'Enter') ok(); }; inp.onkeyup = e => e.stopPropagation();
+    let el = $('nickModal'); if (!el) {
+      el = document.createElement('div'); el.id = 'nickModal'; el.className = 'modal';
+      el.innerHTML = '<div class="panel nk"><div class="nk-ic">🏰</div><h2>용사의 이름을 알려 주세요</h2><p class="nk-sub">랭킹과 기록에 이 이름이 남아요<br>설정에서 언제든 바꿀 수 있어요</p>'
+        + '<div class="nk-field"><input id="nickIn" maxlength="12" placeholder="닉네임 입력" autocomplete="off" spellcheck="false"><span id="nickCnt">0/12</span></div>'
+        + '<div id="nickErr"></div><div class="nk-row"><button id="nickDice" type="button">🎲 추천 이름</button><button id="nickOk" class="main" type="button" disabled>모험 시작</button></div></div>';
+      document.body.appendChild(el);
+    }
+    el.classList.remove('hidden'); const inp = $('nickIn'), ok = $('nickOk'), cnt = $('nickCnt'), err = $('nickErr'); setTimeout(() => inp.focus(), 60);
+    const A = ['용감한', '날쌘', '졸린', '불꽃', '푸른', '든든한', '느긋한', '재빠른', '은빛', '장난꾸러기'], B = ['기사', '궁수', '사제', '수호자', '여우', '고양이', '늑대', '곰돌이', '파수꾼', '모험가'];
+    const upd = () => { const v = inp.value.replace(/[<>&"'`]/g, '').trim(); cnt.textContent = inp.value.length + '/12'; ok.disabled = !v; err.textContent = ''; };
+    const go = () => { const v = Net.setName(inp.value); if (!v) { err.textContent = '닉네임을 입력해 주세요'; inp.focus(); return; } el.classList.add('hidden'); cb(); };
+    inp.value = ''; upd(); inp.oninput = upd;
+    $('nickDice').onclick = () => { inp.value = A[Math.floor(Math.random() * A.length)] + B[Math.floor(Math.random() * B.length)]; upd(); inp.focus(); };
+    ok.onclick = go; inp.onkeydown = e => { e.stopPropagation(); if (e.key === 'Enter' && !e.isComposing) go(); }; inp.onkeyup = e => e.stopPropagation();
   }
   function startFromTitle(devRound) {
     if (!devRound && !Net.name() && !params.get('bot') && !params.get('nonick')) { ensureNick(() => startFromTitle(devRound)); return; }
@@ -1619,6 +1629,18 @@
     else if (fastT > 10000 && renderScale < 1) { renderScale = Math.min(1, +(renderScale + 0.2).toFixed(2)); fastT = 0; resize(); }
   }
   const ema = (k, v) => { perf[k] += (v - perf[k]) * 0.1; };
+  // 장면별 음악: 메뉴 → (컷신 동안 정적) → 게임 → 보스 → 사천왕 2차전 → 용
+  function wantTrack() {
+    if (!titleEl.classList.contains('hidden') && !titleEl.classList.contains('out')) return 'menu';
+    if (!S || comicOn || (typeof intro !== 'undefined' && intro)) return '';
+    if (!running) return 'menu';
+    const bs = S.enemies.filter(e => e.kind === 'boss' && !e.dead); if (S.bossDeath && S.bossDeath.b && !bs.includes(S.bossDeath.b)) bs.push(S.bossDeath.b);
+    if (bs.some(e => e.dragon)) return 'dragon';
+    if (bs.some(e => e.king && e.p2)) return 'king2';
+    if (bs.length) return 'boss';
+    return 'game';
+  }
+  setInterval(() => { try { const t = wantTrack(); if (t === '') A2.setTrack(null, true); else A2.setTrack(t); } catch (e) {} }, 400);
   function updateMood() {
     const boss = S.enemies.some(e => e.kind === 'boss');
     A2.setMood(S.act === 2 || S.round > C.MAX_ROUND ? (boss ? 'dark2' : 'dark') : (boss ? 'boss' : 'calm'));
