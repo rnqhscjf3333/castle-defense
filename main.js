@@ -1398,7 +1398,7 @@
     omLast = null; dragonFramed = 0;
     openingSeen = true;
     const seed = params.get('seed') ? +params.get('seed') : (Date.now() ^ (Math.random() * 1e9)) >>> 0;
-    const mm = params.get('mode') || store.get('cd-mode'), mode = mm === 'free' ? mm : 'normal';
+    const mm = params.get('mode'), mode = mm === 'free' ? mm : 'normal';
     S = C.createGame(seed, mode); S.captureEvents = true; Net.begin(S); syncModeBar();
     fx.length = 0; numFx = 0; paused = false; speed = 1; shownOffer = null; $('picker').classList.add('hidden');
     setSpeed(1); closeModals(); Meta.begin(); lastSyncRound = 0; $('btnToMenu').classList.add('hidden');
@@ -1477,7 +1477,7 @@
   // 모드 전환: 왼쪽 위 라운드 표시 아래에서 언제든 바꿀 수 있다 (기본: 성 주변 방어 / 자유: 범위 안의 적을 멀리까지 추격)
   function syncModeBar() { if (!S) return; for (const b of document.querySelectorAll('#modeBar button')) b.classList.toggle('on', b.dataset.mode === S.mode); }
   for (const b of document.querySelectorAll('#modeBar button')) b.addEventListener('click', () => {
-    if (!S) return; S.mode = b.dataset.mode === 'free' ? 'free' : 'normal'; store.set('cd-mode', S.mode); syncModeBar();
+    if (!S) return; S.mode = b.dataset.mode === 'free' ? 'free' : 'normal'; syncModeBar();
     toast(S.mode === 'free' ? '자유 모드: 유닛이 범위 안의 적을 멀리까지 쫓아가 공격합니다' : '기본 모드: 유닛이 성 주변을 지키며 싸웁니다');
   });
   $('btnRank').addEventListener('click', () => { $('ovBody').innerHTML = '<div id="rankbox"></div>'; showRank(null); $('btnRank').classList.add('hidden'); $('go').textContent = '게임 시작'; });
