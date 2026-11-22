@@ -25,8 +25,8 @@
     s *= 0.55; // 판정 반지름(r)에 맞춰 몸집을 줄여 그린다
     const fl = e.flash > 0, t = (typeof performance !== 'undefined' ? performance.now() : 0) * 0.004, lift = e.lift || 0, flap = Math.sin(t * (lift > 0 ? 2.2 : 1)) * (lift > 0 ? 8 : 3.4);
     ctx.save();
-    ctx.globalAlpha = 0.3 * (1 - lift * 0.6); ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(0, 11 * s, (18 - lift * 6) * s, (4 - lift) * s, 0, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
     ctx.translate(0, -lift * 26 * s);
+    ctx.beginPath(); ctx.rect(-90 * s, -100 * s, 180 * s, 106 * s); ctx.clip(); // 허리 아래는 절벽 아래에 있어 보이지 않는다
     const L = '#0e0305', SC = fl ? FLASH : '#4a0d14', SC2 = fl ? FLASH : '#7a1a1e', BELLY = fl ? FLASH : '#c98a4a', MEM = fl ? FLASH : '#3a0a12', BONE = fl ? FLASH : '#cfc3a4', GLOW = '#ff7a1a';
     ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.strokeStyle = L;
     // 가시 꼬리
@@ -47,9 +47,19 @@
     ctx.strokeStyle = fl ? FLASH : '#8a5a26'; ctx.lineWidth = 0.9 * s; for (let i = -4; i <= 4; i++) { ctx.beginPath(); ctx.arc(0, (i * 3 - 3) * s, 6.4 * s, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke(); }
     // 등 가시 (목에서 몸통까지)
     ctx.fillStyle = BONE; ctx.strokeStyle = L; ctx.lineWidth = 0.8 * s; for (let i = 0; i < 5; i++) { const yy = (-14 + i * 4.4) * s; tri(ctx, -13 * s + i * 0.2 * s, yy, -17.5 * s, yy - 2 * s, -13 * s, yy + 2.4 * s); ctx.fill(); ctx.stroke(); tri(ctx, 13 * s - i * 0.2 * s, yy, 17.5 * s, yy - 2 * s, 13 * s, yy + 2.4 * s); ctx.fill(); ctx.stroke(); }
-    // 다리·갈고리 발톱
-    for (const k of [-1, 1]) { ctx.fillStyle = SC2; ctx.strokeStyle = L; ctx.lineWidth = 1.1 * s; ctx.beginPath(); ctx.ellipse(k * 9.5 * s, 9 * s, 5.6 * s, 3.8 * s, 0, 0, TAU); ctx.fill(); ctx.stroke(); ctx.fillStyle = BONE; for (const c of [-2.2, 0, 2.2]) { tri(ctx, (k * 9.5 + c) * s - 1 * s, 11.4 * s, (k * 9.5 + c + k * 0.6) * s, 16 * s, (k * 9.5 + c) * s + 1 * s, 11.4 * s); ctx.fill(); ctx.stroke(); } }
-    for (const k of [-1, 1]) { ctx.strokeStyle = L; ctx.lineWidth = 4 * s; ctx.beginPath(); ctx.moveTo(k * 11 * s, -10 * s); ctx.lineTo(k * 15 * s, 1 * s); ctx.stroke(); ctx.strokeStyle = SC2; ctx.lineWidth = 2.6 * s; ctx.beginPath(); ctx.moveTo(k * 11 * s, -10 * s); ctx.lineTo(k * 15 * s, 1 * s); ctx.stroke(); ctx.fillStyle = BONE; tri(ctx, k * 15 * s - 1.4 * s, 1 * s, k * 15 * s + k * 0.8 * s, 6 * s, k * 15 * s + 1.4 * s, 1 * s); ctx.fill(); }
+    // 몸통 아래쪽은 절벽 아래로 사라진다
+    { const g = ctx.createLinearGradient(0, -8 * s, 0, 5 * s); g.addColorStop(0, 'rgba(20,8,12,0)'); g.addColorStop(1, 'rgba(20,8,12,0.97)'); ctx.fillStyle = g; ctx.fillRect(-16 * s, -8 * s, 32 * s, 14 * s); }
+    // 두 팔: 어깨에서 바깥으로 꺾여 내려와 주먹과 갈고리 발톱으로 지면을 짚는다
+    for (const k of [-1, 1]) {
+      const sx = k * 10 * s, sy = -13 * s, ex = k * 21 * s, ey = -5 * s, fx = k * 17 * s, fy = 2.4 * s;
+      ctx.globalAlpha = 0.35; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(fx, 4.6 * s, 8 * s, 2.2 * s, 0, 0, TAU); ctx.fill(); ctx.globalAlpha = 1; // 짚은 자리의 그림자
+      ctx.lineCap = 'round'; ctx.strokeStyle = L; ctx.lineWidth = 6.4 * s; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.lineTo(fx, fy); ctx.stroke();
+      ctx.strokeStyle = SC2; ctx.lineWidth = 4.4 * s; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.lineTo(fx, fy); ctx.stroke();
+      ctx.fillStyle = SC2; ctx.strokeStyle = L; ctx.lineWidth = 1.2 * s; ctx.beginPath(); ctx.arc(ex, ey, 3.4 * s, 0, TAU); ctx.fill(); ctx.stroke(); // 팔꿈치
+      ctx.fillStyle = fl ? FLASH : '#b8742e'; ctx.beginPath(); ctx.ellipse(fx, fy + 0.6 * s, 5.4 * s, 3.8 * s, 0, 0, TAU); ctx.fill(); ctx.stroke(); // 주먹
+      ctx.strokeStyle = fl ? FLASH : '#8a5a26'; ctx.lineWidth = 0.7 * s; for (const o of [-2, 0, 2]) { ctx.beginPath(); ctx.moveTo(fx + o * s, fy - 2 * s); ctx.lineTo(fx + o * s, fy + 1 * s); ctx.stroke(); } // 손가락 마디
+      ctx.fillStyle = BONE; ctx.strokeStyle = L; ctx.lineWidth = 0.8 * s; for (const o of [-3.4, -1.1, 1.1, 3.4]) { tri(ctx, fx + o * s - 1 * s, fy + 3 * s, fx + (o + (o < 0 ? -0.8 : 0.8)) * s, fy + 7.2 * s, fx + o * s + 1 * s, fy + 3 * s); ctx.fill(); ctx.stroke(); } // 지면을 움켜쥔 발톱
+    }
     // 가늘고 긴 목 (S자 느낌의 비늘 마디)
     ctx.fillStyle = SC2; ctx.strokeStyle = L; ctx.lineWidth = 1.2 * s; ctx.beginPath(); ctx.moveTo(-6 * s, -14 * s); ctx.quadraticCurveTo(-5 * s, -24 * s, -4.4 * s, -30 * s); ctx.lineTo(4.4 * s, -30 * s); ctx.quadraticCurveTo(5 * s, -24 * s, 6 * s, -14 * s); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.strokeStyle = fl ? FLASH : '#3a0a10'; ctx.lineWidth = 0.9 * s; for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo(-5 * s, (-17 - i * 3) * s); ctx.lineTo(5 * s, (-17 - i * 3) * s); ctx.stroke(); }

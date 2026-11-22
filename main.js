@@ -977,6 +977,7 @@
     ctx.save(); safePath(ctx, 0); ctx.clip(); Scenery.drawGround(ctx, x0, y0, x1, y1); if (TH.tint) { ctx.fillStyle = TH.tint; ctx.fillRect(x0 - 60, y0 - 60, x1 - x0 + 120, y1 - y0 + 120); } ctx.restore(); // 남은 땅만 다시 풀밭으로 (속성에 맞게 물들인다)
     ctx.restore();
   }
+  let dragonFramed = 0; // 용 등장 때 화면을 맞춘 보스
   let omLast = null; // 직전에 떠 있던 사천왕의 기운 (등장 후에도 잠시 남는다)
   const OMEN_COL = { thunder: '#ffd814', snow: '#6fd0ff', earth: '#b8803c', dragon: '#ff5a1a' };
   const drawList = [], byY = (p, q) => p.y - q.y, LITE_AT = 140;
@@ -1368,7 +1369,7 @@
 
   // ───────────── 시작/종료 ─────────────
   function newGame(devRound) {
-    omLast = null;
+    omLast = null; dragonFramed = 0;
     openingSeen = true;
     const seed = params.get('seed') ? +params.get('seed') : (Date.now() ^ (Math.random() * 1e9)) >>> 0;
     const mm = params.get('mode') || store.get('cd-mode'), mode = mm === 'free' ? mm : 'normal';
@@ -1590,6 +1591,9 @@
     if (S) {
       if (!paused) updateDeathCam(dt);
       if (S.cinematic && !cine) startCine(S.cinematic.name, S.cinematic.kind);
+      if (!S.dragonIntro) { const dg = S.enemies.find(e => e.kind === 'boss' && e.fixed && !e.dead); // 용이 나타나면 머리까지 보이도록 한 번 화면을 맞춘다 (이후엔 자유롭게 움직일 수 있다)
+        if (dg && dragonFramed !== dg.id) { dragonFramed = dg.id; const x0 = Math.min(CX - 300, dg.x - 600), x1 = Math.max(CX + 300, dg.x + 600), y0 = Math.min(CY - 300, dg.y - 760), y1 = Math.max(CY + 300, dg.y + 120);
+          cam.zoom = Math.max(minZoom(), Math.min(1, vw / (x1 - x0 + 120), vh / (y1 - y0 + 120))); cam.x = (x0 + x1) / 2; cam.y = (y0 + y1) / 2; clampCam(); } }
       if (cine) stepCine(now);
       else if (Scenery.act !== S.act) Scenery.setAct(S.act, true); // 불러오기/재시작/점프 시 막에 맞는 배경으로
       if (!cine && S.act === 1) syncRoads();

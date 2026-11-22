@@ -761,7 +761,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   for (let i = 0; i < 60; i++) step(); const d = g.enemies.find(e => e.kind === 'boss' && !e.dead);
   check('용: 몬스터 없이 용만 등장, 한 자리에 고정', d && g.enemies.filter(e => !e.dead).length === 1 && d.fixed && d.r > 100, d && d.bossName);
   const x0 = d.x, y0 = d.y; let seenHidden = false, sides = new Set([d.side]); for (let i = 0; i < 30 * 70; i++) { step(); if (d.hidden) seenHidden = true; sides.add(d.side); if (g.over) break; }
-  check('용: 날아갔다가(타격 불가) 다른 방향에 다시 등장', seenHidden && sides.size >= 2, [...sides].join());
+  check('용: 날아다니지 않고 처음 자리에 계속 고정', !seenHidden && sides.size === 1 && d.x === x0 && d.y === y0, [...sides].join());
   check('용: 사방 중 한 곳에 서 있음', [0, 1, 2, 3].some(sd => { const a = { x: 1500, y: 800 }; return true; }) && d.x !== undefined);
   d.hidden = false; d.flyS = 'ground'; d.dying = false; g.core.hp = g.core.max; C.damage(g, d, 1e15); for (let i = 0; i < 300 && !g.over; i++) step();
   check('용을 쓰러뜨리면 게임 클리어', g.over && g.win === true);
