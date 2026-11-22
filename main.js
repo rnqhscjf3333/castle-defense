@@ -134,6 +134,8 @@
     const live = Array.from(box.children).filter(c => !c.classList.contains('out'));
     for (let k = live.length - 1; k >= 5; k--) kill(live[k]);
   }
+  let sayT = 0;
+  function saySpeech(name, text) { let el = $('bossSay'); if (!el) { el = document.createElement('div'); el.id = 'bossSay'; document.body.appendChild(el); } el.innerHTML = '<b></b><span></span>'; el.firstChild.textContent = name; el.lastChild.textContent = '“' + text + '”'; el.classList.add('show'); clearTimeout(sayT); sayT = setTimeout(() => el.classList.remove('show'), 2400); }
   function banner(t, boss) { const el = $('banner'); el.textContent = t; el.classList.toggle('boss', !!boss); el.classList.add('show'); clearTimeout(bannerT); bannerT = setTimeout(() => el.classList.remove('show'), boss ? 3200 : 1900); }
   const DESC = { sword: '체력 높은 전위', archer: '멀리서 공격', priest: '아군을 치유' };
   const KEYS = ['1', '2', '3'];
@@ -779,14 +781,15 @@
         banner(ev.className + ' → ' + ev.name + ' 전직!');
         for (const u of S.units) if (u.type === ev.unitType && fx.length < 300) addFx({ k: 'ring', x: u.x, y: u.y, t: 0, max: 0.7, c: '#ffd166' });
       }
+      else if (ev.type === 'bossSay') saySpeech(ev.name, ev.text);
       else if (ev.type === 'bossDash') addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.5, c: '#ffb21a' });
       else if (ev.type === 'bossShield') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.6, c: '#8fd8ff' }); toast('보스가 방어막을 둘렀어요'); }
       else if (ev.type === 'bossSummon') { for (let k = 0; k < 3; k++) addFx({ k: 'ring', x: ev.x, y: ev.y, t: -k * 0.12, max: 0.7, c: '#ff6b6b', big: true }); toast('보스가 ' + (CFG.enemies[ev.kind] ? CFG.enemies[ev.kind].name : '졸개') + ' ' + ev.n + '마리를 불렀어요!'); }
       else if (ev.type === 'bossClone') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#7fa8ff' }); banner('분신 소환!'); }
       else if (ev.type === 'bossDrain') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#8a0a1a' }); for (const p of ev.pts || []) addFx({ k: 'drainLn', x: ev.x, y: ev.y, tx: p.x, ty: p.y, t: 0, max: 0.9 }); toast('마왕이 검붉은 선으로 생명을 빨아들입니다'); }
-      else if (ev.type === 'bossAura') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.7, c: '#8fd8ff' }); toast('철벽 장군이 아군에게 방어막을 둘렀어요'); }
+      else if (ev.type === 'bossAura') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.7, c: '#8fd8ff' }); toast((ev.name || '보스') + '이(가) 주변 적에게 방어막을 둘렀어요'); }
       else if (ev.type === 'bossRoar') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.7, c: '#ffb04a' }); toast('돌격왕의 함성! 주변 적이 빨라집니다'); }
-      else if (ev.type === 'bossFocus') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#6fe08a' }); toast('광전사가 정신을 집중해 체력을 회복합니다 — 지금이 기회!'); }
+      else if (ev.type === 'bossFocus') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#6fe08a' }); toast((ev.name || '보스') + '이(가) 정신을 집중해 체력을 회복합니다'); }
       else if (ev.type === 'strikeWarn') addFx({ k: 'strikeW', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, w2: ev.w2, t: 0, max: Math.max(0.2, ev.t) });
       else if (ev.type === 'strikeHit') { addFx({ k: 'strikeH', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, w2: ev.w2, t: 0, max: ev.shape === 'cone' ? 0.7 : ev.shape === 'line' ? 0.6 : 0.55 }); if (ev.kind !== 'ice' || ev.r > 300) addShake(ev.kind === 'wind' ? 5 : ev.r > 250 ? 12 : 6, 0.3); }
       else if (ev.type === 'omen') { if (ev.id !== 'dragon') showBossIntro({ name: ev.name, line: ev.line, look: ev.look, r: ev.r, long: true, omen: ev.id }); toast(ev.id === 'dragon' ? '용의 기운이 맵 가장자리에 감돕니다' : '사천왕의 기운이 맵 가장자리에 감돕니다'); }
