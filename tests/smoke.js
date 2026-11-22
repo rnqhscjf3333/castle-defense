@@ -430,7 +430,8 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   for (let i = 0; i < 30 * 8; i++) C.tick(g, DT); g0 = b.dmgMul;
   for (let i = 0; i < 30 * 20; i++) C.tick(g, DT); const g1 = b.dmgMul;
   for (let i = 0; i < 30 * 200; i++) C.tick(g, DT);
-  check('보스: 등장 직후(8초)는 ×1, 28초에는 더 강함, 상한 이후 고정', g0 <= 1.001 && g1 > 1.4 && Math.abs(b.dmgMul - C.CFG.balance.bossGrowMax) < 1e-6, `${g0.toFixed(2)} → ${g1.toFixed(2)} → ${b.dmgMul.toFixed(2)}`); }
+  const M = C.CFG.balance.bossMelee; // 근접 보스는 기본 공격 배율이 더 붙는다
+  check('보스: 등장 직후(8초)는 ×1(근접 배율만), 28초에는 더 강함, 상한 이후 고정', g0 <= M + 0.001 && g1 > 1.4 * M && Math.abs(b.dmgMul - C.CFG.balance.bossGrowMax * M) < 1e-6, `${g0.toFixed(2)} → ${g1.toFixed(2)} → ${b.dmgMul.toFixed(2)}`); }
 // 31) 궁수: 연사는 사라지고 치명타·사거리 카드
 { check('연사 카드가 없고 치명타·사거리 카드가 있음', !C.CARD_DEFS.some(d => d.id === 'u_multi') && C.CARD_DEFS.some(d => d.id === 'u_crit') && C.CARD_DEFS.some(d => d.id === 'u_range'));
   const g = arena(3, []); g.gold = 1e6; g.buyCd.archer = 0; const ar = C.buy(g, 'archer').unit; const r0 = ar.range;

@@ -290,6 +290,7 @@
       bossSplash: 0.25, bossSplashR: 35,               // 보스 기본 공격의 범위 피해: 주변 아군이 받는 비율, 반경(+보스 크기)
       healCap: 0.10,                                  // 한 유닛이 1초 동안 치유로 회복할 수 있는 최대 비율(최대 체력 기준). 사제를 많이 뽑아도 불사가 되지 않게 한다
       bomberCoreMul: 0.55, guardPerUnit: 0.008, guardMax: 0.4, // 성이 받는 피해: 폭파병 ×0.55, 살아 있는 병사 1명당 -0.8% (최대 -40%)
+      bossMelee: 1.2,                                 // 근접 보스(광전사·마왕 …)의 기본 공격 배율 (스킬은 그대로)
       bossGrow: 0.02, bossGrowDelay: 8, bossGrowMax: 2.6, // 보스 기본 공격: 등장 8초 뒤부터 초당 +2%씩 강해진다 (최대 ×2.6)
       summonRange: 600,                               // 보스가 성에서 이 거리 안에 들어와야 졸개 소환 시간이 흐른다
       shellCoreMul: 0.4,                              // 보스 포격이 성에 주는 피해 비율 (성벽이 튼튼하다)
@@ -1161,6 +1162,7 @@
       else if (k.kind === 'bolt') key = 'bolt';
       else if (k.kind === 'ice') key = k.r > 300 ? 'blizzard' : 'frost';
       else if (k.kind === 'fire') key = k.r < 120 && !e.dragon ? null : 'meteor';
+      else if (k.kind === 'sweep' || k.kind === 'slam') key = e.dragon ? 'tail' : 'stomp';
       else if (k.kind === 'rock') key = e.dragon ? 'tail' : (Math.hypot(k.x - e.x, k.y - e.y) > 60 ? 'quake' : 'stomp');
     }
     if (!key || !SAY[key] || e.fixed && key === 'meteor' && false) return;
@@ -1172,6 +1174,8 @@
     const k = Object.assign({ shape: 'circle', t: 1, w: 1, mul: 1, kb: 0, stun: 0, chill: 0, kind: 'bolt', from: e, r: 80 }, o); k.w = k.t;
     if (e && k.kb && !(k.shape === 'circle' && Math.hypot(k.x - e.x, k.y - e.y) <= 60)) k.kb *= CFG.balance.farKb || 0.35; // 보스 주변에 쓰는 광역기가 아니면 밀치는 힘을 줄인다
     if (e && (e.kind === 'boss' || e.king || e.dragon)) bossSay(S, e, k);
+    if (e && e.dragon) { const dk = k.kind === 'slam' ? 'slam' : (k.shape === 'cone' ? 'breath' : 'roar'), dd = k.t + (dk === 'slam' ? 0.35 : 0.5); e.anim = { k: dk, T: dd, left: dd }; } // 용의 동작: 숨결·포효·내려찍기
+    if (e && k.kind === 'sweep') { e.spinWait = Math.max(0, k.t - 0.6); e.spinDur = 0.7; e.spinA0 = e.aim || 0; } // 보스가 무기를 휘두르며 한 바퀴 돈다
     S.strikes.push(k);
     emit(S, { type: 'strikeWarn', x: k.x, y: k.y, r: k.r, t: k.t, kind: k.kind, shape: k.shape, ang: k.ang, half: k.half, len: k.len, w2: k.w2, claw: k.claw });
   }
@@ -1542,7 +1546,10 @@
     e.speedMul = 1; e.rateMul = 1; e.dmgMul = 1;
     e.life = (e.life || 0) + dt; const B = CFG.balance;
     e.grow = Math.min(B.bossGrowMax, 1 + B.bossGrow * Math.max(0, e.life - B.bossGrowDelay)); // 시간이 지날수록 기본 공격이 강해진다
-    e.dmgMul = e.grow;
+    e.dmgMul = e.grow * (!e.ranged && !e.dragon && !e.king && !A.siege ? CFG.balance.bossMelee : 1); // 근접 보스의 기본 공격은 더 강하다
+    if (e.anim && (e.anim.left -= dt) <= 0) e.anim = null;
+    if (e.spinWait > 0 && (e.spinWait -= dt) <= 0) { e.spinWait = 0; e.spinT = e.spinDur; }
+    if (e.spinT > 0) { e.spinT -= dt; e.spinA = e.spinA0 + (1 - Math.max(0, e.spinT) / e.spinDur) * Math.PI * 4; }
     if (A.rage && e.hp <= e.max * A.rage.at) {
       if (!e.enraged) { e.enraged = true; emit(S, { type: 'bossRage', name: e.bossName, x: e.x, y: e.y }); }
       e.speedMul *= A.rage.speed; e.rateMul = A.rage.rate; e.dmgMul *= A.rage.dmg;
@@ -1563,7 +1570,7 @@
         if (e.flyT <= 0) { e.hidden = false; e.flown = true; e.flyS = null; e.lift = 0; e.shx = undefined; e.riseT = e.riseDur = F.back; placeDragon(e); emit(S, { type: 'dragonRise', x: e.x, y: e.y, dur: F.back, back: true }); }
         return;
       }
-      if (!e.flown && !e.flyS && e.hp <= e.max * F.at && e.riseT <= 0) { e.flyS = 'up'; e.flyT = F.up; emit(S, { type: 'dragonUp', x: e.x, y: e.y }); }
+      if (!e.flown && !e.flyS && e.hp <= e.max * F.at && e.riseT <= 0) { e.flyS = 'up'; e.flyT = F.up; e.anim = { k: 'roar', T: F.up, left: F.up }; emit(S, { type: 'dragonUp', x: e.x, y: e.y }); }
     }
     if (A.rush && !e.rushDone) { // 등장하자마자 가장 가까운 아군에게 돌진, 닿으면 충격파로 주변 아군을 기절시킨다 (아군이 없으면 성)
       e.speedMul *= A.rush.mul; const rt = nearest(S.gU, e.x, e.y, 1500);
@@ -1602,7 +1609,7 @@
       }
     }
     if (A.dash) {
-      if (e.dashT > 0) { e.dashT -= dt; e.speedMul *= A.dash.mul; if (e.dashT <= 0 && A.dash.shock) addStrike(S, e, { x: e.x, y: e.y, r: A.dash.shock.r, t: 0.3, mul: A.dash.shock.mul, kb: A.dash.shock.kb, kind: 'rock' }); } // 돌진이 끝나면 충격파로 주변을 밀쳐낸다
+      if (e.dashT > 0) { e.dashT -= dt; e.speedMul *= A.dash.mul; if (e.dashT <= 0 && A.dash.shock) addStrike(S, e, { x: e.x, y: e.y, r: A.dash.shock.r, t: 0.3, mul: A.dash.shock.mul, kb: A.dash.shock.kb, kind: 'sweep' }); } // 돌진이 끝나면 충격파로 주변을 밀쳐낸다
       else { e.t.dash -= dt; if (e.t.dash <= 0) { e.dashT = A.dash.dur; e.t.dash = A.dash.cd; emit(S, { type: 'bossDash', x: e.x, y: e.y }); bossSay(S, e, null, 'dash'); } }
     }
     if (A.shield) {
@@ -1652,7 +1659,7 @@
     }
     if (A.stomp) { // 토왕: 발을 굴러 주변 아군을 밀쳐낸다
       e.t.stomp -= dt;
-      if (e.t.stomp <= 0 && e.life > 2) { if (!S.units.some(u => !u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= A.stomp.r + u.r)) e.t.stomp = 1; else { e.t.stomp = A.stomp.cd; addStrike(S, e, { x: e.x, y: e.y, r: A.stomp.r, t: A.stomp.warn, mul: A.stomp.mul, kb: A.stomp.kb, kind: 'rock' }); } }
+      if (e.t.stomp <= 0 && e.life > 2) { if (!S.units.some(u => !u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= A.stomp.r + u.r)) e.t.stomp = 1; else { e.t.stomp = A.stomp.cd; addStrike(S, e, { x: e.x, y: e.y, r: A.stomp.r, t: A.stomp.warn, mul: A.stomp.mul, kb: A.stomp.kb, kind: 'sweep' }); } }
     }
     if (A.quake) { // 토왕(각성): 아군 발밑이 솟구친다
       e.t.quake -= dt;
@@ -1684,7 +1691,7 @@
     }
     if (A.tail) { // 용: 가까이 붙은 아군을 꼬리로 쓸어 날려 버린다
       e.t.tail -= dt;
-      if (e.t.tail <= 0) { const R = A.tail.r + e.r * 0.6; if (!S.units.some(u => !u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= R + u.r)) e.t.tail = 0.6; else { e.t.tail = A.tail.cd; addStrike(S, e, { x: e.x, y: e.y, r: R, t: A.tail.warn, mul: A.tail.mul, kb: A.tail.kb, kind: 'rock' }); } }
+      if (e.t.tail <= 0) { const R = A.tail.r + e.r * 0.6; if (!S.units.some(u => !u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= R + u.r)) e.t.tail = 0.6; else { e.t.tail = A.tail.cd; addStrike(S, e, { x: e.x, y: e.y, r: R, t: A.tail.warn, mul: A.tail.mul, kb: A.tail.kb, kind: 'slam' }); } }
     }
     if (A.gust) { // 용: 날갯짓으로 모두를 밀어낸다
       e.t.gust -= dt;

@@ -23,21 +23,33 @@
   // 재앙의 용: 정면을 보는 거대한 용. 날갯짓·불길 입김·날아오르는 높이(e.lift)를 그린다.
   function dragon(ctx, e, s) {
     s *= 0.55; // 판정 반지름(r)에 맞춰 몸집을 줄여 그린다
-    const fl = e.flash > 0, t = (typeof performance !== 'undefined' ? performance.now() : 0) * 0.004, lift = e.lift || 0, flap = Math.sin(t * (lift > 0 ? 2.2 : 1)) * (lift > 0 ? 8 : 3.4);
+    // 동작: 평소의 숨쉬기·고개 흔들림 + 스킬마다 포효(고개를 젖혔다 내밀며 입을 벌림)·내려찍기(앞발을 들었다 땅을 찍음)
+    const nowT = (typeof performance !== 'undefined' ? performance.now() : 0) * 0.004, AN = e.anim, ap = AN ? Math.min(1, Math.max(0, 1 - AN.left / AN.T)) : 0, ak = AN && AN.k;
+    let hR = Math.sin(nowT * 0.8) * 0.05 + Math.sin(nowT * 0.37) * 0.03, hD = Math.sin(nowT * 1.3) * 0.6, ns = 1 + Math.sin(nowT * 1.3 + 1) * 0.015, jawO = 0, wA = 0, wS = 0, armL = 0, dip = Math.sin(nowT * 1.3) * 0.5;
+    if (ak === 'roar' || ak === 'breath') {
+      const rr = ap < 0.28 ? ap / 0.28 : 0, th = ap >= 0.28 ? Math.min(1, (ap - 0.28) / 0.1) * (ap > 0.9 ? (1 - ap) / 0.1 : 1) : 0;
+      hR += -0.25 * rr + Math.sin(nowT * 30) * 0.03 * th; ns *= 1 - 0.1 * rr + 0.14 * th; hD += 2 * rr - 3 * th; jawO = th * 8; wA = 8 * (rr + th); wS = rr + th; dip += -1.5 * rr + 1 * th;
+    } else if (ak === 'slam') {
+      const w = 0.67;
+      if (ap < w) { const u = ap / w; armL = u * u; hR -= 0.15 * u; ns *= 1 - 0.06 * u; dip -= 2 * u; wS = 0.5 * u; }
+      else { const v = (ap - w) / (1 - w); armL = Math.max(-0.25, 1 - v * 7) * (v < 0.4 ? 1 : Math.max(0, 1 - (v - 0.4) / 0.6)); dip += 3.5 * (1 - v); ns *= 1 + 0.12 * (1 - v); hD -= 3 * (1 - v); jawO = 7 * Math.min(1, v * 4) * (1 - v); wA = 6 * (1 - v); }
+    }
+    const fl = e.flash > 0, t = nowT, lift = e.lift || 0, flap = Math.sin(t * (lift > 0 ? 2.2 : 1)) * (lift > 0 ? 8 : 5 + wA);
     ctx.save();
     ctx.beginPath(); ctx.rect(-90 * s, -130 * s, 180 * s, 136 * s); ctx.clip(); // 허리 아래는 절벽 아래에 있어 보이지 않는다
     if (e.riseT > 0) { const k = Math.max(0, e.riseT / (e.riseDur || 4.2)), sh = Math.sin((typeof performance !== 'undefined' ? performance.now() : 0) * 0.05) * 1.2 * s * k; ctx.translate(sh, Math.pow(k, 1.6) * 92 * s); } // 땅 아래에서 부들부들 떨며 솟아오른다
     ctx.translate(0, -lift * (e.flyS === 'up' ? 60 : 26) * s); if (e.flyS === 'up') ctx.globalAlpha = Math.max(0, 1 - lift * lift);
     if (e.fallK > 0) { const k = e.fallK; ctx.translate(Math.sin(t * 9) * 2 * s * (1 - k), Math.pow(k, 1.7) * 150 * s); ctx.rotate(Math.sin(k * 3.1) * 0.12); } // 쓰러지며 절벽 아래로 추락
     const L = '#0e0305', SC = fl ? FLASH : '#4a0d14', SC2 = fl ? FLASH : '#7a1a1e', BELLY = fl ? FLASH : '#c98a4a', MEM = fl ? FLASH : '#3a0a12', BONE = fl ? FLASH : '#cfc3a4', GLOW = '#ff7a1a';
+    ctx.translate(0, dip * s);
     ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.strokeStyle = L;
     // 가시 꼬리
-    ctx.lineWidth = 5.4 * s; ctx.beginPath(); ctx.moveTo(6 * s, 8 * s); ctx.bezierCurveTo(28 * s, 14 * s, 34 * s, 0, 24 * s + flap * 0.3 * s, -8 * s); ctx.stroke();
-    ctx.strokeStyle = SC; ctx.lineWidth = 3.6 * s; ctx.beginPath(); ctx.moveTo(6 * s, 8 * s); ctx.bezierCurveTo(28 * s, 14 * s, 34 * s, 0, 24 * s + flap * 0.3 * s, -8 * s); ctx.stroke();
+    ctx.lineWidth = 5.4 * s; ctx.beginPath(); ctx.moveTo(6 * s, 8 * s); ctx.bezierCurveTo(28 * s, 14 * s, 34 * s, 0, 24 * s + (flap * 0.3 + Math.sin(nowT * 1.1) * 3 + (ak === 'slam' ? -ap * 4 : 0)) * s, -8 * s); ctx.stroke();
+    ctx.strokeStyle = SC; ctx.lineWidth = 3.6 * s; ctx.beginPath(); ctx.moveTo(6 * s, 8 * s); ctx.bezierCurveTo(28 * s, 14 * s, 34 * s, 0, 24 * s + (flap * 0.3 + Math.sin(nowT * 1.1) * 3 + (ak === 'slam' ? -ap * 4 : 0)) * s, -8 * s); ctx.stroke();
     ctx.fillStyle = BONE; ctx.strokeStyle = L; ctx.lineWidth = 0.9 * s; tri(ctx, 20 * s, -6 * s, 30 * s, -16 * s, 27 * s, -3 * s); ctx.fill(); ctx.stroke(); tri(ctx, 23 * s, -9 * s, 17 * s, -17 * s, 28 * s, -10 * s); ctx.fill(); ctx.stroke();
     // 박쥐 날개: 뼈대 손가락 + 찢어진 막
     for (const k of [-1, 1]) {
-      const f = flap, tipX = k * 47 * s, tipY = (-44 + f) * s;
+      const f = flap, tipX = k * (47 + wS * 9) * s, tipY = (-44 + f - wS * 8) * s;
       ctx.fillStyle = MEM; ctx.strokeStyle = L; ctx.lineWidth = 1.1 * s;
       ctx.beginPath(); ctx.moveTo(k * 8 * s, -17 * s); ctx.lineTo(tipX, tipY); ctx.quadraticCurveTo(k * 44 * s, (-28 + f * 0.8) * s, k * 40 * s, (-22 + f * 0.7) * s); ctx.quadraticCurveTo(k * 38 * s, (-16 + f * 0.5) * s, k * 44 * s, (-12 + f * 0.4) * s); ctx.quadraticCurveTo(k * 33 * s, (-10 + f * 0.3) * s, k * 36 * s, (-3 + f * 0.2) * s); ctx.quadraticCurveTo(k * 24 * s, -4 * s, k * 26 * s, 7 * s); ctx.lineTo(k * 9 * s, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
       ctx.strokeStyle = BONE; ctx.lineWidth = 1.5 * s; ctx.beginPath(); ctx.moveTo(k * 8 * s, -17 * s); ctx.lineTo(tipX, tipY); ctx.moveTo(k * 22 * s, (-30 + f * 0.9) * s); ctx.lineTo(k * 44 * s, (-12 + f * 0.4) * s); ctx.moveTo(k * 18 * s, -22 * s); ctx.lineTo(k * 26 * s, 7 * s); ctx.stroke();
@@ -53,7 +65,7 @@
     { const g = ctx.createLinearGradient(0, -8 * s, 0, 5 * s); g.addColorStop(0, 'rgba(20,8,12,0)'); g.addColorStop(1, 'rgba(20,8,12,0.97)'); ctx.fillStyle = g; ctx.fillRect(-16 * s, -8 * s, 32 * s, 14 * s); }
     // 두 팔: 어깨에서 바깥으로 꺾여 내려와 주먹과 갈고리 발톱으로 지면을 짚는다
     for (const k of [-1, 1]) {
-      const sx = k * 10 * s, sy = -13 * s, ex = k * 21 * s, ey = -5 * s, fx = k * 17 * s, fy = 2.4 * s;
+      const sx = k * 10 * s, sy = -13 * s, ex = k * (21 + armL * 5) * s, ey = (-5 - armL * 9) * s + Math.sin(nowT * 1.3 + k) * 0.5 * s, fx = k * (17 + armL * 6) * s, fy = (2.4 - armL * 20) * s + Math.sin(nowT * 1.3 + k * 1.7) * 0.8 * s;
       ctx.globalAlpha = 0.35; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(fx, 4.6 * s, 8 * s, 2.2 * s, 0, 0, TAU); ctx.fill(); ctx.globalAlpha = 1; // 짚은 자리의 그림자
       ctx.lineCap = 'round'; ctx.strokeStyle = L; ctx.lineWidth = 6.4 * s; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.lineTo(fx, fy); ctx.stroke();
       ctx.strokeStyle = SC2; ctx.lineWidth = 4.4 * s; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.lineTo(fx, fy); ctx.stroke();
@@ -62,15 +74,17 @@
       ctx.strokeStyle = fl ? FLASH : '#8a5a26'; ctx.lineWidth = 0.7 * s; for (const o of [-2, 0, 2]) { ctx.beginPath(); ctx.moveTo(fx + o * s, fy - 2 * s); ctx.lineTo(fx + o * s, fy + 1 * s); ctx.stroke(); } // 손가락 마디
       ctx.fillStyle = BONE; ctx.strokeStyle = L; ctx.lineWidth = 0.8 * s; for (const o of [-3.4, -1.1, 1.1, 3.4]) { tri(ctx, fx + o * s - 1 * s, fy + 3 * s, fx + (o + (o < 0 ? -0.8 : 0.8)) * s, fy + 7.2 * s, fx + o * s + 1 * s, fy + 3 * s); ctx.fill(); ctx.stroke(); } // 지면을 움켜쥔 발톱
     }
-    // 가늘고 긴 목 (S자 느낌의 비늘 마디)
+    // 가늘고 긴 목 (S자 느낌의 비늘 마디) — 목과 머리는 하나로 묶여 흔들리고 늘어난다
+    ctx.save(); ctx.translate(0, -14 * s + hD * s); ctx.rotate(hR); ctx.scale(1, ns); ctx.translate(0, 14 * s);
     ctx.fillStyle = SC2; ctx.strokeStyle = L; ctx.lineWidth = 1.2 * s; ctx.beginPath(); ctx.moveTo(-6 * s, -14 * s); ctx.quadraticCurveTo(-5 * s, -24 * s, -4.4 * s, -30 * s); ctx.lineTo(4.4 * s, -30 * s); ctx.quadraticCurveTo(5 * s, -24 * s, 6 * s, -14 * s); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.strokeStyle = fl ? FLASH : '#3a0a10'; ctx.lineWidth = 0.9 * s; for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo(-5 * s, (-17 - i * 3) * s); ctx.lineTo(5 * s, (-17 - i * 3) * s); ctx.stroke(); }
     // 머리: 각진 쐐기형 + 길게 튀어나온 주둥이
-    const breath = e.breathT > 0, jaw = breath ? 5 : 0.8;
+    const breath = e.breathT > 0, jaw = Math.max(breath ? 5 : 0.8, 0.8 + jawO);
     ctx.fillStyle = SC; ctx.strokeStyle = L; ctx.lineWidth = 1.3 * s;
     ctx.beginPath(); ctx.moveTo(-9 * s, -39 * s); ctx.lineTo(-11 * s, -33 * s); ctx.lineTo(-5 * s, -26 * s); ctx.lineTo(-3.4 * s, -22 * s); ctx.lineTo(3.4 * s, -22 * s); ctx.lineTo(5 * s, -26 * s); ctx.lineTo(11 * s, -33 * s); ctx.lineTo(9 * s, -39 * s); ctx.lineTo(0, -41 * s); ctx.closePath(); ctx.fill(); ctx.stroke();
     // 아래턱 + 송곳니
     ctx.fillStyle = SC2; ctx.beginPath(); ctx.moveTo(-4.4 * s, (-24 + jaw * 0.2) * s); ctx.lineTo(0, (-20 + jaw) * s); ctx.lineTo(4.4 * s, (-24 + jaw * 0.2) * s); ctx.closePath(); ctx.fill(); ctx.stroke();
+    if (!breath && jawO > 1) { ctx.fillStyle = '#2a0608'; ctx.beginPath(); ctx.ellipse(0, (-22 + jaw * 0.4) * s, 3.6 * s, jaw * 0.7 * s, 0, 0, TAU); ctx.fill(); }
     if (breath) { ctx.fillStyle = '#2a0608'; ctx.beginPath(); ctx.ellipse(0, (-22 + jaw * 0.4) * s, 3.6 * s, jaw * 0.7 * s, 0, 0, TAU); ctx.fill(); const g = ctx.createRadialGradient(0, -22 * s, 1 * s, 0, -22 * s, 18 * s); g.addColorStop(0, 'rgba(255,250,170,.95)'); g.addColorStop(0.5, 'rgba(255,130,30,.6)'); g.addColorStop(1, 'rgba(255,60,10,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, -22 * s, 18 * s, 0, TAU); ctx.fill(); }
     ctx.fillStyle = BONE; ctx.strokeStyle = L; ctx.lineWidth = 0.7 * s; for (const k of [-1, 1]) { tri(ctx, k * 3.2 * s - 0.9 * s, (-23) * s, k * 3 * s, (-18.4 + (breath ? 1.5 : 0)) * s, k * 3.2 * s + 0.9 * s, (-23) * s); ctx.fill(); ctx.stroke(); }
     // 콧구멍 + 콧김
@@ -83,6 +97,7 @@
     for (const k of [-1, 1]) { ctx.beginPath(); ctx.moveTo(k * 5.4 * s, -40 * s); ctx.quadraticCurveTo(k * 16 * s, -45 * s, k * 21 * s, -58 * s); ctx.quadraticCurveTo(k * 12 * s, -50 * s, k * 3 * s, -37.6 * s); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.moveTo(k * 10 * s, -36 * s); ctx.lineTo(k * 18 * s, -37 * s); ctx.lineTo(k * 10.6 * s, -32 * s); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.moveTo(k * 8 * s, -30 * s); ctx.lineTo(k * 14 * s, -28 * s); ctx.lineTo(k * 6 * s, -26.6 * s); ctx.closePath(); ctx.fill(); ctx.stroke(); }
     tri(ctx, -2 * s, -40.6 * s, 0, -48 * s, 2 * s, -40.6 * s); ctx.fill(); ctx.stroke();
     ctx.restore();
+    ctx.restore();
   }
 
   // 방향/걸음 상태 갱신 (프레임마다 한 번)
@@ -93,6 +108,7 @@
     e._px = e.x; e._py = e.y;
     if (e._ang === undefined) e._ang = e.team === 'e' ? Math.PI : 0;
     // 공격 중에는 공격 방향을 본다
+    if (e.spinT > 0) { e.swing = 0.2; e.aim = e.spinA; } // 보스가 주변을 베는 동안은 무기를 든 채 한 바퀴 돈다
     const a = e.swing > 0 && e.aim !== undefined ? e.aim : e._ang;
     e._face = a;
     e._dir = Math.cos(a) >= 0 ? 1 : -1;

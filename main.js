@@ -687,7 +687,7 @@
       case 'bossShield': A2.play('shield', ev.x, ev.y); break;
       case 'bossSummon': A2.play('summon', ev.x, ev.y); break;
       case 'strikeWarn': A2.play('cast', ev.x, ev.y); break;
-      case 'strikeHit': A2.play(ev.kind === 'bolt' || ev.kind === 'fire' ? 'bigBoom' : 'boom', ev.x, ev.y); break;
+      case 'strikeHit': A2.play(ev.kind === 'bolt' || ev.kind === 'fire' || ev.kind === 'slam' ? 'bigBoom' : 'boom', ev.x, ev.y); break;
       case 'dragonIntro': A2.alarm(); A2.play('rumble'); break;
       case 'dragonRise': A2.play('bigBoom', ev.x, ev.y); A2.play('rage'); break;
       case 'dragonUp': case 'dragonLand': A2.play('bigBoom', ev.x, ev.y); break;
@@ -795,7 +795,7 @@
       else if (ev.type === 'bossRoar') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.7, c: '#ffb04a' }); toast('돌격왕의 함성! 주변 적이 빨라집니다'); }
       else if (ev.type === 'bossFocus') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#6fe08a' }); toast((ev.name || '보스') + '이(가) 정신을 집중해 체력을 회복합니다'); }
       else if (ev.type === 'strikeWarn') addFx({ k: 'strikeW', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, w2: ev.w2, claw: ev.claw, t: 0, max: Math.max(0.2, ev.t) });
-      else if (ev.type === 'strikeHit') { addFx({ k: 'strikeH', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, w2: ev.w2, claw: ev.claw, t: 0, max: ev.shape === 'cone' ? 0.7 : ev.shape === 'line' ? 0.6 : 0.55 }); if (ev.kind !== 'ice' || ev.r > 300) addShake(ev.kind === 'wind' ? 5 : ev.r > 250 ? 12 : 6, 0.3); }
+      else if (ev.type === 'strikeHit') { addFx({ k: 'strikeH', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, w2: ev.w2, claw: ev.claw, t: 0, max: ev.shape === 'cone' ? 0.7 : ev.shape === 'line' ? 0.6 : 0.55 }); if (ev.kind !== 'ice' || ev.r > 300) addShake(ev.kind === 'slam' ? 14 : ev.kind === 'wind' ? 5 : ev.r > 250 ? 12 : 6, ev.kind === 'slam' ? 0.45 : 0.3); }
       else if (ev.type === 'omen') { if (ev.id !== 'dragon') showBossIntro({ name: ev.name, line: ev.line, look: ev.look, r: ev.r, long: true, omen: ev.id }); toast(ev.id === 'dragon' ? '용의 기운이 맵 가장자리에 감돕니다' : '사천왕의 기운이 맵 가장자리에 감돕니다'); }
       else if (ev.type === 'castleAwaken') { banner('성채 각성!', true); for (let i = 0; i < 4; i++) addFx({ k: 'ring', x: CX, y: CY, t: -i * 0.12, max: 1.0, c: '#ffe27a', big: true, r: 200 }); addShake(8, 0.5); }
       else if (ev.type === 'dragonRise') { banner(ev.back ? '용이 다시 돌아왔다!!' : '재앙의 용이 모습을 드러낸다!!', true); flash('#ff3a1a', 0.45); addShake(14, 1.2); // 단상 가장자리에 충격파와 먼지·불씨가 터진다
@@ -954,7 +954,7 @@
     }
     ctx.restore();
   }
-  const STRIKE_COL = { bolt: '#ffe14a', ice: '#8fd8ff', rock: '#c28a52', fire: '#ff6a2a', wind: '#d8f2ff', slash: '#c8203a', hammer: '#d9a441' };
+  const STRIKE_COL = { bolt: '#ffe14a', ice: '#8fd8ff', rock: '#c28a52', fire: '#ff6a2a', wind: '#d8f2ff', slash: '#c8203a', hammer: '#d9a441', sweep: '#dfe3f0', slam: '#c28a52' };
   // ── 100라운드: 성 주변만 남기고 땅이 무너져 절벽이 된다 ──
   // 남는 땅 = 성 둘레 원 + 용이 서는 네 자리의 받침 + 그 사이를 잇는 십자 다리
   const DR = CFG.dragon, SAFE_R = 330, PAD_R = 190, BR_W = 80;
@@ -1232,7 +1232,17 @@
         if (f.shape === 'line') { ctx.globalAlpha = 0.5; ctx.lineWidth = 2 / z; ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.ang); ctx.beginPath(); ctx.moveTo(f.len * p, -f.w2 / 2); ctx.lineTo(f.len * p, f.w2 / 2); ctx.stroke(); ctx.restore(); }
         else if (f.shape !== 'cone') { ctx.globalAlpha = 0.55; ctx.lineWidth = 2 / z; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (1 - p), 0, Math.PI * 2); ctx.stroke(); }
         else { ctx.globalAlpha = 0.5; ctx.lineWidth = 2 / z; ctx.beginPath(); ctx.arc(f.x, f.y, f.len * p, f.ang - f.half, f.ang + f.half); ctx.stroke(); }
-        if (f.shape === 'circle' && f.kind !== 'bolt' && f.kind !== 'wind' && f.kind !== 'slash') { ctx.globalAlpha = 1; drawFall(ctx, f.kind, f.x, f.y, f.r, p, 'strike'); }
+        if (f.shape === 'circle' && f.kind !== 'bolt' && f.kind !== 'wind' && f.kind !== 'slash' && f.kind !== 'sweep' && f.kind !== 'slam') { ctx.globalAlpha = 1; drawFall(ctx, f.kind, f.x, f.y, f.r, p, 'strike'); }
+        if (f.kind === 'sweep') { // 무기를 휘두르는 예고: 초승달 칼날 자국이 보스 둘레를 돈다
+          ctx.save(); ctx.translate(f.x, f.y); ctx.lineCap = 'round'; const rot = p * p * 12.5;
+          for (let i = 0; i < 3; i++) { const a0 = rot + i * 2.094; ctx.globalAlpha = 0.35 + 0.4 * p; ctx.strokeStyle = '#f2f4ff'; ctx.lineWidth = (7 + 5 * p) / z; ctx.beginPath(); ctx.arc(0, 0, f.r * 0.82, a0, a0 + 0.9); ctx.stroke(); ctx.globalAlpha = 0.25; ctx.lineWidth = 16 / z; ctx.strokeStyle = '#9fa8c8'; ctx.beginPath(); ctx.arc(0, 0, f.r * 0.82, a0 - 0.2, a0 + 0.9); ctx.stroke(); }
+          ctx.restore(); ctx.lineCap = 'butt';
+        }
+        if (f.kind === 'slam') { // 내려찍기 예고: 바닥에 금이 모인다
+          ctx.save(); ctx.translate(f.x, f.y); ctx.strokeStyle = '#3a2412'; ctx.lineWidth = 3 / z; ctx.globalAlpha = 0.4 + 0.5 * p;
+          for (let i = 0; i < 9; i++) { const an = i * 0.7 + 0.3, r0 = f.r * (0.95 - 0.7 * p), r1 = r0 - f.r * 0.22; ctx.beginPath(); ctx.moveTo(Math.cos(an) * r0, Math.sin(an) * r0); ctx.lineTo(Math.cos(an + 0.08) * (r0 + r1) / 2, Math.sin(an + 0.08) * (r0 + r1) / 2); ctx.lineTo(Math.cos(an) * r1, Math.sin(an) * r1); ctx.stroke(); }
+          ctx.restore();
+        }
         if (f.kind === 'bolt') { ctx.globalAlpha = 0.8; ctx.fillStyle = '#fff6b0'; ctx.beginPath(); ctx.arc(f.x, f.y, 5 + 4 * pu, 0, Math.PI * 2); ctx.fill(); }
         ctx.globalAlpha = 1;
       }
@@ -1267,8 +1277,13 @@
           ctx.globalAlpha = a; ctx.fillStyle = '#e8f8ff'; ctx.strokeStyle = '#6fb8e8'; ctx.lineWidth = 1.5 / z;
           const n = Math.max(8, Math.min(22, Math.round(f.r / 14)));
           for (let i = 0; i < n; i++) { const an = i / n * 6.283 + 0.3, rr = f.r * (0.35 + 0.55 * ((i * 7) % 5) / 5), h = 26 * Math.min(1, p * 4) * (1 - p * 0.5), bx = f.x + Math.cos(an) * rr, by = f.y + Math.sin(an) * rr * 0.8; ctx.beginPath(); ctx.moveTo(bx - 5, by); ctx.lineTo(bx, by - h); ctx.lineTo(bx + 5, by); ctx.closePath(); ctx.fill(); ctx.stroke(); }
-        } else if (f.kind === 'rock' || f.kind === 'hammer') {
-          if (f.kind === 'hammer') { ctx.globalAlpha = a * 0.5; ctx.strokeStyle = '#ffe9b0'; ctx.lineWidth = 5 / z; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (0.3 + 1.1 * p), 0, Math.PI * 2); ctx.stroke(); }
+        } else if (f.kind === 'sweep') { // 휘두른 무기의 궤적이 한 바퀴 퍼져 나간다
+          ctx.save(); ctx.translate(f.x, f.y); ctx.lineCap = 'round'; const rr = f.r * (0.55 + 0.45 * Math.min(1, p * 2.2)), st = p * 6;
+          for (let i = 0; i < 3; i++) { const a0 = st + i * 2.094; ctx.globalAlpha = a * 0.9; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = (9 * a + 3) / z; ctx.beginPath(); ctx.arc(0, 0, rr, a0, a0 + 1.5); ctx.stroke(); ctx.globalAlpha = a * 0.4; ctx.strokeStyle = '#aab4e0'; ctx.lineWidth = 22 / z * a; ctx.beginPath(); ctx.arc(0, 0, rr, a0 - 0.3, a0 + 1.5); ctx.stroke(); }
+          ctx.globalAlpha = a * 0.5; ctx.strokeStyle = col; ctx.lineWidth = 4 / z; ctx.beginPath(); ctx.arc(0, 0, f.r * Math.min(1, p * 1.8), 0, Math.PI * 2); ctx.stroke();
+          ctx.restore(); ctx.lineCap = 'butt';
+        } else if (f.kind === 'rock' || f.kind === 'hammer' || f.kind === 'slam') {
+          if (f.kind === 'hammer' || f.kind === 'slam') { ctx.globalAlpha = a * 0.5; ctx.strokeStyle = '#ffe9b0'; ctx.lineWidth = 5 / z; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (0.3 + 1.1 * p), 0, Math.PI * 2); ctx.stroke(); }
           ctx.globalAlpha = a * 0.6; ctx.strokeStyle = col; ctx.lineWidth = 8 / z * a + 2 / z; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (0.2 + 0.8 * p), 0, Math.PI * 2); ctx.stroke();
           ctx.globalAlpha = a * 0.35; ctx.fillStyle = '#6b4a2a'; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * 0.6, 0, Math.PI * 2); ctx.fill();
           ctx.globalAlpha = a; ctx.fillStyle = '#8a6a44'; for (let i = 0; i < 9; i++) { const an = i * 0.7 + 0.4, d = f.r * (0.3 + 0.6 * p) * (0.7 + (i % 3) * 0.2), rh = 16 * Math.sin(Math.min(1, p * 1.6) * Math.PI); ctx.fillRect(f.x + Math.cos(an) * d - 4, f.y + Math.sin(an) * d * 0.8 - rh - 4, 8, 8); }
