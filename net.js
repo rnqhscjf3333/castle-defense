@@ -82,17 +82,17 @@
     } catch (e) {}
     return { server: false, list: localTop().slice(0, n), failed: true };
   }
-  async function submit(S, name) {
+  async function submit(S, name, msg) {
     if (S.dev) return { rejected: true, dev: true }; // 개발자 모드는 랭킹에 올리지 않는다
-    name = String(name || '').replace(/[<>&"'`]/g, '').trim().slice(0, 12) || '이름없음'; ls.set('cd-name', name);
+    name = String(name || '').replace(/[<>&"'`]/g, '').trim().slice(0, 12) || '이름없음'; ls.set('cd-name', name); msg = String(msg || '').replace(/[<>&"'`]/g, '').trim().slice(0, 30);
     const chk = window.CastleCore.checkRun(S); if (!chk.ok) { enqueue({ type: 'flag', v: CFG.VERSION, pid, run: run.id, seed: S.seed, name, round: S.round, kills: S.kills, earned: Math.round(S.stats.earned), bound: chk.bound, why: chk.why }); return { rejected: true, why: chk.why }; } // 골드 수입이 그 라운드까지 벌 수 있는 양을 넘으면 등록하지 않는다
-    const e = { name, mode: S.mode, score: scoreOf(S.win, S.round, S.kills, S.t), round: S.round, win: !!S.win, kills: S.kills, time: Math.round(S.t), at: Date.now() };
+    const e = { name, msg, mode: S.mode, score: scoreOf(S.win, S.round, S.kills, S.t), round: S.round, win: !!S.win, kills: S.kills, time: Math.round(S.t), at: Date.now() };
     const dsum = window.CastleCore.runSummary(S); e.d = dsum;
     addLocal(e);
-    if (API) { try { await post({ type: 'score', mode: S.mode, v: CFG.VERSION, pid, run: run.id, seed: S.seed, name, earned: Math.round(S.stats.earned), spent: Math.round(S.stats.spent), bound: chk.bound, score: e.score, round: e.round, win: e.win, kills: e.kills, time: e.time, detail: dsum }); } catch (er) { enqueue({ type: 'score', v: CFG.VERSION, pid, run: run.id, seed: S.seed, name, score: e.score, round: e.round, win: e.win, kills: e.kills, time: e.time }); } }
+    if (API) { try { await post({ type: 'score', msg, mode: S.mode, v: CFG.VERSION, pid, run: run.id, seed: S.seed, name, earned: Math.round(S.stats.earned), spent: Math.round(S.stats.spent), bound: chk.bound, score: e.score, round: e.round, win: e.win, kills: e.kills, time: e.time, detail: dsum }); } catch (er) { enqueue({ type: 'score', v: CFG.VERSION, pid, run: run.id, seed: S.seed, name, score: e.score, round: e.round, win: e.win, kills: e.kills, time: e.time }); } }
     return e;
   }
 
   window.addEventListener('online', flush); setTimeout(flush, 2000);
-  window.Net = { configured: !!API, pid, sendError, setSource: f => { getS = f; }, begin, sample, lag, sendLog, top, submit, scoreOf, name: () => ls.get('cd-name') || '', localTop };
+  window.Net = { configured: !!API, pid, sendError, setSource: f => { getS = f; }, begin, sample, lag, sendLog, top, submit, scoreOf, name: () => ls.get('cd-name') || '', setName: v => { v = String(v || '').replace(/[<>&"'`]/g, '').trim().slice(0, 12); if (v) ls.set('cd-name', v); return v; }, localTop };
 })();

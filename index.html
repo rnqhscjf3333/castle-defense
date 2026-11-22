@@ -112,8 +112,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #btnRank { margin-top: 10px; padding: 12px 18px; font-size: 15px; background: transparent; color: var(--ink); border: 1px solid var(--line); border-radius: 12px; cursor: pointer; }
 #btnRank.hidden { display: none; }
 #btnToMenu { margin-top: 10px; padding: 12px 18px; font-size: 15px; background: transparent; color: var(--ink); border: 1px solid var(--line); border-radius: 12px; cursor: pointer; }
-#regbox { display: flex; gap: 8px; margin: 10px 0 4px; }
-#nameIn { flex: 1; min-width: 0; padding: 10px 12px; font-size: 15px; background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 10px; color: var(--ink); }
+#regbox { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px; }
+#msgIn { flex: 1 1 100%; order: 3; min-width: 0; padding: 10px 12px; font-size: 14px; background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 10px; color: var(--ink); } #regBtn { order: 2; }
+#nameIn { flex: 1; order: 1; min-width: 0; padding: 10px 12px; font-size: 15px; background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 10px; color: var(--ink); }
 #regBtn { padding: 10px 14px; font-size: 14px; font-weight: 700; background: var(--gold); color: #1d1500; border: 0; border-radius: 10px; cursor: pointer; }
 #regBtn:disabled { opacity: .6; }
 .rankhead { margin-top: 10px; font-size: 12px; color: var(--muted); text-align: left; }
@@ -240,6 +241,8 @@ body.introOn #btnPause, body.introOn #feed, body.introOn #hud, body.introOn #uni
 @media (min-width: 521px) and (max-height: 600px) { .pcard { min-height: 0; padding: 8px 10px; } .pcard .pimg { width: 62px; height: 62px; margin: 2px 0; } .pcard.castle .pimg { width: 108px; height: 90px; } .pcard .pn { font-size: 15px; } .pcard .pd { font-size: 12px; } #pickBox { padding: 10px 12px 8px; } }
 @media (max-width: 520px) { #units .ucard { width: 80px; } #tools { top: calc(max(5px, env(safe-area-inset-top)) + 90px); } #hud { min-width: 128px; } #hud .row { font-size: 11px; } }
 
+table.rank .rmsg { font-size: 11px; color: var(--muted); font-weight: 400; margin-top: 1px; word-break: break-all; }
+#nickModal .panel { max-width: 340px; text-align: center; } #nickModal input { width: 100%; box-sizing: border-box; padding: 10px; margin: 8px 0; font-size: 16px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255,255,255,.06); color: var(--ink); } 
 table.rank .mtag { font-size: 10px; color: #ffd166; border: 1px solid #ffd16688; border-radius: 4px; padding: 0 3px; margin-left: 3px; }
 /* 오프닝 만화 컷신: 가로 화면은 4컷 페이지, 세로(모바일)는 컷이 위에서 아래로 쌓인다 */
 #comic { position: fixed; top: 0; left: 0; width: 100%; height: 100%; height: 100dvh; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; z-index: 60; padding-bottom: 0; background: radial-gradient(circle at 50% 40%, #fbf6e6, #efe4c4); display: flex; align-items: center; justify-content: center; overflow: hidden; touch-action: manipulation; cursor: pointer; transition: opacity .6s; }
@@ -338,16 +341,17 @@ body.comicOn { overflow: hidden; }
   opacity: 1; transform: none; transition: opacity .6s, transform .5s; }
 #bossIntro.hidden { opacity: 0; transform: translateX(-60px); }
 /* 사천왕이 멀리서 보내는 목소리: 그림자 모습, 속성 색, 아래쪽 대화창 느낌으로 등장 보스 소개와 구분 */
-#bossIntro.omen { top: auto; bottom: 24%; height: 104px; background: linear-gradient(90deg, rgba(4,4,12,0), rgba(4,4,12,.78) 15%, rgba(4,4,12,.78) 85%, rgba(4,4,12,0)); border-top: 1px dashed var(--oc, #ff8a8a); border-bottom: 1px dashed var(--oc, #ff8a8a); flex-direction: row-reverse; }
-#bossIntro.omen canvas { filter: brightness(0) drop-shadow(0 0 10px var(--oc, #ff8a8a)); opacity: .85; width: 96px; height: 96px; }
+#bossIntro.omen { top: 64px; bottom: auto; height: auto; min-height: 84px; padding: 6px 12px; box-sizing: border-box; background: linear-gradient(90deg, rgba(4,4,12,0), rgba(4,4,12,.78) 15%, rgba(4,4,12,.78) 85%, rgba(4,4,12,0)); border-top: 1px dashed var(--oc, #ff8a8a); border-bottom: 1px dashed var(--oc, #ff8a8a); flex-direction: row-reverse; }
+#bossIntro.omen canvas { filter: brightness(0) drop-shadow(0 0 10px var(--oc, #ff8a8a)); opacity: .85; width: min(80px, 20vw); height: min(80px, 20vw); }
 #bossIntro.omen .bi-tag { color: var(--oc, #ff8a8a); } #bossIntro.omen #biName { font-size: 21px; color: var(--oc, #ff8a8a); text-shadow: 0 0 14px var(--oc, #ff8a8a); }
 #bossIntro.omen #biLine { font-size: 14px; color: #e8e8f2; }
 #bossIntro.omen-thunder { --oc: #ffe14a; } #bossIntro.omen-snow { --oc: #8fd8ff; } #bossIntro.omen-earth { --oc: #d9a05a; } #bossIntro.omen-dragon { --oc: #ff7a3a; }
-#bossIntro canvas { width: 120px; height: 120px; flex: none; }
+#bossIntro { box-sizing: border-box; max-width: 100vw; overflow: hidden; } #bossIntro > div { min-width: 0; max-width: calc(100vw - 150px); } #bossIntro #biName, #bossIntro #biLine { overflow-wrap: anywhere; }
+#bossIntro canvas { width: min(120px, 22vw); height: min(120px, 22vw); flex: none; }
 #bossIntro .bi-tag { font-size: 11px; color: #ff8a8a; font-weight: 700; letter-spacing: 2px; }
 #bossIntro #biName { font-size: 30px; font-weight: 900; color: #ff5a5a; text-shadow: 0 0 16px rgba(255,60,60,.6); line-height: 1.15; }
 #bossIntro #biLine { font-size: 15px; font-style: italic; color: #f1dede; margin-top: 4px; }
-@media (max-width: 520px) { #bossIntro { height: 100px; gap: 8px; } #bossIntro canvas { width: 88px; height: 88px; } #bossIntro #biName { font-size: 22px; } #bossIntro #biLine { font-size: 12.5px; } }
+@media (max-width: 520px) { #bossIntro:not(.omen) { height: 100px; gap: 8px; } #bossIntro canvas { width: 88px; height: 88px; } #bossIntro #biName { font-size: 22px; } #bossIntro #biLine { font-size: 12.5px; } }
 #bossSay{position:fixed;left:50%;top:88px;transform:translateX(-50%);z-index:30;pointer-events:none;background:rgba(20,10,16,.82);border:2px solid #c0392b;border-radius:10px;padding:6px 16px;color:#fff;font-size:17px;opacity:0;transition:opacity .2s;white-space:nowrap}#bossSay.show{opacity:1}#bossSay b{color:#ff9a8a;margin-right:10px}</style>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.png">
@@ -468,13 +472,13 @@ body.comicOn { overflow: hidden; }
   </div>
 </div>
 
-<script src="core.js?v=20261122g"></script>
-<script src="figures.js?v=20261122g"></script>
-<script src="scenery.js?v=20261122g"></script>
-<script src="config.js?v=20261122g"></script>
-<script src="meta.js?v=20261122g"></script>
-<script src="net.js?v=20261122g"></script>
-<script src="audio.js?v=20261122g"></script>
-<script src="main.js?v=20261122g"></script>
+<script src="core.js?v=20261122i"></script>
+<script src="figures.js?v=20261122i"></script>
+<script src="scenery.js?v=20261122i"></script>
+<script src="config.js?v=20261122i"></script>
+<script src="meta.js?v=20261122i"></script>
+<script src="net.js?v=20261122i"></script>
+<script src="audio.js?v=20261122i"></script>
+<script src="main.js?v=20261122i"></script>
 </body>
 </html>

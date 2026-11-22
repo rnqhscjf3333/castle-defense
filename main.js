@@ -309,7 +309,7 @@
     const cost = C.castleCost(S), full = C.popCount(S) >= C.popCap(S);
     const key = lv + '|' + cost + '|' + S.core.cannons + '|' + (S.gold >= cost) + '|' + full;
     if (cb.key === key) return; cb.key = key; castleBtn.querySelector('.nmt').textContent = '성';
-    cb.lv.textContent = 'Lv.' + lv; cb.ds.textContent = max ? '최대 레벨 · 인구 제한 없음' : '인구 +' + C.popGain(lv + 1) + ' · 공격·체력↑' + (CFG.castle.cannonLv.includes(lv + 1) ? ' · 대포 +1' : '');
+    cb.lv.textContent = 'Lv.' + lv; cb.ds.textContent = max ? '최대 레벨 · 성 수리' : '인구 +' + C.popGain(lv + 1) + ' · 공격·체력↑' + (CFG.castle.cannonLv.includes(lv + 1) ? ' · 대포 +1' : '');
     cb.cost.textContent = max ? 'MAX' : cost + 'G'; castleBtn.classList.toggle('off', max || S.gold < cost); castleBtn.classList.toggle('need', full && !max);
   }
   function updateHud() {
@@ -321,7 +321,7 @@
     setText('timeTxt', fmtTime(S.t));
     setText('hpTxt', String(Math.ceil(c.hp)));
     setText('gold', S.dev ? '∞' : String(Math.floor(S.gold)));
-    { const sp = C.specialCount(S); setText('unitTxt', C.popCount(S) + (C.popCap(S) < 1e8 ? '/' + C.popCap(S) : '') + (sp ? ' · 특수 ' + sp : '')); } // 인구/상한 + 특수 유닛은 따로
+    { const sp = C.specialCount(S); setText('unitTxt', C.popCount(S) + '/' + C.popCap(S) + (sp ? ' · 특수 ' + sp : '')); } // 인구/상한 + 특수 유닛은 따로
     setText('killTxt', String(S.kills));
     const pct = Math.max(0, c.hp / c.max * 100);
     const f = $('hpfill'); f.style.width = pct + '%'; f.style.background = pct > 50 ? 'var(--ok)' : pct > 25 ? 'var(--gold)' : 'var(--danger)';
@@ -418,6 +418,7 @@
     } else if (job) {
       const rw = JO.reward;
       if (JO.legacy) { $('pickTitle').textContent = JO.boss + ' 처치! 마왕의 유산'; $('pickSub').textContent = '마왕을 쓰러뜨렸다 — 곧 찾아올 사천왕에 맞설 아주 강력한 보상 중 하나를 고르세요'; }
+      else if (stage === 'awaken' && JO.boss === '성채') { $('pickTitle').textContent = '성채 각성'; $('pickSub').textContent = '성이 최대 레벨을 넘어섰어요 — 각성시켜 한 단계 더 강해져요'; }
       else if (stage === 'awaken') { $('pickTitle').textContent = JO.boss + ' 처치! 전직 각성'; $('pickSub').textContent = '아직 각성하지 않은 계열 중 하나의 2차 전직을 업그레이드해요 (고르지 않은 계열은 다음 사천왕 뒤에 각성)'; }
       else if (rw) { $('pickTitle').textContent = JO.boss + ' 처치! 보스 보상'; $('pickSub').textContent = '강력한 용병이나 강화 효과 중 하나를 고르세요'; }
       else if (stage === 'line') { $('pickTitle').textContent = JO.boss + ' 처치! ' + JO.tier + '차 승급'; $('pickSub').textContent = '승급시킬 캐릭터를 고르세요 — 다음 화면에서 두 가지 중 하나를 골라요'; }
@@ -446,7 +447,7 @@
       if (job && !c.reward) { // 외형 미리보기
         const im = document.createElement('img'); im.className = 'pimg'; im.alt = '';
         try {
-          if (castle) im.src = castlePortrait(c);
+          if (castle || c.castle) im.src = castlePortrait(c);
           else if (c.stage === 'line') { const ids = S.jobs[c.type].ids; im.src = portrait('u', c.type, CFG.units[c.type], null, ids.length ? { job: ids[ids.length - 1], jobTier: ids.length } : null).toDataURL(); }
           else im.src = portrait('u', c.type, CFG.units[c.type], null, { job: c.jobId || c.id, jobTier: c.tier }).toDataURL();
         } catch (err) {}
@@ -1448,7 +1449,7 @@
     $('ovTitle').textContent = win ? '게임 클리어! 재앙의 용을 쓰러뜨렸다' : '성이 무너졌어요';
     $('ovBody').innerHTML = '<div class="stat"><div><b>' + reached + '</b>도달 라운드</div><div><b>' + S.kills + '</b>처치</div><div><b>' + fmtTime(S.t) + '</b>시간</div></div>'
       + '<p>최고 기록: ' + Math.max(best, reached) + '라운드</p>'
-      + '<div id="regbox"><input id="nameIn" maxlength="12" placeholder="닉네임 (최대 12자)" autocomplete="off"><button id="regBtn">랭킹 등록</button></div><div id="rankbox"></div>';
+      + '<div id="regbox"><input id="nameIn" maxlength="12" placeholder="닉네임 (최대 12자)" autocomplete="off"><input id="msgIn" maxlength="30" placeholder="랭킹에 남길 한마디 (최대 30자)" autocomplete="off"><button id="regBtn">랭킹 등록</button></div><div id="rankbox"></div>';
     $('go').textContent = '다시 시작'; $('btnRank').classList.add('hidden'); $('btnToMenu').classList.remove('hidden');
     $('overlay').classList.remove('hidden');
     if (!S.dev) Meta.finish(S, C, Net.scoreOf(S.win, S.round, S.kills, S.t));
@@ -1458,11 +1459,12 @@
     if (S.dev) { $('regbox').remove(); $('ovBody').insertAdjacentHTML('beforeend', '<p style="color:#9fd8ff">개발자 모드로 한 판이라 기록·랭킹에 올리지 않아요.</p>'); showRank(null); return; }
     const reg = async () => {
       const name = $('nameIn').value; $('regBtn').disabled = true; $('regBtn').textContent = '등록 중…';
-      const res = await Net.submit(ended, name); $('regbox').remove(); if (res && res.rejected) { $('ovBody').insertAdjacentHTML('beforeend', '<p style="color:#ff9a9a">기록이 비정상적이라 랭킹에 올리지 않았어요.</p>'); } showRank(res && res.rejected ? null : myScore);
+      const res = await Net.submit(ended, name, $('msgIn').value); $('regbox').remove(); if (res && res.rejected) { $('ovBody').insertAdjacentHTML('beforeend', '<p style="color:#ff9a9a">기록이 비정상적이라 랭킹에 올리지 않았어요.</p>'); } showRank(res && res.rejected ? null : myScore);
     };
     $('regBtn').addEventListener('click', reg);
     $('nameIn').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') reg(); });
     $('nameIn').addEventListener('keyup', e => e.stopPropagation());
+    $('msgIn').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') reg(); }); $('msgIn').addEventListener('keyup', e => e.stopPropagation());
     showRank(null);
   }
   // 랭킹 표: 서버가 있으면 서버 순위, 없으면 이 브라우저의 개인 기록
@@ -1472,9 +1474,9 @@
     const r = await Net.top(10); if (!$('rankbox')) return;
     const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     let hit = false; rankList = r.list;
-    const rows = r.list.map((e, i) => { const me = mine != null && !hit && e.score === mine; if (me) hit = true; return '<tr class="clk' + (me ? ' me' : '') + '" data-ri="' + i + '"><td>' + (i + 1) + '</td><td>' + esc(e.name) + '' + '</td><td>' + (e.win ? '클리어' : e.round + '라운드') + '</td><td>' + fmtTime(e.time) + '</td></tr>'; }).join('');
+    const rows = r.list.map((e, i) => { const me = mine != null && !hit && e.score === mine; if (me) hit = true; return '<tr class="clk' + (me ? ' me' : '') + '" data-ri="' + i + '"><td>' + (i + 1) + '</td><td>' + esc(e.name) + (e.msg ? '<div class="rmsg">“' + esc(e.msg) + '”</div>' : '') + '</td><td>' + (e.win ? '클리어' : e.round + '라운드') + '</td><td>' + fmtTime(e.time) + '</td></tr>'; }).join('');
     box.innerHTML = '<div class="rankhead">' + (r.server ? '전체 랭킹' : (Net.configured ? '서버에 연결하지 못해 내 기록만 표시' : '내 기록 (서버 미설정)')) + '</div>'
-      + (rows ? '<table class="rank"><tr><th>#</th><th>이름</th><th>기록</th><th>시간</th></tr>' + rows + '</table>' : '<p>아직 기록이 없어요.</p>');
+      + (rows ? '<table class="rank"><tr><th>#</th><th>닉네임 · 한마디</th><th>기록</th><th>시간</th></tr>' + rows + '</table>' : '<p>아직 기록이 없어요.</p>');
     if (rankScroll !== null) { const mb = $('metaBody'); if (mb) mb.scrollTop = rankScroll; rankScroll = null; }
   }
   // 모드 전환: 왼쪽 위 라운드 표시 아래에서 언제든 바꿀 수 있다 (기본: 성 주변 방어 / 자유: 범위 안의 적을 멀리까지 추격)
@@ -1529,6 +1531,7 @@
   const playOpening = done => playComic('opening', done);
   $('go').addEventListener('click', () => {
     if ($('go').dataset.back) { delete $('go').dataset.back; $('overlay').classList.add('hidden'); return; }
+    if (!Net.name() && !params.get('bot') && !params.get('nonick')) { ensureNick(() => $('go').click()); return; }
     A2.init(); $('overlay').classList.add('hidden');
     if (!openingSeen && !params.get('nointro')) { openingSeen = true; playOpening(() => newGame()); } else newGame();
   });
@@ -1551,7 +1554,16 @@
   const titleEl = $('title');
   function showTitle() { titleEl.classList.remove('hidden', 'out', 'menu'); $('tMsg').textContent = ''; $('tVer').textContent = 'v' + ((window.CD_CONFIG || {}).VERSION || ''); }
   function openMenu() { if (titleEl.classList.contains('menu')) return; titleEl.classList.add('menu'); A2.init(); A2.play('ui'); }
+  // 닉네임이 저장돼 있지 않으면 시작 전에 입력받는다
+  function ensureNick(cb) {
+    if (Net.name() || params.get('bot') || params.get('nonick')) { cb(); return; }
+    let el = $('nickModal'); if (!el) { el = document.createElement('div'); el.id = 'nickModal'; el.className = 'modal'; el.innerHTML = '<div class="panel"><h2>닉네임을 정해 주세요</h2><p class="mhint">랭킹에 이 이름으로 올라가요 (최대 12자, 나중에 랭킹 등록 때 바꿀 수 있어요)</p><input id="nickIn" maxlength="12" placeholder="닉네임" autocomplete="off"><button id="nickOk" class="main">시작</button></div>'; document.body.appendChild(el); }
+    el.classList.remove('hidden'); const inp = $('nickIn'); setTimeout(() => inp.focus(), 50);
+    const ok = () => { const v = Net.setName(inp.value); if (!v) { inp.focus(); return; } el.classList.add('hidden'); cb(); };
+    $('nickOk').onclick = ok; inp.onkeydown = e => { e.stopPropagation(); if (e.key === 'Enter') ok(); }; inp.onkeyup = e => e.stopPropagation();
+  }
   function startFromTitle(devRound) {
+    if (!devRound && !Net.name() && !params.get('bot') && !params.get('nonick')) { ensureNick(() => startFromTitle(devRound)); return; }
     A2.init(); titleEl.classList.add('out'); setTimeout(() => titleEl.classList.add('hidden'), 520);
     if (!openingSeen && !params.get('nointro') && !devRound) { openingSeen = true; playOpening(() => { newGame(); startIntro(); }); } else { newGame(devRound); startIntro(); }
   }

@@ -592,6 +592,10 @@
     if (!list.length) return false;
     S.jobs.offer = { boss: bossName, stage: 'awaken', list }; return true;
   }
+  function openCastleAwaken(S) {
+    if (!S.castle.awkReady || S.castle.awk || S.jobs.offer || S.cOffer) return;
+    S.jobs.offer = { boss: '성채', stage: 'awaken', list: [{ type: 'castle', className: '성채', tier: 3, id: 'awk_castle', name: '성채 각성', desc: '성의 체력 +50%, 공격력 +60%, 공격 속도 +25%, 사거리 +60, 대포 +2문. 성이 완전히 회복됩니다.', awaken: true, castle: true }] };
+  }
   function openLegacy(S, bossName) {
     S.jobs.offer = { boss: bossName, reward: true, legacy: true, list: CFG.legacy.map(r => ({ type: 'reward', reward: true, className: '마왕의 유산', tier: 0, id: r.id, name: r.name, desc: r.desc })) };
   }
@@ -622,6 +626,7 @@
       if (d.coreUp) { S.legacyFort = (S.legacyFort || 0) + 1; recompute(S); S.core.hp = S.core.max; }
       emit(S, { type: 'reward', name: o.name }); return true;
     }
+    if (o.castle) { S.jobs.offer = null; S.castle.awk = true; S.castle.awkReady = false; recompute(S); S.core.hp = S.core.max; emit(S, { type: 'castleAwaken' }); return true; }
     if (o.awaken) { // 각성: 선택이 아니라 업그레이드 — 2차 전직 효과가 한 번 더 더해진다
       S.jobs[o.type].awk = true; S.jobs.offer = null; const before2 = S.jobMods[o.type].revive; recompute(S);
       for (const u of S.units) if (lineOf(u.type) === o.type && !u.dead) { refreshUnit(S, u); if (o.type === 'priest' && u.type === 'priest') u.rv += S.jobMods.priest.revive - before2; } rvSync(S);
@@ -839,8 +844,8 @@
   // ───────────── 플레이어 행동 ─────────────
   // 인구: 설치형(포탑·발리스타)을 뺀 유닛 수. 상한은 성 레벨이 올릴 때마다 늘어난다 (카드·보상으로 얻는 특수 유닛은 상한과 무관하게 합류)
   // 성 레벨업마다 늘어나는 인구가 +1씩 커진다 (2레벨 +3, 3레벨 +4, 4레벨 +5 …)
-  const popCap = S => { if (S.castle.lv >= CFG.castle.max) return 1e9; const n = S.castle.lv - 1; return CFG.castle.popBase + CFG.castle.popPer * n + n * (n - 1) / 2; };
-  const popGain = lv => CFG.castle.popPer + (lv - 2); // lv 레벨로 올릴 때 늘어나는 인구
+  const popCap = S => { const L = S.castle.lv, M = CFG.castle.max, n = Math.min(L, M) - 1; return CFG.castle.popBase + CFG.castle.popPer * n + n * (n - 1) / 2 + (L > M ? 10 * (L - M) : 0); }; // 최대 레벨을 넘는 강화는 레벨마다 +10
+  const popGain = lv => lv > CFG.castle.max ? 10 : CFG.castle.popPer + (lv - 2); // lv 레벨로 올릴 때 늘어나는 인구
   const popCount = S => { let n = 0; for (const u of S.units) if (!u.dead && UNIT_TYPES.includes(u.type)) n++; return n; }; // 기본 3종만 인구에 포함
   const specialCount = S => { let n = 0; for (const u of S.units) if (!u.dead && !isStatic(u) && !UNIT_TYPES.includes(u.type)) n++; return n; }; // 특수 유닛(골렘·용사·전설 등)은 따로
   // 성 수리: 골드로 성 체력을 최대치의 10%씩 회복. 라운드가 갈수록 비싸지고, 라운드 안에서 누를 때마다 더 비싸지며, 쿨타임이 있다
@@ -866,7 +871,7 @@
     S.core.hp = Math.min(S.core.max, S.core.hp + (S.core.max - oldMax) + S.core.max * 0.1);
     for (const u of S.units) if (lineOf(u.type) === 'core' && !u.dead) refreshUnit(S, u); // 포탑도 성 강화를 받는다
     if (!free) logEv(S, ['k', S.round, S.castle.lv]);
-    if (S.endless && S.castle.lv >= castleMax(S) && !S.castle.awk) { S.castle.awk = true; recompute(S); S.core.hp = S.core.max; emit(S, { type: 'castleAwaken' }); } // 성채 각성
+    if (S.endless && S.castle.lv >= castleMax(S) && !S.castle.awk) { S.castle.awkReady = true; openCastleAwaken(S); } // 성채 각성: 유닛 각성처럼 선택지로 제시
     emit(S, { type: 'castleUp', lv: S.castle.lv, cannons: S.core.cannons, pop: popCap(S) });
     return { ok: true, cost: free ? 0 : cost };
   }
@@ -1345,7 +1350,6 @@
   function castPulse(S) { // 수호: 아군 치유·보호막, 공격형은 주변 적에게 피해
     const P = S.cpar.pulse, c = S.core;
     for (const u of S.units) { if (u.dead || u.undead || isStatic(u) || Math.hypot(u.x - c.x, u.y - c.y) > P.r) continue; if (P.heal > 0) applyHeal(S, u, u.max * P.heal); if (P.shield > 0) u.ward = Math.min(u.max * 0.3, (u.ward || 0) + u.max * P.shield); }
-    if (P.heal > 0 && c.hp < c.max) c.hp = Math.min(c.max, c.hp + c.max * P.heal * 0.5);
     if (P.dmg > 0) eachNear(S.gE, c.x, c.y, P.r, o => damage(S, o, c.atk * P.dmg));
     emit(S, { type: 'castlePulse', r: P.r, cvar: c.cvar, cfin: c.cfin, dmg: P.dmg > 0, shield: P.shield > 0 });
     S.cp = Math.max(2, P.cd);
@@ -1816,6 +1820,7 @@
     if (S.dragonIntro) { const D = S.dragonIntro; D.t += dt; S.cliff = Math.min(1, D.t / (D.dur * 0.85)); if (D.t >= D.dur) S.dragonIntro = null; return; } // 100라운드: 땅이 무너지는 연출 동안 시간이 멈춘다
     if (S.bossDeath) { stepBossDeath(S, dt); return; } // 보스 사망·부활 연출 중에는 시간이 멈춘다
     checkCastleChoice(S);
+    if (S.castle.awkReady && !S.castle.awk && !S.cards.offer && !S.cinematic) openCastleAwaken(S);
     if (S.cards.offer || S.jobs.offer || S.cOffer || S.cinematic) return; // 카드/전직/성 선택, 연출 중에는 시간이 멈춘다
     S.t += dt;
     for (const k in S.buyCd) if (S.buyCd[k] > 0) S.buyCd[k] -= dt;

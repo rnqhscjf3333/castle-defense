@@ -611,7 +611,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
 { const run = mode => { const a = C.createGame(1, mode); a.hold = true; a.phase = 'round'; a.round = 10; a.queue = []; C.buy(a, 'sword'); const u = a.units[0]; const e = C.spawnEnemy(a, 'grunt', 1500 + 600, 1500); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; for (let i = 0; i < 3; i++) C.tick(a, DT); const x0 = u.x; C.damage(a, u, 1, false, e); for (let i = 0; i < 200; i++) C.tick(a, DT); return Math.hypot(u.x - e.x, u.y - e.y); };
   const f = run('free'), n = run('normal'); check('자유 모드: 멀리서 나를 때린 적에게 반격하러 감', f < n - 150, `적과의 거리 자유 ${f.toFixed(0)}px / 기본 ${n.toFixed(0)}px`); }
 // 48) 성 최대 레벨이면 인구 제한 없음
-{ const g = C.createGame(3); g.gold = 1e9; const cap1 = C.popCap(g); for (let i = 1; i < C.CFG.castle.max; i++) C.upgradeCastle(g); check('성 최대 레벨이면 인구 제한이 풀림', C.popCap(g) > 1e6 && cap1 < 1e6); }
+{ const g = C.createGame(3); g.gold = 1e9; const cap1 = C.popCap(g); for (let i = 1; i < C.CFG.castle.max; i++) C.upgradeCastle(g); check('성 최대 레벨에도 인구 제한이 있음 (무한 아님)', C.popCap(g) < 1e6 && C.popCap(g) > cap1); { const e = C.createGame(5); e.endless = true; e.gold = 1e9; for (let i = 1; i < C.CFG.castle.max; i++) C.upgradeCastle(e); const p0 = C.popCap(e); C.upgradeCastle(e); check('최대 레벨 이후 강화는 인구 +10', C.popCap(e) - p0 === 10); } }
 // 49) 생산 대기열
 { const g = C.createGame(9); g.gold = 100000; C.CFG.castle.popBase = 999; const g0 = g.gold; const c1 = C.unitCostOf(g, 'sword');
   const res = []; for (let i = 0; i < 6; i++) res.push(C.enqueue(g, i % 2 ? 'archer' : 'sword'));
@@ -772,7 +772,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
 { const g = C.createGame(21); g.gold = 1e12; g.endless = false; for (let i = 1; i < C.CFG.castle.max; i++) C.upgradeCastle(g, true);
   check('50라운드 전: 성 최대 레벨 10', C.castleMax(g) === 10 && C.castleCost(g) === Infinity);
   g.endless = true; check('50라운드 이후: 성 최대 레벨 +3', C.castleMax(g) === 13 && isFinite(C.castleCost(g)));
-  const a0 = g.core.atk, h0 = g.core.max; for (let i = 0; i < 3; i++) C.upgradeCastle(g); check('최대 레벨(13)까지 올리면 성채 각성', g.castle.lv === 13 && g.castle.awk === true && g.core.cannons >= 5 && g.core.atk > a0 * 1.5 && g.core.max > h0 * 1.4, g.core.cannons);
+  const a0 = g.core.atk, h0 = g.core.max; for (let i = 0; i < 3; i++) C.upgradeCastle(g); check('최대 레벨(13)에서 각성 선택지가 뜸', g.castle.lv === 13 && !g.castle.awk && g.jobs.offer && g.jobs.offer.list[0].castle); C.pickJob(g, 0); check('최대 레벨(13)까지 올리면 성채 각성', g.castle.lv === 13 && g.castle.awk === true && g.core.cannons >= 5 && g.core.atk > a0 * 1.5 && g.core.max > h0 * 1.4, g.core.cannons);
   check('각성 후에는 더 올릴 수 없음', !C.upgradeCastle(g).ok); }
 { const kinds = ['stormwolf', 'frostarcher', 'thunderbomber', 'rockgiant', 'voidwraith', 'wyrmling']; const g = C.createGame(22); const seen = new Set();
   for (let r = 40; r <= 70; r++) { g.round = r - 1; g.phase = 'prep'; g.prepT = 0; g.endless = true; g.cards.offer = null; g.jobs.offer = null; g.cOffer = null; C.tick(g, DT); for (const k of g.queue) seen.add(k); g.queue.length = 0; g.cards.offer = null; g.jobs.offer = null; g.cOffer = null; }
