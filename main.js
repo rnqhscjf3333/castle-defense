@@ -734,7 +734,7 @@
       else if (ev.type === 'castleRepair') { addFx({ k: 'heal', x: ev.x, y: ev.y, t: 0, max: 0.9 }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.7, c: '#7dff9a', r: 60, big: true }); }
       else if (ev.type === 'castlePick') banner('성: ' + ev.name, true);
       else if (ev.type === 'lastStand') banner('불사 결계 발동! 성이 되살아났다', true);
-      else if (ev.type === 'bossRevive') { { const zf = Math.min(vw / 1500, vh / 1250); cam.zoom = Math.max(minZoom(), Math.min(cam.zoom, zf)); centerOnCore(); clampCam(); } toast('성 주변만 남기고 땅이 무너진다'); banner(ev.name === '각성한 마왕' ? '더이상!! 참지!! 않겠다!!' : ev.name + '!! 이제부터가 진짜다!!', true); for (let i = 0; i < 3; i++) addFx({ k: 'ring', x: ev.x, y: ev.y, t: -i * 0.35, max: 1.1, c: i % 2 ? '#ff7a3a' : '#ff2a4a', r: ev.r * 3, big: true }); }
+      else if (ev.type === 'bossRevive') { toast('성 주변만 남기고 땅이 무너진다'); banner(ev.name === '각성한 마왕' ? '더이상!! 참지!! 않겠다!!' : ev.name + '!! 이제부터가 진짜다!!', true); for (let i = 0; i < 3; i++) addFx({ k: 'ring', x: ev.x, y: ev.y, t: -i * 0.35, max: 1.1, c: i % 2 ? '#ff7a3a' : '#ff2a4a', r: ev.r * 3, big: true }); }
       else if (ev.type === 'bossRevived') { banner('최후의 결전!', true); addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#ffffff', big: true }); }
       else if (ev.type === 'bossGone') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.9, c: '#ffffff', r: ev.r * 3.5, big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: -0.1, max: 1, c: '#ffd166', r: ev.r * 2.5, big: true }); for (let k = 0; k < 14; k++) addFx({ k: 'dust', x: ev.x + (Math.random() - 0.5) * ev.r * 2.4, y: ev.y + (Math.random() - 0.5) * ev.r * 1.6, t: 0, max: 1.3, r: 14 + Math.random() * 18 }); }
       else if (ev.type === 'bossWipe') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.9, c: '#ffffff', big: true }); toast('남은 적이 모두 쓰러졌어요'); }
@@ -798,11 +798,12 @@
       else if (ev.type === 'strikeHit') { addFx({ k: 'strikeH', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, w2: ev.w2, t: 0, max: ev.shape === 'cone' ? 0.7 : ev.shape === 'line' ? 0.6 : 0.55 }); if (ev.kind !== 'ice' || ev.r > 300) addShake(ev.kind === 'wind' ? 5 : ev.r > 250 ? 12 : 6, 0.3); }
       else if (ev.type === 'omen') { if (ev.id !== 'dragon') showBossIntro({ name: ev.name, line: ev.line, look: ev.look, r: ev.r, long: true, omen: ev.id }); toast(ev.id === 'dragon' ? '용의 기운이 맵 가장자리에 감돕니다' : '사천왕의 기운이 맵 가장자리에 감돕니다'); }
       else if (ev.type === 'castleAwaken') { banner('성채 각성!', true); for (let i = 0; i < 4; i++) addFx({ k: 'ring', x: CX, y: CY, t: -i * 0.12, max: 1.0, c: '#ffe27a', big: true, r: 200 }); addShake(8, 0.5); }
-      else if (ev.type === 'dragonRise') { banner('재앙의 용이 모습을 드러낸다!!', true); flash('#ff3a1a', 0.45); addShake(14, 1.2); // 단상 가장자리에 충격파와 먼지·불씨가 터진다
+      else if (ev.type === 'dragonRise') { banner(ev.back ? '용이 다시 돌아왔다!!' : '재앙의 용이 모습을 드러낸다!!', true); flash('#ff3a1a', 0.45); addShake(14, 1.2); // 단상 가장자리에 충격파와 먼지·불씨가 터진다
         for (let i = 0; i < 4; i++) addFx({ k: 'ring', x: ev.x, y: ev.y + 40, t: -i * 0.45, max: 1.3, c: i % 2 ? '#ff7a3a' : '#ffd9a0', grow: 420 + i * 80, big: true });
         for (let i = 0; i < 26; i++) addFx({ k: 'burst', x: ev.x + (Math.random() - 0.5) * 760, y: ev.y + 20 + Math.random() * 60, t: -Math.random() * 0.6, max: 0.9 + Math.random() * 0.8, c: i % 3 ? '#8a6a44' : '#ff8a2a', big: i % 4 === 0 }); }
       else if (ev.type === 'dragonIntro') { { const zf = Math.min(vw / 1500, vh / 1250); cam.zoom = Math.max(minZoom(), Math.min(cam.zoom, zf)); centerOnCore(); clampCam(); } banner('땅이 갈라진다…', true); toast('성 주변만 남기고 모든 땅이 무너진다'); }
       else if (ev.type === 'dragonUp') { banner('용이 하늘로 날아오른다!', true); addShake(10, 0.6); }
+      else if (ev.type === 'dragonAway') { toast('용이 구름 위로 사라졌다 — 땅 위를 도는 그림자를 따라 불덩이가 떨어진다!'); flash('#000000', 0.25); }
       else if (ev.type === 'dragonLand') { banner('용이 다시 내려앉았다!', true); addShake(16, 0.7); }
       else if (ev.type === 'bossRage') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#ff3b1a' }); banner(ev.name + ' 분노!'); }
       else if (ev.type === 'over') { if (ev.win) setTimeout(() => { if (!S || !S.win) return; if (params.get('nocine') || !running) showEnd(true); else playComic('ending', () => showEnd(true)); }, 600); else startDefeat(); }
@@ -830,7 +831,9 @@
   // 보스 사망 모션: 몸이 흔들리고 깜박이다가 주저앉으며 사라진다. 부활할 때는 새 모습으로 커지며 나타난다
   function drawDyingBoss(e, now) {
     const D = S.bossDeath; let a = 1, sx = 1, sy = 1, ox = 0, oy = 0, blink = false;
-    if (D && D.b === e) {
+    if (D && D.b === e && e.dragon) { // 용: 포효하며 몸부림치다가 절벽 아래로 추락한다
+      const p = Math.min(1, D.t / D.dur); ox = Math.sin(now * 0.07) * (p < 0.4 ? 6 : 3); blink = p < 0.45 && ((now / 80) | 0) % 2 === 0; e.fallK = p < 0.4 ? 0 : Math.min(1, (p - 0.4) / 0.6);
+    } else if (D && D.b === e) {
       if (D.stage === 'die') {
         const p = Math.min(1, D.t / D.dur); ox = Math.sin(now * 0.09) * (1 - p * 0.5) * 4; blink = p < 0.8 && ((now / 70) | 0) % 2 === 0;
         if (p > 0.45) { const q = (p - 0.45) / 0.55; sy = 1 - 0.6 * q * q; sx = 1 + 0.25 * q; oy = q * 6; a = 1 - q * q * q; }
@@ -841,7 +844,7 @@
     }
     const f0 = e.flash; e.flash = blink ? 0.1 : 0;
     ctx.save(); ctx.globalAlpha = Math.max(0, a); ctx.translate(ox, oy); ctx.translate(e.x, e.y); ctx.scale(sx, sy); ctx.translate(-e.x, -e.y);
-    Figures.draw(ctx, e, now); ctx.restore(); e.flash = f0;
+    Figures.draw(ctx, e, now); ctx.restore(); e.flash = f0; if (!e.dragon) e.fallK = 0;
   }
   // 보스 사망·부활 연출 카메라: 보스에게 이동·확대하고, 끝나면 원래 시점으로 돌아온다
   let dcam = null;
@@ -850,9 +853,11 @@
     if (D) {
       if (!dcam) dcam = { prev: { x: cam.x, y: cam.y, zoom: cam.zoom }, fxT: 0 };
       const b = D.b, k = 1 - Math.exp(-4 * dt);
-      cam.x += (b.x - cam.x) * k; cam.y += (b.y - 14 - cam.y) * k; cam.zoom += (Math.max(1.5, dcam.prev.zoom) - cam.zoom) * k; clampCam();
+      if (b.dragon) { const zt = Math.max(minZoom(), Math.min(1.1, vw / 1500, vh / 1050)); cam.x += (b.x - cam.x) * k; cam.y += (b.y - (b.vr || b.r) * 0.9 - cam.y) * k; cam.zoom += (zt - cam.zoom) * k; clampCam(); } // 용: 머리까지 보이도록 용에게 화면을 맞춘다
+      else { cam.x += (b.x - cam.x) * k; cam.y += (b.y - 14 - cam.y) * k; cam.zoom += (Math.max(1.5, dcam.prev.zoom) - cam.zoom) * k; clampCam(); }
+      if (b.dragon && D.stage === 'die') { const p = D.t / D.dur; if (p > 0.4 && Math.random() < 0.5) { const bx = b.x + (Math.random() - 0.5) * 900; addFx({ k: 'dust', x: bx, y: b.y + 10 + Math.random() * 30, t: 0, max: 1.2, r: 22 + Math.random() * 22 }); addFx({ k: 'burst', x: bx, y: b.y + Math.random() * 30, t: 0, max: 0.9, c: Math.random() < 0.5 ? '#8a6a44' : '#ff8a2a' }); } if (p > 0.4) addShake(10, 0.2); }
       if (D.stage === 'die' && (dcam.fxT -= dt) <= 0) { // 사망 중 터지는 불꽃과 연기
-        dcam.fxT = 0.16; const a = Math.random() * 6.283, r = Math.random() * b.r * 0.9, x = b.x + Math.cos(a) * r, y = b.y - 10 + Math.sin(a) * r * 0.7;
+        dcam.fxT = b.dragon ? 0.1 : 0.16; const a = Math.random() * 6.283, rr0 = b.dragon ? (b.vr || b.r) * 0.8 : b.r * 0.9, r = Math.random() * rr0, x = b.x + Math.cos(a) * r, y = (b.dragon ? b.y - Math.random() * (b.vr || b.r) * 1.3 : b.y - 10) + Math.sin(a) * r * 0.7 * (b.dragon ? 0.3 : 1);
         addFx({ k: 'ring', x, y, t: 0, max: 0.55, c: Math.random() < 0.5 ? '#ffb347' : '#ff4a2a', r: 26 + Math.random() * 26, big: true });
         for (let i = 0; i < 2; i++) addFx({ k: 'dust', x: x + (Math.random() - 0.5) * 30, y: y + (Math.random() - 0.5) * 20, t: 0, max: 1, r: 12 + Math.random() * 12 });
         if (Math.random() < 0.4) A2.play('boom', x, y);
@@ -959,26 +964,33 @@
     if (dragonMap()) {
       const T = CY - DR.cut;
       if (Math.hypot(x - CX, y - CY) <= SAFE_R + pad && y >= T - pad) return true;
-      if (x >= CX - DR.plateau - pad && x <= CX + DR.plateau + pad && y >= T - pad && y <= T + 220 + pad) return true;
+      if (y >= T - 10 - pad && y <= CY - 80) { const k = Math.max(0, (y - (T + 80)) / (CY - 80 - (T + 80))), hw = DR.plateau - (DR.plateau - 318) * k * k; if (Math.abs(x - CX) <= hw + pad) return true; }
       if (Math.abs(y - CY) <= BR_W + pad && Math.abs(x - CX) <= DR.anchorX + PAD_R) return true;
       if (Math.abs(x - CX) <= BR_W + pad && y >= CY && y <= CY + DR.anchorY + PAD_R) return true;
       return [[0, DR.anchorY], [-DR.anchorX, 0], [DR.anchorX, 0]].some(a => Math.hypot(x - CX - a[0], y - CY - a[1]) <= PAD_R + pad);
     }
-    return Math.hypot(x - CX, y - CY) <= SAFE_R + pad || (Math.abs(y - CY) <= BR_W + pad && Math.abs(x - CX) <= DR.anchorX + PAD_R) || (Math.abs(x - CX) <= BR_W + pad && Math.abs(y - CY) <= DR.anchorY + PAD_R) || [[0, -DR.anchorY], [0, DR.anchorY], [-DR.anchorX, 0], [DR.anchorX, 0]].some(a => Math.hypot(x - CX - a[0], y - CY - a[1]) <= PAD_R + pad);
+    return Math.hypot(x - CX, y - CY) <= SAFE_R + pad; // 사천왕·마왕 2차전: 성 둘레의 원만 남는다
   };
   function safePath(c, dy) {
     c.beginPath(); const cx = CX, cy = CY + dy;
     if (dragonMap()) {
       const cut = DR.cut, T = cy - cut, xr = Math.sqrt(SAFE_R * SAFE_R - cut * cut), a1 = Math.atan2(-cut, xr), a2 = Math.atan2(-cut, -xr) + Math.PI * 2;
       c.moveTo(cx - xr, T); c.lineTo(cx + xr, T); c.arc(cx, cy, SAFE_R, a1, a2, false); c.closePath(); // 북쪽이 평평하게 깎인 성 둘레 땅
-      c.rect(cx - DR.plateau, T, DR.plateau * 2, 220); // 직각으로 각진 단상 (용이 이 가장자리에서 솟는다)
+      { // 자연스러운 바위 단상: 울퉁불퉁한 윗면, 둥글게 깎인 모서리, 아래로 갈수록 좁아져 성 둘레 땅과 이어지는 어깨선 (용이 이 가장자리에서 솟는다)
+        const P = DR.plateau, R = 80, rim = x => T - (22 + 9 * Math.sin(x * 0.021) + 7 * Math.sin(x * 0.047 + 1.3) + 4 * Math.sin(x * 0.11 + 0.4)), yj = CY + dy - 80;
+        c.moveTo(cx - P + R, rim(-P + R));
+        for (let x = -P + R + 12; x <= P - R; x += 12) c.lineTo(cx + x, rim(x));
+        c.quadraticCurveTo(cx + P + 6, rim(P - R) - 4, cx + P - 4, T + R); // 오른쪽 모서리
+        c.bezierCurveTo(cx + P + 8, T + 150, cx + 400, yj - 70, cx + 318, yj); // 오른쪽 어깨 → 성 둘레 땅
+        c.lineTo(cx - 318, yj);
+        c.bezierCurveTo(cx - 400, yj - 70, cx - P - 8, T + 150, cx - P + 4, T + R); // 왼쪽 어깨
+        c.quadraticCurveTo(cx - P - 6, rim(-P + R) - 4, cx - P + R, rim(-P + R)); c.closePath();
+      }
       for (const a of [[0, DR.anchorY], [-DR.anchorX, 0], [DR.anchorX, 0]]) { c.moveTo(cx + a[0] + PAD_R, cy + a[1]); c.arc(cx + a[0], cy + a[1], PAD_R, 0, Math.PI * 2); }
       c.rect(cx - DR.anchorX, cy - BR_W, DR.anchorX * 2, BR_W * 2); c.rect(cx - BR_W, cy, BR_W * 2, DR.anchorY);
       return;
     }
     c.moveTo(cx + SAFE_R, cy); c.arc(cx, cy, SAFE_R, 0, Math.PI * 2);
-    for (const a of [[0, -DR.anchorY], [0, DR.anchorY], [-DR.anchorX, 0], [DR.anchorX, 0]]) { c.moveTo(cx + a[0] + PAD_R, cy + a[1]); c.arc(cx + a[0], cy + a[1], PAD_R, 0, Math.PI * 2); }
-    c.rect(cx - DR.anchorX, cy - BR_W, DR.anchorX * 2, BR_W * 2); c.rect(cx - BR_W, cy - DR.anchorY, BR_W * 2, DR.anchorY * 2);
   }
   const CRACKS = (() => { let a = 12345; const r = () => { a = (a * 1664525 + 1013904223) >>> 0; return a / 4294967296; }, out = []; for (let i = 0; i < 90; i++) { const x = r() * W, y = r() * H, pts = [[x, y]]; for (let k = 0; k < 4; k++) { const l = pts[pts.length - 1]; pts.push([l[0] + (r() - 0.5) * 120, l[1] + (r() - 0.3) * 90]); } out.push(pts); } return out; })();
   // 무너진 땅의 배경: 용(기본)·마왕(어둠)·설왕(얼음과 눈)·뇌왕(폭풍)·토왕(용암)마다 다르다
@@ -1008,6 +1020,16 @@
     ctx.save(); safePath(ctx, 0); ctx.clip(); Scenery.drawGround(ctx, x0, y0, x1, y1); if (TH.tint) { ctx.fillStyle = TH.tint; ctx.fillRect(x0 - 60, y0 - 60, x1 - x0 + 120, y1 - y0 + 120); } ctx.restore(); // 남은 땅만 다시 풀밭으로 (속성에 맞게 물들인다)
     ctx.restore();
   }
+  // 날아간 용의 그림자: 날개를 펄럭이는 거대한 검은 그림자가 땅 위를 지나간다
+  function drawDragonShadow(e, now) {
+    const s = (e.vr || 260) / 100, fl = Math.sin(now * 0.006) * 0.12; ctx.save(); ctx.translate(e.shx, e.shy); ctx.rotate((e.shAng || 0) + Math.PI / 2);
+    ctx.globalAlpha = 0.5; ctx.fillStyle = '#05030a';
+    ctx.beginPath(); ctx.ellipse(0, 0, 16 * s, 46 * s, 0, 0, Math.PI * 2); ctx.fill(); // 몸통
+    ctx.beginPath(); ctx.moveTo(0, 44 * s); ctx.quadraticCurveTo(6 * s, 70 * s, 0, 100 * s); ctx.quadraticCurveTo(-6 * s, 70 * s, 0, 44 * s); ctx.fill(); // 꼬리
+    ctx.beginPath(); ctx.ellipse(0, -52 * s, 9 * s, 17 * s, 0, 0, Math.PI * 2); ctx.fill(); // 머리
+    for (const k of [-1, 1]) { ctx.beginPath(); ctx.moveTo(k * 10 * s, -14 * s); ctx.quadraticCurveTo(k * 70 * s, (-48 + fl * 60) * s, k * 128 * s, (-8 + fl * 120) * s); ctx.lineTo(k * 100 * s, 6 * s); ctx.lineTo(k * 78 * s, 22 * s); ctx.lineTo(k * 58 * s, 18 * s); ctx.lineTo(k * 38 * s, 34 * s); ctx.quadraticCurveTo(k * 16 * s, 30 * s, k * 10 * s, 22 * s); ctx.closePath(); ctx.fill(); }
+    ctx.restore();
+  }
   let risePulse = 0;
   let dragonFramed = 0; // 용 등장 때 화면을 맞춘 보스
   let omLast = null; // 직전에 떠 있던 사천왕의 기운 (등장 후에도 잠시 남는다)
@@ -1025,6 +1047,7 @@
     const p0 = performance.now();
     Scenery.drawGround(ctx, x0, y0, x1, y1);
     const cliffOn = S.cliff > 0; if (cliffOn) drawCliff(now, x0, y0, x1, y1, z);
+    for (const e of S.enemies) if (e.dragon && e.hidden && e.shx !== undefined) drawDragonShadow(e, now);
     // 적 출현 포탈: 길 위의 붉은 룬 원 (화면 바로 밖에서 적이 나타난다)
     const angs = C.spawnAngles(S.spawnPts || 2);
     if (cliffOn && !S.cliffTheme && S.round === C.FINAL_ROUND && S.cliff >= 1) for (const pd of [[-DR.anchorX, 0], [DR.anchorX, 0], [0, DR.anchorY]]) Scenery.drawPortal(ctx, CX + pd[0], CY + pd[1], now); // 용 레이드: 서·동·남쪽 발판에서 몬스터가 나온다

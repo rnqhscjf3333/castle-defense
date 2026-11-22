@@ -27,7 +27,8 @@
     ctx.save();
     ctx.beginPath(); ctx.rect(-90 * s, -130 * s, 180 * s, 136 * s); ctx.clip(); // 허리 아래는 절벽 아래에 있어 보이지 않는다
     if (e.riseT > 0) { const k = Math.max(0, e.riseT / (e.riseDur || 4.2)), sh = Math.sin((typeof performance !== 'undefined' ? performance.now() : 0) * 0.05) * 1.2 * s * k; ctx.translate(sh, Math.pow(k, 1.6) * 92 * s); } // 땅 아래에서 부들부들 떨며 솟아오른다
-    ctx.translate(0, -lift * 26 * s);
+    ctx.translate(0, -lift * (e.flyS === 'up' ? 60 : 26) * s); if (e.flyS === 'up') ctx.globalAlpha = Math.max(0, 1 - lift * lift);
+    if (e.fallK > 0) { const k = e.fallK; ctx.translate(Math.sin(t * 9) * 2 * s * (1 - k), Math.pow(k, 1.7) * 150 * s); ctx.rotate(Math.sin(k * 3.1) * 0.12); } // 쓰러지며 절벽 아래로 추락
     const L = '#0e0305', SC = fl ? FLASH : '#4a0d14', SC2 = fl ? FLASH : '#7a1a1e', BELLY = fl ? FLASH : '#c98a4a', MEM = fl ? FLASH : '#3a0a12', BONE = fl ? FLASH : '#cfc3a4', GLOW = '#ff7a1a';
     ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.strokeStyle = L;
     // 가시 꼬리

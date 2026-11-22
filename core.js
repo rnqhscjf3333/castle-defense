@@ -160,7 +160,7 @@
     dragon: { id: 'dragon', line: '대지는 사라지고… 오직 불길만이 남으리라.', name: '재앙의 용', r: 130, vr: 260, dragon: true, hpMul: 5, anchorX: 520, anchorY: 420, cut: 260, plateau: 440, monsterFrac: 0.3, waveEvery: 16, waveFrac: 0.07, // r=판정, vr=그림 크기(몸집이 아주 커서 지도에는 상반신만 보인다). 북쪽은 cut만큼 직각으로 깎여 평평한 단상(폭 plateau×2)이 되고 용은 그 가장자리에서 솟는다. 나머지 세 자리(서·동·남)에서는 몬스터가 나온다
      
       look: { style: 'dragon', body: '#a3262a', head: '#d9482c' },
-      abil: { artillery: { cd: 5, dmg: 85, radius: 100, count: 3, flight: 1.5 }, breath: { cd: 11, len: 560, half: 0.3, warn: 1.4, mul: 3, kb: 380 }, tail: { cd: 7, r: 215, warn: 0.7, mul: 2.2, kb: 720 }, gust: { cd: 16, r: 760, warn: 1.0, kb: 540 }, meteor: { cd: 9, n: 8, r: 85, warn: 1.0, mul: 2.0, at: 0.5, kb: 320 }, rage: { at: 0.3, speed: 1, rate: 1.3, dmg: 1.4 } } },
+      abil: { artillery: { cd: 5, dmg: 85, radius: 100, count: 3, flight: 1.5 }, breath: { cd: 11, len: 1150, half: 0.3, warn: 1.4, mul: 3, kb: 380 }, tail: { cd: 7, r: 215, warn: 0.7, mul: 2.2, kb: 720 }, gust: { cd: 16, r: 760, warn: 1.0, kb: 540 }, meteor: { cd: 9, n: 8, r: 85, warn: 1.0, mul: 2.0, at: 0.5, kb: 320 }, rage: { at: 0.3, speed: 1, rate: 1.3, dmg: 1.4 }, fly: { at: 0.5, up: 1.8, away: 11, barrage: 0.6, r: 95, mul: 1.9, back: 3.2 } }, deathT: 7 },
     bossDeathT: 2.8,       // 보스 사망 연출 길이(초): 이 동안 시간이 멈추고 카메라가 보스를 비춘다
     // 보스 보상: 전직이 모두 끝난 뒤(35라운드~)에는 보스를 처치하면 이 중 3가지가 제시된다
     rewards: [
@@ -1042,7 +1042,7 @@
       if (!bd.dragon) e.speed = Math.max(e.speed, CFG.bossSpeed); // 보스는 광전사처럼 빠르게 달려온다
       if (bd === CFG.finalBoss && r === MAX_ROUND) { const N = CFG.finalNerf; e.max = e.hp = Math.round(e.max * N.hp); e.max2 = Math.round(e.max / N.hp * N.hp2); e.dmg *= N.dmg; e.canRevive = true; }
       if (isKing(bd)) { e.king = bd; e.canRevive = true; e.max = e.hp = Math.round(e.max * 0.55); e.max2 = Math.round(e.max * CFG.kingP2.hp); }
-      if (bd.dragon) { e.fixed = true; e.riseT = e.riseDur = 4.2; emit(S, { type: 'dragonRise', x: x, y: y, dur: 4.2 }); e.vr = bd.vr; e.side = 0; placeDragon(e); e.flyS = 'ground'; e.lift = 0; if (bd.abil.fly) e.t.fly = bd.abil.fly.first; }
+      if (bd.dragon) { e.dragon = true; e.fixed = true; e.riseT = e.riseDur = 4.2; emit(S, { type: 'dragonRise', x: x, y: y, dur: 4.2 }); e.vr = bd.vr; e.side = 0; placeDragon(e); e.flyS = null; e.lift = 0; }
       S.stats.seenB[bd.id] = 1;
       emit(S, { type: 'bossSpawn', name: bd.name, id: bd.id, line: bd.line, look: bd.look, r: e.r });
     }
@@ -1058,14 +1058,15 @@
   // 보스 체력이 0이 되면: 남은 졸개가 모두 쓰러지고, 시간이 멈춘 채 보스의 사망 모션이 흐른 뒤 라운드가 끝난다.
   // 50라운드 마왕은 여기서 한 번 더 부활한다 (체력이 다시 차오르며 모습이 바뀐다).
   function beginBossDeath(S, b) {
-    b.dying = true; b.hp = 0; b.shieldT = 0; b.dashT = 0; b.leapT = 0; b.focusT = 0; b.hidden = false; b.lift = 0;
+    b.dying = true; b.hp = 0; b.shieldT = 0; b.dashT = 0; b.leapT = 0; b.focusT = 0; b.hidden = false; b.lift = 0; b.flyS = null; b.shx = undefined; b.riseT = 0;
     const revive = !!b.canRevive && !b.p2 && (!S.endless || !!b.king);
     S.gold += b.gold; S.stats.earned += b.gold; S.kills++; S.stats.killBy.boss = (S.stats.killBy.boss || 0) + 1; if (!revive) S.stats.bossKills++;
     emit(S, { type: 'kill', x: b.x, y: b.y, boss: true });
     S.queue.length = 0; S.zones.length = 0; S.pools.length = 0; S.rain.length = 0; S.strikes.length = 0;
     for (const o of S.enemies) if (!o.dead && o !== b) { o.dead = true; emit(S, { type: 'kill', x: o.x, y: o.y, boss: false, wipe: true }); }
-    S.bossDeath = { b, t: 0, dur: CFG.bossDeathT, stage: 'die', revive, t0: 0 };
-    emit(S, { type: 'bossDying', x: b.x, y: b.y, r: b.r, name: b.bossName, id: b.kind, dur: CFG.bossDeathT, revive });
+    const dT = b.dragon ? CFG.dragon.deathT : CFG.bossDeathT;
+    S.bossDeath = { b, t: 0, dur: dT, stage: 'die', revive, t0: 0 };
+    emit(S, { type: 'bossDying', x: b.x, y: b.y, r: b.r, name: b.bossName, id: b.kind, dur: dT, revive, dragon: !!b.dragon });
     emit(S, { type: 'bossWipe', x: b.x, y: b.y });
   }
   function kingP2(b) { // 사천왕 2차전: 기술 간격이 짧아지고, 일직선 검기와 소환이 더해지며, 공격력이 오른다
@@ -1546,19 +1547,23 @@
       if (!e.enraged) { e.enraged = true; emit(S, { type: 'bossRage', name: e.bossName, x: e.x, y: e.y }); }
       e.speedMul *= A.rage.speed; e.rateMul = A.rage.rate; e.dmgMul *= A.rage.dmg;
     }
-    if (A.fly) { // 용: 날아올랐다가 상·하·좌·우 중 다른 한 곳에 내려앉는다 (날아가 있는 동안은 공격할 수 없고 하늘에서 불덩이가 쏟아진다)
+    if (A.fly) { // 용: 체력이 절반이 되면 한 번 하늘로 날아올라 모습을 감추고, 그림자만 땅 위를 돌며 불덩이를 떨어뜨린다. 시간이 지나면 북쪽 단상으로 다시 솟아오른다
       const F = A.fly;
-      if (e.flyS === 'up') { e.flyT -= dt; e.lift = 1 - Math.max(0, e.flyT) / F.up; e.speedMul = 0; if (e.flyT <= 0) { e.flyS = 'away'; e.flyT = F.away; e.hidden = true; e.t.barrage = 0.6; e.landWarn = false; emit(S, { type: 'dragonAway', x: e.x, y: e.y }); } return; }
+      if (e.flyS === 'up') { e.flyT -= dt; e.lift = 1 - Math.max(0, e.flyT) / F.up; e.speedMul = 0; if (e.flyT <= 0) { e.flyS = 'away'; e.flyT = F.away; e.hidden = true; e.t.barrage = 0.6; e.shT = 0; e.shx = CX; e.shy = CY - 320; emit(S, { type: 'dragonAway', x: e.x, y: e.y }); } return; }
       if (e.flyS === 'away') {
-        e.flyT -= dt; e.t.barrage -= dt; e.speedMul = 0;
-        if (e.t.barrage <= 0) { e.t.barrage = 0.7; const us = S.units.filter(u => !u.dead), pk = us.length ? us[Math.floor(S.rng() * us.length)] : S.core; addStrike(S, e, { x: pk.x + (S.rng() - 0.5) * 60, y: pk.y + (S.rng() - 0.5) * 60, r: 90, t: 1.0, mul: 1.8, kind: 'fire', kb: 300 }); }
-        if (!e.landWarn && e.flyT <= 1.2) { e.landWarn = true; let ns; do ns = Math.floor(S.rng() * 4); while (ns === e.side); e.nextSide = ns; const a = dragonAnchor(ns); addStrike(S, e, { x: a.x, y: a.y, r: 290, t: 1.2, mul: 3, kind: 'rock', kb: 680 }); emit(S, { type: 'dragonLandWarn', x: a.x, y: a.y }); }
-        if (e.flyT <= 0) { e.side = e.nextSide; placeDragon(e); e.hidden = false; e.flyS = 'land'; e.flyT = F.land; e.lift = 1; emit(S, { type: 'dragonLand', x: e.x, y: e.y }); }
+        e.flyT -= dt; e.t.barrage -= dt; e.shT += dt; e.speedMul = 0;
+        const th = -Math.PI / 2 + (e.shT / F.away) * Math.PI * 2, rf = 1 + 0.22 * Math.sin(th * 2 + 1.2), nx = CX + Math.cos(th) * 470 * rf, ny = CY + Math.sin(th) * 320 * rf; // 성 둘레를 한 바퀴 도는 그림자
+        e.shAng = Math.atan2(ny - e.shy, nx - e.shx); e.shx = nx; e.shy = ny;
+        if (e.t.barrage <= 0) { // 그림자가 지나가는 자리와 그 근처 아군 머리 위로 불덩이
+          e.t.barrage = F.barrage;
+          addStrike(S, e, { x: e.shx + (S.rng() - 0.5) * 70, y: e.shy + (S.rng() - 0.5) * 70, r: F.r, t: 1.0, mul: F.mul, kind: 'fire', kb: 300 });
+          const us = S.units.filter(u => !u.dead && !isStatic(u) && Math.hypot(u.x - e.shx, u.y - e.shy) <= 480);
+          if (us.length) { const pk = us[Math.floor(S.rng() * us.length)]; addStrike(S, e, { x: pk.x + (S.rng() - 0.5) * 50, y: pk.y + (S.rng() - 0.5) * 50, r: F.r, t: 1.0, mul: F.mul, kind: 'fire', kb: 300 }); }
+        }
+        if (e.flyT <= 0) { e.hidden = false; e.flown = true; e.flyS = null; e.lift = 0; e.shx = undefined; e.riseT = e.riseDur = F.back; placeDragon(e); emit(S, { type: 'dragonRise', x: e.x, y: e.y, dur: F.back, back: true }); }
         return;
       }
-      if (e.flyS === 'land') { e.flyT -= dt; e.lift = Math.max(0, e.flyT / F.land); e.speedMul = 0; if (e.flyT <= 0) { e.flyS = 'ground'; e.lift = 0; e.t.fly = F.every; } return; }
-      e.t.fly -= dt; if (e.nextFlyHp === undefined) e.nextFlyHp = e.max * 0.75;
-      if (e.t.fly <= 0 || e.hp <= e.nextFlyHp) { if (e.hp <= e.nextFlyHp) e.nextFlyHp -= e.max * 0.25; e.flyS = 'up'; e.flyT = F.up; emit(S, { type: 'dragonUp', x: e.x, y: e.y }); }
+      if (!e.flown && !e.flyS && e.hp <= e.max * F.at && e.riseT <= 0) { e.flyS = 'up'; e.flyT = F.up; emit(S, { type: 'dragonUp', x: e.x, y: e.y }); }
     }
     if (A.rush && !e.rushDone) { // 등장하자마자 가장 가까운 아군에게 돌진, 닿으면 충격파로 주변 아군을 기절시킨다 (아군이 없으면 성)
       e.speedMul *= A.rush.mul; const rt = nearest(S.gU, e.x, e.y, 1500);

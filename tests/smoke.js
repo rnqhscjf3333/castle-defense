@@ -763,8 +763,14 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   { const mons = g.enemies.filter(e => !e.dead && e.kind !== 'boss'); const pads = [[1500 - 520, 1500], [1500 + 520, 1500], [1500, 1500 + 420]];
     check('용 레이드: 서·동·남쪽 발판에서 몬스터가 나옴 (북쪽 용 자리에서는 안 나옴)', mons.length > 0 && mons.every(m => pads.some(p => Math.hypot(m.x - p[0], m.y - p[1]) < 400) || m.age > 1), mons.length + '마리'); }
   const x0 = d.x, y0 = d.y; let seenHidden = false, sides = new Set([d.side]); for (let i = 0; i < 30 * 70; i++) { step(); if (d.hidden) seenHidden = true; sides.add(d.side); if (g.over) break; }
-  check('용: 날아다니지 않고 처음 자리에 계속 고정', !seenHidden && sides.size === 1 && d.x === x0 && d.y === y0, [...sides].join());
+  check('용: 체력이 절반이 되기 전에는 날아다니지 않고 고정', !seenHidden && sides.size === 1 && d.x === x0 && d.y === y0, [...sides].join());
   check('용: 사방 중 한 곳에 서 있음', [0, 1, 2, 3].some(sd => { const a = { x: 1500, y: 800 }; return true; }) && d.x !== undefined);
+  { let hid = 0, sh = false, strikes = 0, back = false; check('용: 브레스 길이가 용 크기에 맞게 김', d.dragon === true && C.CFG.dragon.abil.breath.len >= 1000);
+    d.hp = d.max * 0.49; g.dragonWaveT = 1e9;
+    for (let i = 0; i < 30 * 24 && !g.over; i++) { step(); if (d.hidden) { hid++; if (d.shx !== undefined) sh = true; strikes = Math.max(strikes, g.strikes.length); } if (!d.hidden && d.flown) back = true; }
+    check('용: 체력 절반에서 숨어 그림자가 움직이고 불덩이가 떨어짐', hid > 30 * 8 && sh && strikes > 0, hid + ' ' + sh + ' ' + strikes);
+    check('용: 다시 돌아와 싸움', back && !d.hidden && !d.dead);
+    C.damage(g, d, 1e15); step(); check('용 사망 연출이 길다(7초)', g.bossDeath && g.bossDeath.dur === C.CFG.dragon.deathT && C.CFG.dragon.deathT >= 6); }
   d.hidden = false; d.flyS = 'ground'; d.dying = false; g.core.hp = g.core.max; C.damage(g, d, 1e15); for (let i = 0; i < 300 && !g.over; i++) step();
   check('용을 쓰러뜨리면 게임 클리어', g.over && g.win === true);
 }
