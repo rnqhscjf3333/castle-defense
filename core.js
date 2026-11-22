@@ -157,7 +157,7 @@
         abil2: { dash: { cd: 5, dur: 1.2, mul: 3.4, shock: { r: 260, kb: 640, mul: 2.4 } }, hammer: { cd: 6.5, r: 170, warn: 1.1, mul: 3.4, stun: 1.3, kb: 700 }, quake: { cd: 9, n: 7, r: 100, warn: 1.0, mul: 2.2, kb: 420 }, rage: { at: 0.4, speed: 1.3, rate: 1.4, dmg: 1.4 }, debuff: [{ kind: 'wound', cd: 12, r: 160 }] } },
     },
     // 100라운드: 거대한 용 (몬스터 없이 용과의 1:1 레이드). 성 둘레를 빼고 땅이 무너져 절벽이 된다. 용은 네 방향 중 한 곳에 고정되어 있다가 날아올랐다가 다른 곳에 내려앉는다.
-    dragon: { id: 'dragon', line: '대지는 사라지고… 오직 불길만이 남으리라.', name: '재앙의 용', r: 180, dragon: true, hpMul: 5, anchorX: 520, anchorY: 420, // 몸집이 아주 커서 지도에는 상반신만 보인다 (나머지는 절벽 아래)
+    dragon: { id: 'dragon', line: '대지는 사라지고… 오직 불길만이 남으리라.', name: '재앙의 용', r: 130, vr: 260, dragon: true, hpMul: 5, anchorX: 520, anchorY: 420, cut: 260, plateau: 440, monsterFrac: 0.3, waveEvery: 16, waveFrac: 0.07, // r=판정, vr=그림 크기(몸집이 아주 커서 지도에는 상반신만 보인다). 북쪽은 cut만큼 직각으로 깎여 평평한 단상(폭 plateau×2)이 되고 용은 그 가장자리에서 솟는다. 나머지 세 자리(서·동·남)에서는 몬스터가 나온다
      
       look: { style: 'dragon', body: '#a3262a', head: '#d9482c' },
       abil: { artillery: { cd: 5, dmg: 85, radius: 100, count: 3, flight: 1.5 }, breath: { cd: 11, len: 560, half: 0.3, warn: 1.4, mul: 3, kb: 380 }, tail: { cd: 7, r: 215, warn: 0.7, mul: 2.2, kb: 720 }, gust: { cd: 16, r: 760, warn: 1.0, kb: 540 }, meteor: { cd: 9, n: 8, r: 85, warn: 1.0, mul: 2.0, at: 0.5, kb: 320 }, rage: { at: 0.3, speed: 1, rate: 1.3, dmg: 1.4 } } },
@@ -988,7 +988,7 @@
         emit(S, { type: 'omen', id: nb.id, name: nb.name, line: (LN[nb.id] || LN.thunder).replace('{p}', pv), look: nb.look, r: nb.id === 'dragon' ? 40 : nb.r });
       }
     }
-    if (r === FINAL_ROUND) { q.length = 0; q.push('boss'); S.dragonIntro = { t: 0, dur: 8 }; S.zones.length = 0; S.strikes.length = 0; emit(S, { type: 'dragonIntro' }); } // 마지막 라운드: 몬스터 없이 용과의 1:1 레이드
+    if (r === FINAL_ROUND) { const keep = q.filter((k, i) => k !== 'boss' && (i % 100) < CFG.dragon.monsterFrac * 100); q.length = 0; q.push('boss', ...keep); S.dragonWaveT = CFG.dragon.waveEvery; S.dragonIntro = { t: 0, dur: 8 }; S.zones.length = 0; S.strikes.length = 0; emit(S, { type: 'dragonIntro' }); } // 마지막 라운드: 몬스터 없이 용과의 1:1 레이드
     S.queue = q; S.spawnGap = SPAWN_TIME / q.length; S.spawnT = 0;
     let text = '라운드 ' + r;
     if (r === 10) text += ' · 스폰 지점 증가';
@@ -1002,11 +1002,13 @@
   }
   const isKing = bd => !!(bd && CFG.kings[bd.id] === bd);
   // 용이 서 있을 수 있는 네 자리 (성 기준 상·하·좌·우)
-  function dragonAnchor(side) { const D = CFG.dragon, dx = [0, 0, -D.anchorX, D.anchorX][side], dy = [-D.anchorY, D.anchorY, 0, 0][side]; return { x: CX + dx, y: CY + dy }; }
+  function dragonAnchor(side) { const D = CFG.dragon, dx = [0, 0, -D.anchorX, D.anchorX][side], dy = [-D.cut, D.anchorY, 0, 0][side]; return { x: CX + dx, y: CY + dy }; }
+  const dragonPads = () => [2, 3, 1].map(s => dragonAnchor(s)); // 몬스터가 나오는 세 자리 (서·동·남)
   function placeDragon(e) { const a = dragonAnchor(e.side); e.x = a.x; e.y = a.y; }
   // 적 한 마리 만들기. x,y를 주지 않으면 스폰 지점에서 나온다.
   function spawnEnemy(S, kind, x, y) {
     const cfg = CFG.enemies[kind], r = S.round;
+    if (x === undefined && r === FINAL_ROUND) { const pads = dragonPads(), pk = pads[Math.floor(S.rng() * pads.length)]; x = pk.x + (S.rng() - 0.5) * 120; y = pk.y + (S.rng() - 0.5) * 120; }
     if (x === undefined) {
       const angs = spawnAngles(S.spawnPts), ex = extraAngles(S.extraPts || 0), k = Math.floor(S.rng() * (angs.length + ex.length));
       const isEx = k >= angs.length, ang = (isEx ? ex[k - angs.length] : angs[k]) + (S.rng() - 0.5) * 0.12, ring = isEx ? EXTRA_RING : SPAWN_RING;
@@ -1035,7 +1037,7 @@
       if (!bd.dragon) e.speed = Math.max(e.speed, CFG.bossSpeed); // 보스는 광전사처럼 빠르게 달려온다
       if (bd === CFG.finalBoss && r === MAX_ROUND) { const N = CFG.finalNerf; e.max = e.hp = Math.round(e.max * N.hp); e.max2 = Math.round(e.max / N.hp * N.hp2); e.dmg *= N.dmg; e.canRevive = true; }
       if (isKing(bd)) { e.king = bd; e.canRevive = true; e.max = e.hp = Math.round(e.max * 0.55); e.max2 = Math.round(e.max * CFG.kingP2.hp); }
-      if (bd.dragon) { e.fixed = true; e.side = 0; placeDragon(e); e.flyS = 'ground'; e.lift = 0; if (bd.abil.fly) e.t.fly = bd.abil.fly.first; }
+      if (bd.dragon) { e.fixed = true; e.vr = bd.vr; e.side = 0; placeDragon(e); e.flyS = 'ground'; e.lift = 0; if (bd.abil.fly) e.t.fly = bd.abil.fly.first; }
       S.stats.seenB[bd.id] = 1;
       emit(S, { type: 'bossSpawn', name: bd.name, id: bd.id, line: bd.line, look: bd.look, r: e.r });
     }
@@ -1470,8 +1472,10 @@
     const free = S.mode === 'free';
     if (u.rvT > 0) { u.rvT -= dt; if (u.rvT <= 0) u.rv = null; }
     if (free && u.rv && !u.rv.dead && u.rv.hp > 0) tgt = u.rv; // (자유 모드) 사거리 밖이어도 나를 공격한 적에게 가서 반격한다
-    if (!free && tgt && Math.hypot(tgt.x - CX, tgt.y - CY) > CFG.leash) tgt = null; // (기본 모드) 성에서 너무 먼 적은 쫓지 않는다
-    if (tgt && (free || fromCore <= CFG.leash + 40)) moveToward(u, tgt.x, tgt.y, dt, stopFor(tgt), spm * rush);
+    if (!tgt) { const dg = S.enemies.find(e => e.fixed && !e.dead && !e.hidden); if (dg && Math.hypot(dg.x - u.x, dg.y - u.y) <= 900) tgt = dg; } // 가까이 싸울 적이 없으면 고정된 용에게 달려가 공격한다
+    const dgT = !!(tgt && tgt.fixed);
+    if (!free && tgt && !dgT && Math.hypot(tgt.x - CX, tgt.y - CY) > CFG.leash) tgt = null; // (기본 모드) 성에서 너무 먼 적은 쫓지 않는다
+    if (tgt && (free || dgT || fromCore <= CFG.leash + 40)) moveToward(u, tgt.x, tgt.y, dt, stopFor(tgt), spm * rush);
     else moveToward(u, u.hx, u.hy, dt, 6, spm);
     if (u.cd <= 0) {
       const t = melee ? nearest(S.gE, u.x, u.y, u.range + u.r) : nearestBoth(S, u.x, u.y, u.range + u.r);
@@ -1648,7 +1652,7 @@
     }
     if (A.breath) { // 용: 입에서 불길을 뿜는다 (부채꼴 범위, 예고 후 발사)
       e.t.breath -= dt; if (e.breathT > 0) e.breathT -= dt;
-      if (e.t.breath <= 0 && e.life > 2) { const tg = nearestUnit(S, e.x, e.y, 1000); if (!tg) e.t.breath = 1.5; else { e.t.breath = A.breath.cd; const my = e.y - e.r * 1.1, ang = Math.atan2(tg.y - my, tg.x - e.x); addStrike(S, e, { shape: 'cone', x: e.x, y: my, ang, half: A.breath.half, len: A.breath.len, r: A.breath.len, t: A.breath.warn, mul: A.breath.mul, kb: A.breath.kb, kind: 'fire' }); e.breathT = A.breath.warn + 0.5; } }
+      if (e.t.breath <= 0 && e.life > 2) { const tg = nearestUnit(S, e.x, e.y, 1000); if (!tg) e.t.breath = 1.5; else { e.t.breath = A.breath.cd; const my = e.y - (e.vr || e.r) * 1.85, ang = Math.atan2(tg.y - my, tg.x - e.x); addStrike(S, e, { shape: 'cone', x: e.x, y: my, ang, half: A.breath.half, len: A.breath.len, r: A.breath.len, t: A.breath.warn, mul: A.breath.mul, kb: A.breath.kb, kind: 'fire' }); e.breathT = A.breath.warn + 0.5; } }
     }
     if (A.tail) { // 용: 가까이 붙은 아군을 꼬리로 쓸어 날려 버린다
       e.t.tail -= dt;
@@ -1796,6 +1800,11 @@
     for (const k in S.buyCd) if (S.buyCd[k] > 0) S.buyCd[k] -= dt;
     if (S.repairCd > 0) S.repairCd -= dt;
     updateProd(S, dt);
+    if (S.round === FINAL_ROUND && S.dragonWaveT !== undefined && S.enemies.some(e => e.fixed && !e.dead)) { // 용과 싸우는 동안 서·동·남쪽에서 몬스터가 계속 몰려온다
+      S.dragonWaveT -= dt;
+      if (S.dragonWaveT <= 0) { S.dragonWaveT = CFG.dragon.waveEvery; const kinds = Object.keys(CFG.spawn).filter(k => S.round >= CFG.spawn[k].from), tot = kinds.reduce((a, k) => a + CFG.spawn[k].w, 0), m = Math.max(4, Math.round(enemyCount(S.round) * CFG.dragon.waveFrac));
+        for (let i = 0; i < m; i++) { let x = S.rng() * tot, pick = kinds[0]; for (const k of kinds) { if ((x -= CFG.spawn[k].w) < 0) { pick = k; break; } } S.queue.push(pick); } S.spawnGap = Math.min(S.spawnGap || 1, CFG.dragon.waveEvery * 0.6 / Math.max(1, S.queue.length)); }
+    }
 
     // 라운드 진행
     if (S.phase === 'prep') { S.prepT -= dt; if (S.prepT <= 0) startRound(S); }

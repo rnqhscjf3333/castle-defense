@@ -755,11 +755,13 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
 }
 { // 용
   const g = C.createGame(11); g.round = 99; g.phase = 'round'; g.endless = true; g.hold = false; g.queue = []; g.enemies.length = 0; g.gold = 1e6; g.core.hp = g.core.max = 1e12;
-  C.jumpToRound(g, 100); g.phase = 'prep'; g.prepT = 0; C.tick(g, DT); check('100라운드: 땅이 무너지는 연출 동안 시간 정지', g.dragonIntro && g.round === 100 && g.queue.length === 1 && g.queue[0] === 'boss');
+  C.jumpToRound(g, 100); g.phase = 'prep'; g.prepT = 0; C.tick(g, DT); check('100라운드: 땅이 무너지는 연출 동안 시간 정지', g.dragonIntro && g.round === 100 && g.queue[0] === 'boss' && g.queue.length > 1);
   const step = () => { if (g.cards.offer) C.pickCard(g, 0); if (g.jobs.offer) C.pickJob(g, 0); if (g.cOffer) C.pickCastle(g, 0); C.tick(g, DT); };
   for (let i = 0; i < 300 && g.dragonIntro; i++) step(); check('연출 후 절벽 지형(cliff=1)', !g.dragonIntro && g.cliff >= 0.99);
   for (let i = 0; i < 60; i++) step(); const d = g.enemies.find(e => e.kind === 'boss' && !e.dead);
-  check('용: 몬스터 없이 용만 등장, 한 자리에 고정', d && g.enemies.filter(e => !e.dead).length === 1 && d.fixed && d.r > 100, d && d.bossName);
+  check('용: 북쪽 단상 가장자리에 고정, 그림은 판정보다 훨씬 큼', d && d.fixed && d.side === 0 && d.x === 1500 && d.y === 1500 - C.CFG.dragon.cut && d.vr >= 2 * d.r, d && [d.x, d.y, d.r, d.vr].join());
+  { const mons = g.enemies.filter(e => !e.dead && e.kind !== 'boss'); const pads = [[1500 - 520, 1500], [1500 + 520, 1500], [1500, 1500 + 420]];
+    check('용 레이드: 서·동·남쪽 발판에서 몬스터가 나옴 (북쪽 용 자리에서는 안 나옴)', mons.length > 0 && mons.every(m => pads.some(p => Math.hypot(m.x - p[0], m.y - p[1]) < 400) || m.age > 1), mons.length + '마리'); }
   const x0 = d.x, y0 = d.y; let seenHidden = false, sides = new Set([d.side]); for (let i = 0; i < 30 * 70; i++) { step(); if (d.hidden) seenHidden = true; sides.add(d.side); if (g.over) break; }
   check('용: 날아다니지 않고 처음 자리에 계속 고정', !seenHidden && sides.size === 1 && d.x === x0 && d.y === y0, [...sides].join());
   check('용: 사방 중 한 곳에 서 있음', [0, 1, 2, 3].some(sd => { const a = { x: 1500, y: 800 }; return true; }) && d.x !== undefined);

@@ -687,7 +687,7 @@
     const table = e.team === 'u' ? UNIT : ENEMY; e._pal = e.team === 'e' ? PAL[e.kind] : (e.job && JPAL[e.job]) || UPAL[e.type];
     const fn = table[e.type || e.kind] || (e.team === 'e' ? ENEMY[BASE[e.kind]] : UNIT[UBASE[e.type]]);
     if (!fn) return;
-    const s = (e.r / 10) * 1.25;
+    const s = ((e.vr || e.r) / 10) * 1.25;
     ctx.save(); ctx.translate(e.x, e.y - 3 * s); // 발이 판정 중심 근처에 오도록
     const aw = e.team === 'u' && e.awk && e.job && !e.flash;
     if (aw) awakeBack(ctx, e, s, now);
@@ -703,7 +703,7 @@
     ctx.fillStyle = fl ? '#fff' : c[1]; ctx.beginPath(); ctx.arc(e.x, e.y - 11 * s, 5 * s, 0, TAU); ctx.fill();
   }
   // 체력 바 위치 계산용: 그림의 머리 위 높이
-  function headTop(e) { return -(e.r / 10) * 1.25 * (e.kind === 'boss' ? (e.look && e.look.style === 'dragon' ? 29 : 17) : (e.kind === 'bat' || e.kind === 'wyvern') ? 26 : e.jobTier ? 21 : 16); }
+  function headTop(e) { return -((e.vr || e.r) / 10) * 1.25 * (e.kind === 'boss' ? (e.look && e.look.style === 'dragon' ? 29 : 17) : (e.kind === 'bat' || e.kind === 'wyvern') ? 26 : e.jobTier ? 21 : 16); }
 
   window.Figures = { draw, drawLite, headTop };
 })();

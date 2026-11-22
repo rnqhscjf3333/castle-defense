@@ -942,9 +942,29 @@
   // ── 100라운드: 성 주변만 남기고 땅이 무너져 절벽이 된다 ──
   // 남는 땅 = 성 둘레 원 + 용이 서는 네 자리의 받침 + 그 사이를 잇는 십자 다리
   const DR = CFG.dragon, SAFE_R = 330, PAD_R = 190, BR_W = 80;
-  const inSafe = (x, y, pad) => Math.hypot(x - CX, y - CY) <= SAFE_R + pad || (Math.abs(y - CY) <= BR_W + pad && Math.abs(x - CX) <= DR.anchorX + PAD_R) || (Math.abs(x - CX) <= BR_W + pad && Math.abs(y - CY) <= DR.anchorY + PAD_R) || [[0, -DR.anchorY], [0, DR.anchorY], [-DR.anchorX, 0], [DR.anchorX, 0]].some(a => Math.hypot(x - CX - a[0], y - CY - a[1]) <= PAD_R + pad);
+  // 무너진 땅의 남은 모양. 용 레이드(100R)는 북쪽을 직각으로 깎은 평평한 단상(용이 솟는 자리)에 서·동·남쪽 발판과 다리가 이어진다. 사천왕·마왕 2차전은 성 둘레 + 네 발판 + 십자 다리.
+  const dragonMap = () => !S || !S.cliffTheme;
+  const inSafe = (x, y, pad) => {
+    if (dragonMap()) {
+      const T = CY - DR.cut;
+      if (Math.hypot(x - CX, y - CY) <= SAFE_R + pad && y >= T - pad) return true;
+      if (x >= CX - DR.plateau - pad && x <= CX + DR.plateau + pad && y >= T - pad && y <= T + 220 + pad) return true;
+      if (Math.abs(y - CY) <= BR_W + pad && Math.abs(x - CX) <= DR.anchorX + PAD_R) return true;
+      if (Math.abs(x - CX) <= BR_W + pad && y >= CY && y <= CY + DR.anchorY + PAD_R) return true;
+      return [[0, DR.anchorY], [-DR.anchorX, 0], [DR.anchorX, 0]].some(a => Math.hypot(x - CX - a[0], y - CY - a[1]) <= PAD_R + pad);
+    }
+    return Math.hypot(x - CX, y - CY) <= SAFE_R + pad || (Math.abs(y - CY) <= BR_W + pad && Math.abs(x - CX) <= DR.anchorX + PAD_R) || (Math.abs(x - CX) <= BR_W + pad && Math.abs(y - CY) <= DR.anchorY + PAD_R) || [[0, -DR.anchorY], [0, DR.anchorY], [-DR.anchorX, 0], [DR.anchorX, 0]].some(a => Math.hypot(x - CX - a[0], y - CY - a[1]) <= PAD_R + pad);
+  };
   function safePath(c, dy) {
     c.beginPath(); const cx = CX, cy = CY + dy;
+    if (dragonMap()) {
+      const cut = DR.cut, T = cy - cut, xr = Math.sqrt(SAFE_R * SAFE_R - cut * cut), a1 = Math.atan2(-cut, xr), a2 = Math.atan2(-cut, -xr) + Math.PI * 2;
+      c.moveTo(cx - xr, T); c.lineTo(cx + xr, T); c.arc(cx, cy, SAFE_R, a1, a2, false); c.closePath(); // 북쪽이 평평하게 깎인 성 둘레 땅
+      c.rect(cx - DR.plateau, T, DR.plateau * 2, 220); // 직각으로 각진 단상 (용이 이 가장자리에서 솟는다)
+      for (const a of [[0, DR.anchorY], [-DR.anchorX, 0], [DR.anchorX, 0]]) { c.moveTo(cx + a[0] + PAD_R, cy + a[1]); c.arc(cx + a[0], cy + a[1], PAD_R, 0, Math.PI * 2); }
+      c.rect(cx - DR.anchorX, cy - BR_W, DR.anchorX * 2, BR_W * 2); c.rect(cx - BR_W, cy, BR_W * 2, DR.anchorY);
+      return;
+    }
     c.moveTo(cx + SAFE_R, cy); c.arc(cx, cy, SAFE_R, 0, Math.PI * 2);
     for (const a of [[0, -DR.anchorY], [0, DR.anchorY], [-DR.anchorX, 0], [DR.anchorX, 0]]) { c.moveTo(cx + a[0] + PAD_R, cy + a[1]); c.arc(cx + a[0], cy + a[1], PAD_R, 0, Math.PI * 2); }
     c.rect(cx - DR.anchorX, cy - BR_W, DR.anchorX * 2, BR_W * 2); c.rect(cx - BR_W, cy - DR.anchorY, BR_W * 2, DR.anchorY * 2);
@@ -995,6 +1015,7 @@
     const cliffOn = S.cliff > 0; if (cliffOn) drawCliff(now, x0, y0, x1, y1, z);
     // 적 출현 포탈: 길 위의 붉은 룬 원 (화면 바로 밖에서 적이 나타난다)
     const angs = C.spawnAngles(S.spawnPts || 2);
+    if (cliffOn && !S.cliffTheme && S.round === C.FINAL_ROUND && S.cliff >= 1) for (const pd of [[-DR.anchorX, 0], [DR.anchorX, 0], [0, DR.anchorY]]) Scenery.drawPortal(ctx, CX + pd[0], CY + pd[1], now); // 용 레이드: 서·동·남쪽 발판에서 몬스터가 나온다
     if (!cliffOn) for (const a of angs) { const px = CX + Math.cos(a) * C.SPAWN_RING, py = CY + Math.sin(a) * C.SPAWN_RING; if (px > x0 - 60 && px < x1 + 60 && py > y0 - 40 && py < y1 + 40) Scenery.drawPortal(ctx, px, py, now); }
     if (!cliffOn) for (const a of C.extraAngles(S.extraPts || 0)) { const px = CX + Math.cos(a) * C.EXTRA_RING, py = CY + Math.sin(a) * C.EXTRA_RING; if (px > x0 - 60 && px < x1 + 60 && py > y0 - 40 && py < y1 + 40) Scenery.drawPortal(ctx, px, py, now); }
 
@@ -1592,7 +1613,7 @@
       if (!paused) updateDeathCam(dt);
       if (S.cinematic && !cine) startCine(S.cinematic.name, S.cinematic.kind);
       if (!S.dragonIntro) { const dg = S.enemies.find(e => e.kind === 'boss' && e.fixed && !e.dead); // 용이 나타나면 머리까지 보이도록 한 번 화면을 맞춘다 (이후엔 자유롭게 움직일 수 있다)
-        if (dg && dragonFramed !== dg.id) { dragonFramed = dg.id; const x0 = Math.min(CX - 300, dg.x - 600), x1 = Math.max(CX + 300, dg.x + 600), y0 = Math.min(CY - 300, dg.y - 760), y1 = Math.max(CY + 300, dg.y + 120);
+        if (dg && dragonFramed !== dg.id) { dragonFramed = dg.id; const vrr = dg.vr || dg.r, x0 = Math.min(CX - 300, dg.x - vrr * 3.3), x1 = Math.max(CX + 300, dg.x + vrr * 3.3), y0 = Math.min(CY - 300, dg.y - vrr * 4.2), y1 = Math.max(CY + 300, CY + 480);
           cam.zoom = Math.max(minZoom(), Math.min(1, vw / (x1 - x0 + 120), vh / (y1 - y0 + 120))); cam.x = (x0 + x1) / 2; cam.y = (y0 + y1) / 2; clampCam(); } }
       if (cine) stepCine(now);
       else if (Scenery.act !== S.act) Scenery.setAct(S.act, true); // 불러오기/재시작/점프 시 막에 맞는 배경으로
