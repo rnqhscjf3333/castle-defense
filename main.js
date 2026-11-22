@@ -212,12 +212,13 @@
   function setText(id, v) { if (last[id] !== v) { last[id] = v; $(id).textContent = v; } }
   const fmtTime = t => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
   // 보스 체력 바 (화면 위 가운데): 이름, 체력 숫자, 현재 상태, 가진 패턴
-  const PAT = { dash: '돌진', summon: '소환', artillery: '포격', shield: '방어막', rage: '분노', rush: '강습', blink: '순간이동', leap: '도약', siege: '원거리 포격', clone: '분신', aura: '철벽 수호', roar: '함성', focus: '정신 집중', drain: '암흑 흡수', sword: '검기', bolt: '낙뢰', frost: '냉기', blizzard: '눈보라', stomp: '발구르기', quake: '지진', breath: '불길 숨결', tail: '꼬리 휘두르기', gust: '날갯짓', meteor: '불덩이 낙하', fly: '비행' };
+  const PAT = { dash: '돌진', summon: '소환', artillery: '포격', shield: '방어막', rage: '분노', rush: '강습', blink: '순간이동', leap: '도약', siege: '원거리 포격', clone: '분신', aura: '철벽 수호', roar: '함성', focus: '정신 집중', drain: '암흑 흡수', sword: '검기', claw: '긴 손톱', lance: '번개 창', shards: '얼음 파편', hammer: '대망치', bolt: '낙뢰', frost: '냉기', blizzard: '눈보라', stomp: '발구르기', quake: '지진', breath: '불길 숨결', tail: '꼬리 휘두르기', gust: '날갯짓', meteor: '불덩이 낙하', fly: '비행' };
   const DBK = { stun: ['기절', '#ffe14a'], poison: ['중독', '#7be04a'], weak: ['공격력 감소', '#ff6b6b'], wound: ['치유 감소', '#c77dff'] };
   // 보스 등장 컷신: 모습·이름·대사가 잠깐 나왔다가 사라진다 (게임은 멈추지 않는다)
   let biTimer = 0, biRaf = 0;
   function showBossIntro(ev) {
-    const el = $('bossIntro'), c2 = $('biCv').getContext('2d'); setText('biName', ev.name);
+    const el = $('bossIntro'), c2 = $('biCv').getContext('2d'); setText('biName', ev.omen ? ev.name + '의 목소리' : ev.name);
+    el.className = ev.omen ? 'omen omen-' + ev.omen : ''; el.querySelector('.bi-tag').textContent = ev.omen ? '— 다가오는 기운 —' : 'BOSS';
     $('biLine').textContent = ev.line ? '“' + ev.line + '”' : '';
     el.classList.remove('hidden'); clearTimeout(biTimer); cancelAnimationFrame(biRaf);
     const fake = { team: 'e', kind: 'boss', id: 7, x: 0, y: 0, r: ev.r || 30, look: ev.look, flash: 0, swing: 0 }, t0 = performance.now();
@@ -543,7 +544,7 @@
   }
   let metaTab = 'codex', codexSel = null, listScroll = 0;
   const SKILL_TXT = { dash: '적진으로 돌진하며 지나가는 길의 적 모두를 벤다', rain: '적 위에 화살비 지대를 만들어 범위 안 적에게 계속 피해' };
-  const SK_TXT = { dash: a => '돌진: ' + a.cd + '초마다 ' + a.dur + '초간 ' + a.mul.toFixed(1) + '배 속도로 가장 가까운 아군에게 달려듭니다' + (a.shock ? ' — 끝나면 충격파로 밀쳐냄' : ''), summon: a => '소환: ' + a.cd + '초마다 ' + ({ grunt: '돌격병', archer: '사수', shield: '방패병', bomber: '폭파병' }[a.kind] || a.kind) + ' ' + a.n + '명 (성 가까이 왔을 때)', artillery: a => '포격: ' + a.cd + '초마다 아군 위치에 포탄 ' + a.count + '발 (피해 ' + a.dmg + ', 범위 ' + a.radius + ', 착탄 지점 표시)' + (a.barrage ? ', ' + a.barrage + '번째마다 3배 일제 포격' : ''), shield: a => '방어막: ' + a.cd + '초마다 ' + a.dur + '초간 받는 피해 ' + Math.round(a.red * 100) + '% 감소', rage: a => '분노: 체력 ' + Math.round(a.at * 100) + '% 이하에서 속도 ×' + a.speed + ', 공격 속도 ×' + a.rate + ', 공격력 ×' + a.dmg, rush: a => '강습: 등장하자마자 가장 가까운 아군에게 돌진해 충격파로 기절시킵니다', blink: a => '순간이동: ' + a.cd + '초마다 성 둘레의 다른 자리로 이동하고 곧바로 졸개를 소환', leap: a => '도약: ' + a.cd + '초마다 아군이 가장 몰린 곳으로 뛰어올라 내려찍고 기절시킵니다', siege: () => '원거리 포격: 멀리서 포격만 합니다', clone: a => '분신: 체력 ' + Math.round(a.at * 100) + '%에서 분신 ' + a.n + '기 소환 (1회)', aura: a => '철벽 수호: ' + a.cd + '초마다 주변 적에게 ' + a.dur + '초간 방어막 (피해 ' + Math.round(a.red * 100) + '% 감소)', roar: a => '함성: ' + a.cd + '초마다 주변 적의 속도 +' + Math.round((a.speed - 1) * 100) + '% (' + a.dur + '초)', focus: a => '정신 집중: ' + a.cd + '초마다 ' + a.dur + '초간 정지하며 체력 ' + Math.round(a.heal * 100) + '% 회복, 그동안 받는 피해 ' + Math.round(a.red * 100) + '% 감소', bolt: a => '낙뢰: ' + a.cd + '초마다 아군 머리 위 ' + a.n + '곳에 번개 (범위 ' + a.r + ', 예고 후 피해·기절·밀침)', frost: a => '냉기: ' + a.cd + '초마다 ' + a.count + '곳(범위 ' + a.r + ')을 얼려 ' + a.dur + '초간 이동·공격이 느려짐', blizzard: a => '눈보라: ' + a.cd + '초마다 넓은 범위(' + a.r + ')를 얼리고 밀어냄', stomp: a => '발구르기: ' + a.cd + '초마다 주변(' + a.r + ') 아군을 피해와 함께 밀쳐냄', quake: a => '지진: ' + a.cd + '초마다 ' + a.n + '곳의 바닥이 솟구쳐 밀쳐냄', breath: a => '불길 숨결: ' + a.cd + '초마다 부채꼴(길이 ' + a.len + ') 불길 — 예고 후 큰 피해와 밀침', tail: () => '꼬리 휘두르기: 가까이 붙은 아군을 쓸어 멀리 날려 버림', gust: a => '날갯짓: ' + a.cd + '초마다 모두를 멀리 밀어냄', meteor: a => '불덩이 낙하: 체력 ' + Math.round(a.at * 100) + '% 이하에서 ' + a.cd + '초마다 ' + a.n + '개가 하늘에서 떨어짐', fly: a => '비행: 주기적으로 날아올라 사라졌다가 상·하·좌·우 다른 자리에 착지 (비행 중엔 공격 불가, 착지점에 큰 피해)', drain: a => '암흑 흡수(2형태): ' + a.cd + '초마다 주변 아군에게 검붉은 선을 이어 큰 피해를 주고 맞은 수만큼 체력 회복', sword: a => '검기: ' + a.cd + '초마다 거대한 검기를 일직선으로 발사 (길이 ' + a.len + ', 폭 ' + a.width + ', 예고 후 큰 피해·밀침)' };
+  const SK_TXT = { dash: a => '돌진: ' + a.cd + '초마다 ' + a.dur + '초간 ' + a.mul.toFixed(1) + '배 속도로 가장 가까운 아군에게 달려듭니다' + (a.shock ? ' — 끝나면 충격파로 밀쳐냄' : ''), summon: a => '소환: ' + a.cd + '초마다 ' + ({ grunt: '돌격병', archer: '사수', shield: '방패병', bomber: '폭파병' }[a.kind] || a.kind) + ' ' + a.n + '명 (성 가까이 왔을 때)', artillery: a => '포격: ' + a.cd + '초마다 아군 위치에 포탄 ' + a.count + '발 (피해 ' + a.dmg + ', 범위 ' + a.radius + ', 착탄 지점 표시)' + (a.barrage ? ', ' + a.barrage + '번째마다 3배 일제 포격' : ''), shield: a => '방어막: ' + a.cd + '초마다 ' + a.dur + '초간 받는 피해 ' + Math.round(a.red * 100) + '% 감소', rage: a => '분노: 체력 ' + Math.round(a.at * 100) + '% 이하에서 속도 ×' + a.speed + ', 공격 속도 ×' + a.rate + ', 공격력 ×' + a.dmg, rush: a => '강습: 등장하자마자 가장 가까운 아군에게 돌진해 충격파로 기절시킵니다', blink: a => '순간이동: ' + a.cd + '초마다 성 둘레의 다른 자리로 이동하고 곧바로 졸개를 소환', leap: a => '도약: ' + a.cd + '초마다 아군이 가장 몰린 곳으로 뛰어올라 내려찍고 기절시킵니다', siege: () => '원거리 포격: 멀리서 포격만 합니다', clone: a => '분신: 체력 ' + Math.round(a.at * 100) + '%에서 분신 ' + a.n + '기 소환 (1회)', aura: a => '철벽 수호: ' + a.cd + '초마다 주변 적에게 ' + a.dur + '초간 방어막 (피해 ' + Math.round(a.red * 100) + '% 감소)', roar: a => '함성: ' + a.cd + '초마다 주변 적의 속도 +' + Math.round((a.speed - 1) * 100) + '% (' + a.dur + '초)', focus: a => '정신 집중: ' + a.cd + '초마다 ' + a.dur + '초간 정지하며 체력 ' + Math.round(a.heal * 100) + '% 회복, 그동안 받는 피해 ' + Math.round(a.red * 100) + '% 감소', bolt: a => '낙뢰: ' + a.cd + '초마다 아군 머리 위 ' + a.n + '곳에 번개 (범위 ' + a.r + ', 예고 후 피해·기절·밀침)', frost: a => '냉기: ' + a.cd + '초마다 ' + a.count + '곳(범위 ' + a.r + ')을 얼려 ' + a.dur + '초간 이동·공격이 느려짐', blizzard: a => '눈보라: ' + a.cd + '초마다 넓은 범위(' + a.r + ')를 얼리고 밀어냄', stomp: a => '발구르기: ' + a.cd + '초마다 주변(' + a.r + ') 아군을 피해와 함께 밀쳐냄', quake: a => '지진: ' + a.cd + '초마다 ' + a.n + '곳의 바닥이 솟구쳐 밀쳐냄', breath: a => '불길 숨결: ' + a.cd + '초마다 부채꼴(길이 ' + a.len + ') 불길 — 예고 후 큰 피해와 밀침', tail: () => '꼬리 휘두르기: 가까이 붙은 아군을 쓸어 멀리 날려 버림', gust: a => '날갯짓: ' + a.cd + '초마다 모두를 멀리 밀어냄', meteor: a => '불덩이 낙하: 체력 ' + Math.round(a.at * 100) + '% 이하에서 ' + a.cd + '초마다 ' + a.n + '개가 하늘에서 떨어짐', fly: a => '비행: 주기적으로 날아올라 사라졌다가 상·하·좌·우 다른 자리에 착지 (비행 중엔 공격 불가, 착지점에 큰 피해)', drain: a => '암흑 흡수(2형태): ' + a.cd + '초마다 주변 아군에게 검붉은 선을 이어 큰 피해를 주고 맞은 수만큼 체력 회복', claw: a => '긴 손톱(2형태): ' + a.cd + '초마다 부채꼴로 ' + a.n + '줄기의 손톱 베기 (길이 ' + a.len + ', 예고 후 큰 피해·밀침)', lance: a => '번개 창: ' + a.cd + '초마다 가까운 아군 ' + a.n + '명에게 번개 창을 일직선으로 관통시킴 (기절)', shards: a => '얼음 파편: ' + a.cd + '초마다 부채꼴(길이 ' + a.len + ') 얼음 가시 — 예고 후 피해와 함께 잠시 얼려 기절', hammer: a => '대망치: ' + a.cd + '초마다 아군이 가장 몰린 곳(범위 ' + a.r + ')에 거대한 망치를 내려쳐 큰 피해·기절·밀침', sword: a => '검기: ' + a.cd + '초마다 거대한 검기를 일직선으로 발사 (길이 ' + a.len + ', 폭 ' + a.width + ', 예고 후 큰 피해·밀침)' };
   const DB_TXT = { stun: '아군을 기절시키는', poison: '아군을 중독시키는', weak: '아군의 공격력을 낮추는', wound: '아군의 치유 효과를 낮추는' };
   function enemyTraits(c) { const t = []; if (c.air) t.push('공중 — 궁수 계열과 포탑만 공격 가능'); if (c.ranged) t.push('원거리 공격'); if (c.blast) t.push('폭발 (범위 ' + c.blast + ')'); if (c.rres && c.rres < 1) t.push('원거리 피해 ' + Math.round((1 - c.rres) * 100) + '% 방어'); if (c.mres && c.mres < 1) t.push('근접 피해 ' + Math.round((1 - c.mres) * 100) + '% 방어'); if (c.poison) t.push('공격이 중독을 겁니다'); if (c.rush) t.push('멀리서 ×' + c.rush + ' 속도로 돌진'); if (c.healRange) t.push('주변 적을 치유 (' + Math.round(c.healPct * 100) + '%/' + c.healRate + '초)'); return t; }
   function codexDetail(key) {
@@ -787,7 +788,7 @@
       else if (ev.type === 'bossFocus') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#6fe08a' }); toast('광전사가 정신을 집중해 체력을 회복합니다 — 지금이 기회!'); }
       else if (ev.type === 'strikeWarn') addFx({ k: 'strikeW', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, w2: ev.w2, t: 0, max: Math.max(0.2, ev.t) });
       else if (ev.type === 'strikeHit') { addFx({ k: 'strikeH', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, w2: ev.w2, t: 0, max: ev.shape === 'cone' ? 0.7 : ev.shape === 'line' ? 0.6 : 0.55 }); if (ev.kind !== 'ice' || ev.r > 300) addShake(ev.kind === 'wind' ? 5 : ev.r > 250 ? 12 : 6, 0.3); }
-      else if (ev.type === 'omen') { if (ev.id !== 'dragon') showBossIntro({ name: ev.name, line: ev.line, look: ev.look, r: ev.r, long: true }); toast(ev.id === 'dragon' ? '용의 기운이 맵 가장자리에 감돕니다' : '사천왕의 기운이 맵 가장자리에 감돕니다'); }
+      else if (ev.type === 'omen') { if (ev.id !== 'dragon') showBossIntro({ name: ev.name, line: ev.line, look: ev.look, r: ev.r, long: true, omen: ev.id }); toast(ev.id === 'dragon' ? '용의 기운이 맵 가장자리에 감돕니다' : '사천왕의 기운이 맵 가장자리에 감돕니다'); }
       else if (ev.type === 'castleAwaken') { banner('성채 각성!', true); for (let i = 0; i < 4; i++) addFx({ k: 'ring', x: CX, y: CY, t: -i * 0.12, max: 1.0, c: '#ffe27a', big: true, r: 200 }); addShake(8, 0.5); }
       else if (ev.type === 'dragonIntro') { { const zf = Math.min(vw / 1500, vh / 1250); cam.zoom = Math.max(minZoom(), Math.min(cam.zoom, zf)); centerOnCore(); clampCam(); } banner('땅이 갈라진다…', true); toast('성 주변만 남기고 모든 땅이 무너진다'); }
       else if (ev.type === 'dragonUp') { banner('용이 하늘로 날아오른다!', true); addShake(10, 0.6); }
@@ -884,7 +885,7 @@
     if (p > 0.97) return;
     ctx.save(); ctx.globalAlpha = 0.35 * e; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(x, y, sz * (0.4 + 0.8 * e), sz * (0.2 + 0.4 * e), 0, 0, 6.283); ctx.fill();
     ctx.globalAlpha = a; ctx.translate(x, y - dy); ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(1.5, sz * 0.07);
-    if (kind === 'stun') { // 거대한 망치
+    if (kind === 'stun' || kind === 'hammer') { // 거대한 망치
       ctx.rotate(Math.sin(p * 9) * 0.05); ctx.fillStyle = '#8a5a2a'; ctx.strokeStyle = '#2a1608'; ctx.fillRect(-sz * 0.09, -sz * 1.5, sz * 0.18, sz * 1.5); ctx.strokeRect(-sz * 0.09, -sz * 1.5, sz * 0.18, sz * 1.5);
       ctx.fillStyle = '#9aa3b0'; ctx.strokeStyle = '#2b303a'; ctx.fillRect(-sz * 0.62, -sz * 0.5, sz * 1.24, sz * 0.62); ctx.strokeRect(-sz * 0.62, -sz * 0.5, sz * 1.24, sz * 0.62);
       ctx.fillStyle = '#ffe14a'; ctx.fillRect(-sz * 0.62, -sz * 0.5, sz * 1.24, sz * 0.12); ctx.fillStyle = '#c9d2de'; ctx.fillRect(-sz * 0.56, -sz * 0.36, sz * 0.2, sz * 0.4);
@@ -937,7 +938,7 @@
     }
     ctx.restore();
   }
-  const STRIKE_COL = { bolt: '#ffe14a', ice: '#8fd8ff', rock: '#c28a52', fire: '#ff6a2a', wind: '#d8f2ff', slash: '#c8203a' };
+  const STRIKE_COL = { bolt: '#ffe14a', ice: '#8fd8ff', rock: '#c28a52', fire: '#ff6a2a', wind: '#d8f2ff', slash: '#c8203a', hammer: '#d9a441' };
   // ── 100라운드: 성 주변만 남기고 땅이 무너져 절벽이 된다 ──
   // 남는 땅 = 성 둘레 원 + 용이 서는 네 자리의 받침 + 그 사이를 잇는 십자 다리
   const DR = CFG.dragon, SAFE_R = 330, PAD_R = 190, BR_W = 80;
@@ -976,6 +977,7 @@
     ctx.save(); safePath(ctx, 0); ctx.clip(); Scenery.drawGround(ctx, x0, y0, x1, y1); if (TH.tint) { ctx.fillStyle = TH.tint; ctx.fillRect(x0 - 60, y0 - 60, x1 - x0 + 120, y1 - y0 + 120); } ctx.restore(); // 남은 땅만 다시 풀밭으로 (속성에 맞게 물들인다)
     ctx.restore();
   }
+  let omLast = null; // 직전에 떠 있던 사천왕의 기운 (등장 후에도 잠시 남는다)
   const OMEN_COL = { thunder: '#ffd814', snow: '#6fd0ff', earth: '#b8803c', dragon: '#ff5a1a' };
   const drawList = [], byY = (p, q) => p.y - q.y, LITE_AT = 140;
   let liteMode = false, drawnCount = 0;
@@ -1165,7 +1167,13 @@
       }
       else if (f.k === 'strikeH') { // 예고 범위가 터지는 순간의 효과: 낙뢰·얼음 가시·바위 충격파·불길·바람
         const col = STRIKE_COL[f.kind] || '#ff6a2a', a = 1 - p;
-        if (f.shape === 'line') { // 거대한 검기: 초승달 모양의 칼날이 일직선으로 날아간다
+        if (f.shape === 'line' && f.kind === 'bolt') { // 번개 창: 지그재그 번개가 일직선으로 내리꽂힌다
+          ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.ang); const hd = f.len * Math.min(1, p * 3);
+          ctx.globalAlpha = a * 0.28; ctx.fillStyle = '#ffe14a'; ctx.fillRect(0, -f.w2 / 2, f.len, f.w2);
+          for (const [lw, col2, al] of [[9, '#ffd21a', 0.55], [3.2, '#fffbe0', 1]]) { ctx.globalAlpha = a * al; ctx.strokeStyle = col2; ctx.lineWidth = lw / z * 1.4; ctx.lineJoin = 'miter'; ctx.beginPath(); ctx.moveTo(0, 0); for (let i = 1; i <= 16; i++) { const dx = hd * i / 16; ctx.lineTo(dx, (((i * 53 + Math.floor(f.x)) % 29) - 14) * f.w2 / 70); } ctx.stroke(); }
+          ctx.globalAlpha = a; ctx.fillStyle = '#fffbe0'; ctx.beginPath(); ctx.moveTo(hd, -9); ctx.lineTo(hd + 30, 0); ctx.lineTo(hd, 9); ctx.closePath(); ctx.fill(); // 창끝
+          ctx.restore();
+        } else if (f.shape === 'line') { // 거대한 검기: 초승달 모양의 칼날이 일직선으로 날아간다
           const hd = f.len * Math.min(1, p * 2.2), tl = Math.max(0, hd - f.len * 0.5);
           ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.ang);
           const g = ctx.createLinearGradient(tl, 0, hd, 0); g.addColorStop(0, 'rgba(120,10,30,0)'); g.addColorStop(1, 'rgba(255,60,90,' + (0.85 * a) + ')');
@@ -1173,6 +1181,11 @@
           ctx.globalAlpha = a; ctx.fillStyle = '#ffe8ee'; ctx.strokeStyle = '#d0203c'; ctx.lineWidth = 4 / z; ctx.beginPath(); ctx.moveTo(hd - f.w2 * 0.1, -f.w2 * 0.55); ctx.quadraticCurveTo(hd + f.w2 * 0.45, 0, hd - f.w2 * 0.1, f.w2 * 0.55); ctx.quadraticCurveTo(hd + f.w2 * 0.1, 0, hd - f.w2 * 0.1, -f.w2 * 0.55); ctx.fill(); ctx.stroke();
           ctx.globalAlpha = a * 0.5; ctx.fillStyle = '#ff3a5a'; for (let i = 0; i < 10; i++) ctx.fillRect(hd - (i * 0.09 + p * 0.1) * f.len * 0.5, ((i * 37) % 11 - 5) / 5 * f.w2 * 0.5, 14, 4);
           ctx.restore();
+        } else if (f.kind === 'ice' && f.shape === 'cone') { // 얼음 파편: 부채꼴로 얼음 가시가 뻗어 나간다
+          const gi = ctx.createRadialGradient(f.x, f.y, 10, f.x, f.y, f.len); gi.addColorStop(0, 'rgba(235,250,255,' + (0.85 * a) + ')'); gi.addColorStop(0.6, 'rgba(120,200,255,' + (0.55 * a) + ')'); gi.addColorStop(1, 'rgba(120,200,255,0)');
+          ctx.fillStyle = gi; ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.arc(f.x, f.y, f.len * Math.min(1, 0.4 + p * 1.5), f.ang - f.half, f.ang + f.half); ctx.closePath(); ctx.fill();
+          ctx.globalAlpha = a; ctx.fillStyle = '#e8f8ff'; ctx.strokeStyle = '#4f9ccc'; ctx.lineWidth = 1.5 / z;
+          for (let i = 0; i < 16; i++) { const an = f.ang - f.half + (i + 0.5) / 16 * f.half * 2, d = f.len * (0.25 + 0.7 * ((i * 5) % 8) / 8) * Math.min(1, p * 2.4), h = 34 + (i % 3) * 14, bx = f.x + Math.cos(an) * d, by = f.y + Math.sin(an) * d; ctx.beginPath(); ctx.moveTo(bx - Math.sin(an) * 7, by + Math.cos(an) * 7); ctx.lineTo(bx + Math.cos(an) * h, by + Math.sin(an) * h); ctx.lineTo(bx + Math.sin(an) * 7, by - Math.cos(an) * 7); ctx.closePath(); ctx.fill(); ctx.stroke(); }
         } else if (f.kind === 'bolt') {
           ctx.globalAlpha = a; ctx.strokeStyle = '#fffbe0'; ctx.lineWidth = 5 / z; ctx.lineJoin = 'round'; ctx.beginPath(); let yy = f.y - 420, xx = f.x + 20; ctx.moveTo(xx, yy);
           for (let i = 1; i <= 7; i++) { yy = f.y - 420 + i * 60; xx = f.x + (i === 7 ? 0 : (((i * 37 + Math.floor(f.x)) % 41) - 20)); ctx.lineTo(xx, yy); } ctx.stroke();
@@ -1183,7 +1196,8 @@
           ctx.globalAlpha = a; ctx.fillStyle = '#e8f8ff'; ctx.strokeStyle = '#6fb8e8'; ctx.lineWidth = 1.5 / z;
           const n = Math.max(8, Math.min(22, Math.round(f.r / 14)));
           for (let i = 0; i < n; i++) { const an = i / n * 6.283 + 0.3, rr = f.r * (0.35 + 0.55 * ((i * 7) % 5) / 5), h = 26 * Math.min(1, p * 4) * (1 - p * 0.5), bx = f.x + Math.cos(an) * rr, by = f.y + Math.sin(an) * rr * 0.8; ctx.beginPath(); ctx.moveTo(bx - 5, by); ctx.lineTo(bx, by - h); ctx.lineTo(bx + 5, by); ctx.closePath(); ctx.fill(); ctx.stroke(); }
-        } else if (f.kind === 'rock') {
+        } else if (f.kind === 'rock' || f.kind === 'hammer') {
+          if (f.kind === 'hammer') { ctx.globalAlpha = a * 0.5; ctx.strokeStyle = '#ffe9b0'; ctx.lineWidth = 5 / z; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (0.3 + 1.1 * p), 0, Math.PI * 2); ctx.stroke(); }
           ctx.globalAlpha = a * 0.6; ctx.strokeStyle = col; ctx.lineWidth = 8 / z * a + 2 / z; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (0.2 + 0.8 * p), 0, Math.PI * 2); ctx.stroke();
           ctx.globalAlpha = a * 0.35; ctx.fillStyle = '#6b4a2a'; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * 0.6, 0, Math.PI * 2); ctx.fill();
           ctx.globalAlpha = a; ctx.fillStyle = '#8a6a44'; for (let i = 0; i < 9; i++) { const an = i * 0.7 + 0.4, d = f.r * (0.3 + 0.6 * p) * (0.7 + (i % 3) * 0.2), rh = 16 * Math.sin(Math.min(1, p * 1.6) * Math.PI); ctx.fillRect(f.x + Math.cos(an) * d - 4, f.y + Math.sin(an) * d * 0.8 - rh - 4, 8, 8); }
@@ -1229,23 +1243,27 @@
     ema('rest', performance.now() - p2);
     // 2막: 어두운 밤 (성 주변만 횃불로 밝다)
     if (S.act === 2 && !S.cinematic) { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); Scenery.drawNight(ctx, vw, vh, (CX - cam.x) * z + vw / 2, (CY - cam.y) * z + vh / 2, z, now); }
-    // 사천왕의 기운(51라운드~): 다음 사천왕의 속성 색 빛이 맵 가장자리에 떠오른다 (뇌=노랑, 설=하늘색, 토=갈색, 용=주황)
-    if (S.omen) {
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); const col = OMEN_COL[S.omen] || '#ff5a1a', k = 0.45 + 0.55 * ((S.round - 1) % 10) / 9, pulse = 0.5 + 0.5 * Math.sin(now / 600), rgb = col;
-      const g = ctx.createRadialGradient(vw / 2, vh / 2, Math.min(vw, vh) * 0.3, vw / 2, vh / 2, Math.max(vw, vh) * 0.6); g.addColorStop(0, rgb + '00'); g.addColorStop(1, rgb + Math.round((0.42 + 0.3 * k + 0.07 * pulse) * 255).toString(16).padStart(2, '0'));
-      ctx.fillStyle = g; ctx.fillRect(0, 0, vw, vh);
-      { const bw = Math.max(46, Math.min(vw, vh) * 0.11), al = Math.round((0.5 + 0.3 * k + 0.1 * pulse) * 255).toString(16).padStart(2, '0'); // 가장자리를 따라 흐르는 속성 빛 띠
-        for (const [x0, y0, x1, y1, rx, ry, rw, rh] of [[0, 0, bw, 0, 0, 0, bw, vh], [vw, 0, vw - bw, 0, vw - bw, 0, bw, vh], [0, 0, 0, bw, 0, 0, vw, bw], [0, vh, 0, vh - bw, 0, vh - bw, vw, bw]]) { const lg = ctx.createLinearGradient(x0, y0, x1, y1); lg.addColorStop(0, rgb + al); lg.addColorStop(1, rgb + '00'); ctx.fillStyle = lg; ctx.fillRect(rx, ry, rw, rh); } }
-      const n = 14 + Math.round(10 * k); ctx.globalAlpha = 0.5 + 0.3 * k;
-      for (let i = 0; i < n; i++) { // 가장자리를 따라 속성 입자
-        const ph = (now * 0.00006 * (1 + (i % 3) * 0.4) + i / n) % 1, side = i % 4, off = (Math.sin(i * 12.9898) * 0.5 + 0.5) * 0.12, px = side === 0 ? ph * vw : side === 1 ? vw * (1 - off) : side === 2 ? (1 - ph) * vw : vw * off, py = side === 0 ? vh * off : side === 1 ? ph * vh : side === 2 ? vh * (1 - off) : (1 - ph) * vh;
-        if (S.omen === 'thunder') { if (Math.sin(now * 0.02 + i * 5) > 0.1) { ctx.strokeStyle = '#fff6b0'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(px, py - 14); ctx.lineTo(px + 5, py - 3); ctx.lineTo(px - 4, py + 1); ctx.lineTo(px + 2, py + 14); ctx.stroke(); } }
-        else if (S.omen === 'snow') { ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(px, py + Math.sin(now * 0.003 + i) * 6, 2.6, 0, Math.PI * 2); ctx.fill(); }
-        else if (S.omen === 'earth') { ctx.fillStyle = '#8a6a44'; ctx.fillRect(px - 3, py - 3 - 5 * Math.abs(Math.sin(now * 0.004 + i)), 7, 7); }
-        else { ctx.fillStyle = '#ffb04a'; ctx.beginPath(); ctx.arc(px, py - ((now * 0.03 + i * 17) % 40), 2.6, 0, Math.PI * 2); ctx.fill(); }
-      }
-      ctx.globalAlpha = 1;
-    }
+    // 사천왕의 기운(51라운드~): 다음 사천왕의 속성이 화면 전체에 어둠처럼 번진다 (뇌=노랑 번개, 설=눈보라, 토=먼지, 용=불씨). 사천왕이 등장해도 잠시 남았다가 서서히 걷힌다.
+    { let omId = S.omen, fade = 1, k = 0.45 + 0.55 * ((S.round - 1) % 10) / 9;
+      if (omId) omLast = { id: omId, k, round: S.round, t0: 0 };
+      else if (omLast && S.round >= omLast.round && S.round <= omLast.round + 1) { if (!omLast.t0) omLast.t0 = now; fade = 1 - (now - omLast.t0) / 14000; if (fade > 0) { omId = omLast.id; k = omLast.k; } else omLast = null; }
+      else omLast = null;
+      if (omId) {
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0); const col = OMEN_COL[omId] || '#ff5a1a', pulse = 0.5 + 0.5 * Math.sin(now / 700), hx = (CX - cam.x) * z + vw / 2, hy = (CY - cam.y) * z + vh / 2, hex = a2 => Math.round(Math.max(0, Math.min(1, a2)) * 255).toString(16).padStart(2, '0');
+        const dark = { thunder: '#1a1608', snow: '#0a1c30', earth: '#1c1206', dragon: '#220808' }[omId] || '#120a14';
+        ctx.globalAlpha = 1; ctx.fillStyle = col + hex((0.10 + 0.14 * k + 0.04 * pulse) * fade); ctx.fillRect(0, 0, vw, vh); // 화면 전체에 번지는 속성 빛
+        const g = ctx.createRadialGradient(hx, hy, Math.min(vw, vh) * 0.22, hx, hy, Math.max(vw, vh) * 0.78); g.addColorStop(0, dark + '00'); g.addColorStop(1, dark + hex((0.45 + 0.35 * k) * fade)); ctx.fillStyle = g; ctx.fillRect(0, 0, vw, vh); // 성 주변만 밝고 바깥은 어둡게
+        const n = Math.round((34 + 46 * k) * fade); ctx.globalAlpha = (0.45 + 0.35 * k) * Math.min(1, fade * 1.5);
+        for (let i = 0; i < n; i++) {
+          const sx = (Math.sin(i * 12.9898) * 0.5 + 0.5), sy = (Math.sin(i * 78.233) * 0.5 + 0.5);
+          if (omId === 'snow') { const px = ((sx * vw + now * 0.03 * (0.6 + sy) + Math.sin(now * 0.001 + i) * 18) % vw + vw) % vw, py = ((sy * vh + now * 0.07 * (0.6 + sx)) % vh); ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(px, py, 1.6 + (i % 3), 0, Math.PI * 2); ctx.fill(); }
+          else if (omId === 'thunder') { const ph = (now / 1700 + i * 0.37) % 1; if (ph < 0.06) { const px = sx * vw, py0 = sy * vh * 0.6; ctx.strokeStyle = '#fff6b0'; ctx.lineWidth = 2; ctx.globalAlpha = (1 - ph / 0.06) * 0.8; ctx.beginPath(); ctx.moveTo(px, py0); for (let q = 1; q <= 5; q++) ctx.lineTo(px + (((i * 31 + q * 17) % 41) - 20), py0 + q * 34); ctx.stroke(); ctx.globalAlpha = (0.45 + 0.35 * k) * Math.min(1, fade * 1.5); } }
+          else if (omId === 'earth') { const ph = (now * 0.00008 * (0.6 + sy) + sx) % 1, px = ph * vw, py = sy * vh + Math.sin(now * 0.002 + i) * 8; ctx.fillStyle = i % 2 ? '#a07a4a' : '#6a4a2a'; ctx.fillRect(px, py, 3 + (i % 3), 3 + (i % 2)); }
+          else { const ph = (now * 0.00007 * (0.6 + sx) + sy) % 1, px = sx * vw + Math.sin(now * 0.002 + i) * 10, py = vh * (1 - ph); ctx.fillStyle = i % 3 ? '#ff8a2a' : '#ffd060'; ctx.beginPath(); ctx.arc(px, py, 1.6 + (i % 2), 0, Math.PI * 2); ctx.fill(); }
+        }
+        if (omId === 'thunder' && Math.sin(now / 2300) > 0.985) { ctx.globalAlpha = 0.18 * fade; ctx.fillStyle = '#fff6b0'; ctx.fillRect(0, 0, vw, vh); } // 가끔 번쩍
+        ctx.globalAlpha = 1;
+      } }
     // 화면 밖/UI에 가려진 위험 방향 표시
     drawEdgeWarnings(now);
   }
@@ -1350,6 +1368,7 @@
 
   // ───────────── 시작/종료 ─────────────
   function newGame(devRound) {
+    omLast = null;
     openingSeen = true;
     const seed = params.get('seed') ? +params.get('seed') : (Date.now() ^ (Math.random() * 1e9)) >>> 0;
     const mm = params.get('mode') || store.get('cd-mode'), mode = mm === 'free' ? mm : 'normal';

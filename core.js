@@ -110,7 +110,7 @@
     finalBoss: { id: 'overlord', line: '모든 것은 이 어둠 속에서 끝난다.', name: '마왕', r: 38, look: { body: '#2a2438', head: '#ebe6f4', weapon: 'sword', crown: true, style: 'overlord' }, abil: { summon: { cd: 11, n: 3, kind: 'bomber' }, artillery: { cd: 5, dmg: 130, radius: 115, count: 2, flight: 1.4 }, sword: { cd: 10, len: 1100, width: 150, warn: 1.1, mul: 3, kb: 420 }, shield: { cd: 12, dur: 3.5, red: 0.7 }, rage: { at: 0.4, speed: 1.4, rate: 1.5, dmg: 1.5 }, dash: { cd: 9, dur: 1.2, mul: 2.5 }, debuff: [{ kind: 'stun', cd: 10, r: 120 }, { kind: 'poison', cd: 11, r: 150 }, { kind: 'weak', cd: 13, r: 170 }, { kind: 'wound', cd: 14, r: 170 }] } },
     // 마왕(50라운드): 1·2형태. 체력·공격을 너프하는 대신 한 번 쓰러져도 각성해서 부활한다
     bossSpeed: 105,
-    finalNerf: { hp: 0.6, dmg: 0.65, hp2: 1.1, cdMul: 0.85, rageAt: 0.5, reviveT: 3.4, r: 44, name: '각성한 마왕', look: { body: '#7a1424', head: '#ecd2c4', weapon: 'sword', crown: true, p2: true, style: 'overlord' } },
+    finalNerf: { hp: 0.6, dmg: 0.65, hp2: 1.1, cdMul: 0.85, rageAt: 0.5, reviveT: 3.4, r: 44, name: '각성한 마왕', look: { body: '#7a1424', head: '#ecd2c4', weapon: 'claws', crown: true, p2: true, style: 'overlord' } },
     // 50라운드 클리어 뒤에는 강화 카드의 레벨 제한이 이만큼 풀린다 (아래 목록의 카드만)
     capBonus: 2, capLift: ['u_charge', 'u_pierce', 'u_crit', 'u_range', 'u_aoeheal', 'u_hbuff', 'a_heal', 'a_atk', 'a_def', 'a_spd', 'a_rad', 'f_repair', 'f_thorn'],
     // 2차 전직 각성 (사천왕 처치: 60·70·80라운드에 한 계열씩 업그레이드). 2차 전직 효과에 아래 수치가 한 번 더 더해진다.
@@ -143,18 +143,18 @@
       thunder: { id: 'thunder', elem: 'thunder', line: '번개가 너희의 심장을 꿰뚫으리라.', name: '뇌왕', r: 36,
         look: { body: '#3a3320', head: '#f1ead2', weapon: 'sword', crown: true, style: 'overlord', elem: 'thunder' },
         abil: { bolt: { cd: 6, n: 4, r: 90, warn: 0.9, mul: 1.7, stun: 0.8, kb: 300 }, summon: { cd: 10, n: 3, kind: 'wolf' }, shield: { cd: 15, dur: 3, red: 0.6 }, debuff: [{ kind: 'weak', cd: 13, r: 160 }] },
-        awaken: { name: '각성한 뇌왕', r: 42, reviveT: 3.4, look: { body: '#f3d21a', head: '#fff6c8', weapon: 'sword', crown: true, style: 'overlord', elem: 'thunder', p2: true } },
-        abil2: { bolt: { cd: 4, n: 8, r: 100, warn: 0.8, mul: 2.0, stun: 1.0, kb: 380 }, dash: { cd: 8, dur: 1.0, mul: 3.2, shock: { r: 190, kb: 460, mul: 1.6 } }, rage: { at: 0.4, speed: 1.4, rate: 1.4, dmg: 1.3 }, debuff: [{ kind: 'stun', cd: 11, r: 130 }] } },
+        awaken: { name: '각성한 뇌왕', r: 42, reviveT: 3.4, look: { body: '#f3d21a', head: '#fff6c8', weapon: 'spear', crown: true, style: 'overlord', elem: 'thunder', p2: true } },
+        abil2: { bolt: { cd: 4, n: 8, r: 100, warn: 0.8, mul: 2.0, stun: 1.0, kb: 380 }, lance: { cd: 6, n: 2, len: 1100, width: 56, warn: 0.7, mul: 2.6, stun: 0.7, kb: 300 }, dash: { cd: 8, dur: 1.0, mul: 3.2, shock: { r: 190, kb: 460, mul: 1.6 } }, rage: { at: 0.4, speed: 1.4, rate: 1.4, dmg: 1.3 }, debuff: [{ kind: 'stun', cd: 11, r: 130 }] } },
       snow: { id: 'snow', elem: 'snow', line: '모든 것이 얼어붙는 고요함을 선물하마.', name: '설왕', r: 36,
         look: { body: '#2c4256', head: '#eaf6ff', weapon: 'sword', crown: true, style: 'overlord', elem: 'snow' },
-        abil: { frost: { cd: 8, count: 2, r: 150, warn: 1.2, dur: 5, mul: 0.5 }, artillery: { cd: 6, dmg: 95, radius: 95, count: 2, flight: 1.5 }, summon: { cd: 11, n: 3, kind: 'ghost' }, shield: { cd: 15, dur: 3, red: 0.6 }, debuff: [{ kind: 'wound', cd: 14, r: 165 }] },
-        awaken: { name: '각성한 설왕', r: 42, reviveT: 3.4, look: { body: '#8fd8ff', head: '#ffffff', weapon: 'sword', crown: true, style: 'overlord', elem: 'snow', p2: true } },
-        abil2: { frost: { cd: 6, count: 3, r: 185, warn: 1.1, dur: 6, mul: 0.7 }, blizzard: { cd: 15, r: 560, warn: 1.8, dur: 5, kb: 260, mul: 0.8 }, artillery: { cd: 5, dmg: 110, radius: 100, count: 3, flight: 1.4 }, rage: { at: 0.4, speed: 1.3, rate: 1.4, dmg: 1.3 }, debuff: [{ kind: 'stun', cd: 12, r: 130 }, { kind: 'weak', cd: 12, r: 170 }] } },
+        abil: { frost: { cd: 8, count: 2, r: 150, warn: 1.2, dur: 5, mul: 0.5, freeze: 0.6 }, artillery: { cd: 6, dmg: 95, radius: 95, count: 2, flight: 1.5 }, summon: { cd: 11, n: 3, kind: 'ghost' }, shield: { cd: 15, dur: 3, red: 0.6 }, debuff: [{ kind: 'wound', cd: 14, r: 165 }] },
+        awaken: { name: '각성한 설왕', r: 42, reviveT: 3.4, look: { body: '#8fd8ff', head: '#ffffff', weapon: 'icestaff', crown: true, style: 'overlord', elem: 'snow', p2: true } },
+        abil2: { frost: { cd: 6, count: 3, r: 185, warn: 1.1, dur: 6, mul: 0.7, freeze: 0.9 }, blizzard: { cd: 15, r: 560, warn: 1.8, dur: 5, kb: 260, mul: 0.8, freeze: 1.2 }, shards: { cd: 7, len: 560, half: 0.5, warn: 1.0, mul: 2.4, freeze: 0.9, kb: 200 }, artillery: { cd: 5, dmg: 110, radius: 100, count: 3, flight: 1.4 }, rage: { at: 0.4, speed: 1.3, rate: 1.4, dmg: 1.3 }, debuff: [{ kind: 'stun', cd: 12, r: 130 }, { kind: 'weak', cd: 12, r: 170 }] } },
       earth: { id: 'earth', elem: 'earth', line: '이 대지가 너희의 무덤이 될 것이다.', name: '토왕', r: 40,
         look: { body: '#4a3622', head: '#e9d8bd', weapon: 'sword', crown: true, style: 'overlord', elem: 'earth' },
         abil: { dash: { cd: 7, dur: 1.2, mul: 3.2, shock: { r: 200, kb: 520, mul: 1.8 } }, stomp: { cd: 10, r: 230, warn: 0.8, kb: 460, mul: 1.5 }, shield: { cd: 14, dur: 4, red: 0.7 }, summon: { cd: 12, n: 3, kind: 'shield' }, debuff: [{ kind: 'stun', cd: 12, r: 120 }] },
-        awaken: { name: '각성한 토왕', r: 46, reviveT: 3.4, look: { body: '#a0662e', head: '#f6e6c8', weapon: 'sword', crown: true, style: 'overlord', elem: 'earth', p2: true } },
-        abil2: { dash: { cd: 5, dur: 1.2, mul: 3.4, shock: { r: 260, kb: 640, mul: 2.4 } }, stomp: { cd: 7, r: 300, warn: 0.7, kb: 560, mul: 2.0 }, quake: { cd: 9, n: 7, r: 100, warn: 1.0, mul: 2.2, kb: 420 }, rage: { at: 0.4, speed: 1.3, rate: 1.4, dmg: 1.4 }, debuff: [{ kind: 'wound', cd: 12, r: 160 }] } },
+        awaken: { name: '각성한 토왕', r: 46, reviveT: 3.4, look: { body: '#a0662e', head: '#f6e6c8', weapon: 'hammer', crown: true, style: 'overlord', elem: 'earth', p2: true } },
+        abil2: { dash: { cd: 5, dur: 1.2, mul: 3.4, shock: { r: 260, kb: 640, mul: 2.4 } }, hammer: { cd: 6.5, r: 170, warn: 1.1, mul: 3.4, stun: 1.3, kb: 700 }, quake: { cd: 9, n: 7, r: 100, warn: 1.0, mul: 2.2, kb: 420 }, rage: { at: 0.4, speed: 1.3, rate: 1.4, dmg: 1.4 }, debuff: [{ kind: 'wound', cd: 12, r: 160 }] } },
     },
     // 100라운드: 거대한 용 (몬스터 없이 용과의 1:1 레이드). 성 둘레를 빼고 땅이 무너져 절벽이 된다. 용은 네 방향 중 한 곳에 고정되어 있다가 날아올랐다가 다른 곳에 내려앉는다.
     dragon: { id: 'dragon', line: '대지는 사라지고… 오직 불길만이 남으리라.', name: '재앙의 용', r: 118, dragon: true, hpMul: 5, anchorX: 430, anchorY: 330,
@@ -1063,14 +1063,14 @@
   function kingP2(b) { // 사천왕 2차전: 기술 간격이 짧아지고, 일직선 검기와 소환이 더해지며, 공격력이 오른다
     const K = CFG.kingP2, a = JSON.parse(JSON.stringify(b.king.abil2));
     for (const k in a) { const v = a[k]; if (Array.isArray(v)) v.forEach(d => { d.cd *= K.cdMul; }); else if (v.cd) v.cd *= K.cdMul; }
-    if (!a.sword) a.sword = Object.assign({}, K.sword); if (!a.summon) a.summon = Object.assign({}, K.summon[b.king.id]);
+    if (!a.summon) a.summon = Object.assign({}, K.summon[b.king.id]);
     b.dmg *= K.dmg; return a;
   }
   function p2Abil(abil) {
     const N = CFG.finalNerf, out = {};
     for (const k in abil) { const a = abil[k]; out[k] = Array.isArray(a) ? a.map(d => Object.assign({}, d, { cd: d.cd * N.cdMul })) : Object.assign({}, a, a.cd ? { cd: a.cd * N.cdMul } : {}); }
     if (out.rage) out.rage = Object.assign({}, out.rage, { at: N.rageAt });
-    delete out.rush; delete out.sword; out.drain = { cd: 11 * N.cdMul, r: 280, mul: 1.8, heal: 0.015, cap: 0.06 }; return out;
+    delete out.rush; delete out.sword; out.claw = { cd: 7 * N.cdMul, len: 820, width: 72, warn: 0.9, mul: 2.6, n: 3, spread: 0.3, kb: 380 }; out.drain = { cd: 11 * N.cdMul, r: 280, mul: 1.8, heal: 0.015, cap: 0.06 }; return out;
   }
   function stepBossDeath(S, dt) {
     const D = S.bossDeath, b = D.b, N = b.king ? b.king.awaken : CFG.finalNerf; D.t += dt;
@@ -1160,7 +1160,7 @@
       if (k.chill) u.chillT = Math.max(u.chillT || 0, k.chill);
       if (k.kb) knock(S, u, k.x, k.y, k.kb);
     }
-    if (k.shape === 'line') { const dx = S.core.x - k.x, dy = S.core.y - k.y, al = dx * Math.cos(k.ang) + dy * Math.sin(k.ang), pe = Math.abs(-dx * Math.sin(k.ang) + dy * Math.cos(k.ang)); if (al >= 0 && al <= k.len + S.core.r && pe <= k.w2 / 2 + S.core.r && base > 0) hitCore(S, base * CFG.balance.shellCoreMul, '검기'); }
+    if (k.shape === 'line') { const dx = S.core.x - k.x, dy = S.core.y - k.y, al = dx * Math.cos(k.ang) + dy * Math.sin(k.ang), pe = Math.abs(-dx * Math.sin(k.ang) + dy * Math.cos(k.ang)); if (al >= 0 && al <= k.len + S.core.r && pe <= k.w2 / 2 + S.core.r && base > 0) hitCore(S, base * CFG.balance.shellCoreMul, k.kind === 'slash' ? '검기' : '사천왕 공격'); }
     if (k.shape !== 'cone' && k.shape !== 'line' && Math.hypot(S.core.x - k.x, S.core.y - k.y) <= k.r + S.core.r && base > 0) hitCore(S, base * CFG.balance.shellCoreMul, k.kind === 'fire' ? '용의 불길' : '사천왕 공격');
     emit(S, { type: 'strikeHit', x: k.x, y: k.y, r: k.r, kind: k.kind, shape: k.shape, ang: k.ang, half: k.half, len: k.len, w2: k.w2, hit });
   }
@@ -1603,17 +1603,19 @@
       });
     }
     const spots = (n, jit, range) => { const us = S.units.filter(u => !u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= range), out = []; for (let i = 0; i < n; i++) { const pk = us.length ? us[Math.floor(S.rng() * us.length)] : S.core; out.push({ x: clamp(pk.x + (S.rng() - 0.5) * jit, 20, W - 20), y: clamp(pk.y + (S.rng() - 0.5) * jit, 20, H - 20) }); } return out; };
-    if (A.bolt) { // 뇌왕: 아군 머리 위로 낙뢰
+    const spotsNear = (n, jit) => { const us = S.units.filter(u => !u.dead && !isStatic(u)).sort((a, b) => Math.hypot(a.x - e.x, a.y - e.y) - Math.hypot(b.x - e.x, b.y - e.y)).slice(0, Math.max(3, Math.ceil(n * 0.9))), out = []; // 자신 가까이 있는 아군부터
+      for (let i = 0; i < n; i++) { const pk = us.length ? us[i % us.length] : S.core; out.push({ x: clamp(pk.x + (S.rng() - 0.5) * jit, 20, W - 20), y: clamp(pk.y + (S.rng() - 0.5) * jit, 20, H - 20) }); } return out; };
+    if (A.bolt) { // 뇌왕: 자신과 가까운 아군 머리 위로 낙뢰
       e.t.bolt -= dt;
-      if (e.t.bolt <= 0 && e.life > 1.5) { e.t.bolt = A.bolt.cd; for (const p of spots(A.bolt.n, 90, 1000)) addStrike(S, e, { x: p.x, y: p.y, r: A.bolt.r, t: A.bolt.warn, mul: A.bolt.mul, stun: A.bolt.stun, kb: A.bolt.kb, kind: 'bolt' }); }
+      if (e.t.bolt <= 0 && e.life > 1.5) { e.t.bolt = A.bolt.cd; for (const p of spotsNear(A.bolt.n, 90)) addStrike(S, e, { x: p.x, y: p.y, r: A.bolt.r, t: A.bolt.warn, mul: A.bolt.mul, stun: A.bolt.stun, kb: A.bolt.kb, kind: 'bolt' }); }
     }
     if (A.frost) { // 설왕: 아군이 모인 곳을 얼려 느리게 만든다
       e.t.frost -= dt;
-      if (e.t.frost <= 0 && e.life > 1.5) { e.t.frost = A.frost.cd; for (const p of spots(A.frost.count, 60, 1000)) addStrike(S, e, { x: p.x, y: p.y, r: A.frost.r, t: A.frost.warn, mul: A.frost.mul, chill: A.frost.dur, kind: 'ice' }); }
+      if (e.t.frost <= 0 && e.life > 1.5) { e.t.frost = A.frost.cd; for (const p of spots(A.frost.count, 60, 1000)) addStrike(S, e, { x: p.x, y: p.y, r: A.frost.r, t: A.frost.warn, mul: A.frost.mul, chill: A.frost.dur, stun: A.frost.freeze || 0, kind: 'ice' }); }
     }
     if (A.blizzard) { // 설왕(각성): 눈보라가 넓은 범위를 휩쓸며 밀어내고 얼린다
       e.t.blizzard -= dt;
-      if (e.t.blizzard <= 0 && e.life > 2) { e.t.blizzard = A.blizzard.cd; addStrike(S, e, { x: e.x, y: e.y, r: A.blizzard.r, t: A.blizzard.warn, mul: A.blizzard.mul, chill: A.blizzard.dur, kb: A.blizzard.kb, kind: 'ice' }); }
+      if (e.t.blizzard <= 0 && e.life > 2) { e.t.blizzard = A.blizzard.cd; addStrike(S, e, { x: e.x, y: e.y, r: A.blizzard.r, t: A.blizzard.warn, mul: A.blizzard.mul, chill: A.blizzard.dur, stun: A.blizzard.freeze || 0, kb: A.blizzard.kb, kind: 'ice' }); }
     }
     if (A.stomp) { // 토왕: 발을 굴러 주변 아군을 밀쳐낸다
       e.t.stomp -= dt;
@@ -1626,6 +1628,22 @@
     if (A.sword) { // 암흑 기사단장·마왕(1형태): 거대한 검기를 일직선으로 쏜다 (예고 후 발사)
       e.t.sword -= dt;
       if (e.t.sword <= 0 && e.life > 2) { const tg = nearestUnit(S, e.x, e.y, A.sword.len); if (!tg) e.t.sword = 1.5; else { e.t.sword = A.sword.cd; const ang = Math.atan2(tg.y - e.y, tg.x - e.x); addStrike(S, e, { shape: 'line', x: e.x, y: e.y, ang, len: A.sword.len, w2: A.sword.width, r: A.sword.width, t: A.sword.warn, mul: A.sword.mul, kb: A.sword.kb, kind: 'slash' }); } }
+    }
+    if (A.claw) { // 각성한 마왕: 긴 손톱으로 부채꼴로 세 줄기를 긋는다
+      e.t.claw -= dt;
+      if (e.t.claw <= 0 && e.life > 2) { const tg = nearestUnit(S, e.x, e.y, A.claw.len); if (!tg) e.t.claw = 1.5; else { e.t.claw = A.claw.cd; const base = Math.atan2(tg.y - e.y, tg.x - e.x); for (let i = 0; i < A.claw.n; i++) addStrike(S, e, { shape: 'line', x: e.x, y: e.y, ang: base + (i - (A.claw.n - 1) / 2) * A.claw.spread, len: A.claw.len, w2: A.claw.width, r: A.claw.width, t: A.claw.warn, mul: A.claw.mul, kb: A.claw.kb, kind: 'slash' }); } }
+    }
+    if (A.lance) { // 각성한 뇌왕: 번개 창을 가까운 아군 둘에게 꽂아 관통시킨다
+      e.t.lance -= dt;
+      if (e.t.lance <= 0 && e.life > 2) { const us = S.units.filter(u => !u.dead && !isStatic(u) && Math.hypot(u.x - e.x, u.y - e.y) <= A.lance.len).sort((a, b) => Math.hypot(a.x - e.x, a.y - e.y) - Math.hypot(b.x - e.x, b.y - e.y)); if (!us.length) e.t.lance = 1.5; else { e.t.lance = A.lance.cd; for (let i = 0; i < Math.min(A.lance.n, us.length); i++) addStrike(S, e, { shape: 'line', x: e.x, y: e.y, ang: Math.atan2(us[i].y - e.y, us[i].x - e.x), len: A.lance.len, w2: A.lance.width, r: A.lance.width, t: A.lance.warn, mul: A.lance.mul, stun: A.lance.stun, kb: A.lance.kb, kind: 'bolt' }); } }
+    }
+    if (A.shards) { // 각성한 설왕: 얼음 지팡이에서 부채꼴로 얼음 파편이 뿜어져 나온다
+      e.t.shards -= dt;
+      if (e.t.shards <= 0 && e.life > 2) { const tg = nearestUnit(S, e.x, e.y, A.shards.len); if (!tg) e.t.shards = 1.5; else { e.t.shards = A.shards.cd; addStrike(S, e, { shape: 'cone', x: e.x, y: e.y, ang: Math.atan2(tg.y - e.y, tg.x - e.x), half: A.shards.half, len: A.shards.len, r: A.shards.len, t: A.shards.warn, mul: A.shards.mul, stun: A.shards.freeze, chill: 4, kb: A.shards.kb, kind: 'ice' }); } }
+    }
+    if (A.hammer) { // 각성한 토왕: 거대한 망치를 가장 아군이 몰린 곳에 내려친다
+      e.t.hammer -= dt;
+      if (e.t.hammer <= 0 && e.life > 2) { const us = S.units.filter(u => !u.dead && !isStatic(u) && Math.hypot(u.x - e.x, u.y - e.y) <= 700); if (!us.length) e.t.hammer = 1.5; else { e.t.hammer = A.hammer.cd; let best = us[0], bn = -1; for (const u of us) { let n = 0; for (const o of us) if (Math.hypot(o.x - u.x, o.y - u.y) <= A.hammer.r) n++; if (n > bn) { bn = n; best = u; } } addStrike(S, e, { x: best.x, y: best.y, r: A.hammer.r, t: A.hammer.warn, mul: A.hammer.mul, stun: A.hammer.stun, kb: A.hammer.kb, kind: 'hammer' }); } }
     }
     if (A.breath) { // 용: 입에서 불길을 뿜는다 (부채꼴 범위, 예고 후 발사)
       e.t.breath -= dt; if (e.breathT > 0) e.breathT -= dt;

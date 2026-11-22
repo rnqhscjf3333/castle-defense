@@ -540,6 +540,26 @@
         rect(ctx, d * 8 * s - 6.5 * s, -9 * s + h.bob, 13 * s, 22 * s, 3 * s); ctx.fill(); ctx.stroke();
         if (!fl) { ctx.fillStyle = '#e1b43a'; ctx.fillRect(d * 8 * s - 1.2 * s, -5 * s + h.bob, 2.4 * s, 14 * s); }
         line(ctx, gx - d * 2 * s, gy, gx - d * 2 * s + Math.cos(ang) * 14 * s, gy + Math.sin(ang) * 14 * s, 3 * s, fl ? '#fff' : '#d0d6e2');
+      } else if (weapon === 'claws') { // 마왕(2형태): 양손에 길게 자란 검붉은 손톱
+        for (const sd of [1, -1]) { const hx = sd * gx, base2 = sd > 0 ? ang : Math.PI - ang;
+          for (let i = -1; i <= 1; i++) { const a2 = base2 + i * 0.25, ex = hx + Math.cos(a2) * 27 * s, ey = gy + Math.sin(a2) * 27 * s; ctx.fillStyle = fl ? FLASH : '#f4ead6'; ctx.strokeStyle = '#3a0810'; ctx.lineWidth = 0.9 * s; tri(ctx, hx + Math.cos(a2 + 1.57) * 2 * s, gy + Math.sin(a2 + 1.57) * 1.6 * s, ex, ey, hx - Math.cos(a2 + 1.57) * 2 * s, gy - Math.sin(a2 + 1.57) * 2 * s); ctx.fill(); ctx.stroke(); } }
+      } else if (weapon === 'hammer') { // 토왕(2형태): 바위로 된 거대한 망치
+        const c1 = Math.cos(ang), s1 = Math.sin(ang), n1 = -s1, n2 = c1, ex = gx + c1 * 30 * s, ey = gy + s1 * 30 * s;
+        line(ctx, gx - c1 * 4 * s, gy - s1 * 4 * s, ex, ey, 3.4 * s, fl ? FLASH : '#5a3a1a');
+        ctx.fillStyle = fl ? FLASH : '#8a8f9a'; ctx.strokeStyle = '#23262d'; ctx.lineWidth = s;
+        ctx.beginPath(); ctx.moveTo(ex + n1 * 9 * s - c1 * 6 * s, ey + n2 * 9 * s - s1 * 6 * s); ctx.lineTo(ex + n1 * 9 * s + c1 * 9 * s, ey + n2 * 9 * s + s1 * 9 * s); ctx.lineTo(ex - n1 * 9 * s + c1 * 9 * s, ey - n2 * 9 * s + s1 * 9 * s); ctx.lineTo(ex - n1 * 9 * s - c1 * 6 * s, ey - n2 * 9 * s - s1 * 6 * s); ctx.closePath(); ctx.fill(); ctx.stroke();
+        if (!fl) { ctx.fillStyle = '#ff9a3a'; circle(ctx, ex + c1 * 1.5 * s, ey + s1 * 1.5 * s, 2.2 * s); ctx.fill(); }
+      } else if (weapon === 'spear') { // 뇌왕(2형태): 번개가 이는 긴 창
+        const c1 = Math.cos(ang), s1 = Math.sin(ang), ex = gx + c1 * 36 * s, ey = gy + s1 * 36 * s;
+        line(ctx, gx - c1 * 8 * s, gy - s1 * 8 * s, ex, ey, 2.4 * s, fl ? FLASH : '#7a6a2a');
+        ctx.fillStyle = fl ? FLASH : '#fff6b0'; ctx.strokeStyle = '#7a5a0a'; ctx.lineWidth = 0.8 * s; tri(ctx, ex - s1 * 3 * s, ey + c1 * 3 * s, ex + c1 * 10 * s, ey + s1 * 10 * s, ex + s1 * 3 * s, ey - c1 * 3 * s); ctx.fill(); ctx.stroke();
+        if (!fl) { ctx.globalAlpha = 0.5; ctx.strokeStyle = '#ffe14a'; ctx.lineWidth = 1.2 * s; ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(ex + c1 * 5 * s - s1 * 6 * s, ey + s1 * 5 * s + c1 * 6 * s); ctx.lineTo(ex + c1 * 9 * s + s1 * 5 * s, ey + s1 * 9 * s - c1 * 5 * s); ctx.stroke(); ctx.globalAlpha = 1; }
+      } else if (weapon === 'icestaff') { // 설왕(2형태): 얼음 결정이 박힌 긴 지팡이
+        const c1 = Math.cos(ang), s1 = Math.sin(ang), ex = gx + c1 * 30 * s, ey = gy + s1 * 30 * s;
+        line(ctx, gx - c1 * 5 * s, gy - s1 * 5 * s, ex, ey, 2.4 * s, fl ? FLASH : '#c8e8f8');
+        ctx.globalAlpha = 0.35; ctx.fillStyle = '#9fe0ff'; circle(ctx, ex, ey, 10 * s * (e.swing > 0 ? 1.5 : 1)); ctx.fill(); ctx.globalAlpha = 1;
+        ctx.fillStyle = fl ? FLASH : '#e8f8ff'; ctx.strokeStyle = '#4f9ccc'; ctx.lineWidth = 0.8 * s;
+        for (const [da, ln] of [[0, 11], [0.7, 7], [-0.7, 7]]) { const a2 = ang + da; tri(ctx, ex - Math.sin(a2) * 3 * s, ey + Math.cos(a2) * 3 * s, ex + Math.cos(a2) * ln * s, ey + Math.sin(a2) * ln * s, ex + Math.sin(a2) * 3 * s, ey - Math.cos(a2) * 3 * s); ctx.fill(); ctx.stroke(); }
       } else if (weapon === 'sword' && ST) { // 컷신 속 넓적한 대검: 은빛 칼날 + 금빛 가드
         const c1 = Math.cos(ang), s1 = Math.sin(ang), n1 = -s1, n2 = c1;
         ctx.fillStyle = fl ? FLASH : '#d5dae6'; ctx.strokeStyle = '#2a2d3a'; ctx.lineWidth = s;
