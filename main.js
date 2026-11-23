@@ -1759,6 +1759,7 @@
   S = C.createGame(1); // 시작 화면 뒤에 보일 빈 맵
   centerOnCore();
   if (!params.get('bot') && !params.get('notitle')) showTitle(); else $('overlay').classList.add('hidden');
+  document.body.classList.remove('pre');
   if (params.get('bot')) { $('overlay').classList.add('hidden'); newGame(); const warp = +params.get('warp') || 0; for (let i = 0; i < warp / STEP && !S.over; i++) { botAct(); C.tick(S, STEP); } if (+params.get('round')) { C.jumpToRound(S, +params.get('round')); C.tick(S, STEP); } C.drainEvents(S); if (S.over) showEnd(S.win); cam.zoom = +params.get('zoom') || 0.5; clampCam(); }
   requestAnimationFrame(frame);
   window.__game = { toast, addFx, Meta, get S() { return S; }, cam, CastleCore: C, get bossArrows() { return bossArrows; }, get enemyArrows() { return enemyArrows; }, perf, get liteMode() { return liteMode; }, get drawnCount() { return drawnCount; }, get renderScale() { return renderScale; }, get fxPoolSize() { return fxPool.length; }, uiRects, skipCinematic: () => $('cineSkip').click() };
