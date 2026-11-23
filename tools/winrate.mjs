@@ -1,4 +1,5 @@
-// node tools/winrate.mjs [N] [OVR-json] — 봇(smart 가중치)이 100라운드까지 플레이했을 때 구간별 통과율
+// node tools/winrate.mjs [N] [OVR-json] [FORCE-json] [MAXR] —  FORCE 예: {"sword":["blade","blademaster"]} 는 그 계열의 전직을 해당 경로로 고정, MAXR는 이 라운드에서 중단(직업 비교용, 평균 도달 라운드 출력)
+// 봇(smart 가중치)이 100라운드까지 플레이했을 때 구간별 통과율
 //   30R/50R/80R/100R 통과율 = 해당 라운드의 보스를 쓰러뜨리고 다음으로 넘어간(또는 100R는 클리어한) 비율
 import { Worker, isMainThread, parentPort } from 'node:worker_threads';
 import { createRequire } from 'node:module';
@@ -20,7 +21,8 @@ function runOne(task) {
   let step = 0; const maxSteps = Math.ceil((C.PREP_TIME + 101 * 130) / DT);
   while (!S.over && step < maxSteps) {
     if (S.cinematic) { C.endCinematic(S); continue; }
-    if (S.jobs.offer) { C.pickJob(S, Math.floor(rnd() * S.jobs.offer.list.length)); continue; }
+    if (task.maxr && S.round >= task.maxr) break;
+    if (S.jobs.offer) { const of = S.jobs.offer.list; let pick = -1; if (task.force) for (const ln in task.force) { const want = task.force[ln]; const ix = of.findIndex(o => want.includes(o.id) && o.type === ln); if (ix >= 0) pick = ix; } C.pickJob(S, pick >= 0 ? pick : Math.floor(rnd() * of.length)); continue; }
     if (S.cOffer) { C.pickCastle(S, Math.floor(rnd() * S.cOffer.list.length)); continue; }
     if (S.cards.offer) {
       const offer = S.cards.offer, w = offer.map(wOf);
@@ -39,12 +41,13 @@ function runOne(task) {
 if (!isMainThread) parentPort.on('message', m => parentPort.postMessage({ id: m.id, result: runOne(m.task) }));
 else {
   const n = +process.argv[2] || 40, ovr = process.argv[3] ? JSON.parse(process.argv[3]) : null, t0 = Date.now();
-  const tasks = Array.from({ length: n }, (_, i) => ({ seed: 20000 + i, ovr }));
+  const force = process.argv[4] ? JSON.parse(process.argv[4]) : null, maxr = +process.argv[5] || 0, tasks = Array.from({ length: n }, (_, i) => ({ seed: 20000 + i, ovr, force, maxr }));
   const nw = Math.max(1, Math.min(cpus().length - 1, n)), workers = Array.from({ length: nw }, () => new Worker(fileURLToPath(import.meta.url))), res = new Array(n); let next = 0, done = 0;
   await new Promise(resolve => { for (const w of workers) { const feed = () => { if (next < n) { const id = next++; w.postMessage({ id, task: tasks[id] }); } }; w.on('message', m => { res[m.id] = m.result; if (++done === n) resolve(); else feed(); }); w.on('error', e => { console.error(e); process.exit(1); }); feed(); } });
   workers.forEach(w => w.terminate());
   const pass = R => res.filter(r => r.win || r.round > R).length / n; // 해당 라운드 보스를 넘긴 비율
   const f = x => (x * 100).toFixed(0).padStart(3) + '%';
+  if (maxr) { const avg = res.reduce((a, r) => a + Math.min(maxr, r.win ? 100 : r.round), 0) / n; console.log(`N=${n} (${((Date.now() - t0) / 1000).toFixed(0)}초) FORCE ${JSON.stringify(force)} | 평균 도달(최대 ${maxr}) ${avg.toFixed(1)} | 30R ${f(pass(30))} | 50R ${f(pass(50))}`); process.exit(0); }
   console.log(`N=${n} (${((Date.now() - t0) / 1000).toFixed(0)}초) | 30R ${f(pass(30))} | 50R ${f(pass(50))} | 80R ${f(pass(80))} | 100R 클리어 ${f(res.filter(r => r.win).length / n)}`);
   const h = {}; for (const r of res) { const k = r.win ? 'WIN' : Math.floor(r.round / 5) * 5; h[k] = (h[k] || 0) + 1; } console.log('종료 라운드 분포(5단위):', JSON.stringify(h));
 }

@@ -110,7 +110,7 @@
     finalBoss: { id: 'overlord', line: '모든 것은 이 어둠 속에서 끝난다.', name: '마왕', r: 38, look: { body: '#2a2438', head: '#ebe6f4', weapon: 'sword', crown: true, style: 'overlord' }, abil: { summon: { cd: 11, n: 3, kind: 'bomber' }, artillery: { cd: 5, dmg: 130, radius: 115, count: 2, flight: 1.4 }, sword: { cd: 10, len: 1100, width: 150, warn: 1.1, mul: 3, kb: 420 }, shield: { cd: 12, dur: 3.5, red: 0.7 }, rage: { at: 0.4, speed: 1.4, rate: 1.5, dmg: 1.5 }, dash: { cd: 9, dur: 1.2, mul: 2.5 }, debuff: [{ kind: 'stun', cd: 10, r: 120 }, { kind: 'poison', cd: 11, r: 150 }, { kind: 'weak', cd: 13, r: 170 }, { kind: 'wound', cd: 14, r: 170 }] } },
     // 마왕(50라운드): 1·2형태. 체력·공격을 너프하는 대신 한 번 쓰러져도 각성해서 부활한다
     bossSpeed: 105,
-    finalNerf: { hp: 0.6, dmg: 0.65, hp2: 1.1, cdMul: 0.85, rageAt: 0.5, reviveT: 3.4, r: 44, name: '각성한 마왕', look: { body: '#7a1424', head: '#ecd2c4', weapon: 'claws', crown: true, p2: true, style: 'overlord' } },
+    finalNerf: { hp: 0.75, dmg: 0.65, hp2: 1.25, cdMul: 0.85, rageAt: 0.5, reviveT: 3.4, r: 44, name: '각성한 마왕', look: { body: '#7a1424', head: '#ecd2c4', weapon: 'claws', crown: true, p2: true, style: 'overlord' } },
     // 50라운드 클리어 뒤에는 강화 카드의 레벨 제한이 이만큼 풀린다 (아래 목록의 카드만)
     capBonus: 2, capLift: ['u_charge', 'u_pierce', 'u_crit', 'u_range', 'u_aoeheal', 'u_hbuff', 'a_heal', 'a_atk', 'a_def', 'a_spd', 'a_rad', 'f_repair', 'f_thorn'],
     // 2차 전직 각성 (사천왕 처치: 60·70·80라운드에 한 계열씩 업그레이드). 2차 전직 효과에 아래 수치가 한 번 더 더해진다.
@@ -157,7 +157,7 @@
         abil2: { dash: { cd: 5, dur: 1.2, mul: 3.4, shock: { r: 260, kb: 640, mul: 2.4 } }, hammer: { cd: 6.5, r: 170, warn: 1.1, mul: 3.4, stun: 1.3, kb: 700 }, quake: { cd: 9, n: 7, r: 100, warn: 1.0, mul: 2.2, kb: 420 }, rage: { at: 0.4, speed: 1.3, rate: 1.4, dmg: 1.4 }, debuff: [{ kind: 'wound', cd: 12, r: 160 }] } },
     },
     // 100라운드: 거대한 용 (몬스터 무리가 함께 몰려오는 레이드). 성 둘레를 빼고 땅이 무너져 절벽이 된다. 용은 네 방향 중 한 곳에 고정되어 있다가 날아올랐다가 다른 곳에 내려앉는다.
-    dragon: { id: 'dragon', line: '대지는 사라지고… 오직 불길만이 남으리라.', name: '재앙의 용', r: 130, vr: 260, dragon: true, hpMul: 5, anchorX: 520, anchorY: 420, cut: 260, plateau: 440, monsterFrac: 0.3, waveEvery: 16, waveFrac: 0.07, // r=판정, vr=그림 크기(몸집이 아주 커서 지도에는 상반신만 보인다). 북쪽은 cut만큼 직각으로 깎여 평평한 단상(폭 plateau×2)이 되고 용은 그 가장자리에서 솟는다. 나머지 세 자리(서·동·남)에서는 몬스터가 나온다
+    dragon: { id: 'dragon', line: '대지는 사라지고… 오직 불길만이 남으리라.', name: '재앙의 용', r: 130, vr: 260, dragon: true, hpMul: 3.4, anchorX: 520, anchorY: 420, cut: 260, plateau: 440, monsterFrac: 0.3, waveEvery: 16, waveFrac: 0.07, // r=판정, vr=그림 크기(몸집이 아주 커서 지도에는 상반신만 보인다). 북쪽은 cut만큼 직각으로 깎여 평평한 단상(폭 plateau×2)이 되고 용은 그 가장자리에서 솟는다. 나머지 세 자리(서·동·남)에서는 몬스터가 나온다
      
       look: { style: 'dragon', body: '#a3262a', head: '#d9482c' },
       abil: { artillery: { cd: 5, dmg: 85, radius: 100, count: 3, flight: 1.5 }, breath: { cd: 11, len: 1150, half: 0.3, warn: 1.4, mul: 3, kb: 380 }, tail: { cd: 7, r: 215, warn: 0.7, mul: 2.2, kb: 720 }, gust: { cd: 16, r: 760, warn: 1.0, kb: 540 }, meteor: { cd: 9, n: 8, r: 85, warn: 1.0, mul: 2.0, at: 0.5, kb: 320 }, rage: { at: 0.3, speed: 1, rate: 1.3, dmg: 1.4 }, fly: { at: 0.5, up: 1.8, away: 10, passes: 5, span: 1000, barrage: 0.4, r: 95, mul: 1.9, back: 3.0, landR: 420, landMul: 2.2 } }, deathT: 7 },
@@ -229,12 +229,12 @@
         ],
         t2: {
           knight: [
-            { id: 'paladin', name: '팔라딘', desc: '성스러운 갑옷과 철퇴를 든 완전 방어형. 체력 +70%, 피해 12% 방어, 초당 체력 3% 회복. 대신 공격력 -35%. 때릴 때 12% 확률로 적을 1.2초 기절시킴 (보스는 짧게)', mods: { hp: 0.7, def: 0.12, regen: 0.03, atk: -0.35, stun: 0.12 } },
-            { id: 'warlord', name: '워로드', desc: '긴 랜스를 든 돌격 기사. 공격력 +110%, 체력 +40%, 사거리 +14. 대신 공격 속도 -35%. 찌르면 적을 크게 밀어냄 (보스는 밀리지 않음)', mods: { hp: 0.4, atk: 1.1, rate: -0.35, range: 14, knock: 300 } },
+            { id: 'paladin', name: '팔라딘', desc: '성스러운 갑옷과 철퇴를 든 완전 방어형. 체력 +60%, 피해 12% 방어, 초당 체력 3% 회복. 대신 공격력 -35%. 때릴 때 12% 확률로 적을 1.2초 기절시킴 (보스는 짧게)', mods: { hp: 0.6, def: 0.12, regen: 0.03, atk: -0.35, stun: 0.12 } },
+            { id: 'warlord', name: '워로드', desc: '긴 랜스를 든 돌격 기사. 공격력 +130%, 체력 +40%, 사거리 +14. 대신 공격 속도 -35%. 찌르면 적을 크게 밀어냄 (보스는 밀리지 않음)', mods: { hp: 0.4, atk: 1.3, rate: -0.35, range: 14, knock: 300 } },
           ],
           blade: [
-            { id: 'blademaster', name: '검성', desc: '양손에 쌍검을 든 공격형 달인. 공격력 +45%, 연속 공격 확률 +45% (최대 3연타), 사거리 +10, 주변 적에게 25% 베기', mods: { atk: 0.45, cleave: 0.25, dbl: 0.45, range: 10 } },
-            { id: 'berserker', name: '버서커', desc: '방패 없이 거대한 검을 휘두름. 공격력 +80%, 광역 베기 35%, 체력이 낮을수록 최대 +100% 더 강해짐, 입힌 피해의 15%를 체력으로 흡수', mods: { atk: 0.8, cleave: 0.35, berserk: 1.0, lifesteal: 0.15 } },
+            { id: 'blademaster', name: '검성', desc: '양손에 쌍검을 든 공격형 달인. 공격력 +40%, 연속 공격 확률 +40% (최대 3연타), 사거리 +10, 주변 적에게 25% 베기', mods: { atk: 0.4, cleave: 0.25, dbl: 0.4, range: 10 } },
+            { id: 'berserker', name: '버서커', desc: '방패 없이 거대한 검을 휘두름. 공격력 +80%, 광역 베기 35%, 체력이 낮을수록 최대 +100% 더 강해짐, 입힌 피해의 12%를 체력으로 흡수', mods: { atk: 0.8, cleave: 0.35, berserk: 1.0, lifesteal: 0.12 } },
           ],
         },
       },
@@ -245,7 +245,7 @@
         ],
         t2: {
           sniper: [
-            { id: 'deadeye', name: '명사수', desc: '저격총을 든 저격수. 공격력 +70%, 사거리 +80, 공격 속도 -10%, 이동 속도 -35%. 총알이 포물선 없이 일직선으로 날아가 선 위의 모든 적을 꿰뚫음', mods: { atk: 0.7, rate: -0.1, range: 80, speed: -0.35, rifle: 1 } },
+            { id: 'deadeye', name: '명사수', desc: '저격총을 든 저격수. 공격력 +85%, 사거리 +80, 공격 속도 -10%, 이동 속도 -35%. 총알이 포물선 없이 일직선으로 날아가 선 위의 모든 적을 꿰뚫음', mods: { atk: 0.85, rate: -0.1, range: 80, speed: -0.35, rifle: 1 } },
             { id: 'gunner', name: '포격수', desc: '폭탄 석궁. 맞은 적 주변 범위에 60% 폭발 피해, 공격력 +35%, 공격 속도 -10%', mods: { atk: 0.35, rate: -0.1, splash: 0.6 } },
           ],
           ranger: [
@@ -257,15 +257,15 @@
       priest: {
         t1: [
           { id: 'cleric', name: '성직자', desc: '광륜의 치유사. 치유량 +45%, 치유 범위 +50', mods: { heal: 0.45, healRange: 50 } },
-          { id: 'bard', name: '바드', desc: '류트를 든 음유시인. 연주로 주변 아군(범위 140)을 북돋움: 공격력 +8%, 받는 피해 -5%, 이동·공격 속도 +10%', mods: { bless: 1, tempo: 1 } },
+          { id: 'bard', name: '바드', desc: '류트를 든 음유시인. 연주로 주변 아군(범위 140)을 북돋움: 공격력 +8%, 받는 피해 -5%, 이동·공격 속도 +7%', mods: { bless: 1, tempo: 1 } },
         ],
         t2: {
           cleric: [
-            { id: 'archbishop', name: '대주교', desc: '황금 십자 지팡이와 큰 광륜. 치유량 +20%, 치유 속도 +10%. 이 사제는 라운드마다 쓰러진 아군을 1회 부활 (체력 25%)', mods: { heal: 0.2, healRate: 0.1, revive: 1 } },
-            { id: 'warden', name: '수호사제', desc: '푸른 등불의 수호자. 치유량 +20%, 치유한 아군에게 치유량의 80%만큼 보호막 (최대 체력의 30%까지)', mods: { heal: 0.2, ward: 0.8 } },
+            { id: 'archbishop', name: '대주교', desc: '황금 십자 지팡이와 큰 광륜. 치유량 +30%, 치유 속도 +15%. 이 사제는 라운드마다 쓰러진 아군을 1회 부활 (체력 25%)', mods: { heal: 0.3, healRate: 0.15, revive: 1 } },
+            { id: 'warden', name: '수호사제', desc: '푸른 등불의 수호자. 치유량 +30%, 치유한 아군에게 치유량의 80%만큼 보호막 (최대 체력의 30%까지)', mods: { heal: 0.3, ward: 0.8 } },
           ],
           bard: [
-            { id: 'shaman', name: '무당', desc: '북과 부적의 무녀. 치유량 +10%. 부적 진으로 더 넓은 범위(+60)에 더 강한 버프: 공격력 +16%, 받는 피해 -10%, 속도 +20%, 초당 체력 1.5% 회복 (바드 효과에 더해짐)', mods: { heal: 0.1, bless: 1, tempo: 1, blessR: 60, bregen: 0.015 } },
+            { id: 'shaman', name: '무당', desc: '북과 부적의 무녀. 치유량 +10%. 부적 진으로 더 넓은 범위(+60)에 더 강한 버프: 공격력 +16%, 받는 피해 -10%, 속도 +14%, 초당 체력 1% 회복 (바드 효과에 더해짐)', mods: { heal: 0.1, bless: 1, tempo: 1, blessR: 60, bregen: 0.01 } },
             { id: 'inquisitor', name: '이단심판관', desc: '붉은 십자의 심판관. 체력 +30%. 성화 구체로 사거리 190 안의 적을 공격(치유량의 130%). 맞은 적은 4초간 받는 피해 +20%(낙인), 3초 감속, 4초간 공격력 -25%(약화), 4초간 화상(초당 구체 피해의 25%)', mods: { hp: 0.3, smite: 1, curse: 1 } },
           ],
         },
@@ -283,7 +283,7 @@
       bossHp: 1,                                      // 보스 체력에 추가로 곱하는 배율
       // 2막(31라운드~): 적이 강해지는 폭이 더 크다
       countPost: 3,                                   // 2막에서는 라운드마다 적이 이만큼 늘어난다 (1막 말 수 + 이 값 × 경과 라운드)
-      hpSlopePost: 0.10,                              // 2막 체력 증가 기울기 (라운드당)
+      hpSlopePost: 0.12,                              // 2막 체력 증가 기울기 (라운드당)
       postSpeed: 1.08,                                // 2막 적 이동 속도 배율
       meleeHp: 1.25, rangedDmg: 1.25,                  // 근접 적은 체력, 원거리 적은 공격력을 더 높게 (못 잡으면 쌓인다)
       blastEdge: 0.4,                                   // 자폭 폭발 피해: 가장자리에서 최대 이 비율만큼 약해진다 (중심 100%)
@@ -311,7 +311,7 @@
     cardVals: {                       // 카드 수치 (설명 문구와 효과가 모두 여기서 읽는다)
       coreAtk: 0.40, coreRate: 0.25, coreRange: 45, fortHp: 600, repair: 0.15, thorn: 0.9,
       crit: 0.10, critMul: 2, archerRange: 0.12,
-      guard: 0.15, dodge: 0.12, hbuff: 0.12, hbuffT: 4, blessAtk: 0.08, blessDef: 0.05, tempo: 0.10, charge: 0.40, chargeRate: 0.15, revive: 0.25, pierce: 0.40, bomb: 4.0, bombStep: 1.5,
+      guard: 0.15, dodge: 0.12, hbuff: 0.12, hbuffT: 4, blessAtk: 0.08, blessDef: 0.05, tempo: 0.07, charge: 0.40, chargeRate: 0.15, revive: 0.25, pierce: 0.40, bomb: 4.0, bombStep: 1.5,
       auraHeal: 0.025, auraAtk: 0.08, auraDef: 0.08, auraDefCap: 0.40, auraSpd: 0.06, auraBoost: 0.15,
     },
     rerolls: 2,
@@ -319,7 +319,7 @@
     castle: { max: 10, extra: 3, costExtra: [10000, 15000, 22000], awk: { hp: 0.5, atk: 0.6, rate: 0.25, range: 60, cannons: 2 }, cost: [220, 380, 640, 1000, 1550, 2350, 3500, 5000, 7000], popBase: 8, popPer: 3, hp: 350, atk: 0.16, roundAtk: 0.012, range: 22, rate: 0.06, cannonLv: [3, 5, 7] },
     // 엘리트: 일반 몬스터가 일정 확률로 훨씬 강하고 크게 나온다. 확률은 라운드가 갈수록 커져 최대 max
     elite: { from: 3, perRound: 0.0025, max: 0.10, hp: 3, dmg: 1.6, size: 1.35, gold: 4, speed: 1.05 },
-    endless: { hpLin: 0.052, hpQuad: 0.0003, cnt: 0.011, bossBase: 60000, bossExp: 0.6, marMul: 0.9 }, // 무한 모드(51라운드~) 난이도 곡선: 체력 배율 1+lin·n+quad·n², 적 수 +cnt·n (n = 50라운드 이후 지난 라운드)
+    endless: { hpLin: 0.064, hpQuad: 0.000375, cnt: 0.011, bossBase: 60000, bossExp: 0.6, marMul: 0.9 }, // 무한 모드(51라운드~) 난이도 곡선: 체력 배율 1+lin·n+quad·n², 적 수 +cnt·n (n = 50라운드 이후 지난 라운드)
     dmgVar: 0.15,                     // 모든 공격 피해에 공격력 ±15% 오차
     legendChance: 0.007,              // 30라운드 이후, 카드 한 칸마다 전설 카드가 나올 확률 (아주 낮음)
     rarityWeight: { common: 70, rare: 25, epic: 5 },

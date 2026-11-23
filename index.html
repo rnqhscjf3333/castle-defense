@@ -367,7 +367,22 @@ body.comicOn { overflow: hidden; }
 #bossIntro #biName { font-size: 30px; font-weight: 900; color: #ff5a5a; text-shadow: 0 0 16px rgba(255,60,60,.6); line-height: 1.15; }
 #bossIntro #biLine { font-size: 15px; font-style: italic; color: #f1dede; margin-top: 4px; }
 @media (max-width: 520px) { #bossIntro:not(.omen) { height: 100px; gap: 8px; } #bossIntro canvas { width: 88px; height: 88px; } #bossIntro #biName { font-size: 22px; } #bossIntro #biLine { font-size: 12.5px; } }
-#bossSay{position:fixed;left:50%;top:88px;transform:translateX(-50%);z-index:30;pointer-events:none;background:rgba(20,10,16,.82);border:2px solid #c0392b;border-radius:10px;padding:6px 16px;color:#fff;font-size:17px;opacity:0;transition:opacity .2s;white-space:nowrap}#bossSay.show{opacity:1}#bossSay b{color:#ff9a8a;margin-right:10px}</style>
+#bossSay{position:fixed;left:50%;top:88px;transform:translateX(-50%);z-index:30;pointer-events:none;background:rgba(20,10,16,.82);border:2px solid #c0392b;border-radius:10px;padding:6px 16px;color:#fff;font-size:17px;opacity:0;transition:opacity .2s;white-space:nowrap}#bossSay.show{opacity:1}#bossSay b{color:#ff9a8a;margin-right:10px}
+/* 도감·랭킹 애니메이션 무대 / 금은동 랭킹 */
+.stagebox { position: relative; margin-top: 8px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,.1); background: #1d3326; box-shadow: inset 0 0 30px rgba(0,0,0,.35); } .stagebox canvas { display: block; width: 100%; height: 210px; } .stagebox.run canvas { height: 300px; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0; } .chip { font-size: 11.5px; padding: 3px 8px; border-radius: 999px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1); color: var(--ink); }
+table.rank td:first-child { width: 34px; text-align: center; } table.rank th:first-child { text-align: center; }
+.medal { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; font-weight: 800; font-size: 12.5px; color: #2a1c00; box-shadow: inset 0 0 0 1px rgba(255,255,255,.45), 0 1px 4px rgba(0,0,0,.5); text-shadow: 0 1px 0 rgba(255,255,255,.35); }
+.medal.m1 { background: radial-gradient(circle at 35% 28%, #fff7cf, #f5c542 55%, #b8860b); box-shadow: inset 0 0 0 1px rgba(255,255,255,.5), 0 0 10px rgba(245,197,66,.7); }
+.medal.m2 { background: radial-gradient(circle at 35% 28%, #ffffff, #cfd6e4 55%, #8a93a6); box-shadow: inset 0 0 0 1px rgba(255,255,255,.5), 0 0 8px rgba(207,214,228,.55); }
+.medal.m3 { background: radial-gradient(circle at 35% 28%, #ffe2c0, #c98a4b 55%, #7a4a1c); color: #2a1200; box-shadow: inset 0 0 0 1px rgba(255,255,255,.4), 0 0 8px rgba(201,138,75,.55); }
+table.rank tr.top td { border-top-color: transparent; padding-top: 7px; padding-bottom: 7px; font-weight: 700; }
+table.rank tr.r1 td { background: linear-gradient(90deg, rgba(245,197,66,.30), rgba(245,197,66,.07)); color: #ffe9a0; border-bottom: 1px solid rgba(245,197,66,.45); } table.rank tr.r1 td:first-child { box-shadow: inset 3px 0 0 #f5c542; }
+table.rank tr.r2 td { background: linear-gradient(90deg, rgba(207,214,228,.24), rgba(207,214,228,.05)); color: #eef2fa; border-bottom: 1px solid rgba(207,214,228,.35); } table.rank tr.r2 td:first-child { box-shadow: inset 3px 0 0 #cfd6e4; }
+table.rank tr.r3 td { background: linear-gradient(90deg, rgba(201,138,75,.26), rgba(201,138,75,.05)); color: #ffd9b0; border-bottom: 1px solid rgba(201,138,75,.4); } table.rank tr.r3 td:first-child { box-shadow: inset 3px 0 0 #c98a4b; }
+table.rank tr.top .rmsg { color: inherit; opacity: .75; } .crown { margin-right: 3px; filter: drop-shadow(0 0 4px rgba(245,197,66,.8)); }
+table.rank tr.top.me td { outline: 1px solid rgba(255,204,64,.8); outline-offset: -1px; } table.rank tr.clk:hover td { filter: brightness(1.12); }
+</style>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="theme-color" content="#16301f">
@@ -475,13 +490,13 @@ body.comicOn { overflow: hidden; }
   </div>
 </div>
 
-<script src="core.js?v=20261123k"></script>
-<script src="figures.js?v=20261123k"></script>
-<script src="scenery.js?v=20261123k"></script>
-<script src="config.js?v=20261123k"></script>
-<script src="meta.js?v=20261123k"></script>
-<script src="net.js?v=20261123k"></script>
-<script src="audio.js?v=20261123k"></script>
-<script src="main.js?v=20261123k"></script>
+<script src="core.js?v=20261123l"></script>
+<script src="figures.js?v=20261123l"></script>
+<script src="scenery.js?v=20261123l"></script>
+<script src="config.js?v=20261123l"></script>
+<script src="meta.js?v=20261123l"></script>
+<script src="net.js?v=20261123l"></script>
+<script src="audio.js?v=20261123l"></script>
+<script src="main.js?v=20261123l"></script>
 </body>
 </html>

@@ -176,7 +176,7 @@ try {
   await open('?bot=1&warp=9000&seed=5&zoom=0.6', 3000); // 봇이 30라운드 끝까지(승리 또는 패배) 미리 진행한 상태
   check('종료 화면 표시(빨리감기 중 종료)', (await ev('__game.S.over')) && !(await ev("document.getElementById('overlay').classList.contains('hidden')")), '라운드 ' + await ev('__game.S.round'));
   const title = await ev("document.getElementById('ovTitle').textContent");
-  check('결과 문구(승리/패배)', title === '방어 성공!' || title === '성이 무너졌어요', title);
+  check('결과 문구(승리/패배)', title === '방어 성공!' || title === '성이 무너졌어요' || /^게임 클리어/.test(title), title);
   await ev("document.getElementById('go').click()"); await sleep(500);
   check('다시 시작 → 새 게임', (await ev('__game.S.t')) < 2 && (await ev("document.getElementById('overlay').classList.contains('hidden')")), 't=' + await ev('__game.S.t'));
 
