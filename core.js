@@ -1038,7 +1038,7 @@
       emit(S, { type: 'elite', x, y, kind });
     }
     if (bd) {
-      e.bossName = bd.name; e.look = bd.look; if (bd.ranged) { e.ranged = true; e.range = bd.ranged.range; } e.abil = (bd === CFG.finalBoss || bd === CFG.act1Boss || isKing(bd) || bd.dragon) ? bd.abil : scaleAbil(bd.abil, r); e.t = {};
+      e.bossName = bd.name; e.bossId = bd.id; e.look = bd.look; if (bd.ranged) { e.ranged = true; e.range = bd.ranged.range; } e.abil = (bd === CFG.finalBoss || bd === CFG.act1Boss || isKing(bd) || bd.dragon) ? bd.abil : scaleAbil(bd.abil, r); e.t = {};
       for (const k in e.abil) if (!Array.isArray(e.abil[k])) e.t[k] = (e.abil[k].cd || 0) * 0.6; // 첫 패턴은 조금 일찍
       if (!bd.dragon) e.speed = Math.max(e.speed, CFG.bossSpeed); // 보스는 광전사처럼 빠르게 달려온다
       if (bd === CFG.finalBoss && r === MAX_ROUND) { const N = CFG.finalNerf; e.max = e.hp = Math.round(e.max * N.hp); e.max2 = Math.round(e.max / N.hp * N.hp2); e.dmg *= N.dmg; e.canRevive = true; }
@@ -1152,7 +1152,31 @@
     const bx = o.x - CX, by = o.y - CY, bd = Math.hypot(bx, by), bmin = CFG.core.blockR + (o.r || 9) * 0.6; if (bd < bmin && bd > 0.5) { o.x = CX + bx / bd * bmin; o.y = CY + by / bd * bmin; }
   }
   // ───────────── 예고 후 터지는 공격 (낙뢰·냉기·지진·용의 숨결 …) ─────────────
-  const SAY = { sword: '검기를 받아라!', claw: '갈기갈기 찢어 주마!', lance: '번개의 창에 꿰뚫려라!', shards: '얼어붙어라!', hammer: '으스러져라!', breath: '불길에 타 버려라!', blizzard: '눈보라에 파묻혀라!', quake: '대지가 갈라진다!', bolt: '하늘이 노한다!', meteor: '하늘이 무너진다!', stomp: '짓밟아 주마!', tail: '꺼져라, 벌레들!', gust: '모두 날려 버리겠다!', dash: '받아라!', drain: '네 생명을 내놓아라!', frost: '차갑게 식혀 주마…' };
+  // 기술마다 여러 대사 중 하나를 고른다. 보스마다 개성이 있는 대사(BSAY)가 있으면 그것을 먼저 쓴다.
+  const SAY = {
+    sword: ['검기를 받아라!', '이 일격을 막아 보아라!', '베어 주마!'], claw: ['갈기갈기 찢어 주마!', '발톱이 네 목을 노린다!', '도망쳐 봐라!'],
+    lance: ['번개의 창에 꿰뚫려라!', '뇌전이여, 꿰뚫어라!', '이 창은 피할 수 없다!'], shards: ['얼어붙어라!', '차가운 가시를 받아라!', '서리가 너희를 삼킨다!'],
+    hammer: ['으스러져라!', '이 망치 아래 모두 가루가 되리라!', '무릎 꿇어라!'], breath: ['불길에 타 버려라!', '재가 되어라!', '모든 것을 태워 주마!'],
+    blizzard: ['눈보라에 파묻혀라!', '영원한 겨울을 맛보아라!', '모두 얼어붙어라!'], quake: ['대지가 갈라진다!', '땅이 너희를 삼킬 것이다!', '발밑을 조심해라!'],
+    bolt: ['하늘이 노한다!', '천둥이여, 내려쳐라!', '번개를 맞아 봐라!'], meteor: ['하늘이 무너진다!', '불덩이가 쏟아진다!', '별이 떨어진다!'],
+    stomp: ['짓밟아 주마!', '주변을 모조리 쓸어 주마!', '가까이 오지 마라!'], tail: ['꺼져라, 벌레들!', '귀찮은 것들!', '떨어져라!'],
+    gust: ['모두 날려 버리겠다!', '날개짓 한 번이면 충분하다!'], dash: ['받아라!', '비켜라!', '부딪쳐 주마!'],
+    drain: ['네 생명을 내놓아라!', '그 생명, 내가 거두겠다!'], frost: ['차갑게 식혀 주마…', '얼어붙어라…'],
+    summon: ['나오너라, 종들이여!', '병사들아, 앞으로!', '내 부름에 답하라!'], shield: ['어디 뚫어 보아라!', '이 방패는 깨지지 않는다!', '막아 주마!'],
+    aura: ['모두 내 곁으로!', '철벽을 세워라!', '수호하라!'], focus: ['잠시 숨을 고르겠다…', '정신을 가다듬는다…'],
+    roar: ['전군, 돌격하라!', '함성을 올려라!', '싸워라!'], clone: ['어느 쪽이 진짜일까?', '나는 하나가 아니다!', '분신술!'],
+    blink: ['여기다!', '느리구나!', '뒤를 조심해라!'], leap: ['내려찍는다!', '하늘에서 간다!', '피해 봐라!'],
+    artillery: ['포격 개시!', '불바다로 만들어 주마!', '쏴라, 쏴!'], barrage: ['일제 사격!', '전 포문 개방!'], rage: ['더는 못 참겠다!', '피가 끓는다!', '으아아아!'], rush: ['앞을 막지 마라!', '짓밟아라!'],
+  };
+  const BSAY = {
+    charger: { dash: ['전부 짓밟아 주마!', '돌격이다!', '내 앞을 막지 마라!'], stomp: ['땅이 흔들린다!', '발밑을 조심해라!'], roar: ['돌격 대형으로!', '나를 따르라!'] },
+    summoner: { summon: ['나의 종들이여, 일어나라!', '어둠에서 올라오너라!', '전장으로 나가라!'], clone: ['진짜를 찾아 보아라!', '그림자야, 나를 닮아라!'], sword: ['마력이여!'] },
+    bombardier: { artillery: ['목표, 저 성벽 앞 놈들!', '장전 완료, 발사!', '불꽃놀이를 보여 주마!'], barrage: ['전 포대, 일제 사격!', '하늘을 포연으로 덮어라!'] },
+    warden: { shield: ['이 방패 앞에 무릎 꿇어라!', '단단함을 보여 주마!'], aura: ['철벽 진형!', '내 뒤로 모여라!'], focus: ['흔들리지 않는다…', '호흡을 가다듬는다…'], stomp: ['성벽처럼 밀어 주마!'] },
+    berserker: { stomp: ['으아아, 부숴 버린다!', '피를 보여라!'], dash: ['죽어라, 죽어라!', '찢어 주마!'], rage: ['피가... 피가 끓는다!', '더 싸우자! 더!'] },
+    darkknight: { sword: ['어둠의 검을 받아라!', '이 검이 네 운명이다!'], summon: ['어둠의 병사들이여!', '나의 군대여, 앞으로!'], dash: ['어둠이 덮친다!'] },
+    overlord: { sword: ['어둠에 삼켜져라!', '이 검 앞에 모든 것이 무너진다!'], claw: ['갈기갈기 찢어 주마!', '절망의 손톱을 받아라!'], summon: ['나의 종들이여, 깨어나라!', '끝없는 군단이 일어선다!'], drain: ['네 생명을 내놓아라!', '그 생명, 나의 것이다!'], rage: ['감히 나를 몰아붙이다니!', '어둠이 끓어오른다!'] },
+  };
   function bossSay(S, e, k, key) {
     if (!key) {
       if (k.shape === 'line') key = k.kind === 'bolt' ? 'lance' : (e.abil && e.abil.claw ? 'claw' : 'sword');
@@ -1165,9 +1189,10 @@
       else if (k.kind === 'sweep' || k.kind === 'slam') key = e.dragon ? 'tail' : 'stomp';
       else if (k.kind === 'rock') key = e.dragon ? 'tail' : (Math.hypot(k.x - e.x, k.y - e.y) > 60 ? 'quake' : 'stomp');
     }
-    if (!key || !SAY[key] || e.fixed && key === 'meteor' && false) return;
+    const L = (BSAY[e.bossId] && BSAY[e.bossId][key]) || SAY[key]; if (!key || !L) return;
     if (S.t < (e.sayAt || 0)) return; e.sayAt = S.t + 6;
-    emit(S, { type: 'bossSay', name: e.bossName || '', text: SAY[key], x: e.x, y: e.y });
+    let txt = Array.isArray(L) ? L[Math.floor(S.rng() * L.length)] : L; if (Array.isArray(L) && L.length > 1 && txt === e.lastSay) txt = L[(L.indexOf(txt) + 1) % L.length]; e.lastSay = txt; // 같은 말이 연달아 나오지 않게
+    emit(S, { type: 'bossSay', name: e.bossName || '', text: txt, x: e.x, y: e.y });
   }
   // shape: 'circle' (기본) | 'cone' (ang·half·len) — 예고 시간(t)이 지나면 범위 안 아군에게 피해·넉백·기절·냉기
   function addStrike(S, e, o) {
@@ -1200,7 +1225,7 @@
     if (tgt.dead || tgt.dying || tgt.hidden || tgt.riseT > 0) return;
     if (src && src.kb && tgt.team === 'u' && !src.dead) knock(S, tgt, src.x, src.y, src.kb);
     if (src && src.chill && tgt.team === 'u') tgt.chillT = Math.max(tgt.chillT || 0, src.chill); // 서리 궁수: 맞으면 느려진다 // 강한 적의 공격: 반대쪽으로 밀려난다
-    if (src && tgt.team === 'u' && !src.dead) { tgt.rv = src; tgt.rvT = 6; } // 맞은 유닛이 때린 적을 기억 (자유 모드 반격용)
+    if (src && tgt.team === 'u' && !src.dead) { tgt.foe = src; tgt.rvT = 6; } // 맞은 유닛이 때린 적을 기억 (자유 모드 반격용)
     if (CFG.dmgVar) dmg *= 1 + (S.rng() * 2 - 1) * CFG.dmgVar; // 공격력 ±N% 오차
     if (tgt.team === 'e' && tgt.shieldT > 0) dmg *= 1 - tgt.shieldRed; // 보스 방어막 동안 피해 감소
     if (tgt.team === 'e' && tgt.focusT > 0 && tgt.abil && tgt.abil.focus) dmg *= 1 - tgt.abil.focus.red; // 광전사: 정신 집중 중 피해 감소
@@ -1498,8 +1523,8 @@
     let tgt = find(u.x, u.y);
     { const th = find(u.hx, u.hy); if (th && th !== tgt) { const sc = e => Math.hypot(e.x - u.x, e.y - u.y) + CFG.ai.homeBias * Math.hypot(e.x - u.hx, e.y - u.hy); if (!tgt || sc(th) < sc(tgt)) tgt = th; } }
     const free = S.mode === 'free';
-    if (u.rvT > 0) { u.rvT -= dt; if (u.rvT <= 0) u.rv = null; }
-    if (free && u.rv && !u.rv.dead && u.rv.hp > 0) tgt = u.rv; // (자유 모드) 사거리 밖이어도 나를 공격한 적에게 가서 반격한다
+    if (u.rvT > 0) { u.rvT -= dt; if (u.rvT <= 0) u.foe = null; }
+    if (free && u.foe && !u.foe.dead && u.foe.hp > 0) tgt = u.foe; // (자유 모드) 사거리 밖이어도 나를 공격한 적에게 가서 반격한다
     if (!tgt) { const dg = S.enemies.find(e => e.fixed && !e.dead && !e.hidden); if (dg && Math.hypot(dg.x - u.x, dg.y - u.y) <= 900) tgt = dg; } // 가까이 싸울 적이 없으면 고정된 용에게 달려가 공격한다
     const dgT = !!(tgt && tgt.fixed);
     if (!free && tgt && !dgT && Math.hypot(tgt.x - CX, tgt.y - CY) > CFG.leash) tgt = null; // (기본 모드) 성에서 너무 먼 적은 쫓지 않는다
@@ -1551,7 +1576,7 @@
     if (e.spinWait > 0 && (e.spinWait -= dt) <= 0) { e.spinWait = 0; e.spinT = e.spinDur; }
     if (e.spinT > 0) { e.spinT -= dt; e.spinA = e.spinA0 + (1 - Math.max(0, e.spinT) / e.spinDur) * Math.PI * 4; }
     if (A.rage && e.hp <= e.max * A.rage.at) {
-      if (!e.enraged) { e.enraged = true; emit(S, { type: 'bossRage', name: e.bossName, x: e.x, y: e.y }); }
+      if (!e.enraged) { e.enraged = true; emit(S, { type: 'bossRage', name: e.bossName, x: e.x, y: e.y }); bossSay(S, e, null, 'rage'); }
       e.speedMul *= A.rage.speed; e.rateMul = A.rage.rate; e.dmgMul *= A.rage.dmg;
     }
     if (A.fly) { // 용: 체력이 절반이 되면 한 번 하늘로 날아올라 모습을 감추고, 그림자만 땅 위를 돌며 불덩이를 떨어뜨린다. 시간이 지나면 북쪽 단상으로 다시 솟아오른다
@@ -1591,7 +1616,7 @@
         const d = clamp(dc + (S.rng() - 0.5) * 120, 160, Math.max(A.blink.maxR, dc)), maxArc = 2 * Math.asin(Math.min(1, BLINK_MAX / (2 * d))), arc = Math.min(maxArc, 0.7 + S.rng() * 0.6), ang = cur + (S.rng() < 0.5 ? -arc : arc);
         e.x = clamp(CX + Math.cos(ang) * d, 30, W - 30); e.y = clamp(CY + Math.sin(ang) * d, 30, H - 30);
         if (e.t.summon !== undefined) e.t.summon = Math.min(e.t.summon, 1.2); // 도착하자마자 졸개 소환
-        emit(S, { type: 'bossBlink', x0, y0, x1: e.x, y1: e.y });
+        emit(S, { type: 'bossBlink', x0, y0, x1: e.x, y1: e.y }); bossSay(S, e, null, 'blink');
       }
     }
     if (A.leap) { // 도약: 아군이 가장 밀집한 곳을 향해 날아올라 내려찍는다
@@ -1607,7 +1632,7 @@
           let best = null, bn = -1;
           for (const u of S.units) { if (u.dead || Math.hypot(u.x - e.x, u.y - e.y) > 650) continue; let n = 0; for (const o of S.units) if (!o.dead && Math.hypot(o.x - u.x, o.y - u.y) <= A.leap.r) n++; if (n > bn) { bn = n; best = u; } }
           if (!best) e.t.leap = 1.5;
-          else { e.t.leap = A.leap.cd; e.leapT = A.leap.air; e.leapX = best.x; e.leapY = best.y; emit(S, { type: 'bossLeap', x: best.x, y: best.y, r: A.leap.r, air: A.leap.air, fx: e.x, fy: e.y }); }
+          else { e.t.leap = A.leap.cd; e.leapT = A.leap.air; e.leapX = best.x; e.leapY = best.y; emit(S, { type: 'bossLeap', x: best.x, y: best.y, r: A.leap.r, air: A.leap.air, fx: e.x, fy: e.y }); bossSay(S, e, null, 'leap'); }
         }
       }
     }
@@ -1617,7 +1642,7 @@
     }
     if (A.shield) {
       if (e.shieldT > 0) e.shieldT -= dt;
-      else { e.t.shield -= dt; if (e.t.shield <= 0) { e.shieldT = A.shield.dur; e.shieldRed = A.shield.red; e.t.shield = A.shield.cd; emit(S, { type: 'bossShield', x: e.x, y: e.y }); } }
+      else { e.t.shield -= dt; if (e.t.shield <= 0) { e.shieldT = A.shield.dur; e.shieldRed = A.shield.red; e.t.shield = A.shield.cd; emit(S, { type: 'bossShield', x: e.x, y: e.y }); bossSay(S, e, null, 'shield'); } }
     }
     if (A.summon) {
       // 보스가 성 가까이(summonRange) 왔을 때만 소환 시간을 센다 → 화면에 보이는 곳에서 소환한다
@@ -1628,7 +1653,7 @@
         const toCore = Math.atan2(CY - e.y, CX - e.x); // 졸개는 보스 앞(성 방향)에 나온다
         const r = S.round, cnt = Math.min(Math.round(A.summon.n * clamp(1 + 0.035 * (r - 5), 1, 3.2)), 18), pUp = clamp((r - 15) / 45, 0, 0.75), nu = SUMMON_UP[A.summon.kind]; // 라운드가 지날수록 더 많이, 더 강한 졸개가 나온다
         for (let i = 0; i < cnt; i++) { const a = toCore + (S.rng() - 0.5) * 1.9, d = 75 + S.rng() * 55, kind = nu && S.rng() < pUp ? nu : A.summon.kind; spawnEnemy(S, kind, clamp(e.x + Math.cos(a) * d, 20, W - 20), clamp(e.y + Math.sin(a) * d, 20, H - 20)); }
-        emit(S, { type: 'bossSummon', x: e.x, y: e.y, n: cnt, kind: A.summon.kind });
+        emit(S, { type: 'bossSummon', x: e.x, y: e.y, n: cnt, kind: A.summon.kind }); bossSay(S, e, null, 'summon');
       }
     }
     if (A.debuff) {
@@ -1710,7 +1735,7 @@
         const a = (i / n) * Math.PI * 2 + S.rng(), c = spawnEnemy(S, 'archer', clamp(e.x + Math.cos(a) * 90, 20, W - 20), clamp(e.y + Math.sin(a) * 90, 20, H - 20));
         c.clone = true; c.look = e.look; c.bossName = e.bossName; c.r = Math.round(e.r * 0.85); c.range = e.range || 250; c.rate = 0.8; c.aggro = 330; c.gold = 0; c.speed = Math.max(c.speed, e.speed * 0.8);
         c.max = c.hp = Math.max(1, Math.round(e.max * A.clone.hp)); c.dmg = e.dmg * 0.6; }
-      emit(S, { type: 'bossClone', x: e.x, y: e.y, n, name: e.bossName || '' });
+      emit(S, { type: 'bossClone', x: e.x, y: e.y, n, name: e.bossName || '' }); bossSay(S, e, null, 'clone');
     }
     if (A.aura) { // 철벽 장군: 주변 적군에게 방어막을 씌운다
       e.t.aura -= dt;
@@ -1718,7 +1743,7 @@
         e.t.aura = A.aura.cd; let n = 0;
         for (const o of S.enemies) if (!o.dead && o !== e && !o.dying && Math.hypot(o.x - e.x, o.y - e.y) <= A.aura.r) { o.shieldT = A.aura.dur; o.shieldRed = A.aura.red; n++; }
         e.shieldT = Math.max(e.shieldT, A.aura.dur); e.shieldRed = Math.max(e.shieldRed, A.aura.red); // 본인도 방어막을 받는다
-        emit(S, { type: 'bossAura', x: e.x, y: e.y, r: A.aura.r, n, name: e.bossName || '' });
+        emit(S, { type: 'bossAura', x: e.x, y: e.y, r: A.aura.r, n, name: e.bossName || '' }); bossSay(S, e, null, 'aura');
       }
     }
     if (A.drain) { // 암흑 기사단장: 어둠의 파동으로 주변 아군의 생명을 빨아들여 회복한다
@@ -1739,7 +1764,7 @@
       if (e.t.roar <= 0 && e.life > 2) {
         e.t.roar = A.roar.cd;
         for (const o of S.enemies) if (!o.dead && o !== e && !o.dying && Math.hypot(o.x - e.x, o.y - e.y) <= A.roar.r) { o.hasteT = A.roar.dur; o.hasteMul = A.roar.speed; }
-        emit(S, { type: 'bossRoar', x: e.x, y: e.y, r: A.roar.r });
+        emit(S, { type: 'bossRoar', x: e.x, y: e.y, r: A.roar.r }); bossSay(S, e, null, 'roar');
       }
     }
     if (A.focus) { // 광전사: 가만히 정신을 집중해 체력을 회복한다 (그동안은 공격·이동 불가)
@@ -1749,7 +1774,7 @@
         if (e.focusT <= 0) emit(S, { type: 'bossFocusEnd', x: e.x, y: e.y });
       } else {
         e.t.focus -= dt;
-        if (e.t.focus <= 0 && e.life > 3 && e.hp < e.max * 0.85) { e.focusT = A.focus.dur; e.t.focus = A.focus.cd; emit(S, { type: 'bossFocus', x: e.x, y: e.y, dur: A.focus.dur, name: e.bossName || '' }); }
+        if (e.t.focus <= 0 && e.life > 3 && e.hp < e.max * 0.85) { e.focusT = A.focus.dur; e.t.focus = A.focus.cd; emit(S, { type: 'bossFocus', x: e.x, y: e.y, dur: A.focus.dur, name: e.bossName || '' }); bossSay(S, e, null, 'focus'); }
         else if (e.t.focus <= 0) e.t.focus = 1;
       }
     }
@@ -1758,6 +1783,7 @@
       if (e.t.artillery <= 0) {
         e.t.artillery = A.artillery.cd; e.volley = (e.volley || 0) + 1;
         const bar = A.artillery.barrage && e.volley % A.artillery.barrage === 0; // 포격대장: 몇 번에 한 번은 일제 포격
+        if (!e.dragon) bossSay(S, e, null, bar ? 'barrage' : 'artillery');
         const near = S.units.filter(u => !u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= 900);
         for (let i = 0, cn = A.artillery.count * (bar ? 3 : 1); i < cn; i++) {
           const tg = near.length ? near[Math.floor(S.rng() * near.length)] : S.core;
