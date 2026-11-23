@@ -1350,7 +1350,8 @@
   function autoCastle(S, pick) { // (개발자 모드·테스트) 성 갈래 선택을 자동으로 처리한다
     for (let i = 0; i < 3; i++) { checkCastleChoice(S); if (!S.cOffer) break; pickCastle(S, pick === undefined ? (S.cnodes.length + 1) % S.cOffer.list.length : Math.min(pick, S.cOffer.list.length - 1)); }
   }
-  function runSummary(S) { return { jobs: describeJobs(S).map(j => [j.className, j.names.join(' › ')]), cn: S.cnodes.map(id => { const n = ctNode(id); return n ? n.name : id; }), pop: popCount(S), castle: S.castle.lv, earned: Math.round(S.stats.earned), spent: Math.round(S.stats.spent), log: S.log }; }
+  function runSummary(S) { return { jobs: describeJobs(S).map(j => [j.className, j.names.join(' › ')]), cn: S.cnodes.map(id => { const n = ctNode(id); return n ? n.name : id; }), pop: popCount(S), castle: S.castle.lv, earned: Math.round(S.stats.earned), spent: Math.round(S.stats.spent), fin: [S.core.cpath || null, S.core.cvar || null, S.core.cfin || null, S.core.cannons || 0], ul: finalUnits(S), log: S.log }; }
+  function finalUnits(S) { const m = new Map(); for (const u of S.units) { if (u.dead || u.undead) continue; const k = u.type + '|' + (u.job || '') + '|' + (u.jobTier || 0); m.set(k, (m.get(k) || 0) + 1); } return [...m.entries()].map(([k, n]) => { const a = k.split('|'); return [a[0], a[1], +a[2], n]; }); }
   function describeCastle(S) { return S.cnodes.map(id => ctNode(id)).filter(Boolean).map(n => ({ id: n.id, name: n.name, kind: n.kind, desc: n.desc })); }
   function raiseUndead(S, e) { // 사령: 처치한 일반 적이 일정 확률로 망자가 되어 잠시 아군으로 싸운다
     const R = S.cpar.raise; if (!R || e.kind === 'boss' || (e.elite && !R.elite) || e.blast || S.rng() >= R.chance) return;
