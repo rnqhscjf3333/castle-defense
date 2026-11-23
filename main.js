@@ -503,6 +503,17 @@
     const hpNow = list.reduce((t, u) => t + u.hp, 0);
     const rows = n ? [['인원', n + '명'], ['체력', f1(avg('max')) + ' (현재 평균 ' + f1(hpNow / n) + ')'], ['공격력', f1(avg('atk'))], ['공격 속도', f1(avg('rate')) + '/초'], ['사거리', Math.round(avg('range'))], ['이동 속도', Math.round(avg('speed'))]]
       : [['인원', '0명'], ['기본 체력', cfg.hp], ['기본 공격력', cfg.atk], ['기본 사거리', cfg.range]];
+    if (n) { // 방어·회피·치명 등 전투 수치 (카드·전직·오라 반영)
+      const V = CFG.cardVals, line = cfg.line || type, jm = (S.jobMods && S.jobMods[line]) || {}, pf = S.perks || {}, pc = x => Math.round(x * 1000) / 10 + '%';
+      let red = (line === 'sword' ? (V.guard || 0) * (pf.guard || 0) : 0) + (jm.def || 0); const redT = Math.min(0.7, red + (S.aura ? S.aura.def : 0));
+      rows.push(['피해 감소', pc(Math.min(0.7, red)) + (S.aura && S.aura.def > 0 ? ' (오라 안 ' + pc(redT) + ')' : '') + ' · 최대 70%']);
+      const dg = line === 'archer' ? Math.min(0.6, (V.dodge || 0) * (pf.dodge || 0) + (jm.dodge || 0)) : 0; rows.push(['회피', pc(dg)]);
+      const cr = line === 'archer' ? Math.min(1, (V.crit || 0) * (pf.crit || 0) + (jm.crit || 0)) : 0; rows.push(['치명타', cr > 0 ? pc(cr) + ' (피해 ×' + V.critMul + ')' : '0%']);
+      const ex = []; if (jm.regen) ex.push('초당 회복 ' + pc(jm.regen)); if (jm.lifesteal) ex.push('흡혈 ' + pc(jm.lifesteal)); if (jm.stun) ex.push('기절 ' + pc(jm.stun)); if (jm.cleave) ex.push('광역 베기 ' + pc(jm.cleave)); if (jm.dbl) ex.push('연속 공격 ' + pc(jm.dbl)); if (jm.reflect) ex.push('반사 ' + pc(jm.reflect)); if (jm.knock) ex.push('밀치기 ' + jm.knock); if (jm.splash) ex.push('폭발 ' + pc(jm.splash)); if (jm.berserk) ex.push('광폭화 ' + pc(jm.berserk));
+      if (line === 'archer') { const p = (pf.pierce || 0) + (jm.pierce || 0); if (p) ex.push('관통 ' + p); }
+      if (ex.length) rows.push(['전직·카드 효과', ex.join(' · ')]);
+      if (S.aura && (S.aura.atk || S.aura.spd || S.aura.heal)) rows.push(['성 오라 (안에서)', '공격 +' + pc(S.aura.atk) + ' · 속도 +' + pc(S.aura.spd) + ' · 초당 회복 ' + pc(S.aura.heal)]);
+    }
     if (type === 'priest' && n) { rows.splice(2, 2, ['치유량', f1(avg('heal'))], ['치유 속도', f1(avg('healRate')) + '/초']); }
     const hs = CFG.heroSkill && CFG.heroSkill[type]; if (hs) rows.push(['스킬', hs.name + ' (' + hs.cd + '초마다)']);
     const job = n && list[0].job ? ' · ' + (C.describeJobs(S).find(j => CFG.units[j.type] === cfg) || { names: [] }).names.join(' › ') : '';

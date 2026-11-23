@@ -473,7 +473,7 @@
     { id: 'a_rad',  cat: 'core', rar: 'common', max: 4, name: '오라 강화', desc: l => '모든 오라 효과 +' + Math.round(V().auraBoost * 100 * l) + '%', needsAura: true },
     // 성 — 요새
     { id: 'f_hp',     cat: 'core', rar: 'common', max: 5, name: '성 · 체력',   desc: l => '성 최대 체력 +' + V().fortHp * l + ' (즉시 회복)' },
-    { id: 'f_repair', cat: 'core', rar: 'rare',   max: 3, name: '자동 수리',     desc: l => '라운드가 바뀔 때 성 체력 ' + Math.round(V().repair * 100 * l) + '% 회복' },
+    { id: 'f_repair', cat: 'core', rar: 'rare',   max: 3, name: '자동 수리',     desc: l => '라운드가 바뀔 때 성 체력이 기본 ' + Math.round(CFG.balance.coreRepair * 100) + '%에 더해 ' + Math.round(V().repair * 100 * l) + '% 더 회복 (합계 ' + Math.round((CFG.balance.coreRepair + V().repair * l) * 100) + '%)' },
     { id: 'f_thorn',  cat: 'core', rar: 'rare',   max: 3, name: '가시 방벽',     desc: l => '성을 때린 적에게 그 피해의 ' + Math.round(V().thorn * 100 * l) + '% 반사' },
     // 특수 소환
     { id: 's_turret', cat: 'summon', rar: 'rare',   max: 3,  name: '자동 포탑',       desc: l => '성 옆에 자동 포탑 설치 (' + l + '/3) · 성 공격력·공속·사거리 강화를 받음' },
