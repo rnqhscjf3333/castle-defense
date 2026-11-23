@@ -1194,14 +1194,14 @@
   const STRIKE_COL = { bolt: '#ffe14a', ice: '#8fd8ff', rock: '#c28a52', fire: '#ff6a2a', wind: '#d8f2ff', slash: '#c8203a', hammer: '#d9a441', sweep: '#dfe3f0', slam: '#c28a52' };
   // ── 100라운드: 성 주변만 남기고 땅이 무너져 절벽이 된다 ──
   // 남는 땅 = 성 둘레 원 + 용이 서는 네 자리의 받침 + 그 사이를 잇는 십자 다리
-  const DR = CFG.dragon, SAFE_R = 330, PAD_R = 190, BR_W = 80;
+  const DR = CFG.dragon, SAFE_R = 330, PAD_R = 190, BR_W = 80, GCUT = 140; // GCUT: 땅의 북쪽 가장자리 (성 중심에서 140 위). 단상을 없애고 용이 솟는 자리와 떨어뜨려, 용이 땅을 뚫지 않고 허공에서 솟는다
   // 무너진 땅의 남은 모양. 용 레이드(100R)는 북쪽을 직각으로 깎은 평평한 단상(용이 솟는 자리)에 서·동·남쪽 발판과 다리가 이어진다. 사천왕·마왕 2차전은 성 둘레 + 네 발판 + 십자 다리.
   const dragonMap = () => !S || !S.cliffTheme;
   const inSafe = (x, y, pad) => {
     if (dragonMap()) {
-      const T = CY - DR.cut;
+      const T = CY - GCUT;
       if (Math.hypot(x - CX, y - CY) <= SAFE_R + pad && y >= T - pad) return true;
-      if (y >= T - 10 - pad && y <= CY - 80) { const k = Math.max(0, (y - (T + 80)) / (CY - 80 - (T + 80))), hw = DR.plateau - (DR.plateau - 318) * k * k; if (Math.abs(x - CX) <= hw + pad) return true; }
+      if (false && y >= T - 10 - pad && y <= CY - 80) { const k = Math.max(0, (y - (T + 80)) / (CY - 80 - (T + 80))), hw = DR.plateau - (DR.plateau - 318) * k * k; if (Math.abs(x - CX) <= hw + pad) return true; }
       if (Math.abs(y - CY) <= BR_W + pad && Math.abs(x - CX) <= DR.anchorX + PAD_R) return true;
       if (Math.abs(x - CX) <= BR_W + pad && y >= CY && y <= CY + DR.anchorY + PAD_R) return true;
       return [[0, DR.anchorY], [-DR.anchorX, 0], [DR.anchorX, 0]].some(a => Math.hypot(x - CX - a[0], y - CY - a[1]) <= PAD_R + pad);
@@ -1211,9 +1211,9 @@
   function safePath(c, dy) {
     c.beginPath(); const cx = CX, cy = CY + dy;
     if (dragonMap()) {
-      const cut = DR.cut, T = cy - cut, xr = Math.sqrt(SAFE_R * SAFE_R - cut * cut), a1 = Math.atan2(-cut, xr), a2 = Math.atan2(-cut, -xr) + Math.PI * 2;
+      const cut = GCUT, T = cy - cut, xr = Math.sqrt(SAFE_R * SAFE_R - cut * cut), a1 = Math.atan2(-cut, xr), a2 = Math.atan2(-cut, -xr) + Math.PI * 2;
       c.moveTo(cx - xr, T); c.lineTo(cx + xr, T); c.arc(cx, cy, SAFE_R, a1, a2, false); c.closePath(); // 북쪽이 평평하게 깎인 성 둘레 땅
-      { // 자연스러운 바위 단상: 울퉁불퉁한 윗면, 둥글게 깎인 모서리, 아래로 갈수록 좁아져 성 둘레 땅과 이어지는 어깨선 (용이 이 가장자리에서 솟는다)
+      if (false) { // (단상 제거) 자연스러운 바위 단상: 울퉁불퉁한 윗면, 둥글게 깎인 모서리, 아래로 갈수록 좁아져 성 둘레 땅과 이어지는 어깨선 (용이 이 가장자리에서 솟는다)
         const P = DR.plateau, R = 80, rim = x => T - (22 + 9 * Math.sin(x * 0.021) + 7 * Math.sin(x * 0.047 + 1.3) + 4 * Math.sin(x * 0.11 + 0.4)), yj = CY + dy - 80;
         c.moveTo(cx - P + R, rim(-P + R));
         for (let x = -P + R + 12; x <= P - R; x += 12) c.lineTo(cx + x, rim(x));

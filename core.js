@@ -245,7 +245,7 @@
         ],
         t2: {
           sniper: [
-            { id: 'deadeye', name: '명사수', desc: '저격총을 든 저격수. 공격력 +85%, 사거리 +80, 공격 속도 -10%, 이동 속도 -35%. 총알이 포물선 없이 일직선으로 날아가 선 위의 모든 적을 꿰뚫음', mods: { atk: 0.85, rate: -0.1, range: 80, speed: -0.35, rifle: 1 } },
+            { id: 'deadeye', name: '명사수', desc: '저격총을 든 저격수. 공격력 +85%, 사거리 +80, 공격 속도 -10%, 이동 속도 -35%. 총알이 포물선 없이 일직선으로 날아가 선 위에서 가장 먼저 닿는 적 하나를 맞힘 (관통 없음)', mods: { atk: 0.85, rate: -0.1, range: 80, speed: -0.35, rifle: 1 } },
             { id: 'gunner', name: '포격수', desc: '폭탄 석궁. 맞은 적 주변 범위에 60% 폭발 피해, 공격력 +35%, 공격 속도 -10%', mods: { atk: 0.35, rate: -0.1, splash: 0.6 } },
           ],
           ranger: [
@@ -1511,13 +1511,15 @@
   }
   function snipe(S, u, t, dm, crit) { // 일직선 저격: 총구에서 사거리 끝까지, 선 위의 모든 적에게 피해
     const ang = Math.atan2(t.y - u.y, t.x - u.x), ux = Math.cos(ang), uy = Math.sin(ang), sx = u.x + ux * 16, sy = u.y + uy * 16, len = u.range + 90, ex = sx + ux * len, ey = sy + uy * len;
-    u.aim = ang; let n = 0;
-    for (const e of S.enemies) {
+    u.aim = ang; let first = null, fa = Infinity;
+    for (const e of S.enemies) { // 선 위에서 가장 먼저 닿는 적 하나만 맞는다
       if (e.dead || e.hidden || e.dying || e.riseT > 0) continue;
       const px = e.x - sx, py = e.y - sy, along = px * ux + py * uy; if (along < 0 || along > len + e.r) continue;
-      if (Math.abs(px * uy - py * ux) <= e.r + 6) { damage(S, e, dm * (e.rres || 1), crit, u); n++; }
+      if (Math.abs(px * uy - py * ux) <= e.r + 6 && along < fa) { fa = along; first = e; }
     }
-    emit(S, { type: 'snipe', x: sx, y: sy, tx: ex, ty: ey, hits: n, crit: !!crit });
+    if (first) damage(S, first, dm * (first.rres || 1), crit, u);
+    const L = first ? Math.max(8, fa) : len; // 맞은 적이 있으면 거기서 끝나는 선, 없으면 사거리 끝까지
+    emit(S, { type: 'snipe', x: sx, y: sy, tx: sx + ux * L, ty: sy + uy * L, hits: first ? 1 : 0, crit: !!crit });
   }
   function updateFighter(S, u, dt) {
     u.cd -= dt;

@@ -99,6 +99,7 @@
     for (const k of [-1, 1]) { ctx.beginPath(); ctx.moveTo(k * 5.4 * s, -40 * s); ctx.quadraticCurveTo(k * 16 * s, -45 * s, k * 21 * s, -58 * s); ctx.quadraticCurveTo(k * 12 * s, -50 * s, k * 3 * s, -37.6 * s); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.moveTo(k * 10 * s, -36 * s); ctx.lineTo(k * 18 * s, -37 * s); ctx.lineTo(k * 10.6 * s, -32 * s); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.moveTo(k * 8 * s, -30 * s); ctx.lineTo(k * 14 * s, -28 * s); ctx.lineTo(k * 6 * s, -26.6 * s); ctx.closePath(); ctx.fill(); ctx.stroke(); }
     tri(ctx, -2 * s, -40.6 * s, 0, -48 * s, 2 * s, -40.6 * s); ctx.fill(); ctx.stroke();
     ctx.restore();
+    if (!kSky) { const mb = 6 * s, g = ctx.createLinearGradient(0, mb - 18 * s, 0, mb); g.addColorStop(0, 'rgba(18,8,14,0)'); g.addColorStop(1, 'rgba(18,8,14,0.85)'); ctx.fillStyle = g; ctx.fillRect(-90 * s, mb - 18 * s, 180 * s, 18 * s); } // 잘린 아랫부분은 어둠 속 안개에 잠긴다
     ctx.restore();
   }
 
