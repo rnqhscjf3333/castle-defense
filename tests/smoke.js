@@ -566,7 +566,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   { const { g, b } = mk('berserker'); g.gold = 1e7; for (let i = 0; i < 4; i++) { g.buyCd.sword = 0; const u = C.buy(g, 'sword').unit; u.x = 1500 + 300 + i * 10; u.y = 1500; u.hx = u.x; u.hy = u.y; u.max = u.hp = 1e9; } b.x = 1500 + 400; b.y = 1500; b.speed = 0; g.captureEvents = true; let ev = null, sh = null;
     for (let i = 0; i < 30 * 12 && !sh; i++) { C.tick(g, DT); for (const e of C.drainEvents(g)) { if (e.type === 'bossLeap') ev = e; if (e.type === 'bossShock') sh = e; } }
     check('광전사: 아군이 몰린 곳으로 도약해 내려찍음', !!ev && !!sh && Math.hypot(b.x - 1500, b.y - 1500) < 330, ev ? '도약 후 거리 ' + Math.hypot(b.x - 1500, b.y - 1500).toFixed(0) : '없음'); }
-  { const { g, b } = mk('bombardier'); for (let i = 0; i < 30 * 40; i++) C.tick(g, DT); const d = Math.hypot(b.x - 1500, b.y - 1500); check('포격대장: 원거리 공격 — 성에서 떨어져 싸움 (사거리 230)', b.ranged && d > 150 && d < 300, d.toFixed(0)); }
+  { const { g, b } = mk('bombardier'); for (let i = 0; i < 30 * 40; i++) C.tick(g, DT); const d = Math.hypot(b.x - 1500, b.y - 1500); check('포격대장: 원거리 공격 — 성에서 떨어져 싸움 (사거리 115)', b.ranged && d > 150 && d < 300, d.toFixed(0)); }
 }
 // 43) 인구 제한 + 성 업그레이드(능력치·대포·인구)
 { C.CFG.castle.popBase = POP0; const g = C.createGame(3); g.gold = 1e9; let ok = 0, reason = null; for (let i = 0; i < 30; i++) { g.buyCd.sword = 0; const r = C.buy(g, 'sword'); if (r.ok) ok++; else { reason = r.reason; break; } }

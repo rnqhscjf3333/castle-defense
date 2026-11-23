@@ -570,9 +570,15 @@
         rect(ctx, d * 8 * s - 6.5 * s, -9 * s + h.bob, 13 * s, 22 * s, 3 * s); ctx.fill(); ctx.stroke();
         if (!fl) { ctx.fillStyle = '#e1b43a'; ctx.fillRect(d * 8 * s - 1.2 * s, -5 * s + h.bob, 2.4 * s, 14 * s); }
         line(ctx, gx - d * 2 * s, gy, gx - d * 2 * s + Math.cos(ang) * 14 * s, gy + Math.sin(ang) * 14 * s, 3 * s, fl ? '#fff' : '#d0d6e2');
-      } else if (weapon === 'claws') { // 마왕(2형태): 양손에 길게 자란 검붉은 손톱
-        for (const sd of [1, -1]) { const hx = sd * gx, base2 = sd > 0 ? ang : Math.PI - ang;
-          for (let i = -1; i <= 1; i++) { const a2 = base2 + i * 0.22, ex = hx + Math.cos(a2) * 40 * s, ey = gy + Math.sin(a2) * 40 * s; ctx.fillStyle = fl ? FLASH : '#f4ead6'; ctx.strokeStyle = '#3a0810'; ctx.lineWidth = 0.9 * s; tri(ctx, hx + Math.cos(a2 + 1.57) * 2 * s, gy + Math.sin(a2 + 1.57) * 1.6 * s, ex, ey, hx - Math.cos(a2 + 1.57) * 2 * s, gy - Math.sin(a2 + 1.57) * 2 * s); ctx.fill(); ctx.stroke(); } }
+      } else if (weapon === 'claws') { // 마왕(2형태): 검붉은 손에 휘어진 긴 발톱 네 개
+        const talon = (sx, sy, a, L, cv, w) => { const dx = Math.cos(a), dy = Math.sin(a), nx = -dy, ny = dx, c1x = sx + dx * L * 0.55 + nx * cv, c1y = sy + dy * L * 0.55 + ny * cv, tx = sx + dx * L + nx * cv * 0.6, ty = sy + dy * L + ny * cv * 0.6;
+          ctx.beginPath(); ctx.moveTo(sx + nx * w, sy + ny * w); ctx.quadraticCurveTo(c1x + nx * w * 0.5, c1y + ny * w * 0.5, tx, ty); ctx.quadraticCurveTo(c1x - nx * w * 0.2, c1y - ny * w * 0.2, sx - nx * w, sy - ny * w); ctx.closePath(); ctx.fill(); ctx.stroke(); };
+        for (const sd of [1, -1]) { const hx = sd * Math.max(gx + 5 * s, 15 * s), ra = e.swing > 0 ? ang : 0.8, base2 = sd > 0 ? ra : Math.PI - ra; // 평소에는 양손을 아래로 늘어뜨려 발톱이 바깥쪽 아래를 향한다
+          ctx.lineJoin = 'round';
+          for (let i = 0; i < 4; i++) { const a2 = base2 + (i - 1.5) * 0.2 * -sd, L = (i === 1 || i === 2 ? 38 : 32) * s; ctx.fillStyle = fl ? FLASH : '#f6ecd8'; ctx.strokeStyle = '#2a060c'; ctx.lineWidth = 1.1 * s; talon(hx + Math.cos(a2) * 2.5 * s, gy + Math.sin(a2) * 2.5 * s, a2, L, sd * 5 * s, 2.6 * s); }
+          ctx.fillStyle = fl ? FLASH : '#5a0f1c'; ctx.strokeStyle = '#1e040a'; ctx.lineWidth = 1.1 * s; ctx.beginPath(); ctx.ellipse(hx, gy, 5.2 * s, 4.4 * s, base2, 0, TAU); ctx.fill(); ctx.stroke(); // 검붉은 손
+          if (!fl) { ctx.fillStyle = '#c8203a'; for (let i = 0; i < 4; i++) { const a2 = base2 + (i - 1.5) * 0.2 * -sd; circle(ctx, hx + Math.cos(a2) * 3.8 * s, gy + Math.sin(a2) * 3.8 * s, 1.1 * s); ctx.fill(); } } // 손톱 뿌리의 붉은 마디
+        }
       } else if (weapon === 'hammer') { // 토왕(2형태): 바위로 된 거대한 망치
         const c1 = Math.cos(ang), s1 = Math.sin(ang), n1 = -s1, n2 = c1, ex = gx + c1 * 30 * s, ey = gy + s1 * 30 * s;
         line(ctx, gx - c1 * 4 * s, gy - s1 * 4 * s, ex, ey, 3.4 * s, fl ? FLASH : '#5a3a1a');
