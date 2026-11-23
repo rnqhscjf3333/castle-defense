@@ -382,6 +382,14 @@ table.rank tr.r2 td { background: linear-gradient(90deg, rgba(207,214,228,.24), 
 table.rank tr.r3 td { background: linear-gradient(90deg, rgba(201,138,75,.26), rgba(201,138,75,.05)); color: #ffd9b0; border-bottom: 1px solid rgba(201,138,75,.4); } table.rank tr.r3 td:first-child { box-shadow: inset 3px 0 0 #c98a4b; }
 table.rank tr.top .rmsg { color: inherit; opacity: .75; } .crown { margin-right: 3px; filter: drop-shadow(0 0 4px rgba(245,197,66,.8)); }
 table.rank tr.top.me td { outline: 1px solid rgba(255,204,64,.8); outline-offset: -1px; } table.rank tr.clk:hover td { filter: brightness(1.12); }
+
+/* 클릭 이펙트: 누른 자리에 퍼지는 링과 반짝이 */
+.clickfx { position: fixed; z-index: 99999; pointer-events: none; left: 0; top: 0; width: 0; height: 0; }
+.clickfx i { position: absolute; left: -23px; top: -23px; width: 46px; height: 46px; border-radius: 50%; border: 2px solid var(--fxc, #ffd166); box-shadow: 0 0 10px var(--fxc, #ffd166), inset 0 0 8px rgba(255,255,255,.35); animation: cfxRing .46s ease-out forwards; }
+.clickfx b { position: absolute; left: -2px; top: -2px; width: 4px; height: 4px; border-radius: 50%; background: var(--fxc, #ffd166); box-shadow: 0 0 6px var(--fxc, #ffd166); animation: cfxSpark .5s ease-out forwards; }
+@keyframes cfxRing { from { transform: scale(.25); opacity: .95; } to { transform: scale(1.35); opacity: 0; } }
+@keyframes cfxSpark { from { transform: translate(0, 0) scale(1); opacity: 1; } to { transform: translate(var(--dx), var(--dy)) scale(.2); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .clickfx { display: none; } }
 </style>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.png">
@@ -490,13 +498,13 @@ table.rank tr.top.me td { outline: 1px solid rgba(255,204,64,.8); outline-offset
   </div>
 </div>
 
-<script src="core.js?v=20261123l"></script>
-<script src="figures.js?v=20261123l"></script>
-<script src="scenery.js?v=20261123l"></script>
-<script src="config.js?v=20261123l"></script>
-<script src="meta.js?v=20261123l"></script>
-<script src="net.js?v=20261123l"></script>
-<script src="audio.js?v=20261123l"></script>
-<script src="main.js?v=20261123l"></script>
+<script src="core.js?v=20261123m"></script>
+<script src="figures.js?v=20261123m"></script>
+<script src="scenery.js?v=20261123m"></script>
+<script src="config.js?v=20261123m"></script>
+<script src="meta.js?v=20261123m"></script>
+<script src="net.js?v=20261123m"></script>
+<script src="audio.js?v=20261123m"></script>
+<script src="main.js?v=20261123m"></script>
 </body>
 </html>

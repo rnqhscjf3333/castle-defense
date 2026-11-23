@@ -1848,6 +1848,25 @@
     if (!S) return; S.mode = b.dataset.mode === 'free' ? 'free' : 'normal'; syncModeBar();
     toast(S.mode === 'free' ? '자유 모드: 유닛이 범위 안의 적을 멀리까지 쫓아가 공격합니다' : '기본 모드: 유닛이 성 주변을 지키며 싸웁니다');
   });
+
+  // 버튼을 누르거나 화면을 톡 칠 때: 누른 자리에 이펙트(링+반짝이)와 효과음 (캔버스는 끌기(이동)가 아닌 짧은 탭일 때만)
+  { let down = null, fxN = 0;
+    const BTN = 'button, .btn, [role="button"], .cc, .mbtn, tr.clk, #title, select, label.chk, .pickcard, .card';
+    const burst = (x, y, col) => {
+      if (fxN > 10) return; fxN++;
+      const d = document.createElement('div'); d.className = 'clickfx'; d.style.left = x + 'px'; d.style.top = y + 'px'; d.style.setProperty('--fxc', col);
+      let h = '<i></i>'; for (let k = 0; k < 6; k++) { const a = k / 6 * 6.283 + Math.random() * 0.5, r = 22 + Math.random() * 14; h += '<b style="--dx:' + (Math.cos(a) * r).toFixed(1) + 'px;--dy:' + (Math.sin(a) * r).toFixed(1) + 'px"></b>'; }
+      d.innerHTML = h; document.body.appendChild(d); setTimeout(() => { d.remove(); fxN--; }, 560);
+    };
+    const feedback = (e, isBtn) => { try { A2.init(); A2.play(isBtn ? 'btn' : 'tap'); } catch (err) {} burst(e.clientX, e.clientY, isBtn ? '#ffd166' : '#9fd8ff'); };
+    document.addEventListener('pointerdown', e => {
+      if (e.button > 0) return; const t = e.target; if (!t || !t.closest) return;
+      if (t.closest('input[type="range"], input[type="text"], textarea')) return;
+      if (t.closest(BTN) && !(t.closest('#title') && !t.closest('button'))) { if (t.closest('button:disabled, .lock')) return; down = null; feedback(e, true); return; }
+      if (t.id === 'cv' || t.closest('#title')) down = { x: e.clientX, y: e.clientY, id: e.pointerId };
+    }, true);
+    document.addEventListener('pointerup', e => { if (!down || down.id !== e.pointerId) return; const d = Math.hypot(e.clientX - down.x, e.clientY - down.y); down = null; if (d < 8) feedback(e, false); }, true);
+  }
   $('btnRank').addEventListener('click', () => { $('ovBody').innerHTML = '<div id="rankbox"></div>'; showRank(null); $('btnRank').classList.add('hidden'); $('go').textContent = '게임 시작'; });
   // 플레이 도중 창을 닫거나 숨길 때도 기록을 남긴다 (개선 자료)
   const abandon = () => { if (S && running && !S.over) Net.sendLog(S, 'abandon', true); };

@@ -7,7 +7,7 @@
   try { const j = JSON.parse(localStorage.getItem('cd_audio') || 'null'); if (j) Object.assign(st, j); } catch (e) {}
   const save = () => { try { localStorage.setItem('cd_audio', JSON.stringify(st)); } catch (e) {} };
   let view = { x: 1500, y: 1500, zoom: 1, vw: 900, vh: 700 };
-  const last = {}, MINGAP = { shotA: 0.05, shotC: 0.12, shotT: 0.08, hit: 0.04, kill: 0.035, sword: 0.05, boom: 0.07, heal: 0.15, ui: 0.03, spawn: 0.05, udead: 0.1, chain: 0.1 };
+  const last = {}, MINGAP = { shotA: 0.05, shotC: 0.12, shotT: 0.08, hit: 0.04, kill: 0.035, sword: 0.05, boom: 0.07, heal: 0.15, ui: 0.03, tap: 0.04, btn: 0.04, spawn: 0.05, udead: 0.1, chain: 0.1 };
   let voices = 0;
 
   function init() {
@@ -87,6 +87,8 @@
     buy(t, v, p) { tone('square', 523, 523, t, 0.06, 0.2, v, 0); tone('square', 784, 784, t + 0.06, 0.1, 0.2, v, 0); },
     deny(t, v, p) { tone('square', 160, 120, t, 0.14, 0.25, v, 0); },
     ui(t, v, p) { tone('triangle', 700, 900, t, 0.05, 0.2, v, 0); },
+    tap(t, v, p) { tone('sine', 520, 340, t, 0.07, 0.16, v * 0.8, 0); tone('triangle', 1040, 780, t, 0.04, 0.08, v * 0.5, 0); },            // 화면 터치: 말랑한 톡
+    btn(t, v, p) { tone('triangle', 660, 990, t, 0.06, 0.22, v, 0); tone('sine', 1320, 1760, t + 0.035, 0.07, 0.12, v * 0.7, 0); },     // 버튼: 맑은 딸깍
     card(t, v, p) { [523, 659, 784, 1047].forEach((f, i) => tone('triangle', f, f, t + i * 0.07, 0.22, 0.25, v, 0)); },
     reveal1(t, v, p) { tone('sine', 880, 1320, t, 0.18, 0.18, v, 0); },                                               // 희귀 카드 등장
     reveal2(t, v, p) { [660, 880, 1320].forEach((f, i) => tone('triangle', f, f * 1.01, t + i * 0.06, 0.25, 0.22, v, 0)); },
