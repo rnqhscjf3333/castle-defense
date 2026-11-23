@@ -240,8 +240,8 @@ function killBoss(g) { const b = g.enemies.find(e => e.kind === 'boss'); b.hp = 
   const ar = g.units.find(u => u.type === 'archer'), pr = g.units.find(u => u.type === 'priest'), r0 = ar.range, hr0 = pr.healRange, heal0 = pr.heal;
   const give = id => { const o = C.jobOptions(g).find(x => x.id === id); g.jobs.offer = { boss: 't', list: [o] }; C.pickJob(g, 0); };
   give('sniper'); check('저격수: 사거리 +60, 공격력 상승', ar.range === r0 + 60 && ar.atk > C.CFG.units.archer.atk * 1.5, `${r0}→${ar.range}`);
-  give('deadeye'); check('명사수: 관통(화살이 뒤의 적을 맞힘) 효과 합산', g.jobMods.archer.pierce === 1);
-  give('bishop'); check('주교: 부활 없음', g.reviveLeft === 0 && g.jobMods.priest.revive === 0);
+  const sp0 = C.CFG.units.archer.speed; give('deadeye'); check('명사수: 저격총(일직선) · 사거리 +140 · 이동 속도 -35% (화살 관통은 없음)', g.jobMods.archer.rifle === 1 && g.jobMods.archer.pierce === 0 && ar.range === r0 + 140 && Math.abs(ar.speed / sp0 - 0.65) < 0.02, ar.range + '/' + ar.speed.toFixed(1));
+  give('cleric'); check('성직자: 부활 없음', g.reviveLeft === 0 && g.jobMods.priest.revive === 0);
   give('archbishop'); check('대주교: 부활 1회 (즉시 반영)', g.jobMods.priest.revive === 1 && g.reviveLeft >= 1, 'reviveLeft=' + g.reviveLeft);
   const pr2 = g.units.find(u => u.type === 'priest'); check('주교 계열: 치유량 증가', pr2.heal > heal0, `${heal0}→${pr2.heal.toFixed(1)}`);
   const g2 = C.createGame(42); g2.gold = 1e7; g2.buyCd.priest = 0; C.buy(g2, 'priest'); const p2 = g2.units[0], hr = p2.healRange;
@@ -688,8 +688,10 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   const reapply = g => { g.jobs.offer = null; }; 
   // 워로드: 받은 피해의 일부를 되돌림
   const w = C.createGame(84); w.gold = 1e9; w.phase = 'round'; w.hold = true; w.queue = []; w.buyCd.sword = 0; const ws = C.buy(w, 'sword').unit;
+  const swAtk0 = ws.atk, swRate0 = ws.rate, swRange0 = ws.range;
   for (const id of ['knight', 'warlord']) { const o = C.jobOptions(w).find(x => x.id === id); w.jobs.offer = { boss: 't', list: [o] }; C.pickJob(w, 0); }
-  const ee = C.spawnEnemy(w, 'grunt', ws.x + 20, ws.y); ee.hp = ee.max = 1e6; const hb = ee.hp; C.damage(w, ws, 100, false, ee); check('워로드: 받은 피해의 30%를 때린 적에게 되돌림', hb - ee.hp > 10, '반사 ' + Math.round(hb - ee.hp));
+  check('워로드: 랜스 — 공격력↑·공격 속도↓·사거리 +14', ws.atk > swAtk0 * 1.8 && ws.rate < swRate0 * 0.7 && ws.range === swRange0 + 14, `atk×${(ws.atk / swAtk0).toFixed(2)} rate×${(ws.rate / swRate0).toFixed(2)}`);
+  { w.core.atk = 0; w.core.hp = w.core.max = 1e9; const ee = C.spawnEnemy(w, 'grunt', ws.x + 30, ws.y); ee.speed = 0; ee.dmg = 0; ee.hp = ee.max = 1e9; ws.x = ws.hx; ws.y = ws.hy; ee.x = ws.x + 30; ee.y = ws.y; const x0 = ee.x; let mx = 0; for (let i = 0; i < 60; i++) { C.tick(w, DT); mx = Math.max(mx, ee.x - x0); } check('워로드: 찌르면 적이 밀려남', mx > 25, '밀림 ' + Math.round(mx)); }
   // 버서커: 체력이 낮을수록 공격력 상승
   const b = C.createGame(85); b.gold = 1e9; b.phase = 'round'; b.hold = true; b.queue = []; b.core.atk = 0; b.core.hp = b.core.max = 1e9; b.buyCd.sword = 0; const bs = C.buy(b, 'sword').unit;
   for (const id of ['blade', 'berserker']) { const o = C.jobOptions(b).find(x => x.id === id); b.jobs.offer = { boss: 't', list: [o] }; C.pickJob(b, 0); }
@@ -698,15 +700,52 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   // 포격수(폭발)·사냥꾼(표식)
   const mkA = id1 => { const g = C.createGame(87); g.gold = 1e9; g.phase = 'round'; g.hold = true; g.queue = []; g.core.atk = 0; g.core.hp = g.core.max = 1e9; g.buyCd.archer = 0; const u = C.buy(g, 'archer').unit; for (const id of id1) { const o = C.jobOptions(g).find(x => x.id === id); g.jobs.offer = { boss: 't', list: [o] }; C.pickJob(g, 0); } return [g, u]; };
   { const [g, u] = mkA(['sniper', 'gunner']); const t = C.spawnEnemy(g, 'brute', u.x + 100, u.y), n2 = C.spawnEnemy(g, 'brute', u.x + 120, u.y + 12); for (const e of [t, n2]) { e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; } for (let i = 0; i < 120; i++) C.tick(g, DT); check('포격수: 폭발 화살이 주변 적에게도 피해', t.hp < t.max && n2.hp < n2.max); }
-  { const [g, u] = mkA(['ranger', 'hunter']); const t = C.spawnEnemy(g, 'brute', u.x + 100, u.y); t.speed = 0; t.dmg = 0; t.hp = t.max = 1e9; let marked = false; for (let i = 0; i < 120; i++) { C.tick(g, DT); if (t.markT > 0) marked = true; } const h1 = t.hp; C.damage(g, t, 1000); check('사냥꾼: 맞은 적에게 표식 (표식 중 받는 피해 증가)', marked, ''); }
+  { const [g, u] = mkA(['ranger', 'ninja']); const t = C.spawnEnemy(g, 'brute', u.x + 100, u.y), n2 = C.spawnEnemy(g, 'brute', u.x + 120, u.y + 14), far = C.spawnEnemy(g, 'brute', u.x + 100, u.y + 300); for (const e of [t, n2, far]) { e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; } let marked = false, stacks = 0, burst = null; g.captureEvents = true;
+    for (let i = 0; i < 300; i++) { C.tick(g, DT); if (t.markT > 0) marked = true; if (t.stk > stacks) stacks = t.stk; for (const ev of C.drainEvents(g)) if (ev.type === 'ninjaBurst') burst = ev; }
+    check('닌자: 표창이 쌓이다가 5스택에서 폭발 (스택 증가 → 폭발 이벤트)', stacks >= 2 && !!burst && burst.r === 75, 'stk ' + stacks);
+    check('닌자: 폭발이 주변 적에게도 피해, 먼 적은 무관 / 표식(받는 피해 증가)은 없음', n2.hp < n2.max && far.hp === far.max && !marked); }
   // 수호사제: 치유하면 보호막
   { const g = C.createGame(88); g.gold = 1e9; g.phase = 'round'; g.hold = true; g.queue = []; g.core.atk = 0; g.core.hp = g.core.max = 1e9; g.buyCd.priest = 0; g.buyCd.sword = 0; C.buy(g, 'priest'); const sw = C.buy(g, 'sword').unit; for (const id of ['cleric', 'warden']) { const o = C.jobOptions(g).find(x => x.id === id); g.jobs.offer = { boss: 't', list: [o] }; C.pickJob(g, 0); } sw.hp = sw.max * 0.4; for (let i = 0; i < 100; i++) C.tick(g, DT); check('수호사제: 치유한 아군에게 보호막', sw.ward > 0 || sw.hp > sw.max * 0.4, 'ward ' + Math.round(sw.ward || 0)); }
   // 전투사제: 성스러운 구체로 공격
-  { const g = C.createGame(89); g.gold = 1e9; g.phase = 'round'; g.hold = true; g.queue = []; g.core.atk = 0; g.core.hp = g.core.max = 1e9; g.buyCd.priest = 0; const p = C.buy(g, 'priest').unit; for (const id of ['bishop', 'templar']) { const o = C.jobOptions(g).find(x => x.id === id); g.jobs.offer = { boss: 't', list: [o] }; C.pickJob(g, 0); } const t = C.spawnEnemy(g, 'brute', p.x + 120, p.y); t.speed = 0; t.dmg = 0; t.hp = t.max = 1e9; let orb = false; for (let i = 0; i < 120; i++) { C.tick(g, DT); if (g.shots.some(s => s.color === 'h')) orb = true; } check('전투사제: 성스러운 구체로 적을 공격', orb && t.hp < t.max, '피해 ' + Math.round(t.max - t.hp)); } }
+  { const g = C.createGame(89); g.gold = 1e9; g.phase = 'round'; g.hold = true; g.queue = []; g.core.atk = 0; g.core.hp = g.core.max = 1e9; g.buyCd.priest = 0; const p = C.buy(g, 'priest').unit; for (const id of ['bard', 'inquisitor']) { const o = C.jobOptions(g).find(x => x.id === id); g.jobs.offer = { boss: 't', list: [o] }; C.pickJob(g, 0); } const t = C.spawnEnemy(g, 'brute', p.x + 120, p.y); t.speed = 0; t.dmg = 0; t.hp = t.max = 1e9; let orb = false, dm = 0, bn = 0; for (let i = 0; i < 150; i++) { C.tick(g, DT); if (g.shots.some(s => s.color === 'h')) orb = true; dm = Math.max(dm, t.curseT || 0); bn = Math.max(bn, t.burnT || 0); } check('이단심판관: 성스러운 구체로 적을 공격', orb && t.hp < t.max, '피해 ' + Math.round(t.max - t.hp)); check('이단심판관: 약화·화상 디버프를 건다 (낙인·감속과 함께)', dm > 0 && bn > 0 && t.slowT !== undefined, 'curse ' + dm.toFixed(1) + ' burn ' + bn.toFixed(1)); } }
+
+// 직업 개편: 검성 연속 공격 · 버서커 흡혈 · 팔라딘 기절 · 명사수 일직선 저격 · 폭풍사수 회피 · 바드 속도 버프
+{
+  const mkS = (ids, seed) => { const g = C.createGame(seed); g.gold = 1e9; g.phase = 'round'; g.hold = true; g.queue = []; g.core.atk = 0; g.core.hp = g.core.max = 1e9; g.buyCd.sword = 0; const u = C.buy(g, 'sword').unit; for (const id of ids) { const o = C.jobOptions(g).find(x => x.id === id); g.jobs.offer = { boss: 't', list: [o] }; C.pickJob(g, 0); } u.x = u.hx; u.y = u.hy; return [g, u]; };
+  const duel = (g, u, secs, mod) => { const e = C.spawnEnemy(g, 'brute', u.x + 28, u.y); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e12; e.x = u.x + 28; e.y = u.y; if (mod) mod(e); let melee = 0, dbl = 0, n3 = 0; g.captureEvents = true; for (let i = 0; i < 30 * secs; i++) { C.tick(g, DT); for (const ev of C.drainEvents(g)) if (ev.type === 'melee') { melee++; if (ev.dbl) dbl++; if (ev.n === 2) n3++; } } return { e, melee, dbl, n3 }; };
+  const [gb, ub] = mkS(['blade', 'blademaster'], 301), [gk, uk] = mkS(['blade', 'berserker'], 302);
+  const rb = duel(gb, ub, 12), rk = duel(gk, uk, 12);
+  check('검성: 연속 공격이 매우 잦음 (타격의 절반 이상이 연속타) · 3연타 발생', rb.dbl / rb.melee > 0.45 && rb.n3 > 0, `연속 ${rb.dbl}/${rb.melee}, 3연타 ${rb.n3}`);
+  check('검성: 사거리 +10, 버서커보다 타격이 훨씬 많음', ub.range === C.CFG.units.sword.range + 10 && rb.melee > rk.melee * 1.6, `${rb.melee} vs ${rk.melee}`);
+  { const [g, u] = mkS(['blade', 'berserker'], 303); u.hp = u.max * 0.3; const h0 = u.hp; const r = duel(g, u, 6); check('버서커: 입힌 피해의 일부를 체력으로 흡수(체력 회복)', u.hp > h0 + u.max * 0.02, `${Math.round(h0)}→${Math.round(u.hp)}`);
+    const [g2, u2] = mkS(['blade', 'blademaster'], 304); u2.hp = u2.max * 0.3; const h2 = u2.hp; duel(g2, u2, 6); check('검성은 흡혈하지 않음(대조군)', u2.hp <= h2 + 1, `${Math.round(h2)}→${Math.round(u2.hp)}`); }
+  { const [g, u] = mkS(['knight', 'paladin'], 305); const a0 = C.CFG.units.sword.atk; check('팔라딘: 공격력 감소 패널티 · 체력·방어 증가', u.atk < a0 * 0.75 && u.max > C.CFG.units.sword.hp * 1.6 && g.jobMods.sword.def >= 0.12, `atk ${u.atk.toFixed(1)}/${a0} hp ${u.max}`);
+    let st = 0, stunEv = 0; g.core.atk = 0; const e = C.spawnEnemy(g, 'grunt', u.x + 28, u.y); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e12; g.captureEvents = true; for (let i = 0; i < 30 * 40; i++) { e.x = u.x + 28; e.y = u.y; C.tick(g, DT); if (e.stunT > 0) st++; for (const ev of C.drainEvents(g)) if (ev.type === 'stun') stunEv++; }
+    check('팔라딘: 낮은 확률로 적을 기절시킴 (매번은 아님)', stunEv >= 1 && st > 0 && stunEv < 30 * 40 / 4, 'stun ' + stunEv);
+ }
+}
+{ // 명사수: 일직선 저격 / 폭풍사수: 회피 / 바드: 이동·공격 속도
+  const mkA2 = ids => { const g = C.createGame(311); g.gold = 1e9; g.phase = 'round'; g.hold = true; g.queue = []; g.core.atk = 0; g.core.hp = g.core.max = 1e9; g.buyCd.archer = 0; const u = C.buy(g, 'archer').unit; for (const id of ids) { const o = C.jobOptions(g).find(x => x.id === id); g.jobs.offer = { boss: 't', list: [o] }; C.pickJob(g, 0); } u.x = u.hx; u.y = u.hy; return [g, u]; };
+  const [g, u] = mkA2(['sniper', 'deadeye']);
+  const e1 = C.spawnEnemy(g, 'brute', u.x + 160, u.y), e2 = C.spawnEnemy(g, 'brute', u.x + 260, u.y + 2), e3 = C.spawnEnemy(g, 'brute', u.x + 240, u.y + 90), e4 = C.spawnEnemy(g, 'brute', u.x + u.range + 400, u.y);
+  for (const e of [e1, e2, e3, e4]) { e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; } let sn = null, shots = 0; g.captureEvents = true;
+  for (let i = 0; i < 90; i++) { u.x = u.hx; u.y = u.hy; C.tick(g, DT); for (const ev of C.drainEvents(g)) { if (ev.type === 'snipe' && !sn) sn = ev; if (ev.type === 'shot' && ev.c === 'a') shots++; } }
+  check('명사수: 일직선 저격 이벤트 발생, 포물선 화살은 쏘지 않음', !!sn && shots === 0, sn && JSON.stringify(sn));
+  check('명사수: 선 위의 적은 모두 맞고 선 밖·사거리 밖은 안 맞음', e1.hp < e1.max && e2.hp < e2.max && e3.hp === e3.max && e4.hp === e4.max, [e1, e2, e3, e4].map(e => Math.round(e.max - e.hp)).join('/'));
+  check('명사수: 저격선은 사거리보다 길게 뻗음', sn && Math.hypot(sn.tx - sn.x, sn.ty - sn.y) >= u.range + 80, sn && Math.round(Math.hypot(sn.tx - sn.x, sn.ty - sn.y)));
+  { const [g2, a] = mkA2(['ranger', 'stormarcher']); let dodged = 0, n = 400; g2.captureEvents = true; const foe = C.spawnEnemy(g2, 'grunt', 3000, 3000); foe.dead = false; for (let i = 0; i < n; i++) { const hp = a.hp; C.damage(g2, a, 1, false, foe); a.hp = a.max; } for (const ev of C.drainEvents(g2)) if (ev.type === 'dodge') dodged++;
+    check('폭풍사수: 공격을 약 30% 확률로 회피', dodged > n * 0.2 && dodged < n * 0.4, dodged + '/' + n);
+    const [g3, b] = mkA2(['sniper', 'deadeye']); const foe3 = C.spawnEnemy(g3, 'grunt', 3000, 3000); let d3 = 0; g3.captureEvents = true; for (let i = 0; i < n; i++) { C.damage(g3, b, 1, false, foe3); b.hp = b.max; } for (const ev of C.drainEvents(g3)) if (ev.type === 'dodge') d3++; check('다른 궁수 직업은 회피하지 않음(대조군)', d3 === 0, d3); }
+  { const g4 = C.createGame(312); g4.gold = 1e9; g4.phase = 'round'; g4.hold = true; g4.queue = []; g4.core.atk = 0; g4.core.hp = g4.core.max = 1e9; for (const t of ['sword', 'priest']) { g4.buyCd[t] = 0; C.buy(g4, t); } const sw = g4.units.find(x => x.type === 'sword'), pr = g4.units.find(x => x.type === 'priest'); sw.x = pr.x + 20; sw.y = pr.y;
+    const s0 = sw.speed; for (const id of ['bard']) { const o = C.jobOptions(g4).find(x => x.id === id); g4.jobs.offer = { boss: 't', list: [o] }; C.pickJob(g4, 0); }
+    const foe = C.spawnEnemy(g4, 'brute', sw.x + 28, sw.y); foe.speed = 0; foe.dmg = 0; foe.hp = foe.max = 1e12; let hits = 0; g4.captureEvents = true; for (let i = 0; i < 30 * 8; i++) { sw.x = pr.x + 20; sw.y = pr.y; foe.x = sw.x + 28; foe.y = sw.y; C.tick(g4, DT); for (const ev of C.drainEvents(g4)) if (ev.type === 'melee') hits++; }
+    const g5 = C.createGame(312); g5.gold = 1e9; g5.phase = 'round'; g5.hold = true; g5.queue = []; g5.core.atk = 0; g5.core.hp = g5.core.max = 1e9; g5.buyCd.sword = 0; C.buy(g5, 'sword'); const sw5 = g5.units[0]; const foe5 = C.spawnEnemy(g5, 'brute', sw5.x + 28, sw5.y); foe5.speed = 0; foe5.dmg = 0; foe5.hp = foe5.max = 1e12; let hits5 = 0; g5.captureEvents = true; for (let i = 0; i < 30 * 8; i++) { foe5.x = sw5.x + 28; foe5.y = sw5.y; C.tick(g5, DT); for (const ev of C.drainEvents(g5)) if (ev.type === 'melee') hits5++; }
+    check('바드: 버프 받은 아군의 공격 속도 증가 (약 +10%)', hits > hits5 * 1.04, hits + ' vs ' + hits5); }
+}
 // 58) 사제 부활: 망자는 부활 대상이 아니고, 주교가 여럿이어도 죽음 한 번에 한 번만 부활
 { const g = C.createGame(91); g.gold = 1e9; g.phase = 'round'; g.hold = true; g.queue = []; g.core.hp = g.core.max = 1e9; g.core.atk = 0;
   for (let i = 0; i < 3; i++) { g.buyCd.priest = 0; C.buy(g, 'priest'); } for (let i = 0; i < 4; i++) { g.buyCd.sword = 0; C.buy(g, 'sword'); }
-  for (const id of ['bishop', 'archbishop']) { const o = C.jobOptions(g).find(x => x.id === id); g.jobs.offer = { boss: 't', list: [o] }; C.pickJob(g, 0); }
+  for (const id of ['cleric', 'archbishop']) { const o = C.jobOptions(g).find(x => x.id === id); g.jobs.offer = { boss: 't', list: [o] }; C.pickJob(g, 0); }
   const pool = g.reviveLeft;
   check('대주교 3명이면 부활 횟수는 사제마다 1회씩 합쳐서 3회', pool === 3 && g.units.filter(u => u.type === 'priest').every(p => p.rv === 1), 'pool ' + pool);
   const sw = g.units.filter(u => u.type === 'sword'); for (const x of sw) C.damage(g, x, 1e9);
@@ -737,14 +776,14 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   const g = C.createGame(5); const ok = [60, 70, 80].every((r, i) => C.bossInfo(g, r).id === g.kingOrder[i]) && g.kingOrder.length === 3 && new Set(g.kingOrder).size === 3;
   check('60·70·80라운드는 사천왕 3명이 무작위 순서로 한 번씩, 90라운드는 일반 보스', ok && seeds.size > 1 && !['thunder', 'snow', 'earth'].includes(C.bossInfo(g, 90).id));
   for (const id of ['thunder', 'snow', 'earth']) {
-    const h = C.createGame(6); h.jobs.sword.ids = ['knight', 'paladin']; h.jobs.archer.ids = ['sniper', 'deadeye']; h.jobs.priest.ids = ['cleric', 'highcleric']; h.kingOrder = [id, 'x', 'y']; h.round = 60; h.phase = 'round'; h.hold = true; h.queue = []; h.enemies.length = 0; h.endless = true; h.captureEvents = true; h.core.hp = h.core.max = 1e12;
+    const h = C.createGame(6); h.jobs.sword.ids = ['knight', 'paladin']; h.jobs.archer.ids = ['sniper', 'deadeye']; h.jobs.priest.ids = ['cleric', 'archbishop']; h.kingOrder = [id, 'x', 'y']; h.round = 60; h.phase = 'round'; h.hold = true; h.queue = []; h.enemies.length = 0; h.endless = true; h.captureEvents = true; h.core.hp = h.core.max = 1e12;
     const k = C.spawnEnemy(h, 'boss', 1500, 800); const f1 = k.bossName, l1 = JSON.stringify(k.look); C.damage(h, k, 1e12); for (let i = 0; i < 400; i++) C.tick(h, DT);
     check('사천왕(' + f1 + '): 쓰러져도 각성해서 부활(모습·이름 변화)', !k.dead && k.p2 && k.bossName !== f1 && JSON.stringify(k.look) !== l1 && k.look.elem === id && k.hp > 0, k.bossName);
     C.damage(h, k, 1e13); for (let i = 0; i < 200; i++) C.tick(h, DT);
     check('사천왕(' + f1 + '): 두 번째 처치 후 각성 선택지(3개)', k.dead && h.jobs.offer && h.jobs.offer.stage === 'awaken' && h.jobs.offer.list.length === 3, h.jobs.offer && h.jobs.offer.list.length);
     if (id === 'thunder') { const m0 = h.jobMods.sword.atk; C.pickJob(h, 0); check('각성: 그 계열의 2차 전직 효과가 업그레이드됨 (선택이 아님)', h.jobs.sword.awk && h.jobMods.sword.atk > m0 || h.jobs.offer === null && Object.values(h.jobs).some(x => x && x.awk)); }
   }
-  const h = C.createGame(8); h.jobs.sword.ids = ['knight', 'paladin']; h.jobs.archer.ids = ['sniper', 'deadeye']; h.jobs.priest.ids = ['cleric', 'highcleric']; h.jobs.sword.awk = true; C.openAwaken(h, 'x'); check('각성 선택지는 남은 계열만 (70라운드 2개)', h.jobs.offer.list.length === 2);
+  const h = C.createGame(8); h.jobs.sword.ids = ['knight', 'paladin']; h.jobs.archer.ids = ['sniper', 'deadeye']; h.jobs.priest.ids = ['cleric', 'archbishop']; h.jobs.sword.awk = true; C.openAwaken(h, 'x'); check('각성 선택지는 남은 계열만 (70라운드 2개)', h.jobs.offer.list.length === 2);
 }
 { // 마왕 유산 · 레벨 제한 해제 · 비교 표시
   const g = C.createGame(9); g.round = 50; g.phase = 'round'; g.hold = true; g.queue = []; g.enemies.length = 0; const b = C.spawnEnemy(g, 'boss', 1500, 800); C.damage(g, b, 1e12); for (let i = 0; i < 400; i++) C.tick(g, DT); C.damage(g, b, 1e13); for (let i = 0; i < 200; i++) C.tick(g, DT);
@@ -815,8 +854,10 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   { const g = arena(50, [['boss', 700, 500]]); const b = g.enemies[0]; g.units.length = 0; b.abil = { drain: { cd: 11, r: 280, mul: 1.8, heal: 0.015, cap: 0.06 } }; b.t.drain = 0; b.life = 5; b.hp = b.max * 0.5; g.gold = 1e6; C.buy(g, 'sword'); for (let i = 0; i < 400 && !g.units.length; i++) C.tick(g, DT); const su = g.units[0]; su.x = 720; su.y = 500; su.hp = su.max = 1e6; b.t.drain = 0; b.life = 5; b.hp = b.max * 0.5; const h0 = b.hp; C.drainEvents(g); for (let i = 0; i < 3; i++) C.tick(g, DT); const dv = C.drainEvents(g).find(e => e.type === 'bossDrain'); check('마왕(2형태) 암흑 흡수: 아군 피해·보스 회복·병사 위치 이벤트', b.hp > h0 && !!dv && dv.pts.length >= 1, Math.round(b.hp - h0)); }
   { const g = C.createGame(77); g.gold = 1e7; g.phase = 'round'; g.hold = true; g.queue = []; for (const t of ['sword', 'priest']) { g.buyCd[t] = 0; C.buy(g, t); } for (let i = 0; i < 400 && g.units.length < 2; i++) C.tick(g, DT);
     const pr = g.units.find(u => u.type === 'priest'), sw = g.units.find(u => u.type === 'sword'); sw.x = pr.x + 30; sw.y = pr.y; const give = id => { const o = C.jobOptions(g).find(x => x.id === id); g.jobs.offer = { boss: 't', list: [o] }; C.pickJob(g, 0); };
-    give('bishop'); for (let i = 0; i < 20; i++) C.tick(g, DT); check('주교: 주변 아군에게 축복(공격력↑·피해 감소)', sw.blT > 0 && sw.blA > 0 && sw.blD > 0, sw.blA);
-    const far = g.units.find(u => u.type === 'sword'); far.x = pr.x + 600; far.blT = 0; for (let i = 0; i < 20; i++) C.tick(g, DT); check('주교: 멀리 있는 아군은 축복 없음', !(far.blT > 0)); }
+    give('bard'); for (let i = 0; i < 20; i++) C.tick(g, DT); check('바드: 주변 아군에게 연주 버프(공격력↑·피해 감소·속도↑)', sw.blT > 0 && sw.blA > 0 && sw.blD > 0 && sw.blS > 0, sw.blA + '/' + sw.blS);
+    const bA = sw.blA, bS = sw.blS; give('shaman'); for (let i = 0; i < 20; i++) C.tick(g, DT); check('무당: 바드보다 더 큰 버프 + 초당 회복, 범위 +60', sw.blA > bA * 1.8 && sw.blS > bS * 1.8 && sw.blG > 0 && g.jobMods.priest.blessR === 60, sw.blA + '/' + sw.blS);
+    sw.hp = sw.max * 0.5; const hpb = sw.hp; for (let i = 0; i < 30; i++) C.tick(g, DT); check('무당: 버프 범위 안 아군이 서서히 회복', sw.hp > hpb);
+    const far = g.units.find(u => u.type === 'sword'); far.x = pr.x + 700; far.blT = 0; for (let i = 0; i < 20; i++) C.tick(g, DT); check('바드·무당: 멀리 있는 아군은 버프 없음', !(far.blT > 0)); }
   { const g = arena(10, [['grunt', 700, 500]]); g.jobMods.priest.smite = 1; g.gold = 1e7; g.buyCd.priest = 0; C.buy(g, 'priest'); for (let i = 0; i < 400 && !g.units.length; i++) C.tick(g, DT); const pr = g.units[0]; pr.x = 650; pr.y = 500; const e = g.enemies[0]; e.x = 720; e.y = 500; let ok = false; for (let i = 0; i < 90; i++) { C.tick(g, DT); if (e.markT > 0 && e.slowT > 0) ok = true; } check('전투사제: 맞은 적에게 낙인(받는 피해↑)·감속', ok || e.dead); }
   { const { g, b } = run('charger', 10, () => {}); const o = C.spawnEnemy(g, 'grunt', 760, 500); for (let i = 0; i < 700 && !(o.hasteT > 0); i++) C.tick(g, DT); check('돌격왕: 함성으로 주변 적 가속', o.hasteT > 0 || o.dead); }
   { const { g, b } = run('bombardier', 10, () => {}); const n = []; g.captureEvents = true; for (let i = 0; i < 30 * 18; i++) C.tick(g, DT); check('포격대장: 일제 포격 설정', b.volley >= 3, b.volley); } }

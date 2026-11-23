@@ -115,18 +115,18 @@
     capBonus: 2, capLift: ['u_charge', 'u_pierce', 'u_crit', 'u_range', 'u_aoeheal', 'u_hbuff', 'a_heal', 'a_atk', 'a_def', 'a_spd', 'a_rad', 'f_repair', 'f_thorn'],
     // 2차 전직 각성 (사천왕 처치: 60·70·80라운드에 한 계열씩 업그레이드). 2차 전직 효과에 아래 수치가 한 번 더 더해진다.
     awaken: {
-      paladin:     { name: '각성 팔라딘',   desc: '체력 +50%·방어 +6%·초당 회복 +3% 추가', mods: { hp: 0.5, def: 0.06, regen: 0.03 } },
-      warlord:     { name: '각성 워로드',   desc: '체력 +40%·공격력 +30%·반사 +30% 추가', mods: { hp: 0.4, atk: 0.3, reflect: 0.3 } },
+      paladin:     { name: '각성 팔라딘',   desc: '체력 +50%·방어 +6%·초당 회복 +3%·기절 확률 +5% 추가', mods: { hp: 0.5, def: 0.06, regen: 0.03, stun: 0.05 } },
+      warlord:     { name: '각성 워로드',   desc: '체력 +40%·공격력 +40%·밀어내기 +120 추가', mods: { hp: 0.4, atk: 0.4, knock: 120 } },
       blademaster: { name: '각성 검성',     desc: '공격력 +60%·광역 베기 +30%·연속 공격 +10% 추가', mods: { atk: 0.6, cleave: 0.3, dbl: 0.1 } },
-      berserker:   { name: '각성 버서커',   desc: '공격력 +80%·광역 베기 +30%·광폭화 +80% 추가', mods: { atk: 0.8, cleave: 0.3, berserk: 0.8 } },
-      deadeye:     { name: '각성 명사수',   desc: '공격력 +50%·관통 +1 추가', mods: { atk: 0.5, pierce: 1 } },
+      berserker:   { name: '각성 버서커',   desc: '공격력 +80%·광역 베기 +30%·광폭화 +80%·흡혈 +5% 추가', mods: { atk: 0.8, cleave: 0.3, berserk: 0.8, lifesteal: 0.05 } },
+      deadeye:     { name: '각성 명사수',   desc: '공격력 +50%·사거리 +30 추가', mods: { atk: 0.5, range: 30 } },
       gunner:      { name: '각성 포격수',   desc: '공격력 +35%·폭발 피해 +40% 추가', mods: { atk: 0.35, splash: 0.4 } },
-      stormarcher: { name: '각성 폭풍사수', desc: '공격 속도 +40%·치명타 확률 +15% 추가', mods: { rate: 0.4, crit: 0.15 } },
-      hunter:      { name: '각성 사냥꾼',   desc: '공격력 +30%·이동 속도 +20%·표식 피해 +30% 추가', mods: { atk: 0.3, speed: 0.2, mark: 0.3 } },
-      highcleric:  { name: '각성 대성직자', desc: '치유량 +30%·치유 속도 +15% 추가', mods: { heal: 0.3, healRate: 0.15 } },
+      stormarcher: { name: '각성 폭풍사수', desc: '공격 속도 +40%·치명타 확률 +15%·회피 +10% 추가', mods: { rate: 0.4, crit: 0.15, dodge: 0.1 } },
+      ninja:       { name: '각성 닌자',     desc: '공격력 +30%·이동 속도 +20%·표창 폭발 피해 +40% 추가', mods: { atk: 0.3, speed: 0.2, burst: 0.4 } },
+      archbishop:  { name: '각성 대주교',   desc: '치유량 +25%·치유 속도 +10% 추가', mods: { heal: 0.25, healRate: 0.1 } },
       warden:      { name: '각성 수호사제', desc: '치유량 +20%·보호막 +80% 추가', mods: { heal: 0.2, ward: 0.8 } },
-      archbishop:  { name: '각성 대주교',   desc: '치유량 +12%·축복 한 단계 더 (공격력 +8%·받는 피해 -5%) 추가', mods: { heal: 0.12, bless: 1 } },
-      templar:     { name: '각성 전투사제', desc: '체력 +30%·치유량(성스러운 구체 피해) +40% 추가', mods: { hp: 0.3, heal: 0.4 } },
+      shaman:      { name: '각성 무당',     desc: '치유량 +12%·축복 한 단계·속도 버프 한 단계 더 추가', mods: { heal: 0.12, bless: 1, tempo: 1 } },
+      inquisitor:  { name: '각성 이단심판관', desc: '체력 +30%·치유량(구체 피해) +40%·화상 피해 강화 추가', mods: { hp: 0.3, heal: 0.4 } },
     },
     // 50라운드 마왕 처치 보상: 사천왕에 맞설 수 있도록 아주 강력한 보상 중 하나
     legacy: [
@@ -229,12 +229,12 @@
         ],
         t2: {
           knight: [
-            { id: 'paladin', name: '팔라딘', desc: '성스러운 갑옷과 철퇴. 체력 +50%, 피해 7% 방어, 초당 체력 3% 회복', mods: { hp: 0.5, def: 0.07, regen: 0.03 } },
-            { id: 'warlord', name: '워로드', desc: '뿔 투구에 가시 방패. 체력 +40%, 공격력 +30%, 받은 피해의 30%를 때린 적에게 되돌림', mods: { hp: 0.4, atk: 0.3, reflect: 0.3 } },
+            { id: 'paladin', name: '팔라딘', desc: '성스러운 갑옷과 철퇴를 든 완전 방어형. 체력 +70%, 피해 12% 방어, 초당 체력 3% 회복. 대신 공격력 -35%. 때릴 때 12% 확률로 적을 1.2초 기절시킴 (보스는 짧게)', mods: { hp: 0.7, def: 0.12, regen: 0.03, atk: -0.35, stun: 0.12 } },
+            { id: 'warlord', name: '워로드', desc: '긴 랜스를 든 돌격 기사. 공격력 +110%, 체력 +40%, 사거리 +14. 대신 공격 속도 -35%. 찌르면 적을 크게 밀어냄 (보스는 밀리지 않음)', mods: { hp: 0.4, atk: 1.1, rate: -0.35, range: 14, knock: 300 } },
           ],
           blade: [
-            { id: 'blademaster', name: '검성', desc: '쌍검의 달인. 공격력 +60%, 주변 적에게 50% 베기, 연속 공격 +10%', mods: { atk: 0.6, cleave: 0.5, dbl: 0.1 } },
-            { id: 'berserker', name: '버서커', desc: '방패 없이 거대한 검을 휘두름. 공격력 +80%, 광역 베기 35%, 체력이 낮을수록 최대 +100% 더 강해짐', mods: { atk: 0.8, cleave: 0.35, berserk: 1.0 } },
+            { id: 'blademaster', name: '검성', desc: '양손에 쌍검을 든 공격형 달인. 공격력 +45%, 연속 공격 확률 +45% (최대 3연타), 사거리 +10, 주변 적에게 25% 베기', mods: { atk: 0.45, cleave: 0.25, dbl: 0.45, range: 10 } },
+            { id: 'berserker', name: '버서커', desc: '방패 없이 거대한 검을 휘두름. 공격력 +80%, 광역 베기 35%, 체력이 낮을수록 최대 +100% 더 강해짐, 입힌 피해의 15%를 체력으로 흡수', mods: { atk: 0.8, cleave: 0.35, berserk: 1.0, lifesteal: 0.15 } },
           ],
         },
       },
@@ -245,28 +245,28 @@
         ],
         t2: {
           sniper: [
-            { id: 'deadeye', name: '명사수', desc: '황금 조준경 장궁. 공격력 +50%, 화살이 뒤의 적 1명을 관통', mods: { atk: 0.5, pierce: 1 } },
+            { id: 'deadeye', name: '명사수', desc: '저격총을 든 저격수. 공격력 +70%, 사거리 +80, 공격 속도 -10%, 이동 속도 -35%. 총알이 포물선 없이 일직선으로 날아가 선 위의 모든 적을 꿰뚫음', mods: { atk: 0.7, rate: -0.1, range: 80, speed: -0.35, rifle: 1 } },
             { id: 'gunner', name: '포격수', desc: '폭탄 석궁. 맞은 적 주변 범위에 60% 폭발 피해, 공격력 +35%, 공격 속도 -10%', mods: { atk: 0.35, rate: -0.1, splash: 0.6 } },
           ],
           ranger: [
-            { id: 'stormarcher', name: '폭풍사수', desc: '세 갈래 질풍 화살. 공격 속도 +40%, 치명타 확률 +15%', mods: { rate: 0.4, crit: 0.15 } },
-            { id: 'hunter', name: '사냥꾼', desc: '표식 석궁. 맞은 적이 4초간 받는 피해 +30%, 공격력 +30%, 이동 속도 +20%', mods: { atk: 0.3, speed: 0.2, mark: 0.3 } },
+            { id: 'stormarcher', name: '폭풍사수', desc: '세 갈래 질풍 화살. 공격 속도 +40%, 치명타 확률 +15%, 바람처럼 공격을 30% 확률로 회피', mods: { rate: 0.4, crit: 0.15, dodge: 0.3 } },
+            { id: 'ninja', name: '닌자', desc: '표창을 던지는 암살자. 공격력 +30%, 이동 속도 +25%, 사거리 -50. 표창이 5개 쌓인 적은 폭발해 주변 적에게 큰 피해(표창 피해의 4배, 범위 75)', mods: { atk: 0.3, speed: 0.25, range: -50, stack: 1 } },
           ],
         },
       },
       priest: {
         t1: [
           { id: 'cleric', name: '성직자', desc: '광륜의 치유사. 치유량 +45%, 치유 범위 +50', mods: { heal: 0.45, healRange: 50 } },
-          { id: 'bishop', name: '주교', desc: '주교관과 지팡이. 치유량 +8%. 주변 아군에게 축복: 공격력 +8%, 받는 피해 -5%', mods: { heal: 0.08, bless: 1 } },
+          { id: 'bard', name: '바드', desc: '류트를 든 음유시인. 연주로 주변 아군(범위 140)을 북돋움: 공격력 +8%, 받는 피해 -5%, 이동·공격 속도 +10%', mods: { bless: 1, tempo: 1 } },
         ],
         t2: {
           cleric: [
-            { id: 'highcleric', name: '대성직자', desc: '거대한 광륜. 치유량 +30%, 치유 속도 +15%', mods: { heal: 0.3, healRate: 0.15 } },
+            { id: 'archbishop', name: '대주교', desc: '황금 십자 지팡이와 큰 광륜. 치유량 +20%, 치유 속도 +10%. 이 사제는 라운드마다 쓰러진 아군을 1회 부활 (체력 25%)', mods: { heal: 0.2, healRate: 0.1, revive: 1 } },
             { id: 'warden', name: '수호사제', desc: '푸른 등불의 수호자. 치유량 +20%, 치유한 아군에게 치유량의 80%만큼 보호막 (최대 체력의 30%까지)', mods: { heal: 0.2, ward: 0.8 } },
           ],
-          bishop: [
-            { id: 'archbishop', name: '대주교', desc: '황금 십자 지팡이. 치유량 +12%, 축복 강화(공격력 +16%, 받는 피해 -10%), 이 사제는 라운드마다 쓰러진 아군을 1회 부활 (체력 25%)', mods: { heal: 0.12, revive: 1, bless: 1 } },
-            { id: 'templar', name: '전투사제', desc: '철퇴와 갑옷의 성전사. 체력 +30%. 성스러운 구체로 사거리 190 안의 적을 직접 공격(치유량의 170%). 맞은 적은 4초간 받는 피해 +20%, 2초간 이동 속도 감소(낙인)', mods: { hp: 0.3, smite: 1 } },
+          bard: [
+            { id: 'shaman', name: '무당', desc: '북과 부적의 무녀. 치유량 +10%. 부적 진으로 더 넓은 범위(+60)에 더 강한 버프: 공격력 +16%, 받는 피해 -10%, 속도 +20%, 초당 체력 1.5% 회복 (바드 효과에 더해짐)', mods: { heal: 0.1, bless: 1, tempo: 1, blessR: 60, bregen: 0.015 } },
+            { id: 'inquisitor', name: '이단심판관', desc: '붉은 십자의 심판관. 체력 +30%. 성화 구체로 사거리 190 안의 적을 공격(치유량의 130%). 맞은 적은 4초간 받는 피해 +20%(낙인), 3초 감속, 4초간 공격력 -25%(약화), 4초간 화상(초당 구체 피해의 25%)', mods: { hp: 0.3, smite: 1, curse: 1 } },
           ],
         },
       },
@@ -311,7 +311,7 @@
     cardVals: {                       // 카드 수치 (설명 문구와 효과가 모두 여기서 읽는다)
       coreAtk: 0.40, coreRate: 0.25, coreRange: 45, fortHp: 600, repair: 0.15, thorn: 0.9,
       crit: 0.10, critMul: 2, archerRange: 0.12,
-      guard: 0.15, dodge: 0.12, hbuff: 0.12, hbuffT: 4, blessAtk: 0.08, blessDef: 0.05, charge: 0.40, chargeRate: 0.15, revive: 0.25, pierce: 0.40, bomb: 4.0, bombStep: 1.5,
+      guard: 0.15, dodge: 0.12, hbuff: 0.12, hbuffT: 4, blessAtk: 0.08, blessDef: 0.05, tempo: 0.10, charge: 0.40, chargeRate: 0.15, revive: 0.25, pierce: 0.40, bomb: 4.0, bombStep: 1.5,
       auraHeal: 0.025, auraAtk: 0.08, auraDef: 0.08, auraDefCap: 0.40, auraSpd: 0.06, auraBoost: 0.15,
     },
     rerolls: 2,
@@ -729,7 +729,7 @@
                 splash: L('c_splash'), chain: L('c_chain'), bomb: L('c_bomb'), thorn: L('f_thorn'), repair: L('f_repair') };
   }
   // 전직 효과 합산 (유닛 종류별)
-  const zeroMods = () => ({ hp: 0, atk: 0, rate: 0, speed: 0, def: 0, regen: 0, cleave: 0, range: 0, pierce: 0, crit: 0, heal: 0, healRange: 0, healRate: 0, revive: 0, dbl: 0, reflect: 0, berserk: 0, splash: 0, mark: 0, ward: 0, smite: 0, bless: 0 });
+  const zeroMods = () => ({ hp: 0, atk: 0, rate: 0, speed: 0, def: 0, regen: 0, cleave: 0, range: 0, pierce: 0, crit: 0, heal: 0, healRange: 0, healRate: 0, revive: 0, dbl: 0, reflect: 0, berserk: 0, splash: 0, mark: 0, ward: 0, smite: 0, bless: 0, lifesteal: 0, stun: 0, knock: 0, dodge: 0, rifle: 0, stack: 0, burst: 0, tempo: 0, blessR: 0, bregen: 0, curse: 0 });
   function jobDef(type, id) {
     const j = CFG.jobs[type]; if (!j) return null;
     for (const d of j.t1) if (d.id === id) return d;
@@ -1231,7 +1231,8 @@
     if (tgt.team === 'e' && tgt.markT > 0) dmg *= 1 + tgt.markAmp; // 사냥꾼의 표식
     if (tgt.team === 'u' && tgt.blT > 0) dmg *= 1 - tgt.blD; // 주교의 축복
     if (tgt.team === 'u') {
-      if (S.perks.dodge && lineOf(tgt.type) === 'archer' && S.rng() < Math.min(0.6, V().dodge * S.perks.dodge)) { tgt.dodgeT = 0.4; emit(S, { type: 'dodge', x: tgt.x, y: tgt.y }); return; } // 궁수 회피
+      { const dd = lineOf(tgt.type) === 'archer' ? (S.perks.dodge ? V().dodge * S.perks.dodge : 0) + (S.jobMods ? S.jobMods.archer.dodge : 0) : 0; // 궁수 회피 (카드 + 폭풍사수)
+        if (dd > 0 && S.rng() < Math.min(0.6, dd)) { tgt.dodgeT = 0.4; emit(S, { type: 'dodge', x: tgt.x, y: tgt.y, job: tgt.job }); return; } }
       let red = 0;
       if (tgt.aura) red += S.aura.def;
       if (S.perks.guard && lineOf(tgt.type) === 'sword') red += V().guard * S.perks.guard;
@@ -1278,7 +1279,7 @@
     const H = clamp(cf.arc * d + cf.arcMin, cf.arcMin, cf.arcMax);
     const s = S.shotPool.length ? S.shotPool.pop() : {}; // 쓴 투사체 객체를 재사용 (풀링)
     s.x = sx; s.y = sy; s.sx = sx; s.sy = sy; s.p = 0; s.T = T; s.H = H; s.h = m.h0; s.h0 = m.h0; s.vx = 0; s.vy = 0; s.vh = 0; s.t = tgt; s.from = from; s.dmg = dmg; s.color = color; s.job = from.job || null; s.elite = !!from.elite;
-    s.pierce = !!(extra && extra.pierce); s.pc = extra && extra.pc != null ? extra.pc : null; s.aoe = extra && extra.aoe ? extra.aoe : 0; s.crit = !!(extra && extra.crit); s.splash = extra && extra.splash || 0; s.mark = extra && extra.mark || 0;
+    s.pierce = !!(extra && extra.pierce); s.pc = extra && extra.pc != null ? extra.pc : null; s.aoe = extra && extra.aoe ? extra.aoe : 0; s.crit = !!(extra && extra.crit); s.splash = extra && extra.splash || 0; s.mark = extra && extra.mark || 0; s.stack = extra && extra.stack || 0; s.bm = extra && extra.bm || 0; s.curse = extra && extra.curse || 0;
     S.shots.push(s);
     emit(S, { type: 'shot', x: sx, y: sy, c: color });
   }
@@ -1291,8 +1292,14 @@
     } else if (s.t === S.core) hitCore(S, s.dmg, '화살(사수)');
     else {
       damage(S, s.t, s.dmg * (s.t.rres || 1), s.crit, s.from); onShotHit(S, s);
-      if (s.color === 'h' && !s.t.dead) s.t.slowT = Math.max(s.t.slowT || 0, 2); // 전투사제: 낙인에 맞은 적은 느려진다
-      if (s.mark && !s.t.dead) { s.t.markT = 4; s.t.markAmp = s.mark; emit(S, { type: 'marked', x: s.t.x, y: s.t.y }); } // 사냥꾼: 표식
+      if (s.color === 'h' && !s.t.dead) s.t.slowT = Math.max(s.t.slowT || 0, 3); // 이단심판관: 성화에 맞은 적은 느려진다
+      if (s.mark && !s.t.dead) { s.t.markT = 4; s.t.markAmp = s.mark; emit(S, { type: 'marked', x: s.t.x, y: s.t.y }); } // 이단심판관: 낙인(받는 피해 증가)
+      if (s.curse && !s.t.dead) { const t = s.t; t.curseT = 4; t.burnT = 4; t.burnD = s.dmg * 0.25; t.burnAcc = t.burnAcc || 0; emit(S, { type: 'curse', x: t.x, y: t.y }); } // 약화(공격력 감소) + 성화 화상
+      if (s.stack && !s.t.dead) { // 닌자: 표창이 박힌다 — 5개가 쌓이면 폭발
+        const t = s.t; t.stk = (t.stk || 0) + 1; t.stkT = 6;
+        if (t.stk >= 5) { t.stk = 0; const R = 75, bd = s.dmg * (s.bm || 4); eachNear(S.gE, t.x, t.y, R, e => damage(S, e, bd * (e.rres || 1))); emit(S, { type: 'ninjaBurst', x: t.x, y: t.y, r: R }); }
+        else emit(S, { type: 'ninjaStack', x: t.x, y: t.y, n: t.stk });
+      }
       if (s.splash) { const R = 55, t = s.t; eachNear(S.gE, t.x, t.y, R, e => { if (e !== t) damage(S, e, s.dmg * s.splash); }); emit(S, { type: 'boom', x: t.x, y: t.y, r: R }); } // 포격수: 폭발 화살
     }
   }
@@ -1439,7 +1446,7 @@
   function updatePriest(S, u, dt) {
     u.cd -= dt; if (S.jobMods.priest.smite) priestSmite(S, u, dt);
     if (S.jobMods.priest.bless) priestBless(S, u, dt);
-    const spm = 1 + (u.aura ? S.aura.spd : 0);
+    const spm = (1 + (u.aura ? S.aura.spd : 0)) * (u.blT > 0 ? 1 + (u.blS || 0) : 1);
     const near = nearest(S.gE, u.x, u.y, 90);
     if (near) {
       const dx = u.x - near.x, dy = u.y - near.y, d = Math.hypot(dx, dy) || 1;
@@ -1465,15 +1472,15 @@
   function rvSync(S) { let n = 0; for (const u of S.units) if (u.type === 'priest' && !u.dead) n += u.rv || 0; S.reviveLeft = n; }
   function priestBless(S, u, dt) { // 주교 계열: 주변 아군에게 축복 (공격력 증가·받는 피해 감소)
     u.bt = (u.bt || 0) - dt; if (u.bt > 0) return; u.bt = 0.3;
-    const L = S.jobMods.priest.bless, R = 140;
-    eachNear(S.gU, u.x, u.y, R, a => { if (a.dead || a.undead) return; a.blT = 0.7; a.blA = V().blessAtk * L; a.blD = V().blessDef * L; });
-    u.blT = 0.7; u.blA = V().blessAtk * L; u.blD = V().blessDef * L;
+    const jm = S.jobMods.priest, L = jm.bless, R = 140 + jm.blessR, Sp = V().tempo * jm.tempo, G = jm.bregen;
+    eachNear(S.gU, u.x, u.y, R, a => { if (a.dead || a.undead) return; a.blT = 0.7; a.blA = V().blessAtk * L; a.blD = V().blessDef * L; a.blS = Sp; a.blG = G; });
+    u.blT = 0.7; u.blA = V().blessAtk * L; u.blD = V().blessDef * L; u.blS = Sp; u.blG = G;
   }
   function priestSmite(S, u, dt) { // 전투사제: 성스러운 구체로 가까운 적을 공격
     u.sc = (u.sc || 0) - dt; if (u.sc > 0) return;
     const t = nearest(S.gE, u.x, u.y, 190); if (!t) return;
     u.sc = 1.1; u.swing = 0.3; u.aim = Math.atan2(t.y - u.y, t.x - u.x);
-    fire(S, u, t, u.heal * 1.7 * (1 + (u.aura ? S.aura.atk : 0)), CFG.arrowSpeed * 0.85, 'h', { mark: 0.2 });
+    fire(S, u, t, u.heal * (S.jobMods.priest.curse ? 1.3 : 1.7) * (1 + (u.aura ? S.aura.atk : 0)), CFG.arrowSpeed * 0.85, 'h', S.jobMods.priest.curse ? { mark: 0.2, curse: 1 } : { mark: 0.2 });
   }
   function castHeroSkill(S, u, atk) {
     const sk = CFG.heroSkill[u.type];
@@ -1498,10 +1505,24 @@
     }
     u.swing = 0.4;
   }
+  function stunEnemy(S, t, dur) { // 적 기절: 보스는 짧게만
+    if (t.dead || t.dying || t.hidden || t.riseT > 0) return;
+    t.stunT = Math.max(t.stunT || 0, t.kind === 'boss' ? dur * 0.3 : dur); emit(S, { type: 'stun', x: t.x, y: t.y });
+  }
+  function snipe(S, u, t, dm, crit) { // 일직선 저격: 총구에서 사거리 끝까지, 선 위의 모든 적에게 피해
+    const ang = Math.atan2(t.y - u.y, t.x - u.x), ux = Math.cos(ang), uy = Math.sin(ang), sx = u.x + ux * 16, sy = u.y + uy * 16, len = u.range + 90, ex = sx + ux * len, ey = sy + uy * len;
+    u.aim = ang; let n = 0;
+    for (const e of S.enemies) {
+      if (e.dead || e.hidden || e.dying || e.riseT > 0) continue;
+      const px = e.x - sx, py = e.y - sy, along = px * ux + py * uy; if (along < 0 || along > len + e.r) continue;
+      if (Math.abs(px * uy - py * ux) <= e.r + 6) { damage(S, e, dm * (e.rres || 1), crit, u); n++; }
+    }
+    emit(S, { type: 'snipe', x: sx, y: sy, tx: ex, ty: ey, hits: n, crit: !!crit });
+  }
   function updateFighter(S, u, dt) {
     u.cd -= dt;
     const melee = u.range < 60;
-    const spm = 1 + (u.aura ? S.aura.spd : 0);
+    const spm = (1 + (u.aura ? S.aura.spd : 0)) * (u.blT > 0 ? 1 + (u.blS || 0) : 1); // 바드·무당의 연주: 이동·공격 속도 증가
     const bz = S.jobMods[lineOf(u.type)] ? S.jobMods[lineOf(u.type)].berserk : 0; // 버서커: 체력이 낮을수록 강해진다
     const atk = u.atk * hbMul(S, u) * (1 + (u.aura ? S.aura.atk : 0)) * (u.weakT > 0 ? CFG.debuff.weak.mul : 1) * (bz ? 1 + bz * (1 - Math.max(0, u.hp) / u.max) : 1);
     const fromCore = Math.hypot(u.x - CX, u.y - CY);
@@ -1537,17 +1558,30 @@
         u.cd = 1 / (u.rate * spm * chargeRate); u.swing = 0.25; u.aim = Math.atan2(t.y - u.y, t.x - u.x);
         if (melee) {
           emit(S, { type: 'melee', x: u.x, y: u.y, tx: t.x, ty: t.y, job: u.job, ut: u.type });
-          damage(S, t, atk * (t.mres || 1));
-          if (lineOf(u.type) === 'sword' && S.rng() < (cfg.dbl !== undefined ? cfg.dbl : 0.1) + S.jobMods.sword.dbl) { // 일정 확률로 한 번 더 벤다
-            const t2 = t.dead ? nearest(S.gE, u.x, u.y, u.range + u.r) : t; emit(S, { type: 'melee', x: u.x, y: u.y, tx: (t2 || t).x, ty: (t2 || t).y, job: u.job, ut: u.type, dbl: true }); if (t2) damage(S, t2, atk * (t2.mres || 1)); u.cd *= 0.5;
+          const jmf = S.jobMods[lineOf(u.type)] || {}; let leech = 0;
+          const hit = (tt, dm) => { damage(S, tt, dm); leech += dm; };
+          hit(t, atk * (t.mres || 1));
+          if (jmf.knock && !t.dead) knock(S, t, u.x, u.y, jmf.knock, 0); // 워로드: 랜스로 찔러 밀어낸다
+          if (jmf.stun && !t.dead && S.rng() < jmf.stun) stunEnemy(S, t, 1.2); // 팔라딘: 낮은 확률로 기절
+          if (lineOf(u.type) === 'sword') { // 일정 확률로 한 번 더 벤다 (검성은 최대 3연타)
+            let p = (cfg.dbl !== undefined ? cfg.dbl : 0.1) + jmf.dbl, last = t;
+            for (let n = 0; n < 2 && S.rng() < p; n++, p *= 0.5) {
+              const t2 = last.dead ? nearest(S.gE, u.x, u.y, u.range + u.r) : last; if (!t2) break; last = t2;
+              emit(S, { type: 'melee', x: u.x, y: u.y, tx: t2.x, ty: t2.y, job: u.job, ut: u.type, dbl: true, n: n + 1 }); hit(t2, atk * (t2.mres || 1)); u.cd *= 0.5;
+            }
           }
-          const cl = S.jobMods[lineOf(u.type)] ? S.jobMods[lineOf(u.type)].cleave : 0; // 검성: 주변 적에게 베기 피해
-          if (cl) eachNear(S.gE, t.x, t.y, 46, o => { if (o !== t) damage(S, o, atk * cl); });
+          const cl = jmf.cleave || 0; // 검성: 주변 적에게 베기 피해
+          if (cl) eachNear(S.gE, t.x, t.y, 46, o => { if (o !== t) hit(o, atk * cl); });
+          if (jmf.lifesteal && leech > 0 && u.hp > 0) { // 버서커: 입힌 피해의 일부를 체력으로 흡수
+            applyHeal(S, u, leech * jmf.lifesteal);
+            if (!(u.lsFx > 0)) { u.lsFx = 0.3; emit(S, { type: 'leech', x: u.x, y: u.y, tx: t.x, ty: t.y, amt: Math.round(leech * jmf.lifesteal) }); }
+          }
         } else {
-          const line = lineOf(u.type), pc = (line === 'archer' ? pierceCount(S) : 0) + (CFG.units[u.type].pierce | 0), jma = S.jobMods[line] || {}, arrow = (pc > 0 || jma.splash || jma.mark) ? Object.assign(pc > 0 ? { pierce: true, pc } : {}, jma.splash ? { splash: jma.splash } : {}, jma.mark ? { mark: jma.mark } : {}) : null;
+          const line = lineOf(u.type), pc = (line === 'archer' ? pierceCount(S) : 0) + (CFG.units[u.type].pierce | 0), jma = S.jobMods[line] || {}, arrow = (pc > 0 || jma.splash || jma.mark || jma.stack) ? Object.assign(pc > 0 ? { pierce: true, pc } : {}, jma.splash ? { splash: jma.splash } : {}, jma.mark ? { mark: jma.mark } : {}, jma.stack ? { stack: 1, bm: 4 * (1 + jma.burst) } : {}) : null;
           const cc = line === 'archer' ? V().crit * S.perks.crit + S.jobMods.archer.crit : 0;
           let dm = atk, isCrit = false; if (cc > 0 && S.rng() < cc) { dm *= V().critMul; isCrit = true; emit(S, { type: 'crit', x: t.x, y: t.y }); }
-          fire(S, u, t, dm, CFG.arrowSpeed, 'a', isCrit ? Object.assign({ crit: true }, arrow) : arrow);
+          if (jma.rifle) snipe(S, u, t, dm, isCrit); // 명사수: 저격총 — 포물선 없이 일직선으로 꿰뚫는다
+          else fire(S, u, t, dm, CFG.arrowSpeed, 'a', isCrit ? Object.assign({ crit: true }, arrow) : arrow);
         }
       }
     }
@@ -1819,6 +1853,7 @@
   function updateEnemy(S, e, dt) {
     e.cd -= dt; e.age += dt;
     if (e.frozenT > 0) { e.frozenT -= dt; return; } // 절대영도: 얼어붙음
+    if (e.stunT > 0) { e.stunT -= dt; return; } // 팔라딘의 기절
     const boost = enrageMul(e.age);
     if ((e.kind !== 'boss' || !(e.abil && e.abil.shield)) && e.shieldT > 0) e.shieldT -= dt; // (보스의 자체 방어막은 보스 능력에서 줄인다)
     if (e.hasteT > 0) e.hasteT -= dt;
@@ -1829,7 +1864,7 @@
     if (e.fixed) return; // 용: 제자리에 고정 (스킬만 쓴다)
     if (e.kind === 'shaman') return updateShaman(S, e, dt);
     if (e.slowT > 0) e.slowT -= dt;
-    const c = S.core, spm = e.speedMul * (e.hasteT > 0 ? e.hasteMul : 1) * (e.slowT > 0 ? 0.45 : 1) * (boost > 1 ? Math.min(1.5, 1 + (boost - 1) * 0.2) : 1), dmg = e.dmg * boost * e.dmgMul, cdTime = 1 / (e.rate * e.rateMul || 1);
+    const c = S.core, spm = e.speedMul * (e.hasteT > 0 ? e.hasteMul : 1) * (e.slowT > 0 ? 0.45 : 1) * (boost > 1 ? Math.min(1.5, 1 + (boost - 1) * 0.2) : 1), dmg = e.dmg * boost * e.dmgMul * (e.curseT > 0 ? 0.75 : 1), cdTime = 1 / (e.rate * e.rateMul || 1);
     let tgt = nearest(S.gU, e.x, e.y, (e.abil && e.abil.rush && !e.rushDone) || e.dashT > 0 ? 1500 : e.aggro);
     if (e.dashT > 0 || (e.abil && e.abil.rush && !e.rushDone)) { let bs = null, bdd = Infinity; for (const u of S.units) { if (u.dead || (u.type !== 'sword' && u.line !== 'sword' && u.type !== 'legendsword')) continue; const d = Math.hypot(u.x - e.x, u.y - e.y); if (d < bdd) { bdd = d; bs = u; } } if (bs) tgt = bs; } // 돌진은 가장 가까운 검사부터 // 등장 돌진 중에는 거리와 상관없이 가장 가까운 아군
     if (e.leapT > 0) return; // 도약 중
@@ -1927,7 +1962,7 @@
       if (u.dead) continue;
       if (u.kvx || u.kvy) stepKnock(S, u, dt);
       if (u.chillT > 0) u.chillT -= dt;
-      u.flash = Math.max(0, u.flash - dt); u.swing = Math.max(0, u.swing - dt); if (u.wardFx > 0) u.wardFx -= dt; if (u.hbT > 0) u.hbT -= dt; if (u.blT > 0) u.blT -= dt;
+      u.flash = Math.max(0, u.flash - dt); u.swing = Math.max(0, u.swing - dt); if (u.wardFx > 0) u.wardFx -= dt; if (u.hbT > 0) u.hbT -= dt; if (u.blT > 0) u.blT -= dt; if (u.lsFx > 0) u.lsFx -= dt;
       if (u.undead && (u.ttl -= dt) <= 0) { u.dead = true; emit(S, { type: 'undeadFade', x: u.x, y: u.y }); continue; }
       if (u.stunT > 0 || u.poisonT > 0 || u.weakT > 0 || u.woundT > 0) {
         if (u.poisonT > 0) { u.poisonT -= dt; u.hp = Math.max(1, u.hp - u.max * CFG.debuff.poison.pct * dt); }
@@ -1937,6 +1972,7 @@
       if (CFG.units[u.type].static) { updateStatic(S, u, dt); continue; }
       const jm = S.jobMods[lineOf(u.type)];
       if (jm && jm.regen && u.hp < u.max) u.hp = Math.min(u.max, u.hp + u.max * jm.regen * dt);
+      if (u.blT > 0 && u.blG && u.hp < u.max && u.hp > 0) u.hp = Math.min(u.max, u.hp + u.max * u.blG * dt); // 무당의 부적 진: 초당 회복
       const a = S.threat + wrapAngle(u.ha - S.threat) * (1 - bias);
       u.hx = CX + Math.cos(a) * u.hr + Math.sin(S.t * 0.6 + u.id * 1.7) * CFG.ai.sway; u.hy = CY + Math.sin(a) * u.hr + Math.cos(S.t * 0.5 + u.id * 2.3) * CFG.ai.sway;
       const udt = u.chillT > 0 ? dt * 0.55 : dt; // 냉기: 이동·공격이 느려진다
@@ -1967,7 +2003,7 @@
       const pl = S.pools[i]; if (!pl) continue; pl.t -= dt; if (pl.t <= 0) { S.pools.splice(i, 1); continue; }
       for (const u of S.units) if (!u.dead && Math.hypot(u.x - pl.x, u.y - pl.y) <= pl.r + u.r * 0.5) u.poisonT = Math.max(u.poisonT || 0, 1.5);
     }
-    for (const e of S.enemies) { if (e.dead) continue; if (e.kvx || e.kvy) stepKnock(S, e, dt); if (e.markT > 0) e.markT -= dt; e.flash = Math.max(0, e.flash - dt); e.swing = Math.max(0, e.swing - dt); updateEnemy(S, e, dt); }
+    for (const e of S.enemies) { if (e.dead) continue; if (e.kvx || e.kvy) stepKnock(S, e, dt); if (e.markT > 0) e.markT -= dt; if (e.curseT > 0) e.curseT -= dt; if (e.stkT > 0 && (e.stkT -= dt) <= 0) e.stk = 0; if (e.burnT > 0) { e.burnT -= dt; e.burnAcc = (e.burnAcc || 0) + e.burnD * dt; if (e.burnAcc >= e.burnD * 0.5) { const b = e.burnAcc; e.burnAcc = 0; damage(S, e, b); } } e.flash = Math.max(0, e.flash - dt); e.swing = Math.max(0, e.swing - dt); updateEnemy(S, e, dt); }
     separate(S.units, S.gU); separate(S.enemies, S.gE);
 
     // 투사체 (포물선)
