@@ -758,6 +758,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   const g = C.createGame(11); g.round = 99; g.phase = 'round'; g.endless = true; g.hold = false; g.queue = []; g.enemies.length = 0; g.gold = 1e6; g.core.hp = g.core.max = 1e12;
   C.jumpToRound(g, 100); g.phase = 'prep'; g.prepT = 0; C.tick(g, DT); check('100라운드: 땅이 무너지는 연출 동안 시간 정지', g.dragonIntro && g.round === 100 && g.queue[0] === 'boss' && g.queue.length > 1);
   const step = () => { if (g.cards.offer) C.pickCard(g, 0); if (g.jobs.offer) C.pickJob(g, 0); if (g.cOffer) C.pickCastle(g, 0); C.tick(g, DT); };
+  g.core.hp = g.core.max = 1e12; // (라운드 시작 때 성 능력치가 다시 계산되므로 여기서 다시 고정)
   for (let i = 0; i < 300 && g.dragonIntro; i++) step(); check('연출 후 절벽 지형(cliff=1)', !g.dragonIntro && g.cliff >= 0.99);
   for (let i = 0; i < 60; i++) step(); const d = g.enemies.find(e => e.kind === 'boss' && !e.dead);
   check('용: 북쪽 단상 가장자리에 고정, 그림은 판정보다 훨씬 큼', d && d.fixed && d.side === 0 && d.x === 1500 && d.y === 1500 - C.CFG.dragon.cut && d.vr >= 2 * d.r, d && [d.x, d.y, d.r, d.vr].join());

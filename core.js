@@ -316,7 +316,7 @@
     },
     rerolls: 2,
     // 성 업그레이드: 유닛 수(인구)에 상한이 있고, 골드로 성을 올리면 인구 상한·체력·공격력·사거리가 오르고 특정 레벨마다 대포가 1문씩 늘어난다
-    castle: { max: 10, extra: 3, costExtra: [10000, 15000, 22000], awk: { hp: 0.5, atk: 0.6, rate: 0.25, range: 60, cannons: 2 }, cost: [220, 380, 640, 1000, 1550, 2350, 3500, 5000, 7000], popBase: 8, popPer: 3, hp: 350, atk: 0.16, range: 22, rate: 0.06, cannonLv: [3, 5, 7] },
+    castle: { max: 10, extra: 3, costExtra: [10000, 15000, 22000], awk: { hp: 0.5, atk: 0.6, rate: 0.25, range: 60, cannons: 2 }, cost: [220, 380, 640, 1000, 1550, 2350, 3500, 5000, 7000], popBase: 8, popPer: 3, hp: 350, atk: 0.16, roundAtk: 0.012, range: 22, rate: 0.06, cannonLv: [3, 5, 7] },
     // 엘리트: 일반 몬스터가 일정 확률로 훨씬 강하고 크게 나온다. 확률은 라운드가 갈수록 커져 최대 max
     elite: { from: 3, perRound: 0.0025, max: 0.10, hp: 3, dmg: 1.6, size: 1.35, gold: 4, speed: 1.05 },
     endless: { hpLin: 0.052, hpQuad: 0.0003, cnt: 0.011, bossBase: 60000, bossExp: 0.6, marMul: 0.9 }, // 무한 모드(51라운드~) 난이도 곡선: 체력 배율 1+lin·n+quad·n², 적 수 +cnt·n (n = 50라운드 이후 지난 라운드)
@@ -716,7 +716,7 @@
     const K = CFG.castle, kl = (S.castle ? S.castle.lv : 1) - 1;
     c.lv = kl + 1; c.cannons = 1 + K.cannonLv.filter(l => l <= kl + 1).length;
     c.max = b.hp + v.fortHp * L('f_hp') + K.hp * kl;
-    c.atk = b.atk * (1 + v.coreAtk * L('c_atk') + K.atk * kl);
+    c.atk = b.atk * (1 + v.coreAtk * L('c_atk') + K.atk * kl) * (1 + (K.roundAtk || 0) * Math.max(0, (S.round || 1) - 1)); // 라운드가 지날수록 성 공격력도 자란다 (적 체력 증가를 따라가도록)
     c.rate = b.rate * (1 + v.coreRate * L('c_rate') + K.rate * kl);
     c.range = b.range + v.coreRange * L('c_range') + K.range * kl;
     if (S.castle && S.castle.awk) { const A = CFG.castle.awk; c.max *= 1 + A.hp; c.atk *= 1 + A.atk; c.rate *= 1 + A.rate; c.range += A.range; c.cannons += A.cannons; } // 성채 각성
@@ -964,7 +964,7 @@
   }
   function startRound(S) {
     S.cliff = 0; S.cliffTheme = null;
-    S.phase = 'round'; S.round++; S.roundT = 0; S.clearT = 0; S.repairN = 0;
+    S.phase = 'round'; S.round++; S.roundT = 0; S.clearT = 0; S.repairN = 0; recompute(S);
     const r = S.round;
     for (const u of S.units) if (u.type === 'priest') u.rv = S.jobMods.priest.revive; rvSync(S);
     if (r > 1) {
