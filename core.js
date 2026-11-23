@@ -265,7 +265,7 @@
             { id: 'warden', name: '수호사제', desc: '푸른 등불의 수호자. 치유량 +20%, 치유한 아군에게 치유량의 80%만큼 보호막 (최대 체력의 30%까지)', mods: { heal: 0.2, ward: 0.8 } },
           ],
           bishop: [
-            { id: 'archbishop', name: '대주교', desc: '황금 십자 지팡이. 치유량 +12%, 축복 강화(공격력 +16%, 받는 피해 -10%), 이 사제는 라운드마다 쓰러진 아군을 1회 부활 (체력 50%)', mods: { heal: 0.12, revive: 1, bless: 1 } },
+            { id: 'archbishop', name: '대주교', desc: '황금 십자 지팡이. 치유량 +12%, 축복 강화(공격력 +16%, 받는 피해 -10%), 이 사제는 라운드마다 쓰러진 아군을 1회 부활 (체력 25%)', mods: { heal: 0.12, revive: 1, bless: 1 } },
             { id: 'templar', name: '전투사제', desc: '철퇴와 갑옷의 성전사. 체력 +30%. 성스러운 구체로 사거리 190 안의 적을 직접 공격(치유량의 170%). 맞은 적은 4초간 받는 피해 +20%, 2초간 이동 속도 감소(낙인)', mods: { hp: 0.3, smite: 1 } },
           ],
         },
@@ -311,7 +311,7 @@
     cardVals: {                       // 카드 수치 (설명 문구와 효과가 모두 여기서 읽는다)
       coreAtk: 0.40, coreRate: 0.25, coreRange: 45, fortHp: 600, repair: 0.15, thorn: 0.9,
       crit: 0.10, critMul: 2, archerRange: 0.12,
-      guard: 0.15, dodge: 0.12, hbuff: 0.12, hbuffT: 4, blessAtk: 0.08, blessDef: 0.05, charge: 0.40, chargeRate: 0.15, revive: 0.5, pierce: 0.40, bomb: 4.0, bombStep: 1.5,
+      guard: 0.15, dodge: 0.12, hbuff: 0.12, hbuffT: 4, blessAtk: 0.08, blessDef: 0.05, charge: 0.40, chargeRate: 0.15, revive: 0.25, pierce: 0.40, bomb: 4.0, bombStep: 1.5,
       auraHeal: 0.025, auraAtk: 0.08, auraDef: 0.08, auraDefCap: 0.40, auraSpd: 0.06, auraBoost: 0.15,
     },
     rerolls: 2,

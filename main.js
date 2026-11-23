@@ -1540,6 +1540,8 @@
     const box = $('rankbox'); if (!box) return; box.innerHTML = '<p>랭킹 불러오는 중…</p>';
     const r = await Net.top(10); if (!$('rankbox')) return;
     const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    // 서버가 한마디·상세 기록을 내려주지 않아도, 이 브라우저에서 올린 기록이면 저장해 둔 값을 붙여 보여 준다
+    { const loc = Net.localTop(); for (const e of r.list) { const l = loc.find(x => x.name === e.name && x.score === e.score); if (l) { if (!e.msg && l.msg) e.msg = l.msg; if (!e.d && !e.detail && l.d) e.d = l.d; } } }
     let hit = false; rankList = r.list;
     const rows = r.list.map((e, i) => { const me = mine != null && !hit && e.score === mine; if (me) hit = true; return '<tr class="clk' + (me ? ' me' : '') + '" data-ri="' + i + '"><td>' + (i + 1) + '</td><td>' + esc(e.name) + (e.msg ? '<div class="rmsg">“' + esc(e.msg) + '”</div>' : '') + '</td><td>' + (e.win ? '클리어' : e.round + '라운드') + '</td><td>' + fmtTime(e.time) + '</td></tr>'; }).join('');
     box.innerHTML = '<div class="rankhead">' + (r.server ? '전체 랭킹' : (Net.configured ? '서버에 연결하지 못해 내 기록만 표시' : '내 기록 (서버 미설정)')) + '</div>'
@@ -1565,12 +1567,12 @@
     act2: [[1.13, 1.81, 56.75], [56.94, 1.92, 41.93], [0.82, 48.39, 44.45], [44.96, 48.49, 54.04]], // 암흑 군단의 진격 개시 (assets/a30_*)
     endless: [[1.07, 1.92, 59.08], [59.77, 1.71, 39.28], [0.69, 48.39, 43.19], [43.38, 48.39, 55.55]],
     dragon: [[0.69, 1.51, 54.79], [52.65, 1.61, 46.6], [0.76, 48.79, 50.0], [48.05, 48.79, 51.26]], // 보물을 깨운 붉은 용의 비상 (assets/d80_*)
-    ending: [[0.91, 1.46, 52.99], [49.93, 1.46, 49.22], [0.91, 50.59, 48.37], [47.98, 50.59, 51.17]],
+    ending: [[0.91, 1.07, 50.59], [48.31, 1.07, 50.91], [0.91, 50.59, 49.54], [48.44, 50.59, 50.78]], // 용사들의 승리와 평화의 귀환
   };
   function playComic(name, done) {
     if (name === 'opening') $('comicStage').innerHTML = OPENING_HTML;
     const wide = name === 'ending'; $('comicStage').style.aspectRatio = wide ? '1536 / 1024' : ''; $('comicStage').style.width = wide ? 'min(97vw, calc((100vh - 62px) * 1.5))' : '';
-    if (name !== 'opening') $('comicStage').innerHTML = COMIC_POS[name].map((p, i) => '<img class="cp" data-i="' + (i + 1) + '" src="assets/' + ({ act2: 'a30', dragon: 'd80' }[name] || name) + '_' + (i + 1) + '.webp?v=3" alt="" style="left:' + p[0] + '%;top:' + p[1] + '%;width:' + p[2] + '%">').join('');
+    if (name !== 'opening') $('comicStage').innerHTML = COMIC_POS[name].map((p, i) => '<img class="cp" data-i="' + (i + 1) + '" src="assets/' + ({ act2: 'a30', dragon: 'd80' }[name] || name) + '_' + (i + 1) + '.webp?v=4" alt="" style="left:' + p[0] + '%;top:' + p[1] + '%;width:' + p[2] + '%">').join('');
     const el = $('comic'), imgs = Array.from(el.querySelectorAll('.cp')); let idx = 0, over = false; comicOn = true;
     const wait = Promise.all(imgs.map(im => im.complete ? 1 : new Promise(r => { im.onload = im.onerror = r; })));
     document.body.classList.add('comicOn'); imgs.forEach(im => im.classList.remove('in')); el.classList.remove('hidden', 'out', 'shake', 'rumble'); $('comicHint').textContent = '화면을 터치하면 다음 컷 ▶';
