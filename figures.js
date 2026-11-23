@@ -29,6 +29,9 @@
     if (ak === 'roar' || ak === 'breath') {
       const rr = ap < 0.28 ? ap / 0.28 : 0, th = ap >= 0.28 ? Math.min(1, (ap - 0.28) / 0.1) * (ap > 0.9 ? (1 - ap) / 0.1 : 1) : 0;
       hR += -0.25 * rr + Math.sin(nowT * 30) * 0.03 * th; ns *= 1 - 0.1 * rr + 0.14 * th; hD += 2 * rr - 3 * th; jawO = th * 8; wA = 8 * (rr + th); wS = rr + th; dip += -1.5 * rr + 1 * th;
+    } else if (ak === 'swipe') { // 한쪽 손을 높이 들었다가 크게 휘두른다
+      const u = ap < 0.55 ? ap / 0.55 : 1, v = ap < 0.55 ? 0 : (ap - 0.55) / 0.45;
+      armL = Math.max(-0.2, u * u * 1.15 - v * 1.6); hR += -0.12 * u + 0.18 * v * (1 - v) * 4; ns *= 1 - 0.04 * u + 0.06 * v * (1 - v) * 4; wS = 0.4 * u; dip -= 1.2 * u; jawO = 4 * v * (1 - v) * 4;
     } else if (ak === 'slam') {
       const w = 0.67;
       if (ap < w) { const u = ap / w; armL = u * u; hR -= 0.15 * u; ns *= 1 - 0.06 * u; dip -= 2 * u; wS = 0.5 * u; }

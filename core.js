@@ -138,7 +138,7 @@
     kb: { decay: 5.2, max: 950, stagger: 0.35, basic: { boss: 230, ogre: 200, brute: 150, boar: 150, direwolf: 90, rockgiant: 300, stormwolf: 90, elite: 110 }, mass: { golem: 0.35, legendsword: 0.5, hero: 0.8, legendarcher: 0.8, marksman: 0.9 } },
     // 사천왕 (60·70·80라운드에 무작위 순서로 한 명씩. 90라운드는 일반 보스). 마왕처럼 쓰러지면 속성에 맞는 모습으로 각성해 부활한다.
     kingP2: { cdMul: 0.78, dmg: 1.25, hp: 1.9, sword: { cd: 8, len: 1100, width: 150, warn: 1.0, mul: 3.2, kb: 440 }, summon: { thunder: { cd: 9, n: 4, kind: 'wolf' }, snow: { cd: 10, n: 3, kind: 'ghost' }, earth: { cd: 10, n: 3, kind: 'ironshield' } } }, // 사천왕 2차전 강화
-    kingHp: 1.5,           // 사천왕 한 형태의 체력 = 무한 모드 보스 기본 체력 × 이 값
+    kingHp: 1.3,           // 사천왕 한 형태의 체력 = 무한 모드 보스 기본 체력 × 이 값
     kings: {
       thunder: { id: 'thunder', elem: 'thunder', line: '번개가 너희의 심장을 꿰뚫으리라.', name: '뇌왕', r: 36,
         look: { body: '#3a3320', head: '#f1ead2', weapon: 'sword', crown: true, style: 'overlord', elem: 'thunder' },
@@ -157,7 +157,7 @@
         abil2: { dash: { cd: 5, dur: 1.2, mul: 3.4, shock: { r: 260, kb: 640, mul: 2.4 } }, hammer: { cd: 6.5, r: 170, warn: 1.1, mul: 3.4, stun: 1.3, kb: 700 }, quake: { cd: 9, n: 7, r: 100, warn: 1.0, mul: 2.2, kb: 420 }, rage: { at: 0.4, speed: 1.3, rate: 1.4, dmg: 1.4 }, debuff: [{ kind: 'wound', cd: 12, r: 160 }] } },
     },
     // 100라운드: 거대한 용 (몬스터 무리가 함께 몰려오는 레이드). 성 둘레를 빼고 땅이 무너져 절벽이 된다. 용은 네 방향 중 한 곳에 고정되어 있다가 날아올랐다가 다른 곳에 내려앉는다.
-    dragon: { id: 'dragon', line: '대지는 사라지고… 오직 불길만이 남으리라.', name: '재앙의 용', r: 130, vr: 260, dragon: true, hpMul: 3.4, anchorX: 520, anchorY: 420, cut: 260, plateau: 440, monsterFrac: 0.3, waveEvery: 16, waveFrac: 0.07, // r=판정, vr=그림 크기(몸집이 아주 커서 지도에는 상반신만 보인다). 북쪽은 cut만큼 직각으로 깎여 평평한 단상(폭 plateau×2)이 되고 용은 그 가장자리에서 솟는다. 나머지 세 자리(서·동·남)에서는 몬스터가 나온다
+    dragon: { id: 'dragon', line: '대지는 사라지고… 오직 불길만이 남으리라.', name: '재앙의 용', r: 130, vr: 260, dragon: true, hpMul: 2.4, anchorX: 520, anchorY: 420, cut: 260, plateau: 440, monsterFrac: 0.3, waveEvery: 16, waveFrac: 0.07, // r=판정, vr=그림 크기(몸집이 아주 커서 지도에는 상반신만 보인다). 북쪽은 cut만큼 직각으로 깎여 평평한 단상(폭 plateau×2)이 되고 용은 그 가장자리에서 솟는다. 나머지 세 자리(서·동·남)에서는 몬스터가 나온다
      
       look: { style: 'dragon', body: '#a3262a', head: '#d9482c' },
       abil: { artillery: { cd: 5, dmg: 85, radius: 100, count: 3, flight: 1.5 }, breath: { cd: 11, len: 1150, half: 0.3, warn: 1.4, mul: 3, kb: 380 }, tail: { cd: 7, r: 215, warn: 0.7, mul: 2.2, kb: 720 }, gust: { cd: 16, r: 760, warn: 1.0, kb: 540 }, meteor: { cd: 9, n: 8, r: 85, warn: 1.0, mul: 2.0, at: 0.5, kb: 320 }, rage: { at: 0.3, speed: 1, rate: 1.3, dmg: 1.4 }, fly: { at: 0.5, up: 1.8, away: 10, passes: 5, span: 1000, barrage: 0.4, r: 95, mul: 1.9, back: 3.0, landR: 420, landMul: 2.2 } }, deathT: 7 },
@@ -324,6 +324,16 @@
     legendChance: 0.007,              // 30라운드 이후, 카드 한 칸마다 전설 카드가 나올 확률 (아주 낮음)
     rarityWeight: { common: 70, rare: 25, epic: 5 },
   };
+  // 사천왕·용: 마왕의 공통 스킬(포격·방어막·광폭화·돌진·네 가지 상태이상)을 함께 쓴다. 용은 사천왕의 대표 기술도 가져온다.
+  { const DB = () => [{ kind: 'stun', cd: 11, r: 125 }, { kind: 'poison', cd: 12, r: 150 }, { kind: 'weak', cd: 13, r: 165 }, { kind: 'wound', cd: 14, r: 165 }];
+    const COM = (dmg, cnt) => ({ artillery: { cd: 6, dmg, radius: 100, count: cnt, flight: 1.5 }, shield: { cd: 16, dur: 3, red: 0.6 }, rage: { at: 0.4, speed: 1.3, rate: 1.3, dmg: 1.25 }, dash: { cd: 10, dur: 1.2, mul: 2.2 } });
+    const mix = (a, x) => { for (const k in x) if (!a[k]) a[k] = x[k]; a.debuff = DB(); };
+    const K = CFG.kings;
+    mix(K.thunder.abil, COM(85, 2)); mix(K.thunder.abil2, COM(95, 2));
+    mix(K.snow.abil, COM(80, 2)); mix(K.snow.abil2, COM(90, 2));
+    mix(K.earth.abil, COM(85, 2)); mix(K.earth.abil2, COM(95, 2));
+    Object.assign(CFG.dragon.abil, { claw: { cd: 8, len: 950, width: 72, warn: 1.0, mul: 2.4, n: 3, kb: 380 }, bolt: { cd: 10, n: 5, r: 90, warn: 0.9, mul: 1.7, stun: 0.8, kb: 300 }, frost: { cd: 12, count: 2, r: 150, warn: 1.2, dur: 5, mul: 0.5, freeze: 0.6 }, quake: { cd: 11, n: 5, r: 100, warn: 1.0, mul: 2.0, kb: 420 }, shield: { cd: 18, dur: 3, red: 0.5 }, debuff: DB() });
+  }
   const UNIT_TYPES = ['sword', 'archer', 'priest']; // 직접 생산 가능한 유닛
 
   // ───────────── 유틸 ─────────────
@@ -993,7 +1003,7 @@
         emit(S, { type: 'omen', id: nb.id, name: nb.name, line: (LN[nb.id] || LN.thunder).replace('{p}', pv), look: nb.look, r: nb.id === 'dragon' ? 40 : nb.r });
       }
     }
-    if (r === FINAL_ROUND) { const keep = q.filter((k, i) => k !== 'boss' && (i % 100) < CFG.dragon.monsterFrac * 100); q.length = 0; q.push('boss', ...keep); S.dragonWaveT = CFG.dragon.waveEvery; S.dragonIntro = { t: 0, dur: 8 }; S.zones.length = 0; S.strikes.length = 0; emit(S, { type: 'dragonIntro' }); } // 마지막 라운드: 몬스터 없이 용과의 1:1 레이드
+    if (r === FINAL_ROUND) { const keep = q.filter((k, i) => k !== 'boss' && (i % 100) < CFG.dragon.monsterFrac * 100); q.length = 0; q.push('boss', ...keep); S.dragonWaveT = CFG.dragon.waveEvery; S.dragonIntro = { t: 0, dur: 8, wait: true }; S.zones.length = 0; S.strikes.length = 0; } // 마지막 라운드: 몬스터 없이 용과의 1:1 레이드
     S.queue = q; S.spawnGap = SPAWN_TIME / q.length; S.spawnT = 0;
     let text = '라운드 ' + r;
     if (r === 10) text += ' · 스폰 지점 증가';
@@ -1198,7 +1208,7 @@
     const k = Object.assign({ shape: 'circle', t: 1, w: 1, mul: 1, kb: 0, stun: 0, chill: 0, kind: 'bolt', from: e, r: 80 }, o); k.w = k.t;
     if (e && k.kb && !(k.shape === 'circle' && Math.hypot(k.x - e.x, k.y - e.y) <= 60)) k.kb *= CFG.balance.farKb || 0.35; // 보스 주변에 쓰는 광역기가 아니면 밀치는 힘을 줄인다
     if (e && (e.kind === 'boss' || e.king || e.dragon)) bossSay(S, e, k);
-    if (e && e.dragon) { const dk = k.kind === 'slam' ? 'slam' : (k.shape === 'cone' ? 'breath' : 'roar'), dd = k.t + (dk === 'slam' ? 0.35 : 0.5); e.anim = { k: dk, T: dd, left: dd }; } // 용의 동작: 숨결·포효·내려찍기
+    if (e && e.dragon) { const dk = k.claw ? 'swipe' : k.kind === 'slam' ? 'slam' : (k.shape === 'cone' ? 'breath' : 'roar'), dd = k.t + (dk === 'slam' ? 0.35 : 0.5); e.anim = { k: dk, T: dd, left: dd }; } // 용의 동작: 숨결·포효·내려찍기
     if (e && k.kind === 'sweep') { e.spinWait = Math.max(0, k.t - 0.6); e.spinDur = 0.7; e.spinA0 = e.aim || 0; } // 보스가 무기를 휘두르며 한 바퀴 돈다
     S.strikes.push(k);
     emit(S, { type: 'strikeWarn', x: k.x, y: k.y, r: k.r, t: k.t, kind: k.kind, shape: k.shape, ang: k.ang, half: k.half, len: k.len, w2: k.w2, claw: k.claw });
@@ -1266,13 +1276,14 @@
     t: { len: 20, h0: 9.5 }, // 포탑 포신
     b: { len: 26, h0: 12 },  // 발리스타 석궁
     es: { len: 85, h0: 34 }, // 보스(포격대장) 어깨 대포
+    eb: { len: 85, h0: 34 }, // 포격대장의 기본 공격: 어깨 대포에서 나가는 폭탄
     h: { len: 8, h0: 10 },   // 전투사제의 성스러운 구체
     cm: { len: 14, h0: 36 }, // 갈래를 고른 성: 지붕 위 마법사의 지팡이 끝에서 나간다
     throw: { len: 0, h0: 62 },// 대포가 없는 보스: 머리 위로 던지듯 발사
   };
   // 투사체: 지면 위치(x,y)는 목표를 향해 직선으로 가고, 높이(h)가 포물선을 그린다. 도착하면 피해.
   function fire(S, from, tgt, dmg, spd, color, extra) {
-    const m = (color === 'c' && from.cpath) ? MUZZLE.cm : (color === 'es' && !(from.look && from.look.weapon === 'cannon')) ? MUZZLE.throw : (MUZZLE[color] || { len: 0, h0: 0 });
+    const m = (color === 'c' && from.cpath) ? MUZZLE.cm : ((color === 'es' || color === 'eb') && !(from.look && from.look.weapon === 'cannon')) ? MUZZLE.throw : (MUZZLE[color] || { len: 0, h0: 0 });
     const ang = Math.atan2(tgt.y - from.y, tgt.x - from.x), sx = from.x + Math.cos(ang) * m.len, sy = from.y + Math.sin(ang) * m.len;
     const dx = tgt.x - sx, dy = tgt.y - sy, d = Math.hypot(dx, dy), cf = CFG.shots;
     const T = extra && extra.T ? extra.T : Math.max(cf.minT, d / spd);
@@ -1733,9 +1744,9 @@
       e.t.sword -= dt;
       if (e.t.sword <= 0 && e.life > 2) { const tg = nearestUnit(S, e.x, e.y, A.sword.len); if (!tg) e.t.sword = 1.5; else { e.t.sword = A.sword.cd; const ang = Math.atan2(tg.y - e.y, tg.x - e.x); addStrike(S, e, { shape: 'line', x: e.x, y: e.y, ang, len: A.sword.len, w2: A.sword.width, r: A.sword.width, t: A.sword.warn, mul: A.sword.mul, kb: A.sword.kb, kind: 'slash' }); } }
     }
-    if (A.claw) { // 각성한 마왕: 긴 손톱으로 부채꼴로 세 줄기를 긋는다
+    if (A.claw) { // 각성한 마왕·용: 손을 휘둘러 몸 중심에서 사방으로 손톱 자국이 뻗는다 (한 줄기는 가장 가까운 아군을 향한다)
       e.t.claw -= dt;
-      if (e.t.claw <= 0 && e.life > 2) { const tg = nearestUnit(S, e.x, e.y, A.claw.len); if (!tg) e.t.claw = 1.5; else { e.t.claw = A.claw.cd; const base = Math.atan2(tg.y - e.y, tg.x - e.x); for (let i = 0; i < A.claw.n; i++) { const off = (i - (A.claw.n - 1) / 2) * A.claw.gap; addStrike(S, e, { shape: 'line', x: e.x - Math.sin(base) * off, y: e.y + Math.cos(base) * off, ang: base + (i - (A.claw.n - 1) / 2) * 0.03, len: A.claw.len, w2: A.claw.width, r: A.claw.width, t: A.claw.warn + i * 0.1, mul: A.claw.mul, kb: A.claw.kb, kind: 'slash', claw: true }); } } }
+      if (e.t.claw <= 0 && e.life > 2) { const tg = nearestUnit(S, e.x, e.y, A.claw.len); if (!tg) e.t.claw = 1.5; else { e.t.claw = A.claw.cd; const base = Math.atan2(tg.y - e.y, tg.x - e.x); for (let i = 0; i < A.claw.n; i++) addStrike(S, e, { shape: 'line', x: e.x, y: e.y, ang: base + i * Math.PI * 2 / A.claw.n, len: A.claw.len, w2: A.claw.width, r: A.claw.width, t: A.claw.warn, mul: A.claw.mul, kb: A.claw.kb, kind: 'slash', claw: true }); } }
     }
     if (A.lance) { // 각성한 뇌왕: 번개 창을 가까운 아군 둘에게 꽂아 관통시킨다
       e.t.lance -= dt;
@@ -1874,7 +1885,7 @@
     if (e.ranged) { // 사수: 사거리 끝에서 멈춰 포물선 화살을 쏜다
       const t = tgt || c, d = Math.hypot(t.x - e.x, t.y - e.y) - t.r - e.r;
       if (d > e.range * 0.9) moveToward(e, t.x, t.y, dt, e.range * 0.9 + t.r + e.r, spm);
-      if (e.cd <= 0 && d <= e.range) { e.cd = cdTime; e.swing = 0.25; e.aim = Math.atan2(t.y - e.y, t.x - e.x); fire(S, e, t, dmg, CFG.enemyArrowSpeed, e.kind === 'boss' ? 'em' : 'ea'); }
+      if (e.cd <= 0 && d <= e.range) { e.cd = cdTime; e.swing = 0.25; e.aim = Math.atan2(t.y - e.y, t.x - e.x); fire(S, e, t, dmg, CFG.enemyArrowSpeed, e.kind === 'boss' ? (e.look && e.look.weapon === 'cannon' ? 'eb' : 'em') : 'ea'); }
       return;
     }
     const t = tgt || c;
@@ -1899,6 +1910,10 @@
   function tick(S, dt) {
     if (S.over) return;
     if (S.dev && S.gold < 1e8) S.gold = DEV_GOLD; // 개발자 모드: 골드 무한
+    if (S.dragonIntro && S.dragonIntro.wait) { // 선택지(카드·전직·보상)를 모두 고른 뒤에야 땅의 연출이 시작된다
+      checkCastleChoice(S); if (S.cards.offer || S.jobs.offer || S.cOffer || S.cinematic) return;
+      S.dragonIntro.wait = false; emit(S, { type: 'dragonIntro' });
+    }
     if (S.dragonIntro) { const D = S.dragonIntro; D.t += dt; S.cliff = Math.min(1, D.t / (D.dur * 0.85)); if (D.t >= D.dur) S.dragonIntro = null; return; } // 100라운드: 땅이 무너지는 연출 동안 시간이 멈춘다
     if (S.bossDeath) { stepBossDeath(S, dt); return; } // 보스 사망·부활 연출 중에는 시간이 멈춘다
     checkCastleChoice(S);

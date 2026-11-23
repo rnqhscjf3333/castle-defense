@@ -472,7 +472,7 @@
   $('pickBack').addEventListener('click', () => { if (S) C.jobBack(S); });
   $('btnReroll').addEventListener('click', () => { if (S) C.reroll(S); });
 
-  const MODALS = ['setMenu', 'infoPanel', 'metaPanel'];
+  const MODALS = ['setMenu', 'infoPanel', 'metaPanel', 'devPanel'];
   const anyModal = () => MODALS.some(id => !$(id).classList.contains('hidden'));
   function openModal(id) { $(id).classList.remove('hidden'); if (S && running) paused = true; if (id === 'setMenu') { syncVol(); const ing = !!(S && running); $('setMenu').classList.toggle('titleMode', !ing); $('sResume').textContent = ing ? '계속하기' : '닫기'; } }
   function closeModals() { for (const id of MODALS) $(id).classList.add('hidden'); paused = false; stopStage(); }
@@ -753,7 +753,7 @@
       const A = bd.abil; extra += '<h3>스킬</h3>' + Object.keys(A).filter(x => x !== 'debuff').map(x => '<div class="d" style="margin:4px 0">• ' + (SK_TXT[x] ? SK_TXT[x](A[x]) : x) + '</div>').join('') + (A.debuff || []).map(d => '<div class="d" style="margin:4px 0">• ' + DBK[d.kind][0] + ' 광역기: ' + d.cd + '초마다 ' + DB_TXT[d.kind] + ' 범위(' + d.r + ')를 예고 후 터뜨립니다</div>').join('');
       if (isK) extra += '<h3>각성 후 — ' + bd.awaken.name + '</h3><div class="d" style="margin:4px 0">쓰러지면 속성에 맞는 모습으로 각성해 부활합니다.</div>' + Object.keys(bd.abil2).filter(x => x !== 'debuff').map(x => '<div class="d" style="margin:4px 0">• ' + (SK_TXT[x] ? SK_TXT[x](bd.abil2[x]) : x) + '</div>').join('');
       if (bd === CFG.finalBoss) { const A2x = C.p2Abil(bd.abil), N = CFG.finalNerf;
-        extra += '<h3>각성 후 — ' + N.name + '</h3><div class="d" style="margin:4px 0">첫 형태가 쓰러지면 체력이 다시 차오르며 각성해 부활합니다. 기술 간격이 15% 짧아지고, 땅은 성 둘레의 원만 남기고 무너집니다.</div>'
+        extra += '<h3>각성 후 — ' + N.name + '</h3><div class="d" style="margin:4px 0">첫 형태가 쓰러지면 체력이 다시 차오르며 각성해 부활합니다. 기술 간격이 15% 짧아지고, 지형이 성 둘레의 원만 남기고 자신의 영역으로 바뀝니다.</div>'
           + Object.keys(A2x).filter(x => x !== 'debuff').map(x => '<div class="d" style="margin:4px 0">• ' + (SK_TXT[x] ? SK_TXT[x](A2x[x]) : x) + '</div>').join('') + (A2x.debuff || []).map(d => '<div class="d" style="margin:4px 0">• ' + DBK[d.kind][0] + ' 광역기: ' + d.cd.toFixed(1) + '초마다 ' + DB_TXT[d.kind] + ' 범위(' + d.r + ')를 예고 후 터뜨립니다</div>').join(''); }
     } else if (k === 'j') {
       const d = C.jobDef(a, b), c = CFG.units[a], t2 = !CFG.jobs[a].t1.some(x => x.id === b); name = d.name; desc = d.desc; stageSpec = { sc: 'char', team: 'u', type: a, job: b, tier: t2 ? 2 : 1, r: c.r };
@@ -918,7 +918,7 @@
       else if (ev.type === 'castleRepair') { addFx({ k: 'heal', x: ev.x, y: ev.y, t: 0, max: 0.9 }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.7, c: '#7dff9a', r: 60, big: true }); }
       else if (ev.type === 'castlePick') banner('성: ' + ev.name, true);
       else if (ev.type === 'lastStand') banner('불사 결계 발동! 성이 되살아났다', true);
-      else if (ev.type === 'bossRevive') { toast('성 주변만 남기고 땅이 무너진다'); banner(ev.name === '각성한 마왕' ? '더이상!! 참지!! 않겠다!!' : ev.name + '!! 이제부터가 진짜다!!', true); for (let i = 0; i < 3; i++) addFx({ k: 'ring', x: ev.x, y: ev.y, t: -i * 0.35, max: 1.1, c: i % 2 ? '#ff7a3a' : '#ff2a4a', r: ev.r * 3, big: true }); }
+      else if (ev.type === 'bossRevive') { toast(ev.name + '이(가) 지형을 자신의 영역으로 옮겼다'); banner(ev.name === '각성한 마왕' ? '더이상!! 참지!! 않겠다!!' : ev.name + '!! 이제부터가 진짜다!!', true); for (let i = 0; i < 3; i++) addFx({ k: 'ring', x: ev.x, y: ev.y, t: -i * 0.35, max: 1.1, c: i % 2 ? '#ff7a3a' : '#ff2a4a', r: ev.r * 3, big: true }); }
       else if (ev.type === 'bossRevived') { banner('최후의 결전!', true); addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#ffffff', big: true }); }
       else if (ev.type === 'bossGone') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.9, c: '#ffffff', r: ev.r * 3.5, big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: -0.1, max: 1, c: '#ffd166', r: ev.r * 2.5, big: true }); for (let k = 0; k < 14; k++) addFx({ k: 'dust', x: ev.x + (Math.random() - 0.5) * ev.r * 2.4, y: ev.y + (Math.random() - 0.5) * ev.r * 1.6, t: 0, max: 1.3, r: 14 + Math.random() * 18 }); }
       else if (ev.type === 'bossWipe') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.9, c: '#ffffff', big: true }); toast('남은 적이 모두 쓰러졌어요'); }
@@ -999,7 +999,7 @@
       else if (ev.type === 'dragonRise') { banner(ev.back ? '용이 하늘에서 내려온다!!' : '재앙의 용이 모습을 드러낸다!!', true); flash('#ff3a1a', ev.back ? 0.2 : 0.45); addShake(ev.back ? 4 : 14, ev.back ? 0.5 : 1.2); if (!ev.back) { // 단상 가장자리에 충격파와 먼지·불씨가 터진다
         for (let i = 0; i < 4; i++) addFx({ k: 'ring', x: ev.x, y: ev.y + 40, t: -i * 0.45, max: 1.3, c: i % 2 ? '#ff7a3a' : '#ffd9a0', grow: 420 + i * 80, big: true });
         for (let i = 0; i < 26; i++) addFx({ k: 'burst', x: ev.x + (Math.random() - 0.5) * 760, y: ev.y + 20 + Math.random() * 60, t: -Math.random() * 0.6, max: 0.9 + Math.random() * 0.8, c: i % 3 ? '#8a6a44' : '#ff8a2a', big: i % 4 === 0 }); } }
-      else if (ev.type === 'dragonIntro') { { const zf = Math.min(vw / 1500, vh / 1250); cam.zoom = Math.max(minZoom(), Math.min(cam.zoom, zf)); centerOnCore(); clampCam(); } banner('땅이 갈라진다…', true); toast('성 주변만 남기고 모든 땅이 무너진다'); }
+      else if (ev.type === 'dragonIntro') { { const zf = Math.min(vw / 1500, vh / 1250); cam.zoom = Math.max(minZoom(), Math.min(cam.zoom, zf)); centerOnCore(); clampCam(); } banner('용의 영역이 펼쳐진다…', true); toast('재앙의 용이 지형을 자신의 영역으로 옮겼다'); }
       else if (ev.type === 'dragonLand') { flash('#ffd9a0', 0.5); addShake(20, 1.0); // 착지: 충격파와 먼지
         for (let i = 0; i < 4; i++) addFx({ k: 'ring', x: ev.x, y: ev.y + 40, t: -i * 0.15, max: 1.1, c: i % 2 ? '#ff7a3a' : '#ffd9a0', grow: 520 + i * 90, big: true });
         for (let i = 0; i < 30; i++) addFx({ k: 'burst', x: ev.x + (Math.random() - 0.5) * 900, y: ev.y + 20 + Math.random() * 70, t: -Math.random() * 0.3, max: 0.9 + Math.random() * 0.8, c: i % 3 ? '#8a6a44' : '#ff8a2a', big: i % 4 === 0 }); A2.play('bigBoom', ev.x, ev.y); }
@@ -1194,7 +1194,7 @@
   const STRIKE_COL = { bolt: '#ffe14a', ice: '#8fd8ff', rock: '#c28a52', fire: '#ff6a2a', wind: '#d8f2ff', slash: '#c8203a', hammer: '#d9a441', sweep: '#dfe3f0', slam: '#c28a52' };
   // ── 100라운드: 성 주변만 남기고 땅이 무너져 절벽이 된다 ──
   // 남는 땅 = 성 둘레 원 + 용이 서는 네 자리의 받침 + 그 사이를 잇는 십자 다리
-  const DR = CFG.dragon, SAFE_R = 330, PAD_R = 190, BR_W = 80, GCUT = 140; // GCUT: 땅의 북쪽 가장자리 (성 중심에서 140 위). 단상을 없애고 용이 솟는 자리와 떨어뜨려, 용이 땅을 뚫지 않고 허공에서 솟는다
+  const DR = CFG.dragon, SAFE_R = 330, PAD_R = 190, BR_W = 80, GCUT = 205; // GCUT: 땅의 북쪽 가장자리 (성 중심에서 205 위). 용의 몸통 아랫단과 맞닿아, 용이 이 가장자리 너머에서 솟는다
   // 무너진 땅의 남은 모양. 용 레이드(100R)는 북쪽을 직각으로 깎은 평평한 단상(용이 솟는 자리)에 서·동·남쪽 발판과 다리가 이어진다. 사천왕·마왕 2차전은 성 둘레 + 네 발판 + 십자 다리.
   const dragonMap = () => !S || !S.cliffTheme;
   const inSafe = (x, y, pad) => {
@@ -1402,6 +1402,12 @@
       } else if (sh.color === 'em') { // 소환사의 마법구
         ctx.globalAlpha = 0.4; ctx.fillStyle = '#6fa8ff'; ctx.beginPath(); ctx.arc(px, py, 11, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 0.9;
         ctx.fillStyle = '#cfe4ff'; ctx.strokeStyle = '#3f6fb5'; ctx.lineWidth = 1.5 / z; ctx.beginPath(); ctx.arc(px, py, 5.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.globalAlpha = 1;
+      } else if (sh.color === 'eb') { // 포격대장의 기본 공격: 심지에 불이 붙은 검은 폭탄 (날아가며 빙글 돈다)
+        const rot = (sh.p || 0) * 9; ctx.save(); ctx.translate(px, py); ctx.rotate(rot);
+        ctx.fillStyle = '#1b1b22'; ctx.strokeStyle = '#6a6f7e'; ctx.lineWidth = 1.2 / z; ctx.beginPath(); ctx.arc(0, 0, 6.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.arc(-2.2, -2.2, 1.8, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#a58a5a'; ctx.lineWidth = 1.6 / z; ctx.beginPath(); ctx.moveTo(0, -6); ctx.quadraticCurveTo(3, -9, 6, -9); ctx.stroke();
+        const fl = 0.6 + Math.random() * 0.4; ctx.globalAlpha = fl; ctx.fillStyle = '#ffd35a'; ctx.beginPath(); ctx.arc(6.4, -9.2, 2.6 + Math.random(), 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#ff6a2a'; ctx.beginPath(); ctx.arc(6.4, -9.2, 1.3, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; ctx.restore();
       } else if (sh.color === 'es') { // 보스 포탄
         ctx.globalAlpha = 0.45; ctx.fillStyle = '#ff9f43'; ctx.beginPath(); ctx.arc(px, py, 13, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
         ctx.fillStyle = '#3a2418'; ctx.strokeStyle = '#ff7a2a'; ctx.lineWidth = 1.5 / z; ctx.beginPath(); ctx.arc(px, py, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -1965,6 +1971,11 @@
   $('mColl').addEventListener('click', e => { e.stopPropagation(); openMeta('codex'); });
   $('mRank').addEventListener('click', e => { e.stopPropagation(); openMeta('rank'); });
   $('tSet').addEventListener('click', e => { e.stopPropagation(); openModal('setMenu'); });
+  const devRoundSet = v => { v = Math.max(2, Math.min(100, Math.round(+v || 2))); $('devRound').value = v; $('devRoundV').textContent = v + '라운드'; return v; };
+  $('devRound').addEventListener('input', () => devRoundSet($('devRound').value));
+  for (const b of document.querySelectorAll('#devPresets button')) b.addEventListener('click', () => devRoundSet(b.dataset.r));
+  $('devGo').addEventListener('click', e => { e.stopPropagation(); const r = devRoundSet($('devRound').value); store.set('cd-devround', String(r)); closeModals(); startFromTitle(r); });
+  $('tDev').addEventListener('click', e => { e.stopPropagation(); devRoundSet(+store.get('cd-devround') || 30); openModal('devPanel'); }); // 투명 버튼: 타이틀 왼쪽 위 모서리
   $('mHow').addEventListener('click', e => { e.stopPropagation(); drawHowImgs(); $('howto').classList.remove('hidden'); });
   let howDrawn = false;
   function drawHowImgs() { // 게임 방법의 번호별 그림은 게임 안의 실제 그림을 그대로 쓴다
