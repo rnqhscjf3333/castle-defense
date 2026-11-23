@@ -156,7 +156,7 @@
         awaken: { name: '각성한 토왕', r: 46, reviveT: 3.4, look: { body: '#a0662e', head: '#f6e6c8', weapon: 'hammer', crown: true, style: 'overlord', elem: 'earth', p2: true } },
         abil2: { dash: { cd: 5, dur: 1.2, mul: 3.4, shock: { r: 260, kb: 640, mul: 2.4 } }, hammer: { cd: 6.5, r: 170, warn: 1.1, mul: 3.4, stun: 1.3, kb: 700 }, quake: { cd: 9, n: 7, r: 100, warn: 1.0, mul: 2.2, kb: 420 }, rage: { at: 0.4, speed: 1.3, rate: 1.4, dmg: 1.4 }, debuff: [{ kind: 'wound', cd: 12, r: 160 }] } },
     },
-    // 100라운드: 거대한 용 (몬스터 없이 용과의 1:1 레이드). 성 둘레를 빼고 땅이 무너져 절벽이 된다. 용은 네 방향 중 한 곳에 고정되어 있다가 날아올랐다가 다른 곳에 내려앉는다.
+    // 100라운드: 거대한 용 (몬스터 무리가 함께 몰려오는 레이드). 성 둘레를 빼고 땅이 무너져 절벽이 된다. 용은 네 방향 중 한 곳에 고정되어 있다가 날아올랐다가 다른 곳에 내려앉는다.
     dragon: { id: 'dragon', line: '대지는 사라지고… 오직 불길만이 남으리라.', name: '재앙의 용', r: 130, vr: 260, dragon: true, hpMul: 5, anchorX: 520, anchorY: 420, cut: 260, plateau: 440, monsterFrac: 0.3, waveEvery: 16, waveFrac: 0.07, // r=판정, vr=그림 크기(몸집이 아주 커서 지도에는 상반신만 보인다). 북쪽은 cut만큼 직각으로 깎여 평평한 단상(폭 plateau×2)이 되고 용은 그 가장자리에서 솟는다. 나머지 세 자리(서·동·남)에서는 몬스터가 나온다
      
       look: { style: 'dragon', body: '#a3262a', head: '#d9482c' },
@@ -1703,14 +1703,18 @@
     }
     if (A.clone && !e.cloned && e.hp <= e.max * A.clone.at) { // 소환사: 체력이 절반이 되면 분신을 불러낸다
       e.cloned = true; const n = A.clone.n;
-      for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2 + S.rng(), c = spawnEnemy(S, 'warlock', clamp(e.x + Math.cos(a) * 90, 20, W - 20), clamp(e.y + Math.sin(a) * 90, 20, H - 20)); c.clone = true; c.elite = true; c.max = c.hp = Math.max(1, Math.round(e.max * A.clone.hp)); c.dmg = e.dmg * 0.6; }
-      emit(S, { type: 'bossClone', x: e.x, y: e.y, n });
+      for (let i = 0; i < n; i++) { // 분신: 보스와 똑같은 모습으로 그려지는 원거리 적 (체력은 낮고 보스 공격력의 60%로 쏜다)
+        const a = (i / n) * Math.PI * 2 + S.rng(), c = spawnEnemy(S, 'archer', clamp(e.x + Math.cos(a) * 90, 20, W - 20), clamp(e.y + Math.sin(a) * 90, 20, H - 20));
+        c.clone = true; c.look = e.look; c.bossName = e.bossName; c.r = Math.round(e.r * 0.85); c.range = e.range || 250; c.rate = 0.8; c.aggro = 330; c.gold = 0; c.speed = Math.max(c.speed, e.speed * 0.8);
+        c.max = c.hp = Math.max(1, Math.round(e.max * A.clone.hp)); c.dmg = e.dmg * 0.6; }
+      emit(S, { type: 'bossClone', x: e.x, y: e.y, n, name: e.bossName || '' });
     }
     if (A.aura) { // 철벽 장군: 주변 적군에게 방어막을 씌운다
       e.t.aura -= dt;
       if (e.t.aura <= 0 && e.life > 2) {
         e.t.aura = A.aura.cd; let n = 0;
         for (const o of S.enemies) if (!o.dead && o !== e && !o.dying && Math.hypot(o.x - e.x, o.y - e.y) <= A.aura.r) { o.shieldT = A.aura.dur; o.shieldRed = A.aura.red; n++; }
+        e.shieldT = Math.max(e.shieldT, A.aura.dur); e.shieldRed = Math.max(e.shieldRed, A.aura.red); // 본인도 방어막을 받는다
         emit(S, { type: 'bossAura', x: e.x, y: e.y, r: A.aura.r, n, name: e.bossName || '' });
       }
     }
@@ -1787,7 +1791,7 @@
     e.cd -= dt; e.age += dt;
     if (e.frozenT > 0) { e.frozenT -= dt; return; } // 절대영도: 얼어붙음
     const boost = enrageMul(e.age);
-    if (e.kind !== 'boss' && e.shieldT > 0) e.shieldT -= dt;
+    if ((e.kind !== 'boss' || !(e.abil && e.abil.shield)) && e.shieldT > 0) e.shieldT -= dt; // (보스의 자체 방어막은 보스 능력에서 줄인다)
     if (e.hasteT > 0) e.hasteT -= dt;
     if (e.age > ENRAGE_AFTER && !e.enr) { e.enr = true; if (S.enrageSaid !== S.round) { S.enrageSaid = S.round; emit(S, { type: 'enrage' }); } }
     if (e.riseT > 0) { e.riseT -= dt; e.life = 0; return; } // 용이 땅 아래에서 솟아오르는 동안은 움직이지도 공격하지도 못한다

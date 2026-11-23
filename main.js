@@ -575,7 +575,7 @@
     } else if (k === 'b') {
       const all = CFG.bossPool.concat([CFG.act1Boss, CFG.finalBoss], Object.values(CFG.kings), [CFG.dragon]), bd = all.find(x => x.id === a), isK = !!CFG.kings[a]; name = bd.name; desc = bd.line ? '“' + bd.line + '”' : '';
       try { img = portrait('e', 'boss', CFG.enemies.boss, Object.assign({ r: bd.r || 30 }, bd.look), null, true).toDataURL(); } catch (e) {}
-      const rd = bd === CFG.act1Boss ? '30라운드' : bd === CFG.finalBoss ? '50라운드' : isK ? '60·70·80라운드 (무작위 순서)' : bd === CFG.dragon ? '100라운드 (최종 보스, 몬스터 없이 1:1 레이드)' : '5라운드마다 (무작위 순서)';
+      const rd = bd === CFG.act1Boss ? '30라운드' : bd === CFG.finalBoss ? '50라운드' : isK ? '60·70·80라운드 (무작위 순서)' : bd === CFG.dragon ? '100라운드 (최종 보스, 몬스터 무리와 함께 싸우는 레이드)' : '5라운드마다 (무작위 순서)';
       rows = [['등장', rd], ['체력', '라운드별 표 (5R ' + CFG.bossHp[5] + ' → 50R ' + CFG.bossHp[50] + ')'], ['기본 공격력', CFG.enemies.boss.dmg + ' (시간이 지날수록 증가)'], ['기본 공격', bd.ranged ? '원거리 마법' : '범위 근접 공격']];
       const A = bd.abil; extra += '<h3>스킬</h3>' + Object.keys(A).filter(x => x !== 'debuff').map(x => '<div class="d" style="margin:4px 0">• ' + (SK_TXT[x] ? SK_TXT[x](A[x]) : x) + '</div>').join('') + (A.debuff || []).map(d => '<div class="d" style="margin:4px 0">• ' + DBK[d.kind][0] + ' 광역기: ' + d.cd + '초마다 ' + DB_TXT[d.kind] + ' 범위(' + d.r + ')를 예고 후 터뜨립니다</div>').join('');
       if (isK) extra += '<h3>각성 후 — ' + bd.awaken.name + '</h3><div class="d" style="margin:4px 0">쓰러지면 속성에 맞는 모습으로 각성해 부활합니다.</div>' + Object.keys(bd.abil2).filter(x => x !== 'debuff').map(x => '<div class="d" style="margin:4px 0">• ' + (SK_TXT[x] ? SK_TXT[x](bd.abil2[x]) : x) + '</div>').join('');
@@ -805,6 +805,7 @@
       else if (ev.type === 'dragonUp') { banner('용이 하늘로 날아오른다!', true); addShake(10, 0.6); }
       else if (ev.type === 'dragonAway') { toast('용이 구름 위로 사라졌다 — 땅 위를 도는 그림자를 따라 불덩이가 떨어진다!'); flash('#000000', 0.25); }
       else if (ev.type === 'dragonLand') { banner('용이 다시 내려앉았다!', true); addShake(16, 0.7); }
+      else if (ev.type === 'bossClone') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#9ad0ff' }); toast((ev.name || '보스') + ' 분신술! 분신 ' + ev.n + '기'); }
       else if (ev.type === 'bossRage') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#ff3b1a' }); banner(ev.name + ' 분노!'); }
       else if (ev.type === 'over') { if (ev.win) setTimeout(() => { if (!S || !S.win) return; if (params.get('nocine') || !running) showEnd(true); else playComic('ending', () => showEnd(true)); }, 600); else startDefeat(); }
     }
@@ -1550,15 +1551,15 @@
   const OPENING_HTML = $('comicStage').innerHTML; // 오프닝 4컷 (HTML에 들어 있는 원본)
   // 30라운드(암흑 기사단장 처치)·50라운드(마왕 처치) 컷신: 만화 한 장을 컷별로 잘라 둔 이미지를 오프닝처럼 한 컷씩 보여 준다 (위치는 원본 1586×992 기준 %)
   const COMIC_POS = {
-    act2: [[1.13, 1.71, 56.75], [56.94, 1.81, 41.99], [0.5, 48.39, 44.77], [44.39, 48.59, 54.6]],
+    act2: [[1.13, 1.81, 56.75], [56.94, 1.92, 41.93], [0.82, 48.39, 44.45], [44.96, 48.49, 54.04]], // 암흑 군단의 진격 개시 (assets/a30_*)
     endless: [[1.07, 1.92, 59.08], [59.77, 1.71, 39.28], [0.69, 48.39, 43.19], [43.38, 48.39, 55.55]],
-    dragon: [[0.72, 1.17, 51.5], [48.76, 1.17, 50.59], [0.72, 47.66, 44.53], [41.08, 47.66, 58.33]], // 1536×1024 원본 기준
+    dragon: [[0.69, 1.51, 54.79], [52.65, 1.61, 46.6], [0.76, 48.79, 50.0], [48.05, 48.79, 51.26]], // 보물을 깨운 붉은 용의 비상 (assets/d80_*)
     ending: [[0.91, 1.46, 52.99], [49.93, 1.46, 49.22], [0.91, 50.59, 48.37], [47.98, 50.59, 51.17]],
   };
   function playComic(name, done) {
     if (name === 'opening') $('comicStage').innerHTML = OPENING_HTML;
-    const wide = name === 'dragon' || name === 'ending'; $('comicStage').style.aspectRatio = wide ? '1536 / 1024' : ''; $('comicStage').style.width = wide ? 'min(97vw, calc((100vh - 62px) * 1.5))' : '';
-    if (name !== 'opening') $('comicStage').innerHTML = COMIC_POS[name].map((p, i) => '<img class="cp" data-i="' + (i + 1) + '" src="assets/' + name + '_' + (i + 1) + '.webp?v=2" alt="" style="left:' + p[0] + '%;top:' + p[1] + '%;width:' + p[2] + '%">').join('');
+    const wide = name === 'ending'; $('comicStage').style.aspectRatio = wide ? '1536 / 1024' : ''; $('comicStage').style.width = wide ? 'min(97vw, calc((100vh - 62px) * 1.5))' : '';
+    if (name !== 'opening') $('comicStage').innerHTML = COMIC_POS[name].map((p, i) => '<img class="cp" data-i="' + (i + 1) + '" src="assets/' + ({ act2: 'a30', dragon: 'd80' }[name] || name) + '_' + (i + 1) + '.webp?v=3" alt="" style="left:' + p[0] + '%;top:' + p[1] + '%;width:' + p[2] + '%">').join('');
     const el = $('comic'), imgs = Array.from(el.querySelectorAll('.cp')); let idx = 0, over = false; comicOn = true;
     const wait = Promise.all(imgs.map(im => im.complete ? 1 : new Promise(r => { im.onload = im.onerror = r; })));
     document.body.classList.add('comicOn'); imgs.forEach(im => im.classList.remove('in')); el.classList.remove('hidden', 'out', 'shake', 'rumble'); $('comicHint').textContent = '화면을 터치하면 다음 컷 ▶';

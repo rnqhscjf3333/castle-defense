@@ -40,7 +40,7 @@
     if (e.riseT > 0) { const k = Math.max(0, e.riseT / (e.riseDur || 4.2)), sh = Math.sin((typeof performance !== 'undefined' ? performance.now() : 0) * 0.05) * 1.2 * s * k; ctx.translate(sh, Math.pow(k, 1.6) * 92 * s); } // 땅 아래에서 부들부들 떨며 솟아오른다
     ctx.translate(0, -lift * (e.flyS === 'up' ? 60 : 26) * s); if (e.flyS === 'up') ctx.globalAlpha = Math.max(0, 1 - lift * lift);
     if (e.fallK > 0) { const k = e.fallK; ctx.translate(Math.sin(t * 9) * 2 * s * (1 - k), Math.pow(k, 1.7) * 150 * s); ctx.rotate(Math.sin(k * 3.1) * 0.12); } // 쓰러지며 절벽 아래로 추락
-    const L = '#0e0305', SC = fl ? FLASH : '#4a0d14', SC2 = fl ? FLASH : '#7a1a1e', BELLY = fl ? FLASH : '#c98a4a', MEM = fl ? FLASH : '#3a0a12', BONE = fl ? FLASH : '#cfc3a4', GLOW = '#ff7a1a';
+    const L = '#1e070c', SC = fl ? FLASH : '#9b2229', SC2 = fl ? FLASH : '#c4363a', BELLY = fl ? FLASH : '#e0a560', MEM = fl ? FLASH : '#a82c3a', BONE = fl ? FLASH : '#4a141c', TOOTH = fl ? FLASH : '#f4e8c8', GLOW = '#ffb21a'; // 붉은 비늘 + 짙은 적갈색 뿔·날개뼈 + 노란 눈
     ctx.translate(0, dip * s);
     ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.strokeStyle = L;
     // 가시 꼬리
@@ -58,7 +58,7 @@
     // 몸통과 배 비늘
     ctx.fillStyle = SC; ctx.strokeStyle = L; ctx.lineWidth = 1.3 * s; ctx.beginPath(); ctx.ellipse(0, -5 * s, 13 * s, 18 * s, 0, 0, TAU); ctx.fill(); ctx.stroke();
     ctx.fillStyle = BELLY; ctx.beginPath(); ctx.ellipse(0, -3 * s, 7.4 * s, 14 * s, 0, 0, TAU); ctx.fill();
-    ctx.strokeStyle = fl ? FLASH : '#8a5a26'; ctx.lineWidth = 0.9 * s; for (let i = -4; i <= 4; i++) { ctx.beginPath(); ctx.arc(0, (i * 3 - 3) * s, 6.4 * s, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke(); }
+    ctx.strokeStyle = fl ? FLASH : '#b8742e'; ctx.lineWidth = 0.9 * s; for (let i = -4; i <= 4; i++) { ctx.beginPath(); ctx.arc(0, (i * 3 - 3) * s, 6.4 * s, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke(); }
     // 등 가시 (목에서 몸통까지)
     ctx.fillStyle = BONE; ctx.strokeStyle = L; ctx.lineWidth = 0.8 * s; for (let i = 0; i < 5; i++) { const yy = (-14 + i * 4.4) * s; tri(ctx, -13 * s + i * 0.2 * s, yy, -17.5 * s, yy - 2 * s, -13 * s, yy + 2.4 * s); ctx.fill(); ctx.stroke(); tri(ctx, 13 * s - i * 0.2 * s, yy, 17.5 * s, yy - 2 * s, 13 * s, yy + 2.4 * s); ctx.fill(); ctx.stroke(); }
     // 몸통 아래쪽은 절벽 아래로 사라진다
@@ -70,9 +70,9 @@
       ctx.lineCap = 'round'; ctx.strokeStyle = L; ctx.lineWidth = 6.4 * s; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.lineTo(fx, fy); ctx.stroke();
       ctx.strokeStyle = SC2; ctx.lineWidth = 4.4 * s; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.lineTo(fx, fy); ctx.stroke();
       ctx.fillStyle = SC2; ctx.strokeStyle = L; ctx.lineWidth = 1.2 * s; ctx.beginPath(); ctx.arc(ex, ey, 3.4 * s, 0, TAU); ctx.fill(); ctx.stroke(); // 팔꿈치
-      ctx.fillStyle = fl ? FLASH : '#b8742e'; ctx.beginPath(); ctx.ellipse(fx, fy + 0.6 * s, 5.4 * s, 3.8 * s, 0, 0, TAU); ctx.fill(); ctx.stroke(); // 주먹
+      ctx.fillStyle = fl ? FLASH : '#d9503a'; ctx.beginPath(); ctx.ellipse(fx, fy + 0.6 * s, 5.4 * s, 3.8 * s, 0, 0, TAU); ctx.fill(); ctx.stroke(); // 주먹
       ctx.strokeStyle = fl ? FLASH : '#8a5a26'; ctx.lineWidth = 0.7 * s; for (const o of [-2, 0, 2]) { ctx.beginPath(); ctx.moveTo(fx + o * s, fy - 2 * s); ctx.lineTo(fx + o * s, fy + 1 * s); ctx.stroke(); } // 손가락 마디
-      ctx.fillStyle = BONE; ctx.strokeStyle = L; ctx.lineWidth = 0.8 * s; for (const o of [-3.4, -1.1, 1.1, 3.4]) { tri(ctx, fx + o * s - 1 * s, fy + 3 * s, fx + (o + (o < 0 ? -0.8 : 0.8)) * s, fy + 7.2 * s, fx + o * s + 1 * s, fy + 3 * s); ctx.fill(); ctx.stroke(); } // 지면을 움켜쥔 발톱
+      ctx.fillStyle = TOOTH; ctx.strokeStyle = L; ctx.lineWidth = 0.8 * s; for (const o of [-3.4, -1.1, 1.1, 3.4]) { tri(ctx, fx + o * s - 1 * s, fy + 3 * s, fx + (o + (o < 0 ? -0.8 : 0.8)) * s, fy + 7.2 * s, fx + o * s + 1 * s, fy + 3 * s); ctx.fill(); ctx.stroke(); } // 지면을 움켜쥔 발톱
     }
     // 가늘고 긴 목 (S자 느낌의 비늘 마디) — 목과 머리는 하나로 묶여 흔들리고 늘어난다
     ctx.save(); ctx.translate(0, -14 * s + hD * s); ctx.rotate(hR); ctx.scale(1, ns); ctx.translate(0, 14 * s);
@@ -86,7 +86,7 @@
     ctx.fillStyle = SC2; ctx.beginPath(); ctx.moveTo(-4.4 * s, (-24 + jaw * 0.2) * s); ctx.lineTo(0, (-20 + jaw) * s); ctx.lineTo(4.4 * s, (-24 + jaw * 0.2) * s); ctx.closePath(); ctx.fill(); ctx.stroke();
     if (!breath && jawO > 1) { ctx.fillStyle = '#2a0608'; ctx.beginPath(); ctx.ellipse(0, (-22 + jaw * 0.4) * s, 3.6 * s, jaw * 0.7 * s, 0, 0, TAU); ctx.fill(); }
     if (breath) { ctx.fillStyle = '#2a0608'; ctx.beginPath(); ctx.ellipse(0, (-22 + jaw * 0.4) * s, 3.6 * s, jaw * 0.7 * s, 0, 0, TAU); ctx.fill(); const g = ctx.createRadialGradient(0, -22 * s, 1 * s, 0, -22 * s, 18 * s); g.addColorStop(0, 'rgba(255,250,170,.95)'); g.addColorStop(0.5, 'rgba(255,130,30,.6)'); g.addColorStop(1, 'rgba(255,60,10,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, -22 * s, 18 * s, 0, TAU); ctx.fill(); }
-    ctx.fillStyle = BONE; ctx.strokeStyle = L; ctx.lineWidth = 0.7 * s; for (const k of [-1, 1]) { tri(ctx, k * 3.2 * s - 0.9 * s, (-23) * s, k * 3 * s, (-18.4 + (breath ? 1.5 : 0)) * s, k * 3.2 * s + 0.9 * s, (-23) * s); ctx.fill(); ctx.stroke(); }
+    ctx.fillStyle = TOOTH; ctx.strokeStyle = L; ctx.lineWidth = 0.7 * s; for (const k of [-1, 1]) { tri(ctx, k * 3.2 * s - 0.9 * s, (-23) * s, k * 3 * s, (-18.4 + (breath ? 1.5 : 0)) * s, k * 3.2 * s + 0.9 * s, (-23) * s); ctx.fill(); ctx.stroke(); }
     // 콧구멍 + 콧김
     ctx.fillStyle = GLOW; for (const k of [-1, 1]) { ctx.beginPath(); ctx.ellipse(k * 1.7 * s, -24.4 * s, 0.8 * s, 1.2 * s, k * 0.4, 0, TAU); ctx.fill(); }
     // 눈: 가늘게 찢어진 불타는 눈 + 이마 주름
@@ -702,13 +702,14 @@
   // 개체 하나 그리기. unitScale: 판정 반지름 대비 그림 크기 배율
   function draw(ctx, e, now) {
     track(e, now);
-    const table = e.team === 'u' ? UNIT : ENEMY; e._pal = e.team === 'e' ? PAL[e.kind] : (e.job && JPAL[e.job]) || UPAL[e.type];
-    const fn = table[e.type || e.kind] || (e.team === 'e' ? ENEMY[BASE[e.kind]] : UNIT[UBASE[e.type]]);
+    const table = e.team === 'u' ? UNIT : ENEMY; e._pal = e.clone ? undefined : e.team === 'e' ? PAL[e.kind] : (e.job && JPAL[e.job]) || UPAL[e.type];
+    const fn = (e.clone && e.look && ENEMY.boss) || table[e.type || e.kind] || (e.team === 'e' ? ENEMY[BASE[e.kind]] : UNIT[UBASE[e.type]]);
     if (!fn) return;
     const s = ((e.vr || e.r) / 10) * 1.25;
     ctx.save(); ctx.translate(e.x, e.y - 3 * s); // 발이 판정 중심 근처에 오도록
     const aw = e.team === 'u' && e.awk && e.job && !e.flash;
     if (aw) awakeBack(ctx, e, s, now);
+    if (e.clone) ctx.globalAlpha = 0.78; // 분신은 살짝 투명하다
     fn(ctx, e, s);
     if (aw) awakeFront(ctx, e, s, now);
     ctx.restore();
@@ -721,7 +722,7 @@
     ctx.fillStyle = fl ? '#fff' : c[1]; ctx.beginPath(); ctx.arc(e.x, e.y - 11 * s, 5 * s, 0, TAU); ctx.fill();
   }
   // 체력 바 위치 계산용: 그림의 머리 위 높이
-  function headTop(e) { return -((e.vr || e.r) / 10) * 1.25 * (e.kind === 'boss' ? (e.look && e.look.style === 'dragon' ? 29 : 17) : (e.kind === 'bat' || e.kind === 'wyvern') ? 26 : e.jobTier ? 21 : 16); }
+  function headTop(e) { return -((e.vr || e.r) / 10) * 1.25 * ((e.kind === 'boss' || e.clone) ? (e.look && e.look.style === 'dragon' ? 29 : 17) : (e.kind === 'bat' || e.kind === 'wyvern') ? 26 : e.jobTier ? 21 : 16); }
 
   window.Figures = { draw, drawLite, headTop };
 })();
