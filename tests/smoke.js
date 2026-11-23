@@ -566,7 +566,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   { const { g, b } = mk('berserker'); g.gold = 1e7; for (let i = 0; i < 4; i++) { g.buyCd.sword = 0; const u = C.buy(g, 'sword').unit; u.x = 1500 + 300 + i * 10; u.y = 1500; u.hx = u.x; u.hy = u.y; u.max = u.hp = 1e9; } b.x = 1500 + 400; b.y = 1500; b.speed = 0; g.captureEvents = true; let ev = null, sh = null;
     for (let i = 0; i < 30 * 12 && !sh; i++) { C.tick(g, DT); for (const e of C.drainEvents(g)) { if (e.type === 'bossLeap') ev = e; if (e.type === 'bossShock') sh = e; } }
     check('광전사: 아군이 몰린 곳으로 도약해 내려찍음', !!ev && !!sh && Math.hypot(b.x - 1500, b.y - 1500) < 330, ev ? '도약 후 거리 ' + Math.hypot(b.x - 1500, b.y - 1500).toFixed(0) : '없음'); }
-  { const { g, b } = mk('bombardier'); for (let i = 0; i < 30 * 40; i++) C.tick(g, DT); const d = Math.hypot(b.x - 1500, b.y - 1500); check('포격대장: 성에서 떨어져 포격만 함 (약 235)', d > 200 && d < 290, d.toFixed(0)); }
+  { const { g, b } = mk('bombardier'); for (let i = 0; i < 30 * 40; i++) C.tick(g, DT); const d = Math.hypot(b.x - 1500, b.y - 1500); check('포격대장: 원거리 공격 — 성에서 떨어져 싸움 (사거리 230)', b.ranged && d > 150 && d < 300, d.toFixed(0)); }
 }
 // 43) 인구 제한 + 성 업그레이드(능력치·대포·인구)
 { C.CFG.castle.popBase = POP0; const g = C.createGame(3); g.gold = 1e9; let ok = 0, reason = null; for (let i = 0; i < 30; i++) { g.buyCd.sword = 0; const r = C.buy(g, 'sword'); if (r.ok) ok++; else { reason = r.reason; break; } }
@@ -800,7 +800,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
 // 61) 보스 개성 스킬
 { const run = (id, round, f) => { const g = arena(round, [['boss', 700, 500]], id); const b = g.enemies[0]; g.units.length = 0; f(g, b); return { g, b }; };
   { const { g, b } = run('summoner', 10, (g, b) => { b.hp = b.max * 0.49; }); for (let i = 0; i < 5; i++) C.tick(g, DT);
-    check('소환사: 원거리 공격', b.ranged && b.range >= 200);
+    check('소환사: 짧은 사거리의 원거리 공격 (125)', b.ranged && b.range === 125);
     const cl = g.enemies.filter(e => e.clone); check('소환사: 체력 절반에 분신 소환(1회)', cl.length === 2 && b.cloned, cl.length); for (let i = 0; i < 60; i++) C.tick(g, DT); check('소환사: 분신은 한 번만', g.enemies.filter(e => e.clone).length >= 0 && b.cloned); }
   { const { g, b } = run('warden', 10, () => {}); const o = C.spawnEnemy(g, 'grunt', 760, 500); b.t.aura = 0; b.life = 3; for (let i = 0; i < 20 && !(o.shieldT > 0); i++) C.tick(g, DT);
     check('철벽 장군: 주변 적에게 방어막', o.shieldT > 0 && o.shieldRed > 0.2, o.shieldRed); for (let i = 0; i < 300; i++) C.tick(g, DT); check('철벽 장군: 방어막은 시간이 지나면 풀림', o.dead || o.shieldT <= 0 || b.t.aura > 0); }

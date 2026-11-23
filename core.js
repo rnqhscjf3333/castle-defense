@@ -99,8 +99,8 @@
     bossHp: { 5: 1300, 10: 4000, 15: 9000, 20: 17000, 25: 29000, 30: 39000, 35: 40000, 40: 58000, 45: 75000, 50: 175000 },
     bossPool: [
       { id: 'charger', line: '전부 짓밟아 주마!',    name: '돌격왕',    look: { body: '#b5472a', head: '#e6c9a0', weapon: 'axe' },    abil: { dash: { cd: 7, dur: 1.4, mul: 3 }, roar: { cd: 14, r: 260, dur: 5, speed: 1.35 }, debuff: [{ kind: 'stun', cd: 12, r: 105 }] } },
-      { id: 'summoner', line: '나의 종들이여, 일어나라!',   name: '소환사',    look: { body: '#3f6fb5', head: '#cfe0f0', weapon: 'staff' },  ranged: { range: 250 }, abil: { summon: { cd: 9, n: 4, kind: 'grunt' }, clone: { at: 0.5, n: 2, hp: 0.07 }, debuff: [{ kind: 'weak', cd: 12, r: 150 }] } },
-      { id: 'bombardier', line: '온 땅을 불바다로 만들어 주지!', name: '포격대장',  look: { body: '#6b7a3a', head: '#e0d6b0', weapon: 'cannon' }, abil: { artillery: { cd: 5, dmg: 60, radius: 90, count: 1, flight: 1.6, barrage: 3 }, summon: { cd: 14, n: 2, kind: 'archer' }, debuff: [{ kind: 'poison', cd: 12, r: 135 }] } },
+      { id: 'summoner', line: '나의 종들이여, 일어나라!',   name: '소환사',    look: { body: '#3f6fb5', head: '#cfe0f0', weapon: 'staff' },  ranged: { range: 125 }, abil: { summon: { cd: 9, n: 4, kind: 'grunt' }, clone: { at: 0.5, n: 2, hp: 0.07 }, debuff: [{ kind: 'weak', cd: 12, r: 150 }] } },
+      { id: 'bombardier', line: '온 땅을 불바다로 만들어 주지!', name: '포격대장',  look: { body: '#6b7a3a', head: '#e0d6b0', weapon: 'cannon' }, ranged: { range: 230 }, abil: { artillery: { cd: 5, dmg: 60, radius: 90, count: 1, flight: 1.6, barrage: 3 }, summon: { cd: 14, n: 2, kind: 'archer' }, debuff: [{ kind: 'poison', cd: 12, r: 135 }] } },
       { id: 'warden', line: '이 성벽, 내가 부숴 주겠다.',     name: '철벽 장군', look: { body: '#6a737f', head: '#d8dde6', weapon: 'shield' }, abil: { shield: { cd: 12, dur: 4, red: 0.8 }, aura: { cd: 11, r: 230, dur: 5, red: 0.5 }, focus: { cd: 17, dur: 2.6, heal: 0.07, red: 0.5 }, dash: { cd: 10, dur: 1.2, mul: 2.5 }, summon: { cd: 12, n: 3, kind: 'shield' }, debuff: [{ kind: 'wound', cd: 13, r: 170 }] } },
       { id: 'berserker', line: '피가... 피가 끓는다!',  name: '광전사',    look: { body: '#a3252d', head: '#f0cfa8', weapon: 'twin' },   abil: { rage: { at: 0.5, speed: 1.4, rate: 1.5, dmg: 1.3 }, stomp: { cd: 8, r: 190, warn: 0.6, kb: 560, mul: 1.7 }, dash: { cd: 6, dur: 1.2, mul: 3 }, artillery: { cd: 7, dmg: 55, radius: 100, count: 1, flight: 1.5 }, debuff: [{ kind: 'stun', cd: 11, r: 95 }] } },
     ],
@@ -480,7 +480,6 @@
   { const BA = id => CFG.bossPool.find(b => b.id === id).abil;
     Object.assign(BA('charger'), { rush: { mul: 5, until: 170, r: 120, stun: 0.9 } });
     Object.assign(BA('summoner'), { blink: { cd: 13, minR: 300, maxR: 460 } });
-    Object.assign(BA('bombardier'), { siege: { dist: 235 } });
     Object.assign(BA('berserker'), { leap: { cd: 11, r: 110, mul: 1.4, air: 0.8 } });
     Object.assign(CFG.act1Boss.abil, { rush: { mul: 3.6, until: 180, r: 115, stun: 0.9 }, blink: { cd: 14, minR: 300, maxR: 460 } });
     Object.assign(CFG.finalBoss.abil, { rush: { mul: 3.6, until: 190, r: 125, stun: 1.0 }, blink: { cd: 14, minR: 320, maxR: 480 }, leap: { cd: 12, r: 115, mul: 1.5, air: 0.8 } });
@@ -1080,7 +1079,7 @@
     const N = CFG.finalNerf, out = {};
     for (const k in abil) { const a = abil[k]; out[k] = Array.isArray(a) ? a.map(d => Object.assign({}, d, { cd: d.cd * N.cdMul })) : Object.assign({}, a, a.cd ? { cd: a.cd * N.cdMul } : {}); }
     if (out.rage) out.rage = Object.assign({}, out.rage, { at: N.rageAt });
-    delete out.rush; delete out.sword; out.claw = { cd: 7 * N.cdMul, len: 820, width: 56, warn: 0.9, mul: 2.6, n: 3, spread: 0.24, kb: 380 }; out.drain = { cd: 11 * N.cdMul, r: 280, mul: 1.8, heal: 0.015, cap: 0.06 }; return out;
+    delete out.rush; delete out.sword; out.claw = { cd: 7 * N.cdMul, len: 820, width: 64, gap: 108, warn: 0.9, mul: 2.6, n: 3, kb: 380 }; out.drain = { cd: 11 * N.cdMul, r: 280, mul: 1.8, heal: 0.015, cap: 0.06 }; return out;
   }
   function stepBossDeath(S, dt) {
     const D = S.bossDeath, b = D.b, N = b.king ? b.king.awaken : CFG.finalNerf; D.t += dt;
@@ -1699,7 +1698,7 @@
     }
     if (A.claw) { // 각성한 마왕: 긴 손톱으로 부채꼴로 세 줄기를 긋는다
       e.t.claw -= dt;
-      if (e.t.claw <= 0 && e.life > 2) { const tg = nearestUnit(S, e.x, e.y, A.claw.len); if (!tg) e.t.claw = 1.5; else { e.t.claw = A.claw.cd; const base = Math.atan2(tg.y - e.y, tg.x - e.x); for (let i = 0; i < A.claw.n; i++) addStrike(S, e, { shape: 'line', x: e.x, y: e.y, ang: base + (i - (A.claw.n - 1) / 2) * A.claw.spread, len: A.claw.len, w2: A.claw.width, r: A.claw.width, t: A.claw.warn + i * 0.14, mul: A.claw.mul, kb: A.claw.kb, kind: 'slash', claw: true }); } }
+      if (e.t.claw <= 0 && e.life > 2) { const tg = nearestUnit(S, e.x, e.y, A.claw.len); if (!tg) e.t.claw = 1.5; else { e.t.claw = A.claw.cd; const base = Math.atan2(tg.y - e.y, tg.x - e.x); for (let i = 0; i < A.claw.n; i++) { const off = (i - (A.claw.n - 1) / 2) * A.claw.gap; addStrike(S, e, { shape: 'line', x: e.x - Math.sin(base) * off, y: e.y + Math.cos(base) * off, ang: base + (i - (A.claw.n - 1) / 2) * 0.03, len: A.claw.len, w2: A.claw.width, r: A.claw.width, t: A.claw.warn + i * 0.1, mul: A.claw.mul, kb: A.claw.kb, kind: 'slash', claw: true }); } } }
     }
     if (A.lance) { // 각성한 뇌왕: 번개 창을 가까운 아군 둘에게 꽂아 관통시킨다
       e.t.lance -= dt;
@@ -1990,7 +1989,7 @@
 
   return {
     CFG, MAX_ROUND, ACT1_END, extraAngles, EXTRA_RING, ROUND_TIME, SPAWN_TIME, PREP_TIME, SPAWN_RING, UNIT_TYPES, CARD_DEFS,
-    createGame, tick, buy, openAwaken, openLegacy, cmpDesc, FINAL_ROUND, castleMax, repairCastle, repairCost, devSetup, runSummary, ctNode, jobDef, coreGuard, hitCore, pickCastle, autoCastle, castleOptions, describeCastle, jobBack, classOptions, enqueue, cancelProd, goldBound, checkRun, upgradeCastle, castleCost, popCap, popGain, popCount, specialCount, endCinematic, jumpToRound, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo, drainEvents, pickCard, reroll, describeTaken, openCards,
+    p2Abil, createGame, tick, buy, openAwaken, openLegacy, cmpDesc, FINAL_ROUND, castleMax, repairCastle, repairCost, devSetup, runSummary, ctNode, jobDef, coreGuard, hitCore, pickCastle, autoCastle, castleOptions, describeCastle, jobBack, classOptions, enqueue, cancelProd, goldBound, checkRun, upgradeCastle, castleCost, popCap, popGain, popCount, specialCount, endCinematic, jumpToRound, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo, drainEvents, pickCard, reroll, describeTaken, openCards,
     unitCostOf, enemyCount, hpMul, dmgMul, mulberry32, damage,
   };
 });
