@@ -2021,7 +2021,7 @@
     if (!running) return 'menu';
     const bs = S.enemies.filter(e => e.kind === 'boss' && !e.dead); if (S.bossDeath && S.bossDeath.b && !bs.includes(S.bossDeath.b)) bs.push(S.bossDeath.b);
     if (bs.some(e => e.dragon)) return 'dragon';
-    if (bs.some(e => e.king && e.p2)) return 'king2';
+    if (bs.some(e => (e.king || e.bossId === 'overlord') && e.p2)) return 'king2'; // 마왕 2차전도 사천왕 2차전과 같은 곡
     if (bs.length) return 'boss';
     return 'game';
   }
