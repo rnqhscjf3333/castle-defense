@@ -798,13 +798,15 @@
       else if (ev.type === 'strikeHit') { addFx({ k: 'strikeH', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, w2: ev.w2, claw: ev.claw, t: 0, max: ev.shape === 'cone' ? 0.7 : ev.shape === 'line' ? 0.6 : 0.55 }); if (ev.kind !== 'ice' || ev.r > 300) addShake(ev.kind === 'slam' ? 14 : ev.kind === 'wind' ? 5 : ev.r > 250 ? 12 : 6, ev.kind === 'slam' ? 0.45 : 0.3); }
       else if (ev.type === 'omen') { if (ev.id !== 'dragon') showBossIntro({ name: ev.name, line: ev.line, look: ev.look, r: ev.r, long: true, omen: ev.id }); toast(ev.id === 'dragon' ? '용의 기운이 맵 가장자리에 감돕니다' : '사천왕의 기운이 맵 가장자리에 감돕니다'); }
       else if (ev.type === 'castleAwaken') { banner('성채 각성!', true); for (let i = 0; i < 4; i++) addFx({ k: 'ring', x: CX, y: CY, t: -i * 0.12, max: 1.0, c: '#ffe27a', big: true, r: 200 }); addShake(8, 0.5); }
-      else if (ev.type === 'dragonRise') { banner(ev.back ? '용이 다시 돌아왔다!!' : '재앙의 용이 모습을 드러낸다!!', true); flash('#ff3a1a', 0.45); addShake(14, 1.2); // 단상 가장자리에 충격파와 먼지·불씨가 터진다
+      else if (ev.type === 'dragonRise') { banner(ev.back ? '용이 하늘에서 내려온다!!' : '재앙의 용이 모습을 드러낸다!!', true); flash('#ff3a1a', ev.back ? 0.2 : 0.45); addShake(ev.back ? 4 : 14, ev.back ? 0.5 : 1.2); if (!ev.back) { // 단상 가장자리에 충격파와 먼지·불씨가 터진다
         for (let i = 0; i < 4; i++) addFx({ k: 'ring', x: ev.x, y: ev.y + 40, t: -i * 0.45, max: 1.3, c: i % 2 ? '#ff7a3a' : '#ffd9a0', grow: 420 + i * 80, big: true });
-        for (let i = 0; i < 26; i++) addFx({ k: 'burst', x: ev.x + (Math.random() - 0.5) * 760, y: ev.y + 20 + Math.random() * 60, t: -Math.random() * 0.6, max: 0.9 + Math.random() * 0.8, c: i % 3 ? '#8a6a44' : '#ff8a2a', big: i % 4 === 0 }); }
+        for (let i = 0; i < 26; i++) addFx({ k: 'burst', x: ev.x + (Math.random() - 0.5) * 760, y: ev.y + 20 + Math.random() * 60, t: -Math.random() * 0.6, max: 0.9 + Math.random() * 0.8, c: i % 3 ? '#8a6a44' : '#ff8a2a', big: i % 4 === 0 }); } }
       else if (ev.type === 'dragonIntro') { { const zf = Math.min(vw / 1500, vh / 1250); cam.zoom = Math.max(minZoom(), Math.min(cam.zoom, zf)); centerOnCore(); clampCam(); } banner('땅이 갈라진다…', true); toast('성 주변만 남기고 모든 땅이 무너진다'); }
+      else if (ev.type === 'dragonLand') { flash('#ffd9a0', 0.5); addShake(20, 1.0); // 착지: 충격파와 먼지
+        for (let i = 0; i < 4; i++) addFx({ k: 'ring', x: ev.x, y: ev.y + 40, t: -i * 0.15, max: 1.1, c: i % 2 ? '#ff7a3a' : '#ffd9a0', grow: 520 + i * 90, big: true });
+        for (let i = 0; i < 30; i++) addFx({ k: 'burst', x: ev.x + (Math.random() - 0.5) * 900, y: ev.y + 20 + Math.random() * 70, t: -Math.random() * 0.3, max: 0.9 + Math.random() * 0.8, c: i % 3 ? '#8a6a44' : '#ff8a2a', big: i % 4 === 0 }); A2.play('bigBoom', ev.x, ev.y); }
       else if (ev.type === 'dragonUp') { banner('용이 하늘로 날아오른다!', true); addShake(10, 0.6); }
       else if (ev.type === 'dragonAway') { toast('용이 구름 위로 사라졌다 — 땅 위를 도는 그림자를 따라 불덩이가 떨어진다!'); flash('#000000', 0.25); }
-      else if (ev.type === 'dragonLand') { banner('용이 다시 내려앉았다!', true); addShake(16, 0.7); }
       else if (ev.type === 'bossClone') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#9ad0ff' }); toast((ev.name || '보스') + ' 분신술! 분신 ' + ev.n + '기'); }
       else if (ev.type === 'bossRage') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#ff3b1a' }); banner(ev.name + ' 분노!'); }
       else if (ev.type === 'over') { if (ev.win) setTimeout(() => { if (!S || !S.win) return; if (params.get('nocine') || !running) showEnd(true); else playComic('ending', () => showEnd(true)); }, 600); else startDefeat(); }
@@ -1049,6 +1051,7 @@
     Scenery.drawGround(ctx, x0, y0, x1, y1);
     const cliffOn = S.cliff > 0; if (cliffOn) drawCliff(now, x0, y0, x1, y1, z);
     for (const e of S.enemies) if (e.dragon && e.hidden && e.shx !== undefined) drawDragonShadow(e, now);
+    for (const e of S.enemies) if (e.dragon && e.fromSky && e.riseT > 0) { const k = e.riseT / (e.riseDur || 3); ctx.save(); ctx.globalAlpha = 0.5 * (1 - k * 0.7); ctx.fillStyle = '#05030a'; ctx.beginPath(); ctx.ellipse(e.x, e.y + 40, (140 + 330 * (1 - k)), (40 + 90 * (1 - k)), 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); } // 내려오는 용의 그림자가 커진다
     // 적 출현 포탈: 길 위의 붉은 룬 원 (화면 바로 밖에서 적이 나타난다)
     const angs = C.spawnAngles(S.spawnPts || 2);
     if (cliffOn && !S.cliffTheme && S.round === C.FINAL_ROUND && S.cliff >= 1) for (const pd of [[-DR.anchorX, 0], [DR.anchorX, 0], [0, DR.anchorY]]) Scenery.drawPortal(ctx, CX + pd[0], CY + pd[1], now); // 용 레이드: 서·동·남쪽 발판에서 몬스터가 나온다
@@ -1731,7 +1734,7 @@
       if (!paused) updateDeathCam(dt);
       if (S.cinematic && !cine) startCine(S.cinematic.name, S.cinematic.kind);
       { const rd = S.enemies.find(e => e.fixed && e.riseT > 0 && !e.dead); // 용이 솟아오르는 동안: 계속 흔들리고 단상 가장자리에서 먼지·바위 조각이 튄다
-        if (rd && !paused) { risePulse += dt; if (risePulse > 0.08) { risePulse = 0; addShake(7 + 6 * (rd.riseT / rd.riseDur), 0.3); if (fx.length < 200) addFx({ k: 'burst', x: rd.x + (Math.random() - 0.5) * 700, y: rd.y + 10 + Math.random() * 50, t: 0, max: 0.6 + Math.random() * 0.5, c: Math.random() < 0.5 ? '#8a6a44' : '#ffb04a', big: Math.random() < 0.3 }); } } }
+        if (rd && !paused) { risePulse += dt; if (risePulse > 0.08) { risePulse = 0; addShake(rd.fromSky ? 3 + 8 * (1 - rd.riseT / rd.riseDur) : 7 + 6 * (rd.riseT / rd.riseDur), 0.3); if (fx.length < 200) addFx({ k: 'burst', x: rd.x + (Math.random() - 0.5) * 700, y: rd.y + 10 + Math.random() * 50, t: 0, max: 0.6 + Math.random() * 0.5, c: Math.random() < 0.5 ? '#8a6a44' : '#ffb04a', big: Math.random() < 0.3 }); } } }
       if (!S.dragonIntro) { const dg = S.enemies.find(e => e.kind === 'boss' && e.fixed && !e.dead); // 용이 나타나면 머리까지 보이도록 한 번 화면을 맞춘다 (이후엔 자유롭게 움직일 수 있다)
         if (dg && dragonFramed !== dg.id) { dragonFramed = dg.id; const vrr = dg.vr || dg.r, x0 = Math.min(CX - 300, dg.x - vrr * 3.3), x1 = Math.max(CX + 300, dg.x + vrr * 3.3), y0 = Math.min(CY - 300, dg.y - vrr * 4.2), y1 = Math.max(CY + 300, CY + 480);
           cam.zoom = Math.max(minZoom(), Math.min(1, vw / (x1 - x0 + 120), vh / (y1 - y0 + 120))); cam.x = (x0 + x1) / 2; cam.y = (y0 + y1) / 2; clampCam(); } }

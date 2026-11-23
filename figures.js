@@ -36,8 +36,10 @@
     }
     const fl = e.flash > 0, t = nowT, lift = e.lift || 0, flap = Math.sin(t * (lift > 0 ? 2.2 : 1)) * (lift > 0 ? 8 : 5 + wA);
     ctx.save();
-    ctx.beginPath(); ctx.rect(-90 * s, -130 * s, 180 * s, 136 * s); ctx.clip(); // 허리 아래는 절벽 아래에 있어 보이지 않는다
-    if (e.riseT > 0) { const k = Math.max(0, e.riseT / (e.riseDur || 4.2)), sh = Math.sin((typeof performance !== 'undefined' ? performance.now() : 0) * 0.05) * 1.2 * s * k; ctx.translate(sh, Math.pow(k, 1.6) * 92 * s); } // 땅 아래에서 부들부들 떨며 솟아오른다
+    const kSky = e.fromSky && e.riseT > 0 ? Math.max(0, e.riseT / (e.riseDur || 3)) : 0; // 하늘에서 내려오는 정도 (1: 높은 하늘, 0: 착지)
+    if (kSky > 0) ctx.translate(0, -Math.pow(kSky, 1.2) * 90 * s);
+    ctx.beginPath(); ctx.rect(-90 * s, -130 * s, 180 * s, (136 + kSky * 60) * s); ctx.clip(); // 허리 아래는 절벽 아래에 있어 보이지 않는다 (하늘에서는 전신이 보인다)
+    if (e.riseT > 0 && !e.fromSky) { const k = Math.max(0, e.riseT / (e.riseDur || 4.2)), sh = Math.sin((typeof performance !== 'undefined' ? performance.now() : 0) * 0.05) * 1.2 * s * k; ctx.translate(sh, Math.pow(k, 1.6) * 92 * s); } // 땅 아래에서 부들부들 떨며 솟아오른다
     ctx.translate(0, -lift * (e.flyS === 'up' ? 60 : 26) * s); if (e.flyS === 'up') ctx.globalAlpha = Math.max(0, 1 - lift * lift);
     if (e.fallK > 0) { const k = e.fallK; ctx.translate(Math.sin(t * 9) * 2 * s * (1 - k), Math.pow(k, 1.7) * 150 * s); ctx.rotate(Math.sin(k * 3.1) * 0.12); } // 쓰러지며 절벽 아래로 추락
     const L = '#1e070c', SC = fl ? FLASH : '#9b2229', SC2 = fl ? FLASH : '#c4363a', BELLY = fl ? FLASH : '#e0a560', MEM = fl ? FLASH : '#a82c3a', BONE = fl ? FLASH : '#4a141c', TOOTH = fl ? FLASH : '#f4e8c8', GLOW = '#ffb21a'; // 붉은 비늘 + 짙은 적갈색 뿔·날개뼈 + 노란 눈
