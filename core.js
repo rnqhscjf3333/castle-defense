@@ -1744,9 +1744,9 @@
       e.t.sword -= dt;
       if (e.t.sword <= 0 && e.life > 2) { const tg = nearestUnit(S, e.x, e.y, A.sword.len); if (!tg) e.t.sword = 1.5; else { e.t.sword = A.sword.cd; const ang = Math.atan2(tg.y - e.y, tg.x - e.x); addStrike(S, e, { shape: 'line', x: e.x, y: e.y, ang, len: A.sword.len, w2: A.sword.width, r: A.sword.width, t: A.sword.warn, mul: A.sword.mul, kb: A.sword.kb, kind: 'slash' }); } }
     }
-    if (A.claw) { // 각성한 마왕·용: 손을 휘둘러 몸 중심에서 사방으로 손톱 자국이 뻗는다 (한 줄기는 가장 가까운 아군을 향한다)
+    if (A.claw) { // 각성한 마왕·용: 손을 휘둘러 몸 중심에서 목표 방향 직선 한 줄기와 양옆으로 살짝 틀어진 두 줄기가 뻗는다
       e.t.claw -= dt;
-      if (e.t.claw <= 0 && e.life > 2) { const tg = nearestUnit(S, e.x, e.y, A.claw.len); if (!tg) e.t.claw = 1.5; else { e.t.claw = A.claw.cd; const base = Math.atan2(tg.y - e.y, tg.x - e.x); for (let i = 0; i < A.claw.n; i++) addStrike(S, e, { shape: 'line', x: e.x, y: e.y, ang: base + i * Math.PI * 2 / A.claw.n, len: A.claw.len, w2: A.claw.width, r: A.claw.width, t: A.claw.warn, mul: A.claw.mul, kb: A.claw.kb, kind: 'slash', claw: true }); } }
+      if (e.t.claw <= 0 && e.life > 2) { const tg = nearestUnit(S, e.x, e.y, A.claw.len); if (!tg) e.t.claw = 1.5; else { e.t.claw = A.claw.cd; const base = Math.atan2(tg.y - e.y, tg.x - e.x); for (let i = 0; i < A.claw.n; i++) addStrike(S, e, { shape: 'line', x: e.x, y: e.y, ang: base + (i - (A.claw.n - 1) / 2) * (A.claw.spread || 0.4), len: A.claw.len, w2: A.claw.width, r: A.claw.width, t: A.claw.warn, mul: A.claw.mul, kb: A.claw.kb, kind: 'slash', claw: true }); } }
     }
     if (A.lance) { // 각성한 뇌왕: 번개 창을 가까운 아군 둘에게 꽂아 관통시킨다
       e.t.lance -= dt;

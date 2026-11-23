@@ -1871,6 +1871,7 @@
       if (t.closest(BTN) && !(t.closest('#title') && !t.closest('button'))) { if (t.closest('button:disabled, .lock')) return; down = null; feedback(e, true); return; }
       if (t.id === 'cv' || t.closest('#title')) down = { x: e.clientX, y: e.clientY, id: e.pointerId };
     }, true);
+    for (const ev of ['touchend', 'click', 'keydown']) document.addEventListener(ev, () => { try { A2.init(); } catch (err) {} }, { capture: true, passive: true }); // iOS 등은 touchend/click 안에서만 오디오를 깨울 수 있다
     document.addEventListener('pointerup', e => { if (!down || down.id !== e.pointerId) return; const d = Math.hypot(e.clientX - down.x, e.clientY - down.y); down = null; if (d < 8) feedback(e, false); }, true);
   }
   $('btnRank').addEventListener('click', () => { $('ovBody').innerHTML = '<div id="rankbox"></div>'; showRank(null); $('btnRank').classList.add('hidden'); $('go').textContent = '게임 시작'; });

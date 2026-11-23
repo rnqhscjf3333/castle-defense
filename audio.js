@@ -129,6 +129,7 @@
 
   // x,y가 있으면 위치 기반(확대·거리 반영), 없으면 UI 소리(확대 무관)
   function play(name, x, y, gainMul) {
+    if (ctx && !st.muted && ctx.state === 'suspended' && (name === 'tap' || name === 'btn')) { ctx.resume().then(() => play(name, x, y, gainMul)).catch(() => {}); return; } // 모바일: 첫 터치에서 오디오가 막 깨어나는 중이어도 그 소리를 낸다
     if (!ctx || st.muted || ctx.state !== 'running' || !SFX[name]) return;
     const now = ctx.currentTime, key = name.replace(/^shot.*/, m => m), gap = MINGAP[key] || MINGAP[name.replace(/[A-Z].*/, '')] || 0.03;
     if (last[name] && now - last[name] < gap) return;
