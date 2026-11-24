@@ -107,5 +107,5 @@
   }
   setTimeout(flushFb, 4000);
 
-  window.Net = { configured: !!API, feedback, pid, sendError, setSource: f => { getS = f; }, begin, sample, lag, sendLog, top, submit, scoreOf, name: () => ls.get('cd-name') || '', setName: v => { v = String(v || '').replace(/[<>&"'`]/g, '').trim().slice(0, 12); if (v) ls.set('cd-name', v); return v; }, localTop };
+  window.Net = { configured: !!API, feedback, resumeRun: () => { run.sent = false; }, pid, sendError, setSource: f => { getS = f; }, begin, sample, lag, sendLog, top, submit, scoreOf, name: () => ls.get('cd-name') || '', setName: v => { v = String(v || '').replace(/[<>&"'`]/g, '').trim().slice(0, 12); if (v) ls.set('cd-name', v); return v; }, localTop };
 })();

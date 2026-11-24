@@ -1884,7 +1884,7 @@
       + '<div class="infBtns"><button id="goInf" class="infMain">♾ 무한 모드 계속하기</button><button id="goEnd" class="infSub">여기서 끝내고 랭킹 등록</button></div>';
     $('overlay').classList.remove('hidden');
     $('goInf').addEventListener('click', () => {
-      if (!C.continueInfinite(S)) return; gb.style.display = ''; $('overlay').classList.add('hidden'); running = true; defeating = false;
+      if (!C.continueInfinite(S)) return; Net.resumeRun(); gb.style.display = ''; $('overlay').classList.add('hidden'); running = true; defeating = false;
       centerOnCore(); banner('무한 모드 돌입!', true); toast('무한 모드: 이제부터 적이 훨씬 빠르게 강해집니다');
     });
     $('goEnd').addEventListener('click', () => { gb.style.display = ''; showResult(true); });
