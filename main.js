@@ -318,7 +318,7 @@
     setText('roundTxt', S.infinite || S.round > C.FINAL_ROUND ? '라운드 ' + S.round + ' · 무한' : '라운드 ' + Math.max(1, S.round) + ' / ' + C.FINAL_ROUND);
     rt.classList.toggle('boss', !!bi); rt.classList.toggle('nextboss', !bi && !!nb); rt.classList.toggle('act2', S.act === 2 && !bi && !nb);
     updateBossBar(); updateCastleBtn();
-    { const om = S.omen && !S.omenWait ? C.CFG.omenFx[S.omen] : null, row = $('omenRow'); if (row) { row.hidden = !om; if (om) { const tx = $('omenTxt'); const lbl = om.name + ' · ' + om.short; if (tx.textContent !== lbl) { tx.textContent = lbl; row.title = om.text; tx.style.color = OMEN_COL[S.omen] || '#ffd'; } } } } // 사천왕의 기운 효과 표시
+    { const om = S.omen && !S.omenWait ? C.CFG.omenFx[S.omen] : null, row = $('omenRow'); if (row) { row.hidden = !om; if (om) { const tx = $('omenTxt'); const lbl = om.name + ' ⓘ'; if (tx.textContent !== lbl) { tx.textContent = lbl; row.title = om.text; tx.style.color = OMEN_COL[S.omen] || '#ffd'; } } } } // 사천왕의 기운 효과 표시
     setText('timeTxt', fmtTime(S.t));
     setText('hpTxt', String(Math.ceil(c.hp)));
     setText('gold', S.dev ? '∞' : String(Math.floor(S.gold)));
@@ -473,7 +473,7 @@
   $('pickBack').addEventListener('click', () => { if (S) C.jobBack(S); });
   $('btnReroll').addEventListener('click', () => { if (S) C.reroll(S); });
 
-  const MODALS = ['setMenu', 'infoPanel', 'metaPanel', 'devPanel', 'fbPanel'];
+  const MODALS = ['setMenu', 'infoPanel', 'metaPanel', 'devPanel', 'fbPanel', 'omenPanel'];
   const anyModal = () => MODALS.some(id => !$(id).classList.contains('hidden'));
   function openModal(id) { $(id).classList.remove('hidden'); if (S && running) paused = true; if (id === 'setMenu') { syncVol(); const ing = !!(S && running); $('setMenu').classList.toggle('titleMode', !ing); $('sResume').textContent = ing ? '계속하기' : '닫기'; } }
   function closeModals() { for (const id of MODALS) $(id).classList.add('hidden'); paused = false; stopStage(); }
@@ -489,6 +489,14 @@
   $('sSfx').addEventListener('change', () => A2.play('kill')); // 놓았을 때 효과음 미리듣기
   function recordAbandon() { if (S && running && !S.over && S.round >= 2 && !S.dev) { Meta.finish(S, C, 0); Net.sendLog(S, 'abandon', true); } }
   $('sNick').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') $('sNickSave').click(); }); $('sNick').addEventListener('keyup', e => e.stopPropagation());
+  // 사천왕의 기운 칩을 누르면 효과를 자세히 보여 준다
+  $('omenRow').addEventListener('click', e => {
+    e.stopPropagation(); if (!S || !S.omen || S.omenWait) return; const om = C.CFG.omenFx[S.omen], nx = S.round > 80 ? C.FINAL_ROUND : Math.ceil(S.round / 10) * 10, nb = C.bossInfo(S, nx), col = OMEN_COL[S.omen] || '#ffd';
+    const why = { thunder: '번개가 맵 전체에 내리쳐 적들이 들떠서 더 빠르게 달려옵니다.', snow: '눈보라가 맵을 덮어 아군의 발걸음이 무거워집니다.', earth: '대지의 가호로 적의 몸이 단단해져 받는 피해가 줄어듭니다.', dragon: '불씨가 하늘에서 떨어져 아군이 조금씩 불에 탑니다.' }[S.omen] || '';
+    $('omenTitle').textContent = om.name; $('omenTitle').style.color = col;
+    $('omenBody').innerHTML = '<p><b style="color:' + col + '">' + om.text.replace(/^.*— /, '') + '</b></p><p>' + why + '</p><p style="opacity:.85">다음 상대: <b>' + (nb ? nb.name : '?') + '</b> (' + nx + '라운드)<br>이 기운은 51라운드부터 다음 사천왕·용이 나타날 때까지 모든 라운드에 계속되며, 선택지를 모두 고른 뒤부터 적용됩니다. 사천왕이 등장하면 서서히 걷힙니다.</p>';
+    openModal('omenPanel');
+  });
   // 개발자에게 피드백 (설정 창에서 열림)
   { const t = $('fbText'); for (const ev of ['keydown', 'keyup']) t.addEventListener(ev, e => e.stopPropagation());
     t.addEventListener('input', () => setText('fbCount', t.value.length + ' / 1000'));

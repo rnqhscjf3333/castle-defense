@@ -20,7 +20,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #hud { position: fixed; top: max(5px, env(safe-area-inset-top)); left: 5px; padding: 5px 9px; min-width: 146px; pointer-events: none; border-radius: 9px; }
 #hud .row { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; line-height: 1.45; }
 #hud b { font-variant-numeric: tabular-nums; }
-#omenRow { position: fixed; left: 100px; top: calc(max(5px, env(safe-area-inset-top)) + 82px); padding: 4px 8px; border-radius: 9px; font-size: 11px; font-weight: 700; white-space: nowrap; pointer-events: none; z-index: 5; max-width: calc(100vw - 230px); overflow: hidden; text-overflow: ellipsis; zoom: .84; }
+#omenRow { position: fixed; left: 100px; top: calc(max(5px, env(safe-area-inset-top)) + 82px); padding: 4px 8px; border-radius: 9px; font-size: 11px; font-weight: 700; white-space: nowrap; pointer-events: auto; cursor: pointer; z-index: 5; max-width: calc(100vw - 230px); overflow: hidden; text-overflow: ellipsis; zoom: .84; }
 #omenRow[hidden] { display: none; }
 body.introOn #omenRow { opacity: 0; }
 #hpbar { height: 6px; border-radius: 3px; background: #2a3244; overflow: hidden; margin: 3px 0 2px; }
@@ -435,6 +435,11 @@ table.rank tr.top.me td { outline: 1px solid rgba(255,204,64,.8); outline-offset
 
 <div id="feed"></div>
 
+<div id="omenPanel" class="modal hidden"><div class="panel mbox">
+  <h2 id="omenTitle">사천왕의 기운</h2>
+  <div class="mlist"><div id="omenBody" style="font-size:14px;line-height:1.6"></div><button data-close class="main">닫기</button></div>
+</div></div>
+
 <div id="fbPanel" class="modal hidden"><div class="panel mbox">
   <h2>개발자에게 피드백</h2>
   <div class="mlist">
@@ -523,13 +528,13 @@ table.rank tr.top.me td { outline: 1px solid rgba(255,204,64,.8); outline-offset
   </div>
 </div>
 
-<script src="core.js?v=20261124n"></script>
-<script src="figures.js?v=20261124n"></script>
-<script src="scenery.js?v=20261124n"></script>
-<script src="config.js?v=20261124n"></script>
-<script src="meta.js?v=20261124n"></script>
-<script src="net.js?v=20261124n"></script>
-<script src="audio.js?v=20261124n"></script>
-<script src="main.js?v=20261124n"></script>
+<script src="core.js?v=20261124o"></script>
+<script src="figures.js?v=20261124o"></script>
+<script src="scenery.js?v=20261124o"></script>
+<script src="config.js?v=20261124o"></script>
+<script src="meta.js?v=20261124o"></script>
+<script src="net.js?v=20261124o"></script>
+<script src="audio.js?v=20261124o"></script>
+<script src="main.js?v=20261124o"></script>
 </body>
 </html>
