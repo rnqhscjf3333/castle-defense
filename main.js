@@ -945,7 +945,7 @@
         if (ev.zone > 0) addFx({ k: 'pool', x: ev.x, y: ev.y, r: ev.r * 0.95, t: dl, max: ev.zone, c: ['#ff7a1a', '#ffb24a', '#ffe9a0'] });
         if (ev.freeze) addFx({ k: 'ring', x: ev.x, y: ev.y, t: dl, max: 0.9, c: '#eaf8ff', r: ev.r * 1.5, big: true });
       }
-      else if (ev.type === 'castlePulse') { const col = JOBC[ev.cfin] || JOBC[ev.cvar] || JOBC.guardian; addFx({ k: 'pulseWave', x: CX, y: CY, t: 0, max: ev.dmg ? 1.1 : 0.9, c: ev.shield ? '#8fd8ff' : col, r: ev.r, shield: !!ev.shield, atk: !!ev.dmg }); addFx({ k: 'ring', x: CX, y: CY, t: 0, max: 0.9, c: ev.dmg ? '#ff5a3a' : col, r: ev.r, grow: ev.r, big: true }); addFx({ k: 'ring', x: CX, y: CY, t: -0.12, max: 0.7, c: '#ffffff', r: ev.r * 0.7, grow: ev.r * 0.7 }); }
+      else if (ev.type === 'castlePulse') { const col = JOBC[ev.cfin] || JOBC[ev.cvar] || JOBC.guardian; addFx({ k: 'pulseWave', x: CX, y: CY, t: 0, max: ev.dmg ? 1.1 : 0.9, c: ev.shield ? '#8fd8ff' : col, r: ev.r, shield: !!ev.shield, atk: !!ev.dmg }); if (ev.dmg) addFx({ k: 'ring', x: CX, y: CY, t: 0, max: 0.9, c: '#ff5a3a', r: ev.r, grow: ev.r }); }
       else if (ev.type === 'raise') { addFx({ k: 'burst', x: ev.x, y: ev.y, t: 0, max: 0.5, c: '#3ae68a', big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.5, c: '#7affc8', r: 28 }); }
       else if (ev.type === 'undeadFade') addFx({ k: 'burst', x: ev.x, y: ev.y, t: 0, max: 0.4, c: '#3ae68a' });
       else if (ev.type === 'marked') addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.35, c: '#ff5a5a', r: 16 });
@@ -1399,7 +1399,7 @@
       if (e.focusT > 0) { ctx.globalAlpha = 0.3 + 0.15 * Math.sin(now * 0.02); ctx.fillStyle = '#6fe08a'; ctx.beginPath(); ctx.arc(e.x, e.y - 6, e.r * (1.3 + 0.25 * Math.sin(now * 0.01)), 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
       if (e.dying) drawDyingBoss(e, now); else Figures.draw(ctx, e, now);
       if (e.elite) eliteMark(e, z);
-      if (e.team === 'u' && e.ward > 0) { ctx.globalAlpha = 0.22 + 0.1 * Math.sin(now * 0.01) + (e.wardFx > 0 ? 0.3 : 0); ctx.strokeStyle = '#8fd8ff'; ctx.fillStyle = '#8fd8ff'; ctx.lineWidth = 1.6 / z; ctx.beginPath(); ctx.arc(e.x, e.y - 4, e.r * 1.5, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 0.8; ctx.stroke(); ctx.globalAlpha = 1; }
+      if (e.team === 'u' && e.ward > 0) { ctx.globalAlpha = 0.14 + 0.06 * Math.sin(now * 0.01) + (e.wardFx > 0 ? 0.15 : 0); ctx.strokeStyle = '#8fd8ff'; ctx.fillStyle = '#8fd8ff'; ctx.lineWidth = 1.6 / z; ctx.beginPath(); ctx.arc(e.x, e.y - 4, e.r * 1.5, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 0.8; ctx.stroke(); ctx.globalAlpha = 1; }
       if (e.team === 'e' && e.markT > 0) { ctx.strokeStyle = '#ff4a4a'; ctx.lineWidth = 1.6 / z; ctx.globalAlpha = 0.9; const my = e.y + Figures.headTop(e) - 8, mr = 5 + Math.sin(now * 0.02); ctx.beginPath(); ctx.arc(e.x, my, mr, 0, Math.PI * 2); ctx.moveTo(e.x - mr - 3, my); ctx.lineTo(e.x + mr + 3, my); ctx.moveTo(e.x, my - mr - 3); ctx.lineTo(e.x, my + mr + 3); ctx.stroke(); ctx.globalAlpha = 1; }
       if (e.team === 'e' && e.frozenT > 0) { ctx.globalAlpha = 0.45; ctx.fillStyle = '#bfe8ff'; ctx.strokeStyle = '#eaf8ff'; ctx.lineWidth = 1.5 / z; ctx.beginPath(); ctx.ellipse(e.x, e.y - 4, e.r * 1.3, e.r * 1.7, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.globalAlpha = 1; }
       if ((e.team === 'u' && (e.stunT > 0 || e.poisonT > 0 || e.weakT > 0 || e.woundT > 0)) || (e.team === 'e' && (e.stunT > 0 || e.curseT > 0 || e.burnT > 0))) statusMarks(e, now, z);
@@ -1498,8 +1498,8 @@
       const p = f.t / f.max;
       if (f.k === 'burst') { ctx.globalAlpha = 1 - p; ctx.fillStyle = f.c; ctx.beginPath(); ctx.arc(f.x, f.y, (f.big ? 20 : 8) + p * (f.big ? 50 : 16), 0, Math.PI * 2); ctx.fill(); }
       else if (f.k === 'pulseWave') { // 성 파동: 성에서 퍼져 나가는 빛의 원판 (보호막 파동은 푸른 방벽 + 육각 문양)
-        const rr = 20 + (f.r - 20) * Math.min(1, p * 1.25), a = 1 - p; ctx.save(); const g = ctx.createRadialGradient(f.x, f.y, rr * 0.55, f.x, f.y, rr); g.addColorStop(0, f.c + '00'); g.addColorStop(0.7, f.c + (f.shield ? '33' : '22')); g.addColorStop(1, f.c + (f.shield ? 'bb' : '99')); ctx.globalAlpha = a; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(f.x, f.y, rr, 0, 6.283); ctx.fill();
-        ctx.strokeStyle = f.shield ? '#e6f8ff' : '#fff'; ctx.lineWidth = (f.shield ? 6 : 4.5) / z; ctx.globalAlpha = Math.min(1, a * 1.3); ctx.beginPath(); ctx.arc(f.x, f.y, rr, 0, 6.283); ctx.stroke();
+        const rr = 20 + (f.r - 20) * Math.min(1, p * 1.25), a = 1 - p; ctx.save(); const g = ctx.createRadialGradient(f.x, f.y, rr * 0.55, f.x, f.y, rr); g.addColorStop(0, f.c + '00'); g.addColorStop(0.7, f.c + (f.shield ? '22' : '14')); g.addColorStop(1, f.c + (f.shield ? '77' : '55')); ctx.globalAlpha = a * 0.75; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(f.x, f.y, rr, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = f.shield ? '#e6f8ff' : '#fff'; ctx.lineWidth = (f.shield ? 3.5 : 2.5) / z; ctx.globalAlpha = Math.min(1, a * 0.7); ctx.beginPath(); ctx.arc(f.x, f.y, rr, 0, 6.283); ctx.stroke();
         if (f.atk) { // 공격형 파동: 테두리가 붉게 타오르고 번개가 지직거린다
           const aa = Math.min(1, (1 - p * 0.75) * 1.2); ctx.globalAlpha = aa; ctx.strokeStyle = '#ff3a2a'; ctx.lineWidth = 8 / z; ctx.beginPath(); ctx.arc(f.x, f.y, rr, 0, 6.283); ctx.stroke();
           ctx.lineCap = 'round'; ctx.lineJoin = 'round'; const N = 26, jit = 10 + 8 * (1 - p);

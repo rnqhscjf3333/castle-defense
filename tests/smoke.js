@@ -958,5 +958,13 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   const ud = g.units.find(u => u.undead && !u.dead); check('망령은 쓰러진 아군에 비례한 능력을 가짐', !!ud && ud.max > 30 && ud.atk >= 3 && ud.ttl > 0);
   g.mode = 'normal'; g.units.forEach(u => { if (!u.undead) { u.dead = true; } }); ud.x = 1500 + C.CFG.leash + 200; ud.y = 1500; ud.hx = 1500 + 80; ud.hy = 1500; const e = C.spawnEnemy(g, 'grunt', ud.x + 150, ud.y); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; const d0 = Math.hypot(e.x - ud.x, e.y - ud.y); ud.ttl = 99; ud.hp = ud.max = 1e9; for (let i = 0; i < 60; i++) C.tick(g, DT);
   check('망령은 기본 모드에서도 성 밖 멀리 있는 적을 쫓아가 공격 (자유 모드처럼)', e.hp < e.max, Math.round(d0) + ' → ' + Math.round(Math.hypot(e.x - ud.x, e.y - ud.y))); }
+
+// 74. 공격형 수호 파동 밀쳐내기(보스 제외) · 설치형 라운드 성장
+{ const g = arena(3, []); g.cpar = { pulse: { cd: 5, heal: 0, r: 230, shield: 0, dmg: 1 } }; const ca = g.core;
+  C.spawnEnemy(g, 'brute', ca.x + 100, ca.y); const e = g.enemies[g.enemies.length - 1]; const x0 = e.x;
+  C.spawnEnemy(g, 'brute', ca.x - 100, ca.y); C.tick(g, DT); g.cpar = { pulse: { cd: 5, heal: 0, r: 230, shield: 0, dmg: 1 } }; C.castPulse(g);
+  check('수호 공격 파동이 적을 살짝 밀어냄(보스 제외)', (e.kvx || 0) > 0 && (e.kvx || 0) < 400, 'kvx=' + (e.kvx || 0)); }
+{ const g = arena(3, []); applyById(g, 's_turret'); const tu = g.units.find(u => u.type === 'turret'); const a0 = tu.atk, h0 = tu.max; g.round = 60; C.refreshUnit ? C.refreshUnit(g, tu) : null;
+  check('포탑은 후반 라운드에서 더 강해짐', !C.refreshUnit || (tu.atk > a0 * 2 && tu.max > h0 * 2), a0 + '→' + tu.atk); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

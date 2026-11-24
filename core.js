@@ -152,6 +152,8 @@
     },
     ninjaBurst: 4.5, // 닌자 5스택 폭발 배율 (표창 피해 × 이 값, 단일 대상)
     kingHp: 2.0, kingP1: 1.5, wingedHp: 2.0, // 용익 기사단장 체력 배율
+    pulseKnock: 150, // 성스러운 심판 파동이 적을 밀어내는 힘
+    turretGrow: 0.035, // 설치형 포탑·발리스타: 라운드마다 공격력·체력이 이만큼씩 오른다
     bossGuard: { dur: 8, fade: 2, red: 0.85 }, // 보스(1차전·단일 형태)가 나타난 직후 8초간 받는 피해 -85% (마지막 2초 동안 서서히 사라진다)           // 사천왕 한 형태의 체력 = 무한 모드 보스 기본 체력 × 이 값
     kings: {
       thunder: { id: 'thunder', elem: 'thunder', line: '번개가 너희의 심장을 꿰뚫으리라.', name: '뇌왕', r: 36,
@@ -793,9 +795,9 @@
   // 유닛 종류별 강화 수치 반영
   function statsOf(S, type) {
     const b = CFG.units[type], line = lineOf(type);
+    const grow = b.static ? 1 + CFG.turretGrow * Math.max(0, S.round - 1) : 1; // 설치형은 후반에도 뒤처지지 않도록 라운드에 따라 커진다
     if (line === 'core') { // 포탑: 성 공격력·공속·사거리 강화를 받는다
-      const v = V(), L = id => taken(S, id);
-      return { max: b.hp, atk: S.core.atk, rate: S.core.rate, speed: b.speed, heal: 0, healRate: 0, range: S.core.range, healRange: 0 };
+      return { max: Math.round(b.hp * grow), atk: S.core.atk * grow, rate: S.core.rate, speed: b.speed, heal: 0, healRate: 0, range: S.core.range, healRange: 0 };
     }
     // 사제는 유닛 수가 적어서 강화 효과를 2배로 쳐 준다
     const k = 1; // 사제도 일반 유닛과 같은 강화 효과 (치유량·속도 카드 증가폭 축소)
@@ -803,7 +805,7 @@
     const jm = (S.jobMods && S.jobMods[line]) || zeroMods();
     const bu = S.bossUp || { hp: 0, atk: 0 }, bh = 1 + p.hp * bu.hp, ba = 1 + p.atk * bu.atk; // 보스 보상 [전군 강화]는 일반 강화와 별개로 곱해진다
     return {
-      max: Math.round(b.hp * (1 + p.hp * l.hp) * bh * (1 + jm.hp)), atk: b.atk * (1 + p.atk * l.atk) * ba * (1 + jm.atk), rate: b.rate * (1 + p.rate * l.rate) * (1 + jm.rate),
+      max: Math.round(b.hp * grow * (1 + p.hp * l.hp) * bh * (1 + jm.hp)), atk: b.atk * grow * (1 + p.atk * l.atk) * ba * (1 + jm.atk), rate: b.rate * (1 + p.rate * l.rate) * (1 + jm.rate),
       speed: b.speed * (1 + p.speed * l.speed) * (1 + jm.speed), heal: (b.heal || 0) * (1 + p.atk * l.atk) * ba * (1 + jm.heal),
       healRate: b.healRate ? b.healRate / ((1 + p.rate * l.rate) * (1 + jm.healRate)) : 0, range: (b.range || 0) * (line === 'archer' ? 1 + V().archerRange * taken(S, 'u_range') : 1) + jm.range, healRange: (b.healRange || 0) + jm.healRange,
     };
@@ -1011,6 +1013,7 @@
   function startRound(S) {
     S.cliff = 0; S.cliffTheme = null;
     S.phase = 'round'; S.round++; S.roundT = 0; S.clearT = 0; S.repairN = 0; recompute(S);
+    for (const u of S.units) if (!u.dead && isStatic(u)) refreshUnit(S, u);
     const r = S.round;
     for (const u of S.units) if (u.type === 'priest') u.rv = S.jobMods.priest.revive; rvSync(S);
     if (r > 1) {
@@ -1451,7 +1454,7 @@
   function castPulse(S) { // 수호: 아군 치유·보호막, 공격형은 주변 적에게 피해
     const P = S.cpar.pulse, c = S.core;
     for (const u of S.units) { if (u.dead || u.undead || isStatic(u) || Math.hypot(u.x - c.x, u.y - c.y) > P.r) continue; if (P.heal > 0) applyHeal(S, u, u.max * P.heal); if (P.shield > 0) { u.ward = Math.min(u.max * 0.3, (u.ward || 0) + u.max * P.shield); u.wardFx = 0.45; } }
-    if (P.dmg > 0) eachNear(S.gE, c.x, c.y, P.r, o => damage(S, o, c.atk * P.dmg));
+    if (P.dmg > 0) eachNear(S.gE, c.x, c.y, P.r, o => { damage(S, o, c.atk * P.dmg); knock(S, o, c.x, c.y, CFG.pulseKnock, 0); }); // 공격형 파동: 적을 살짝 밀어낸다 (보스 제외)
     emit(S, { type: 'castlePulse', r: P.r, cvar: c.cvar, cfin: c.cfin, dmg: P.dmg > 0, shield: P.shield > 0 });
     S.cp = Math.max(2, P.cd);
   }
@@ -2132,6 +2135,6 @@
   return {
     CFG, MAX_ROUND, ACT1_END, extraAngles, EXTRA_RING, ROUND_TIME, SPAWN_TIME, PREP_TIME, SPAWN_RING, UNIT_TYPES, CARD_DEFS,
     p2Abil, createGame, tick, buy, openAwaken, openLegacy, cmpDesc, FINAL_ROUND, castleMax, repairCastle, repairCost, devSetup, continueInfinite, runSummary, ctNode, jobDef, coreGuard, hitCore, pickCastle, autoCastle, castleOptions, describeCastle, jobBack, classOptions, enqueue, cancelProd, goldBound, checkRun, upgradeCastle, castleCost, popCap, popGain, popCount, specialCount, endCinematic, jumpToRound, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo, drainEvents, pickCard, reroll, describeTaken, openCards,
-    unitCostOf, enemyCount, hpMul, dmgMul, mulberry32, damage,
+    unitCostOf, castPulse, refreshUnit, enemyCount, hpMul, dmgMul, mulberry32, damage,
   };
 });
