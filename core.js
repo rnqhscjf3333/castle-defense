@@ -151,7 +151,7 @@
       dragon:  { name: '불길의 기운', short: '불씨가 아군에 낙하', every: 2.5, n: 3, pct: 0.03, text: '불길의 기운 — 불씨가 떨어져 아군 3명이 2.5초마다 최대 체력의 3% 피해' },
     },
     kingHp: 2.0, kingP1: 1.5, wingedHp: 2.0, // 용익 기사단장 체력 배율
-    bossGuard: { dur: 8, fade: 2, red: 0.85 }, // 보스가 나타난 직후(그리고 2차전 시작 직후) 8초간 받는 피해 -85% (마지막 2초 동안 서서히 사라진다)           // 사천왕 한 형태의 체력 = 무한 모드 보스 기본 체력 × 이 값
+    bossGuard: { dur: 8, fade: 2, red: 0.85 }, // 보스(1차전·단일 형태)가 나타난 직후 8초간 받는 피해 -85% (마지막 2초 동안 서서히 사라진다)           // 사천왕 한 형태의 체력 = 무한 모드 보스 기본 체력 × 이 값
     kings: {
       thunder: { id: 'thunder', elem: 'thunder', line: '번개가 너희의 심장을 꿰뚫으리라.', name: '뇌왕', r: 36,
         look: { body: '#3a3320', head: '#f1ead2', weapon: 'sword', crown: true, style: 'overlord', elem: 'thunder' },
@@ -263,7 +263,7 @@
           ],
           ranger: [
             { id: 'stormarcher', name: '폭풍사수', desc: '세 갈래 질풍 화살. 공격 속도 +40%, 치명타 확률 +15%, 바람처럼 공격을 30% 확률로 회피', mods: { rate: 0.4, crit: 0.15, dodge: 0.3 } },
-            { id: 'ninja', name: '닌자', desc: '표창을 던지는 암살자. 공격력 +30%, 이동 속도 +25%, 사거리 -50. 표창이 5개 쌓인 적은 폭발해 주변 적에게 큰 피해(표창 피해의 4배, 범위 75)', mods: { atk: 0.3, speed: 0.25, range: -50, stack: 1 } },
+            { id: 'ninja', name: '닌자', desc: '표창을 던지는 암살자. 공격력 +30%, 이동 속도 +25%, 사거리 -50. 표창이 5개 쌓인 적은 폭발해 그 적에게 큰 피해(표창 피해의 4배, 주변 적은 받지 않음). 표창은 직선으로 빠르게 날아감', mods: { atk: 0.3, speed: 0.25, range: -50, stack: 1 } },
           ],
         },
       },
@@ -1125,7 +1125,7 @@
       if (D.revive) { // 각성: 모습이 바뀌고 체력이 0에서 다시 차오른다 (땅도 보스의 속성에 맞게 무너진다)
         D.stage = 'revive'; S.cliffTheme = b.king ? b.king.id : 'dark'; D.t0 = D.t; b.p2 = true; b.flash = 0; b.bossName = N.name; b.look = N.look; b.r = N.r; b.max = b.max2; b.hp = 0; b.gold = 0;
         b.abil = b.king ? kingP2(b) : p2Abil(b.abil); b.t = {}; for (const k in b.abil) if (!Array.isArray(b.abil[k])) b.t[k] = (b.abil[k].cd || 0) * (b.king ? 0.3 : 0.6);
-        b.life = 0; b.enraged = false; b.rushDone = true; b.age = 0; b.enr = false; b.cd = 1; b.guardT = S.round > MAX_ROUND ? CFG.bossGuard.dur : 0; // 2차전도 시작 직후에는 보호 (사천왕 등. 마왕 2차전에는 없다)
+        b.life = 0; b.enraged = false; b.rushDone = true; b.age = 0; b.enr = false; b.cd = 1; b.guardT = 0; // 2차전(마왕·사천왕)에는 등장 직후 보호가 없다
         emit(S, { type: 'bossRevive', x: b.x, y: b.y, r: b.r, name: b.bossName, dur: N.reviveT });
         return;
       }
@@ -1317,8 +1317,9 @@
     const m = (color === 'c' && from.cpath) ? MUZZLE.cm : ((color === 'es' || color === 'eb') && !(from.look && from.look.weapon === 'cannon')) ? MUZZLE.throw : (MUZZLE[color] || { len: 0, h0: 0 });
     const ang = Math.atan2(tgt.y - from.y, tgt.x - from.x), sx = from.x + Math.cos(ang) * m.len, sy = from.y + Math.sin(ang) * m.len;
     const dx = tgt.x - sx, dy = tgt.y - sy, d = Math.hypot(dx, dy), cf = CFG.shots;
-    const T = extra && extra.T ? extra.T : Math.max(cf.minT, d / spd);
-    const H = clamp(cf.arc * d + cf.arcMin, cf.arcMin, cf.arcMax);
+    const flat = !!(extra && extra.flat); // 직선 투사체(닌자 표창): 포물선 없이 빠르게 곧장 날아간다
+    const T = extra && extra.T ? extra.T : Math.max(flat ? 0.07 : cf.minT, d / spd);
+    const H = flat ? 0 : clamp(cf.arc * d + cf.arcMin, cf.arcMin, cf.arcMax);
     const s = S.shotPool.length ? S.shotPool.pop() : {}; // 쓴 투사체 객체를 재사용 (풀링)
     s.x = sx; s.y = sy; s.sx = sx; s.sy = sy; s.p = 0; s.T = T; s.H = H; s.h = m.h0; s.h0 = m.h0; s.vx = 0; s.vy = 0; s.vh = 0; s.t = tgt; s.from = from; s.dmg = dmg; s.color = color; s.job = from.job || null; s.elite = !!from.elite;
     s.pierce = !!(extra && extra.pierce); s.pc = extra && extra.pc != null ? extra.pc : null; s.aoe = extra && extra.aoe ? extra.aoe : 0; s.crit = !!(extra && extra.crit); s.splash = extra && extra.splash || 0; s.mark = extra && extra.mark || 0; s.stack = extra && extra.stack || 0; s.bm = extra && extra.bm || 0; s.curse = extra && extra.curse || 0;
@@ -1339,7 +1340,7 @@
       if (s.curse && !s.t.dead) { const t = s.t; t.curseT = 4; t.burnT = 4; t.burnD = s.dmg * 0.25; t.burnAcc = t.burnAcc || 0; emit(S, { type: 'curse', x: t.x, y: t.y }); } // 약화(공격력 감소) + 성화 화상
       if (s.stack && !s.t.dead) { // 닌자: 표창이 박힌다 — 5개가 쌓이면 폭발
         const t = s.t; t.stk = (t.stk || 0) + 1; t.stkT = 6;
-        if (t.stk >= 5) { t.stk = 0; const R = 75, bd = s.dmg * (s.bm || 4); eachNear(S.gE, t.x, t.y, R, e => damage(S, e, bd * (e.rres || 1))); emit(S, { type: 'ninjaBurst', x: t.x, y: t.y, r: R }); }
+        if (t.stk >= 5) { t.stk = 0; const bd = s.dmg * (s.bm || 4); damage(S, t, bd * (t.rres || 1)); emit(S, { type: 'ninjaBurst', x: t.x, y: t.y, r: 40 }); } // 폭발은 표창이 쌓인 그 적만 받는다
         else emit(S, { type: 'ninjaStack', x: t.x, y: t.y, n: t.stk });
       }
       if (s.splash) { const R = 55, t = s.t; eachNear(S.gE, t.x, t.y, R, e => { if (e !== t) damage(S, e, s.dmg * s.splash); }); emit(S, { type: 'boom', x: t.x, y: t.y, r: R }); } // 포격수: 폭발 화살
@@ -1625,6 +1626,7 @@
           const cc = line === 'archer' ? V().crit * S.perks.crit + S.jobMods.archer.crit : 0;
           let dm = atk, isCrit = false; if (cc > 0 && S.rng() < cc) { dm *= V().critMul; isCrit = true; emit(S, { type: 'crit', x: t.x, y: t.y }); }
           if (jma.rifle) snipe(S, u, t, dm, isCrit); // 명사수: 저격총 — 포물선 없이 일직선으로 꿰뚫는다
+          else if (jma.stack) fire(S, u, t, dm, CFG.arrowSpeed * 2.6, 'a', Object.assign({ flat: true }, isCrit ? { crit: true } : {}, arrow)); // 닌자: 표창은 직선으로 빠르게
           else fire(S, u, t, dm, CFG.arrowSpeed, 'a', isCrit ? Object.assign({ crit: true }, arrow) : arrow);
         }
       }

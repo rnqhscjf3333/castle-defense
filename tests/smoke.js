@@ -703,8 +703,10 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   { const [g, u] = mkA(['sniper', 'gunner']); const t = C.spawnEnemy(g, 'brute', u.x + 100, u.y), n2 = C.spawnEnemy(g, 'brute', u.x + 120, u.y + 12); for (const e of [t, n2]) { e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; } for (let i = 0; i < 120; i++) C.tick(g, DT); check('포격수: 폭발 화살이 주변 적에게도 피해', t.hp < t.max && n2.hp < n2.max); }
   { const [g, u] = mkA(['ranger', 'ninja']); const t = C.spawnEnemy(g, 'brute', u.x + 100, u.y), n2 = C.spawnEnemy(g, 'brute', u.x + 120, u.y + 14), far = C.spawnEnemy(g, 'brute', u.x + 100, u.y + 300); for (const e of [t, n2, far]) { e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; } let marked = false, stacks = 0, burst = null; g.captureEvents = true;
     for (let i = 0; i < 300; i++) { C.tick(g, DT); if (t.markT > 0) marked = true; if (t.stk > stacks) stacks = t.stk; for (const ev of C.drainEvents(g)) if (ev.type === 'ninjaBurst') burst = ev; }
-    check('닌자: 표창이 쌓이다가 5스택에서 폭발 (스택 증가 → 폭발 이벤트)', stacks >= 2 && !!burst && burst.r === 75, 'stk ' + stacks);
-    check('닌자: 폭발이 주변 적에게도 피해, 먼 적은 무관 / 표식(받는 피해 증가)은 없음', n2.hp < n2.max && far.hp === far.max && !marked); }
+    check('닌자: 표창이 쌓이다가 5스택에서 폭발 (스택 증가 → 폭발 이벤트)', stacks >= 2 && !!burst && burst.r === 40, 'stk ' + stacks);
+    { const [g2, u2] = mkA(['ranger', 'ninja']); const t2 = C.spawnEnemy(g2, 'brute', u2.x + 120, u2.y); t2.speed = 0; t2.dmg = 0; t2.hp = t2.max = 1e9; let sh = null; for (let i = 0; i < 120 && !sh; i++) { C.tick(g2, DT); sh = g2.shots.find(x => x.job === 'ninja') || null; }
+      check('닌자: 표창은 포물선 없이 직선으로 빠르게 날아감', !!sh && sh.H === 0 && sh.T < 0.25, sh && (sh.H + '/' + sh.T.toFixed(2))); }
+    check('닌자: 폭발은 쌓인 적만 받고 주변·먼 적은 피해 없음 / 표식(받는 피해 증가)은 없음', t.hp < t.max && n2.hp === n2.max && far.hp === far.max && !marked); }
   // 수호사제: 치유하면 보호막
   { const g = C.createGame(88); g.gold = 1e9; g.phase = 'round'; g.hold = true; g.queue = []; g.core.atk = 0; g.core.hp = g.core.max = 1e9; g.buyCd.priest = 0; g.buyCd.sword = 0; C.buy(g, 'priest'); const sw = C.buy(g, 'sword').unit; for (const id of ['cleric', 'warden']) { const o = C.jobOptions(g).find(x => x.id === id); g.jobs.offer = { boss: 't', list: [o] }; C.pickJob(g, 0); } sw.hp = sw.max * 0.4; for (let i = 0; i < 100; i++) C.tick(g, DT); check('수호사제: 치유한 아군에게 보호막', sw.ward > 0 || sw.hp > sw.max * 0.4, 'ward ' + Math.round(sw.ward || 0)); }
   // 전투사제: 성스러운 구체로 공격
@@ -912,7 +914,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   const kg = arena(60, [['boss', 700, 500]]); const kk = kg.enemies[0]; kk.king = kk.king || C.CFG.kings.thunder; kk.canRevive = true; kk.guardT = 0; kk.hp = 1; C.damage(kg, kk, 5); for (let i = 0; i < 400 && kg.bossDeath && kg.bossDeath.stage !== 'revive'; i++) C.tick(kg, DT); for (let i = 0; i < 400 && kg.bossDeath; i++) C.tick(kg, DT);
   check('50라운드(마왕)부터 초반 보호가 걸림', arena(50, [['boss', 700, 500]]).enemies[0].guardT === C.CFG.bossGuard.dur);
   check('30라운드 이전 보스에는 초반 보호가 없음', arena(30, [['boss', 700, 500]]).enemies[0].guardT === 0 && arena(10, [['boss', 700, 500]], 'charger').enemies[0].guardT === 0);
-  check('사천왕 2차전도 시작하면 보호가 다시 걸림', kk.guardT > 0 || !kk.p2, kk.guardT);
+  check('사천왕 2차전에는 등장 직후 보호가 걸리지 않음', kk.p2 && !(kk.guardT > 0), kk.guardT);
   C.CFG.bossGuard.red = 0;
   const gg = C.createGame(5); check('90라운드는 용인 기사단장', C.bossInfo(gg, 90).id === 'drakeknight' && !!C.bossInfo(gg, 90).look.wings);
   check('용인 기사단장은 암흑 기사단장보다 강하고 용의 기술을 씀', !!C.CFG.winged.abil.gust && !!C.CFG.winged.abil.meteor && C.CFG.winged.abil.artillery.dmg > C.CFG.act1Boss.abil.artillery.dmg && C.bossInfo(gg, 90).hp > C.bossInfo(gg, 95).hp);
