@@ -619,9 +619,9 @@
       const ST = L.style, fl0 = e.flash > 0, dd = e._dir;
       if (ST) { // 암흑 기사단장·마왕: 몸 뒤로 늘어지는 보라 망토 (+ 마왕은 높게 솟은 옷깃)
         const sw = Math.sin((typeof performance !== 'undefined' ? performance.now() : 0) * 0.004) * 1.4 * s - dd * (e._moving ? 2 * s : 0);
-        ctx.fillStyle = fl0 ? FLASH : (EL ? EL.cape : L.p2 ? '#6a1020' : '#4c2a80'); ctx.strokeStyle = '#150a22'; ctx.lineWidth = s;
+        ctx.fillStyle = fl0 ? FLASH : (EL ? EL.cape : L.wings ? '#5a0f1c' : L.p2 ? '#6a1020' : '#4c2a80'); ctx.strokeStyle = '#150a22'; ctx.lineWidth = s;
         ctx.beginPath(); ctx.moveTo(-6.5 * s, -4 * s); ctx.lineTo(6.5 * s, -4 * s); ctx.lineTo(14 * s + sw, 13 * s); ctx.lineTo(-14 * s + sw, 13 * s); ctx.closePath(); ctx.fill(); ctx.stroke();
-        if (!fl0) { ctx.fillStyle = EL ? EL.hem : L.p2 ? '#a82030' : '#a3284e'; ctx.beginPath(); ctx.moveTo(-14 * s + sw, 13 * s); ctx.lineTo(14 * s + sw, 13 * s); ctx.lineTo(13 * s + sw, 10.4 * s); ctx.lineTo(-13 * s + sw, 10.4 * s); ctx.closePath(); ctx.fill(); }
+        if (!fl0) { ctx.fillStyle = EL ? EL.hem : L.wings ? '#e0662a' : L.p2 ? '#a82030' : '#a3284e'; ctx.beginPath(); ctx.moveTo(-14 * s + sw, 13 * s); ctx.lineTo(14 * s + sw, 13 * s); ctx.lineTo(13 * s + sw, 10.4 * s); ctx.lineTo(-13 * s + sw, 10.4 * s); ctx.closePath(); ctx.fill(); }
         if (ST === 'overlord') { ctx.fillStyle = fl0 ? FLASH : (EL ? EL.cape2 : L.p2 ? '#5a0e1a' : '#3e2270'); for (const k of [-1, 1]) { tri(ctx, k * 3 * s, -3 * s, k * 11.5 * s, -19 * s, k * 8 * s, -2 * s); ctx.fill(); ctx.stroke(); } }
       }
       const h = body(ctx, e, { s, body: L.body || '#7b3fa8', legs: EL ? EL.legs : L.p2 ? '#2a0a12' : ST ? '#1c1a26' : '#2a1a3a', head: L.head || '#d9c6e6', line: '#1f0e2e', angry: true, belt: EL ? EL.belt : L.p2 ? '#ff7a2a' : '#e1b43a', bw: 15, bh: 15, eye: EL ? EL.eye : L.p2 ? '#ffd84a' : '#ff3b3b' });
@@ -629,10 +629,10 @@
       const base = e.swing > 0 ? e._face : (d > 0 ? -0.7 : Math.PI + 0.7), ang = base + (e.swing > 0 ? swingOff(e, 0.25) * d : 0);
       const weapon = L.weapon || 'axe';
       if (ST === 'darkknight' && !fl) { // 완전히 덮는 어두운 투구: 눈구멍 틈새의 붉은 빛 + 이마의 보라 문장 + 어깨 갑옷
-        ctx.fillStyle = '#1a1c27'; ctx.beginPath(); ctx.moveTo(-5 * s, h.hyHead - 1 * s); ctx.lineTo(5 * s, h.hyHead - 1 * s); ctx.lineTo(4 * s, h.hyHead + 3 * s); ctx.lineTo(-4 * s, h.hyHead + 3 * s); ctx.closePath(); ctx.fill();
-        ctx.fillStyle = '#ff3a5a'; ctx.fillRect(-4 * s, h.hyHead - 0.4 * s, 8 * s, 1.1 * s);
-        ctx.fillStyle = '#7a44c8'; tri(ctx, -2 * s, h.hyHead - 3 * s, 2 * s, h.hyHead - 3 * s, 0, h.hyHead - 8 * s); ctx.fill();
-        ctx.fillStyle = '#3a3e52'; ctx.strokeStyle = '#14161f'; ctx.lineWidth = s; for (const k of [-1, 1]) { ctx.beginPath(); ctx.ellipse(k * 7.2 * s, -1.4 * s + h.bob, 4.2 * s, 3.2 * s, 0, 0, TAU); ctx.fill(); ctx.stroke(); }
+        ctx.fillStyle = L.wings ? '#2a0e14' : '#1a1c27'; ctx.beginPath(); ctx.moveTo(-5 * s, h.hyHead - 1 * s); ctx.lineTo(5 * s, h.hyHead - 1 * s); ctx.lineTo(4 * s, h.hyHead + 3 * s); ctx.lineTo(-4 * s, h.hyHead + 3 * s); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = L.wings ? '#ff9a1a' : '#ff3a5a'; ctx.fillRect(-4 * s, h.hyHead - 0.4 * s, 8 * s, 1.1 * s);
+        ctx.fillStyle = L.wings ? '#ff7a1a' : '#7a44c8'; tri(ctx, -2 * s, h.hyHead - 3 * s, 2 * s, h.hyHead - 3 * s, 0, h.hyHead - 8 * s); ctx.fill();
+        ctx.fillStyle = L.wings ? '#6a2230' : '#3a3e52'; ctx.strokeStyle = L.wings ? '#2a0a10' : '#14161f'; ctx.lineWidth = s; for (const k of [-1, 1]) { ctx.beginPath(); ctx.ellipse(k * 7.2 * s, -1.4 * s + h.bob, 4.2 * s, 3.2 * s, 0, 0, TAU); ctx.fill(); ctx.stroke(); }
       }
       if (L.wings && !fl) { // 용인: 투구 옆으로 휘어 솟은 뿔, 투구 틈의 금빛 세로 눈, 어깨와 등의 가시, 비늘 문양
         ctx.fillStyle = '#d8c8a0'; ctx.strokeStyle = '#1f0e2e'; ctx.lineWidth = 0.9 * s;
