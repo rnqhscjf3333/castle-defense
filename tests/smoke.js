@@ -910,7 +910,8 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   check('보호 중에는 받는 피해가 크게 줄어듦 (85%)', early < late * 0.2 && late > 80, early.toFixed(1) + ' vs ' + late.toFixed(1));
   b.guardT = 1; b.hp = 1000; C.damage(g, b, 100); const fade = 1000 - b.hp; check('보호는 끝나기 전 서서히 약해짐', fade > early * 1.5 && fade < late, fade.toFixed(1));
   const kg = arena(60, [['boss', 700, 500]]); const kk = kg.enemies[0]; kk.king = kk.king || C.CFG.kings.thunder; kk.canRevive = true; kk.guardT = 0; kk.hp = 1; C.damage(kg, kk, 5); for (let i = 0; i < 400 && kg.bossDeath && kg.bossDeath.stage !== 'revive'; i++) C.tick(kg, DT); for (let i = 0; i < 400 && kg.bossDeath; i++) C.tick(kg, DT);
-  check('1·2·30라운드 보스에는 초반 보호가 없음', arena(30, [['boss', 700, 500]]).enemies[0].guardT === 0 && arena(10, [['boss', 700, 500]], 'charger').enemies[0].guardT === 0);
+  check('50라운드(마왕)부터 초반 보호가 걸림', arena(50, [['boss', 700, 500]]).enemies[0].guardT === C.CFG.bossGuard.dur);
+  check('30라운드 이전 보스에는 초반 보호가 없음', arena(30, [['boss', 700, 500]]).enemies[0].guardT === 0 && arena(10, [['boss', 700, 500]], 'charger').enemies[0].guardT === 0);
   check('사천왕 2차전도 시작하면 보호가 다시 걸림', kk.guardT > 0 || !kk.p2, kk.guardT);
   C.CFG.bossGuard.red = 0;
   const gg = C.createGame(5); check('90라운드는 용익 기사단장', C.bossInfo(gg, 90).id === 'drakeknight' && !!C.bossInfo(gg, 90).look.wings);

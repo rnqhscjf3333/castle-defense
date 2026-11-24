@@ -1073,7 +1073,7 @@
       emit(S, { type: 'elite', x, y, kind });
     }
     if (bd) {
-      e.guardT = r > MAX_ROUND ? CFG.bossGuard.dur : 0; // 등장 직후 보호 (마왕 이후의 보스부터)
+      e.guardT = r >= MAX_ROUND ? CFG.bossGuard.dur : 0; // 등장 직후 보호 (50라운드 마왕부터)
       e.bossName = bd.name; e.bossId = bd.id; e.look = bd.look; if (bd.ranged) { e.ranged = true; e.range = bd.ranged.range; } e.abil = (bd === CFG.finalBoss || bd === CFG.act1Boss || bd === CFG.winged || isKing(bd) || bd.dragon) ? bd.abil : scaleAbil(bd.abil, r); e.t = {};
       for (const k in e.abil) if (!Array.isArray(e.abil[k])) e.t[k] = (e.abil[k].cd || 0) * (isKing(bd) ? 0.3 : 0.6); // 첫 패턴은 조금 일찍 (사천왕은 더 일찍)
       if (!bd.dragon) e.speed = Math.max(e.speed, CFG.bossSpeed); // 보스는 광전사처럼 빠르게 달려온다
@@ -1125,7 +1125,7 @@
       if (D.revive) { // 각성: 모습이 바뀌고 체력이 0에서 다시 차오른다 (땅도 보스의 속성에 맞게 무너진다)
         D.stage = 'revive'; S.cliffTheme = b.king ? b.king.id : 'dark'; D.t0 = D.t; b.p2 = true; b.flash = 0; b.bossName = N.name; b.look = N.look; b.r = N.r; b.max = b.max2; b.hp = 0; b.gold = 0;
         b.abil = b.king ? kingP2(b) : p2Abil(b.abil); b.t = {}; for (const k in b.abil) if (!Array.isArray(b.abil[k])) b.t[k] = (b.abil[k].cd || 0) * (b.king ? 0.3 : 0.6);
-        b.life = 0; b.enraged = false; b.rushDone = true; b.age = 0; b.enr = false; b.cd = 1; b.guardT = S.round > MAX_ROUND ? CFG.bossGuard.dur : 0; // 2차전도 시작 직후에는 보호 (사천왕·용 등 마왕 이후)
+        b.life = 0; b.enraged = false; b.rushDone = true; b.age = 0; b.enr = false; b.cd = 1; b.guardT = S.round >= MAX_ROUND ? CFG.bossGuard.dur : 0; // 2차전도 시작 직후에는 보호 (마왕·사천왕·용 등 50라운드 이후)
         emit(S, { type: 'bossRevive', x: b.x, y: b.y, r: b.r, name: b.bossName, dur: N.reviveT });
         return;
       }
