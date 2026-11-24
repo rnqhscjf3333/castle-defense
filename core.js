@@ -138,7 +138,14 @@
     kb: { decay: 5.2, max: 950, stagger: 0.35, basic: { boss: 230, ogre: 200, brute: 150, boar: 150, direwolf: 90, rockgiant: 300, stormwolf: 90, elite: 110 }, mass: { golem: 0.35, legendsword: 0.5, hero: 0.8, legendarcher: 0.8, marksman: 0.9 } },
     // 사천왕 (60·70·80라운드에 무작위 순서로 한 명씩. 90라운드는 일반 보스). 마왕처럼 쓰러지면 속성에 맞는 모습으로 각성해 부활한다.
     kingP2: { cdMul: 0.78, dmg: 1.25, hp: 1.9, sword: { cd: 8, len: 1100, width: 150, warn: 1.0, mul: 3.2, kb: 440 }, summon: { thunder: { cd: 9, n: 4, kind: 'wolf' }, snow: { cd: 10, n: 3, kind: 'ghost' }, earth: { cd: 10, n: 3, kind: 'ironshield' } } }, // 사천왕 2차전 강화
-    kingHp: 1.3,           // 사천왕 한 형태의 체력 = 무한 모드 보스 기본 체력 × 이 값
+    // 사천왕의 기운(51라운드~): 다음 사천왕의 속성이 맵 전체에 깔리며 실제 효과를 준다 (선택지를 모두 고른 뒤부터)
+    omenFx: {
+      thunder: { name: '번개의 기운', enemySpd: 1.15, text: '번개의 기운 — 적의 이동 속도 +15%' },
+      snow:    { name: '눈보라의 기운', allySpd: 0.8, text: '눈보라의 기운 — 아군의 이동 속도 -20%' },
+      earth:   { name: '대지의 기운', foeTaken: 0.88, text: '대지의 기운 — 적이 받는 피해 -12%' },
+      dragon:  { name: '불길의 기운', every: 2.5, n: 3, pct: 0.03, text: '불길의 기운 — 불씨가 떨어져 아군 3명이 2.5초마다 최대 체력의 3% 피해' },
+    },
+    kingHp: 1.8,           // 사천왕 한 형태의 체력 = 무한 모드 보스 기본 체력 × 이 값
     kings: {
       thunder: { id: 'thunder', elem: 'thunder', line: '번개가 너희의 심장을 꿰뚫으리라.', name: '뇌왕', r: 36,
         look: { body: '#3a3320', head: '#f1ead2', weapon: 'sword', crown: true, style: 'overlord', elem: 'thunder' },
@@ -319,7 +326,7 @@
     castle: { max: 10, extra: 3, costExtra: [10000, 15000, 22000], awk: { hp: 0.5, atk: 0.6, rate: 0.25, range: 60, cannons: 2 }, cost: [220, 380, 640, 1000, 1550, 2350, 3500, 5000, 7000], popBase: 8, popPer: 3, hp: 350, atk: 0.16, roundAtk: 0.012, range: 22, rate: 0.06, cannonLv: [3, 5, 7] },
     // 엘리트: 일반 몬스터가 일정 확률로 훨씬 강하고 크게 나온다. 확률은 라운드가 갈수록 커져 최대 max
     elite: { from: 3, perRound: 0.0025, max: 0.10, hp: 3, dmg: 1.6, size: 1.35, gold: 4, speed: 1.05 },
-    endless: { hpLin: 0.064, hpQuad: 0.000375, cnt: 0.011, bossBase: 60000, bossExp: 0.6, marMul: 0.9 }, // 무한 모드(51라운드~) 난이도 곡선: 체력 배율 1+lin·n+quad·n², 적 수 +cnt·n (n = 50라운드 이후 지난 라운드)
+    endless: { hpLin: 0.064, hpQuad: 0.000375, cnt: 0.011, bossBase: 60000, bossExp: 0.6, marMul: 0.9, postBoss: 1.25 }, // 무한 모드(51라운드~) 난이도 곡선: 체력 배율 1+lin·n+quad·n², 적 수 +cnt·n (n = 50라운드 이후 지난 라운드)
     dmgVar: 0.15,                     // 모든 공격 피해에 공격력 ±15% 오차
     legendChance: 0.007,              // 30라운드 이후, 카드 한 칸마다 전설 카드가 나올 확률 (아주 낮음)
     rarityWeight: { common: 70, rare: 25, epic: 5 },
@@ -804,7 +811,7 @@
       units: [], enemies: [], shots: [], shotPool: [],
       kills: 0, nextId: 1,
       prod: [], spawnN: 0, repairCd: 0, repairN: 0, buyCd: { sword: 0, archer: 0, priest: 0 },
-      threat: 0, over: false, win: false, omen: null,
+      threat: 0, over: false, win: false, omen: null, omenWait: false, omenEv: null, omenT: 0,
       captureEvents: false, events: [], numQ: [],
       gU: makeGrid(48), gE: makeGrid(48), gA: makeGrid(48), seen: {},
       cards: { offer: null, rerolls: CFG.rerolls, taken: {}, boss: false },
@@ -929,7 +936,7 @@
     return r < ACT1_END ? CFG.bossPool[S.bossOrder[r / 5 - 1]] : CFG.bossPool[S.bossOrder2[(r - 35) / 5]];
   }
   const endBase = r => CFG.endless.bossBase * Math.pow(endF(r), CFG.endless.bossExp);
-  const bossBaseHp = r => r === FINAL_ROUND ? endBase(r) * CFG.dragon.hpMul : (r > MAX_ROUND && r <= 80 && r % 10 === 0) ? endBase(r) * CFG.kingHp : CFG.bossHp[r] || (r > MAX_ROUND ? CFG.endless.bossBase * Math.pow(endF(r), CFG.endless.bossExp) * (r % 10 === 0 ? CFG.endless.marMul : 1) : CFG.bossHp[MAX_ROUND]);
+  const bossBaseHp = r => r === FINAL_ROUND ? endBase(r) * CFG.dragon.hpMul : (r > MAX_ROUND && r <= 80 && r % 10 === 0) ? endBase(r) * CFG.kingHp : CFG.bossHp[r] || (r > MAX_ROUND ? CFG.endless.bossBase * Math.pow(endF(r), CFG.endless.bossExp) * (r % 10 === 0 ? CFG.endless.marMul : 1) * CFG.endless.postBoss : CFG.bossHp[MAX_ROUND]);
   const bossInfo = (S, r) => { const d = bossDefFor(S, r); return d ? Object.assign({ hp: bossBaseHp(r) }, d) : null; };
   // 풀 보스의 패턴 수치를 라운드에 맞춰 조정 (15라운드 = 기준). 일찍 나오면 약하게, 늦게 나오면 강하게.
   const SUMMON_UP = { grunt: 'captain', shield: 'ironshield', archer: 'crossbow', bomber: 'sapper', shaman: 'warlock' }; // 소환 졸개의 강화형
@@ -994,14 +1001,15 @@
     const boss = bossDefFor(S, r);
     if (boss) q.unshift('boss'); // 보스 라운드에는 시작과 동시에 보스가 나온다
     // 사천왕의 기운: 다음 사천왕(용) 등장 라운드까지 맵 가장자리에 그 속성의 기운이 뜬다. 51·61·71·81·91라운드에는 다음 상대가 직접 한마디 한다.
-    S.omen = null;
+    S.omen = null; S.omenEv = null;
     if (r > MAX_ROUND && r < FINAL_ROUND && r % 10 !== 0) {
       const nx = r > 80 ? FINAL_ROUND : Math.ceil(r / 10) * 10, nb = bossDefFor(S, nx); S.omen = nb ? nb.id : null;
       if (r % 10 === 1 && r <= 81 && nb) {
         const pv = r === MAX_ROUND + 1 ? CFG.finalBoss.name : bossDefFor(S, r - 1).name, LN = { thunder: '번개처럼 끝내 주마. {p}은 사천왕 중 최약체였을 뿐이다!', snow: '…고요히 얼려 주지. {p}은 사천왕 중 최약체였다.', earth: '크크… {p}은 사천왕 중 최약체였지. 이 대지가 너희의 무덤이 될 것이다.', dragon: '사천왕 따위가 내 앞에 서겠느냐. {p}은 사천왕 중 최약체였다… 이제 내가 간다.' };
         if (nb.id === 'dragon' && r === 81) S.cinematic = { name: nb.name, kind: 'dragon' }; // 사천왕이 모두 쓰러지면 용이 깨어나는 만화 컷신 (시간이 멈춘다)
-        emit(S, { type: 'omen', id: nb.id, name: nb.name, line: (LN[nb.id] || LN.thunder).replace('{p}', pv), look: nb.look, r: nb.id === 'dragon' ? 40 : nb.r });
+        S.omenEv = { type: 'omen', id: nb.id, name: nb.name, line: (LN[nb.id] || LN.thunder).replace('{p}', pv), look: nb.look, r: nb.id === 'dragon' ? 40 : nb.r, fx: CFG.omenFx[nb.id] && CFG.omenFx[nb.id].text }; // 선택지를 모두 고른 뒤에 알린다
       }
+      S.omenWait = true; S.omenT = 0;
     }
     if (r === FINAL_ROUND) { const keep = q.filter((k, i) => k !== 'boss' && (i % 100) < CFG.dragon.monsterFrac * 100); q.length = 0; q.push('boss', ...keep); S.dragonWaveT = CFG.dragon.waveEvery; S.dragonIntro = { t: 0, dur: 8, wait: true }; S.zones.length = 0; S.strikes.length = 0; } // 마지막 라운드: 몬스터 없이 용과의 1:1 레이드
     S.queue = q; S.spawnGap = SPAWN_TIME / q.length; S.spawnT = 0;
@@ -1048,7 +1056,7 @@
     }
     if (bd) {
       e.bossName = bd.name; e.bossId = bd.id; e.look = bd.look; if (bd.ranged) { e.ranged = true; e.range = bd.ranged.range; } e.abil = (bd === CFG.finalBoss || bd === CFG.act1Boss || isKing(bd) || bd.dragon) ? bd.abil : scaleAbil(bd.abil, r); e.t = {};
-      for (const k in e.abil) if (!Array.isArray(e.abil[k])) e.t[k] = (e.abil[k].cd || 0) * 0.6; // 첫 패턴은 조금 일찍
+      for (const k in e.abil) if (!Array.isArray(e.abil[k])) e.t[k] = (e.abil[k].cd || 0) * (isKing(bd) ? 0.3 : 0.6); // 첫 패턴은 조금 일찍 (사천왕은 더 일찍)
       if (!bd.dragon) e.speed = Math.max(e.speed, CFG.bossSpeed); // 보스는 광전사처럼 빠르게 달려온다
       if (bd === CFG.finalBoss && r === MAX_ROUND) { const N = CFG.finalNerf; e.max = e.hp = Math.round(e.max * N.hp); e.max2 = Math.round(e.max / N.hp * N.hp2); e.dmg *= N.dmg; e.canRevive = true; }
       if (isKing(bd)) { e.king = bd; e.canRevive = true; e.max = e.hp = Math.round(e.max * 0.55); e.max2 = Math.round(e.max * CFG.kingP2.hp); }
@@ -1068,7 +1076,7 @@
   // 보스 체력이 0이 되면: 남은 졸개가 모두 쓰러지고, 시간이 멈춘 채 보스의 사망 모션이 흐른 뒤 라운드가 끝난다.
   // 50라운드 마왕은 여기서 한 번 더 부활한다 (체력이 다시 차오르며 모습이 바뀐다).
   function beginBossDeath(S, b) {
-    b.dying = true; b.hp = 0; b.shieldT = 0; b.dashT = 0; b.leapT = 0; b.focusT = 0; b.hidden = false; b.lift = 0; b.flyS = null; b.shx = undefined; b.riseT = 0;
+    b.dying = true; b.hp = 0; b.shieldT = 0; b.dashT = 0; b.dashDx = undefined; b.leapT = 0; b.focusT = 0; b.hidden = false; b.lift = 0; b.flyS = null; b.shx = undefined; b.riseT = 0;
     const revive = !!b.canRevive && !b.p2 && (!S.endless || !!b.king);
     S.gold += b.gold; S.stats.earned += b.gold; S.kills++; S.stats.killBy.boss = (S.stats.killBy.boss || 0) + 1; if (!revive) S.stats.bossKills++;
     emit(S, { type: 'kill', x: b.x, y: b.y, boss: true });
@@ -1097,7 +1105,7 @@
       if (D.t < D.dur) return;
       if (D.revive) { // 각성: 모습이 바뀌고 체력이 0에서 다시 차오른다 (땅도 보스의 속성에 맞게 무너진다)
         D.stage = 'revive'; S.cliffTheme = b.king ? b.king.id : 'dark'; D.t0 = D.t; b.p2 = true; b.flash = 0; b.bossName = N.name; b.look = N.look; b.r = N.r; b.max = b.max2; b.hp = 0; b.gold = 0;
-        b.abil = b.king ? kingP2(b) : p2Abil(b.abil); b.t = {}; for (const k in b.abil) if (!Array.isArray(b.abil[k])) b.t[k] = (b.abil[k].cd || 0) * 0.6;
+        b.abil = b.king ? kingP2(b) : p2Abil(b.abil); b.t = {}; for (const k in b.abil) if (!Array.isArray(b.abil[k])) b.t[k] = (b.abil[k].cd || 0) * (b.king ? 0.3 : 0.6);
         b.life = 0; b.enraged = false; b.rushDone = true; b.age = 0; b.enr = false; b.cd = 1;
         emit(S, { type: 'bossRevive', x: b.x, y: b.y, r: b.r, name: b.bossName, dur: N.reviveT });
         return;
@@ -1232,6 +1240,7 @@
   }
   function damage(S, tgt, dmg, crit, src) {
     if (tgt.dead || tgt.dying || tgt.hidden || tgt.riseT > 0) return;
+    if (S.omen === 'earth' && !S.omenWait && tgt.team === 'e') dmg *= CFG.omenFx.earth.foeTaken; // 대지의 기운
     if (src && src.kb && tgt.team === 'u' && !src.dead) knock(S, tgt, src.x, src.y, src.kb);
     if (src && src.chill && tgt.team === 'u') tgt.chillT = Math.max(tgt.chillT || 0, src.chill); // 서리 궁수: 맞으면 느려진다 // 강한 적의 공격: 반대쪽으로 밀려난다
     if (src && tgt.team === 'u' && !src.dead) { tgt.foe = src; tgt.rvT = 6; } // 맞은 유닛이 때린 적을 기억 (자유 모드 반격용)
@@ -1457,7 +1466,7 @@
   function updatePriest(S, u, dt) {
     u.cd -= dt; if (S.jobMods.priest.smite) priestSmite(S, u, dt);
     if (S.jobMods.priest.bless) priestBless(S, u, dt);
-    const spm = (1 + (u.aura ? S.aura.spd : 0)) * (u.blT > 0 ? 1 + (u.blS || 0) : 1);
+    const spm = (1 + (u.aura ? S.aura.spd : 0)) * (u.blT > 0 ? 1 + (u.blS || 0) : 1) * (S.omen === 'snow' && !S.omenWait ? CFG.omenFx.snow.allySpd : 1);
     const near = nearest(S.gE, u.x, u.y, 90);
     if (near) {
       const dx = u.x - near.x, dy = u.y - near.y, d = Math.hypot(dx, dy) || 1;
@@ -1535,7 +1544,7 @@
   function updateFighter(S, u, dt) {
     u.cd -= dt;
     const melee = u.range < 60;
-    const spm = (1 + (u.aura ? S.aura.spd : 0)) * (u.blT > 0 ? 1 + (u.blS || 0) : 1); // 바드·무당의 연주: 이동·공격 속도 증가
+    const spm = (1 + (u.aura ? S.aura.spd : 0)) * (u.blT > 0 ? 1 + (u.blS || 0) : 1) * (S.omen === 'snow' && !S.omenWait ? CFG.omenFx.snow.allySpd : 1); // 바드·무당의 연주: 이동·공격 속도 증가
     const bz = S.jobMods[lineOf(u.type)] ? S.jobMods[lineOf(u.type)].berserk : 0; // 버서커: 체력이 낮을수록 강해진다
     const atk = u.atk * hbMul(S, u) * (1 + (u.aura ? S.aura.atk : 0)) * (u.weakT > 0 ? CFG.debuff.weak.mul : 1) * (bz ? 1 + bz * (1 - Math.max(0, u.hp) / u.max) : 1);
     const fromCore = Math.hypot(u.x - CX, u.y - CY);
@@ -1684,7 +1693,21 @@
       }
     }
     if (A.dash) {
-      if (e.dashT > 0) { e.dashT -= dt; e.speedMul *= A.dash.mul; if (e.dashT <= 0 && A.dash.shock) addStrike(S, e, { x: e.x, y: e.y, r: A.dash.shock.r, t: 0.3, mul: A.dash.shock.mul, kb: A.dash.shock.kb, kind: 'sweep' }); } // 돌진이 끝나면 충격파로 주변을 밀쳐낸다
+      if (e.dashT > 0) { // 돌격: 정한 방향으로 일직선으로 달리며 무기를 휘둘러 길목의 병사를 양옆으로 밀쳐낸다
+        e.dashT -= dt; e.speedMul = 0; e.cd = Math.max(e.cd, 0.3);
+        if (e.dashDx === undefined) { const t0 = nearest(S.gU, e.x, e.y, 1500) || S.core, d0 = Math.hypot(t0.x - e.x, t0.y - e.y) || 1; e.dashDx = (t0.x - e.x) / d0; e.dashDy = (t0.y - e.y) / d0; e.dashHit = new Set(); }
+        const sp = Math.max(220, e.speed * A.dash.mul), dx = e.dashDx, dy = e.dashDy;
+        e.x += dx * sp * dt; e.y += dy * sp * dt; e.aim = Math.atan2(dy, dx); e.swing = 0.3;
+        e.dashTick = (e.dashTick || 0) - dt; if (e.dashTick <= 0) { e.dashTick = 0.06; emit(S, { type: 'dashTrail', x: e.x, y: e.y }); }
+        for (const u of S.units) {
+          if (u.dead) continue; const rx = u.x - e.x, ry = u.y - e.y, d = Math.hypot(rx, ry); if (d > e.r + u.r + 46) continue;
+          const side = (dx * ry - dy * rx) >= 0 ? 1 : -1, px = -dy * side, py = dx * side; // 진행 방향의 수직(바깥쪽)
+          knock(S, u, u.x - px * 100, u.y - py * 100, 520, 0.4);
+          if (!e.dashHit.has(u)) { e.dashHit.add(u); damage(S, u, e.dmg * e.dmgMul * 0.9, false, e); }
+        }
+        const cd2 = Math.hypot(S.core.x - e.x, S.core.y - e.y); if (cd2 < e.r + S.core.r + 10 && !e.dashHit.has(S.core)) { e.dashHit.add(S.core); hitCore(S, e.dmg * e.dmgMul * 0.9, '보스 돌격'); }
+        if (e.dashT <= 0) { e.dashDx = undefined; if (A.dash.shock) addStrike(S, e, { x: e.x, y: e.y, r: A.dash.shock.r, t: 0.3, mul: A.dash.shock.mul, kb: A.dash.shock.kb, kind: 'sweep' }); } // 돌격이 끝나면 충격파로 주변을 밀쳐낸다
+      }
       else { e.t.dash -= dt; if (e.t.dash <= 0) { e.dashT = A.dash.dur; e.t.dash = A.dash.cd; emit(S, { type: 'bossDash', x: e.x, y: e.y }); bossSay(S, e, null, 'dash'); } }
     }
     if (A.shield) {
@@ -1832,9 +1855,15 @@
         const bar = A.artillery.barrage && e.volley % A.artillery.barrage === 0; // 포격대장: 몇 번에 한 번은 일제 포격
         if (!e.dragon) bossSay(S, e, null, bar ? 'barrage' : 'artillery');
         const near = S.units.filter(u => !u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= 900);
+        const spots = [], gap = A.artillery.radius * 1.5; // 여러 발은 서로 떨어진 곳에 (한곳에 몰아 쏘지 않는다)
         for (let i = 0, cn = A.artillery.count * (bar ? 3 : 1); i < cn; i++) {
-          const tg = near.length ? near[Math.floor(S.rng() * near.length)] : S.core;
-          const gt = { x: tg.x + (S.rng() - 0.5) * 40, y: tg.y + (S.rng() - 0.5) * 40, r: 0 }; // 떨어질 지점 (미리 표시된다)
+          let gt = null;
+          for (let tr = 0; tr < 10 && !gt; tr++) {
+            const tg = near.length ? near[Math.floor(S.rng() * near.length)] : S.core, ang = S.rng() * 6.283, off = tr < 3 ? 20 : 40 + tr * 25;
+            const c = { x: tg.x + Math.cos(ang) * off * S.rng(), y: tg.y + Math.sin(ang) * off * S.rng(), r: 0 }; // 떨어질 지점 (미리 표시된다)
+            if (spots.every(q => Math.hypot(q.x - c.x, q.y - c.y) >= gap)) gt = c; else if (tr === 9) gt = c;
+          }
+          spots.push(gt);
           fire(S, e, gt, A.artillery.dmg * CFG.balance.enemyDmg * e.dmgMul, 0, 'es', { T: A.artillery.flight, aoe: A.artillery.radius });
         }
         e.swing = 0.4;
@@ -1877,7 +1906,7 @@
     if (e.fixed) return; // 용: 제자리에 고정 (스킬만 쓴다)
     if (e.kind === 'shaman') return updateShaman(S, e, dt);
     if (e.slowT > 0) e.slowT -= dt;
-    const c = S.core, spm = e.speedMul * (e.hasteT > 0 ? e.hasteMul : 1) * (e.slowT > 0 ? 0.45 : 1) * (boost > 1 ? Math.min(1.5, 1 + (boost - 1) * 0.2) : 1), dmg = e.dmg * boost * e.dmgMul * (e.curseT > 0 ? 0.75 : 1), cdTime = 1 / (e.rate * e.rateMul || 1);
+    const c = S.core, spm = e.speedMul * (S.omen === 'thunder' && !S.omenWait ? CFG.omenFx.thunder.enemySpd : 1) * (e.hasteT > 0 ? e.hasteMul : 1) * (e.slowT > 0 ? 0.45 : 1) * (boost > 1 ? Math.min(1.5, 1 + (boost - 1) * 0.2) : 1), dmg = e.dmg * boost * e.dmgMul * (e.curseT > 0 ? 0.75 : 1), cdTime = 1 / (e.rate * e.rateMul || 1);
     let tgt = nearest(S.gU, e.x, e.y, (e.abil && e.abil.rush && !e.rushDone) || e.dashT > 0 ? 1500 : e.aggro);
     if (e.dashT > 0 || (e.abil && e.abil.rush && !e.rushDone)) { let bs = null, bdd = Infinity; for (const u of S.units) { if (u.dead || (u.type !== 'sword' && u.line !== 'sword' && u.type !== 'legendsword')) continue; const d = Math.hypot(u.x - e.x, u.y - e.y); if (d < bdd) { bdd = d; bs = u; } } if (bs) tgt = bs; } // 돌진은 가장 가까운 검사부터 // 등장 돌진 중에는 거리와 상관없이 가장 가까운 아군
     if (e.leapT > 0) return; // 도약 중
@@ -1919,7 +1948,12 @@
     checkCastleChoice(S);
     if (S.castle.awkReady && !S.castle.awk && !S.cards.offer && !S.cinematic) openCastleAwaken(S);
     if (S.cards.offer || S.jobs.offer || S.cOffer || S.cinematic) return; // 카드/전직/성 선택, 연출 중에는 시간이 멈춘다
+    if (S.omenWait) { S.omenWait = false; if (S.omenEv) { emit(S, S.omenEv); S.omenEv = null; } } // 사천왕의 기운은 선택을 마친 뒤에 나타난다
     S.t += dt;
+    if (S.omen === 'dragon') { // 불길의 기운: 불씨가 아군 위로 떨어진다
+      const F = CFG.omenFx.dragon; S.omenT += dt;
+      if (S.omenT >= F.every) { S.omenT = 0; const al = S.units.filter(u => !u.dead); for (let i = 0; i < F.n && al.length; i++) { const u = al.splice(Math.floor(S.rng() * al.length), 1)[0]; damage(S, u, u.max * F.pct, false, null); emit(S, { type: 'omenEmber', x: u.x, y: u.y }); } }
+    }
     for (const k in S.buyCd) if (S.buyCd[k] > 0) S.buyCd[k] -= dt;
     if (S.repairCd > 0) S.repairCd -= dt;
     updateProd(S, dt);

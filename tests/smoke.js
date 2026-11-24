@@ -830,7 +830,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   const fa = C.spawnEnemy(u, 'frostarcher', sw.x + 100, sw.y); C.damage(u, sw, 5, false, fa); check('서리 궁수: 맞은 아군은 느려짐(냉기)', sw.chillT > 2);
   const tb = C.spawnEnemy(u, 'thunderbomber', sw.x + 5, sw.y); sw.stunT = 0; for (let i = 0; i < 40 && !tb.dead; i++) C.tick(u, DT); check('뇌격병: 폭발에 휘말리면 기절·넉백', tb.dead && (sw.stunT > 0 || Math.hypot(sw.kvx, sw.kvy) > 0 || sw.x !== 0)); }
 { const g = C.createGame(25); g.captureEvents = true; g.endless = true; const kingAt = r => C.bossInfo(g, r).id;
-  const run = r => { g.round = r - 1; g.phase = 'prep'; g.prepT = 0; g.cards.offer = null; g.jobs.offer = null; g.cOffer = null; C.tick(g, DT); g.queue.length = 0; g.cards.offer = null; g.jobs.offer = null; g.cOffer = null; return C.drainEvents(g).filter(e => e.type === 'omen'); };
+  const run = r => { g.round = r - 1; g.phase = 'prep'; g.prepT = 0; g.cards.offer = null; g.jobs.offer = null; g.cOffer = null; C.tick(g, DT); g.cards.offer = null; g.jobs.offer = null; g.cOffer = null; C.tick(g, DT); g.queue.length = 0; g.cards.offer = null; g.jobs.offer = null; g.cOffer = null; return C.drainEvents(g).filter(e => e.type === 'omen'); }; // (선택을 마친 뒤에야 기운 이벤트가 나온다)
   const o51 = run(51); check('51라운드: 다음 사천왕의 기운(속성)과 대사 이벤트', g.omen === kingAt(60) && o51.length === 1 && o51[0].line.includes('마왕은 사천왕 중 최약체'), o51[0] && o51[0].line);
   const o55 = run(55); check('52~59라운드: 기운은 유지되고 대사는 없음', g.omen === kingAt(60) && o55.length === 0);
   const o61 = run(61); check('61라운드: 방금 쓰러뜨린 사천왕이 최약체였다는 대사', g.omen === kingAt(70) && o61.length === 1 && o61[0].line.includes(C.bossInfo(g, 60).name + '은 사천왕 중 최약체'), o61[0] && o61[0].line);
@@ -860,7 +860,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
     sw.hp = sw.max * 0.5; const hpb = sw.hp; for (let i = 0; i < 30; i++) C.tick(g, DT); check('무당: 버프 범위 안 아군이 서서히 회복', sw.hp > hpb);
     const far = g.units.find(u => u.type === 'sword'); far.x = pr.x + 700; far.blT = 0; for (let i = 0; i < 20; i++) C.tick(g, DT); check('바드·무당: 멀리 있는 아군은 버프 없음', !(far.blT > 0)); }
   { const g = arena(10, [['grunt', 700, 500]]); g.jobMods.priest.smite = 1; g.gold = 1e7; g.buyCd.priest = 0; C.buy(g, 'priest'); for (let i = 0; i < 400 && !g.units.length; i++) C.tick(g, DT); const pr = g.units[0]; pr.x = 650; pr.y = 500; const e = g.enemies[0]; e.x = 720; e.y = 500; let ok = false; for (let i = 0; i < 90; i++) { C.tick(g, DT); if (e.markT > 0 && e.slowT > 0) ok = true; } check('전투사제: 맞은 적에게 낙인(받는 피해↑)·감속', ok || e.dead); }
-  { const { g, b } = run('charger', 10, () => {}); const o = C.spawnEnemy(g, 'grunt', 760, 500); for (let i = 0; i < 700 && !(o.hasteT > 0); i++) C.tick(g, DT); check('돌격왕: 함성으로 주변 적 가속', o.hasteT > 0 || o.dead); }
+  { const { g, b } = run('charger', 10, (g, b) => { delete b.abil.dash; }); const o = C.spawnEnemy(g, 'grunt', 760, 500); for (let i = 0; i < 700 && !(o.hasteT > 0); i++) C.tick(g, DT); check('돌격왕: 함성으로 주변 적 가속', o.hasteT > 0 || o.dead); }
   { const { g, b } = run('bombardier', 10, () => {}); const n = []; g.captureEvents = true; for (let i = 0; i < 30 * 18; i++) C.tick(g, DT); check('포격대장: 일제 포격 설정', b.volley >= 3, b.volley); } }
 
 // 59) 성 피해 완화: 병사 보호 + 폭파병 / 사제 치유 범위 표시는 망자 제외
@@ -873,5 +873,23 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   h.core.cpath = 'necro'; h.cpar = JSON.parse(JSON.stringify(C.CFG.castleTree.roots[2].par)); h.cpar.raise.chance = 1; const e = C.spawnEnemy(h, 'grunt', 1700, 1500); C.damage(h, e, 1e9); const ud = h.units.find(x => x.undead); ud.x = sw.x + 5; ud.y = sw.y; ud.hp = ud.max * 0.3;
   C.drainEvents(h); let healToUndead = 0; h.captureEvents = true; for (let i = 0; i < 120; i++) { C.tick(h, DT); for (const ev of C.drainEvents(h)) if (ev.type === 'heal' && ev.aoe && Math.hypot(ev.tx - ud.x, ev.ty - ud.y) < 1) healToUndead++; }
   check('치유 범위 효과·치유 표시가 망자에게는 가지 않음', healToUndead === 0 && ud.hp <= ud.max * 0.3 + 1e-6, 'aoe 표시 ' + healToUndead); }
+// 64) 돌격 일직선·병사 밀치기, 포격 분산, 사천왕의 기운 효과
+{ const g = arena(10, [['boss', 700, 500]], 'charger'); const b = g.enemies[0]; g.units.length = 0; b.abil = { dash: { cd: 99, dur: 1.2, mul: 3 } }; b.t.dash = 0; g.gold = 1e6; g.buyCd.sword = 0; C.buy(g, 'sword');
+  for (let i = 0; i < 400 && !g.units.length; i++) C.tick(g, DT); const u = g.units[0]; u.hp = u.max = 1e9; u.x = 560; u.y = 520; u.hx = 560; u.hy = 520; b.life = 5; const p0 = { x: b.x, y: b.y }; let pts = [], pushed = false;
+  for (let i = 0; i < 60; i++) { C.tick(g, DT); if (b.dashT > 0) pts.push([b.x, b.y]); if (u.kvx || u.kvy) pushed = true; }
+  const a = pts[0], z = pts[pts.length - 1], path = pts.slice(1).reduce((t, q, i) => t + Math.hypot(q[0] - pts[i][0], q[1] - pts[i][1]), 0);
+  check('돌격: 일직선으로 달린다', pts.length > 10 && Math.hypot(z[0] - a[0], z[1] - a[1]) > path * 0.98, pts.length + '/' + Math.round(path));
+  check('돌격: 길목의 병사를 밀쳐내고 피해를 줌', pushed && u.hp < u.max); }
+{ const g = arena(30, [['boss', 700, 500]], null); const b = g.enemies[0]; g.units.length = 0; b.abil = { artillery: { cd: 99, dmg: 50, radius: 90, count: 4, flight: 1.5 } }; b.t.artillery = 0; b.life = 5;
+  g.gold = 1e6; for (let i = 0; i < 4; i++) { g.buyCd.sword = 0; C.buy(g, 'sword'); } for (let i = 0; i < 600 && g.units.length < 4; i++) C.tick(g, DT); for (const u of g.units) { u.x = 560 + Math.random() * 20; u.y = 500; u.hx = u.x; u.hy = u.y; }
+  b.t.artillery = 0; for (let i = 0; i < 3; i++) C.tick(g, DT); const sh = g.shots.filter(s => s.aoe); let md = 1e9; for (let i = 0; i < sh.length; i++) for (let j = i + 1; j < sh.length; j++) md = Math.min(md, Math.hypot(sh[i].t.x - sh[j].t.x, sh[i].t.y - sh[j].t.y));
+  check('포격: 여러 발이 서로 떨어진 곳에 떨어짐', sh.length >= 3 && md > 60, sh.length + '/' + Math.round(md)); }
+{ const mk = om => { const g = arena(61, [['grunt', 900, 500]]); g.omen = om; g.omenWait = false; g.gold = 1e6; g.buyCd.sword = 0; C.buy(g, 'sword'); for (let i = 0; i < 400 && !g.units.length; i++) C.tick(g, DT); return g; };
+  const base = mk(null), th = mk('thunder'); const a0 = base.enemies[0].x, a1 = th.enemies[0].x; for (let i = 0; i < 30; i++) { C.tick(base, DT); C.tick(th, DT); }
+  check('번개의 기운: 적의 이동 속도 증가', Math.abs(th.enemies[0].x - a1) > Math.abs(base.enemies[0].x - a0) * 1.05);
+  const sn = mk('snow'), ba = mk(null); sn.units[0].x = ba.units[0].x = 300; sn.units[0].y = ba.units[0].y = 500; const far = { x: 700, y: 500 }; sn.enemies.length = 0; ba.enemies.length = 0; C.spawnEnemy(sn, 'grunt', 700, 500); C.spawnEnemy(ba, 'grunt', 700, 500); sn.units[0].hx = ba.units[0].hx = 300; sn.units[0].hy = ba.units[0].hy = 500;
+  const e1 = sn.units[0].x, e2 = ba.units[0].x; for (let i = 0; i < 30; i++) { C.tick(sn, DT); C.tick(ba, DT); } check('눈보라의 기운: 아군 이동 속도 감소', Math.abs(sn.units[0].x - e1) <= Math.abs(ba.units[0].x - e2) + 0.01);
+  const w = mk('earth'); const gr = w.enemies[0]; gr.hp = gr.max = 1000; C.damage(w, gr, 100, false, null); check('대지의 기운: 적이 받는 피해 감소', Math.round(gr.hp) === 1000 - Math.round(100 * C.CFG.omenFx.earth.foeTaken));
+  const d = mk('dragon'); d.omenT = 99; const u0 = d.units[0]; u0.hp = u0.max; C.tick(d, DT); check('불길의 기운: 불씨가 아군에게 피해', u0.hp < u0.max); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

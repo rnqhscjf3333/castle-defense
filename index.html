@@ -20,6 +20,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #hud { position: fixed; top: max(5px, env(safe-area-inset-top)); left: 5px; padding: 5px 9px; min-width: 146px; pointer-events: none; border-radius: 9px; }
 #hud .row { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; line-height: 1.45; }
 #hud b { font-variant-numeric: tabular-nums; }
+#omenRow { max-width: 190px; font-size: 11px; font-weight: 700; margin-top: 2px; }
 #hpbar { height: 6px; border-radius: 3px; background: #2a3244; overflow: hidden; margin: 3px 0 2px; }
 #hpfill { height: 100%; width: 100%; background: var(--ok); transition: width .15s; }
 #gold { color: var(--gold); }
@@ -404,6 +405,7 @@ table.rank tr.top.me td { outline: 1px solid rgba(255,204,64,.8); outline-offset
   <div id="hpbar"><div id="hpfill"></div></div>
   <div class="row"><span>성 <b id="hpTxt">1000</b></span><span>골드 <b id="gold">200</b></span></div>
   <div class="row"><span>유닛 <b id="unitTxt">0</b></span><span>처치 <b id="killTxt">0</b></span></div>
+  <div class="row" id="omenRow" hidden><span id="omenTxt"></span></div>
 </div>
 
 <button class="btn panel tbtn" id="btnPause" title="설정 (Space / Esc)" aria-label="설정"><svg class="gear" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8l1.5 2.4 2.8-.6.9 2.7 2.7.9-.6 2.8 2.4 1.5-2.4 1.5.6 2.8-2.7.9-.9 2.7-2.8-.6L12 21.2l-1.5-2.4-2.8.6-.9-2.7-2.7-.9.6-2.8L2.3 12l2.4-1.5-.6-2.8 2.7-.9.9-2.7 2.8.6z"/></svg></button>
@@ -506,13 +508,13 @@ table.rank tr.top.me td { outline: 1px solid rgba(255,204,64,.8); outline-offset
   </div>
 </div>
 
-<script src="core.js?v=20261124e"></script>
-<script src="figures.js?v=20261124e"></script>
-<script src="scenery.js?v=20261124e"></script>
-<script src="config.js?v=20261124e"></script>
-<script src="meta.js?v=20261124e"></script>
-<script src="net.js?v=20261124e"></script>
-<script src="audio.js?v=20261124e"></script>
-<script src="main.js?v=20261124e"></script>
+<script src="core.js?v=20261124f"></script>
+<script src="figures.js?v=20261124f"></script>
+<script src="scenery.js?v=20261124f"></script>
+<script src="config.js?v=20261124f"></script>
+<script src="meta.js?v=20261124f"></script>
+<script src="net.js?v=20261124f"></script>
+<script src="audio.js?v=20261124f"></script>
+<script src="main.js?v=20261124f"></script>
 </body>
 </html>

@@ -318,6 +318,7 @@
     setText('roundTxt', '라운드 ' + Math.max(1, S.round) + ' / ' + C.FINAL_ROUND);
     rt.classList.toggle('boss', !!bi); rt.classList.toggle('nextboss', !bi && !!nb); rt.classList.toggle('act2', S.act === 2 && !bi && !nb);
     updateBossBar(); updateCastleBtn();
+    { const om = S.omen && !S.omenWait ? C.CFG.omenFx[S.omen] : null, row = $('omenRow'); if (row) { row.hidden = !om; if (om) { const tx = $('omenTxt'); if (tx.textContent !== om.text) { tx.textContent = om.text; tx.style.color = OMEN_COL[S.omen] || '#ffd'; } } } } // 사천왕의 기운 효과 표시
     setText('timeTxt', fmtTime(S.t));
     setText('hpTxt', String(Math.ceil(c.hp)));
     setText('gold', S.dev ? '∞' : String(Math.floor(S.gold)));
@@ -1005,7 +1006,8 @@
       else if (ev.type === 'bossFocus') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#6fe08a' }); toast((ev.name || '보스') + '이(가) 정신을 집중해 체력을 회복합니다'); }
       else if (ev.type === 'strikeWarn') addFx({ k: 'strikeW', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, w2: ev.w2, claw: ev.claw, t: 0, max: Math.max(0.2, ev.t) });
       else if (ev.type === 'strikeHit') { addFx({ k: 'strikeH', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, w2: ev.w2, claw: ev.claw, t: 0, max: ev.shape === 'cone' ? 0.7 : ev.shape === 'line' ? 0.6 : 0.55 }); if (ev.kind !== 'ice' || ev.r > 300) addShake(ev.kind === 'slam' ? 14 : ev.kind === 'wind' ? 5 : ev.r > 250 ? 12 : 6, ev.kind === 'slam' ? 0.45 : 0.3); }
-      else if (ev.type === 'omen') { if (ev.id !== 'dragon') showBossIntro({ name: ev.name, line: ev.line, look: ev.look, r: ev.r, long: true, omen: ev.id }); toast(ev.id === 'dragon' ? '용의 기운이 맵 가장자리에 감돕니다' : '사천왕의 기운이 맵 가장자리에 감돕니다'); }
+      else if (ev.type === 'omen') { if (ev.id !== 'dragon') showBossIntro({ name: ev.name, line: ev.line, look: ev.look, r: ev.r, long: true, omen: ev.id }); toast(ev.id === 'dragon' ? '용의 기운이 맵 가장자리에 감돕니다' : '사천왕의 기운이 맵 가장자리에 감돕니다'); if (ev.fx) setTimeout(() => toast(ev.fx), 1200); }
+      else if (ev.type === 'omenEmber') addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.5, c: '#ff7a3a' });
       else if (ev.type === 'castleAwaken') { banner('성채 각성!', true); for (let i = 0; i < 4; i++) addFx({ k: 'ring', x: CX, y: CY, t: -i * 0.12, max: 1.0, c: '#ffe27a', big: true, r: 200 }); addShake(8, 0.5); }
       else if (ev.type === 'dragonRise') { banner(ev.back ? '용이 하늘에서 내려온다!!' : '재앙의 용이 모습을 드러낸다!!', true); flash('#ff3a1a', ev.back ? 0.2 : 0.45); addShake(ev.back ? 4 : 14, ev.back ? 0.5 : 1.2); if (!ev.back) { // 단상 가장자리에 충격파와 먼지·불씨가 터진다
         for (let i = 0; i < 4; i++) addFx({ k: 'ring', x: ev.x, y: ev.y + 40, t: -i * 0.45, max: 1.3, c: i % 2 ? '#ff7a3a' : '#ffd9a0', grow: 420 + i * 80, big: true });
@@ -1653,24 +1655,24 @@
     // 2막: 어두운 밤 (성 주변만 횃불로 밝다)
     if (S.act === 2 && !S.cinematic) { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); Scenery.drawNight(ctx, vw, vh, (CX - cam.x) * z + vw / 2, (CY - cam.y) * z + vh / 2, z, now); }
     // 사천왕의 기운(51라운드~): 다음 사천왕의 속성이 화면 전체에 어둠처럼 번진다 (뇌=노랑 번개, 설=눈보라, 토=먼지, 용=불씨). 사천왕이 등장해도 잠시 남았다가 서서히 걷힌다.
-    { let omId = S.omen, fade = 1, k = 0.45 + 0.55 * ((S.round - 1) % 10) / 9;
+    if (!S.omenWait) { let omId = S.omen, fade = 1, k = 0.45 + 0.55 * ((S.round - 1) % 10) / 9;
       if (omId) omLast = { id: omId, k, round: S.round, t0: 0 };
       else if (omLast && S.round >= omLast.round && S.round <= omLast.round + 1) { if (!omLast.t0) omLast.t0 = now; fade = 1 - (now - omLast.t0) / 14000; if (fade > 0) { omId = omLast.id; k = omLast.k; } else omLast = null; }
       else omLast = null;
       if (omId) {
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0); const col = OMEN_COL[omId] || '#ff5a1a', pulse = 0.5 + 0.5 * Math.sin(now / 700), hx = (CX - cam.x) * z + vw / 2, hy = (CY - cam.y) * z + vh / 2, hex = a2 => Math.round(Math.max(0, Math.min(1, a2)) * 255).toString(16).padStart(2, '0');
         const dark = { thunder: '#1a1608', snow: '#0a1c30', earth: '#1c1206', dragon: '#220808' }[omId] || '#120a14';
-        ctx.globalAlpha = 1; ctx.fillStyle = col + hex((0.10 + 0.14 * k + 0.04 * pulse) * fade); ctx.fillRect(0, 0, vw, vh); // 화면 전체에 번지는 속성 빛
+        ctx.globalAlpha = 1; ctx.fillStyle = col + hex((0.10 + 0.14 * k + 0.04 * pulse) * (omId === 'thunder' ? 0.5 : 1) * fade); ctx.fillRect(0, 0, vw, vh); // 화면 전체에 번지는 속성 빛
         const g = ctx.createRadialGradient(hx, hy, Math.min(vw, vh) * 0.22, hx, hy, Math.max(vw, vh) * 0.78); g.addColorStop(0, dark + '00'); g.addColorStop(1, dark + hex((0.45 + 0.35 * k) * fade)); ctx.fillStyle = g; ctx.fillRect(0, 0, vw, vh); // 성 주변만 밝고 바깥은 어둡게
-        const n = Math.round((34 + 46 * k) * fade); ctx.globalAlpha = (0.45 + 0.35 * k) * Math.min(1, fade * 1.5);
+        const n = Math.round((34 + 46 * k) * (omId === 'thunder' ? 0.5 : 1) * fade); ctx.globalAlpha = (0.45 + 0.35 * k) * Math.min(1, fade * 1.5);
         for (let i = 0; i < n; i++) {
           const sx = (Math.sin(i * 12.9898) * 0.5 + 0.5), sy = (Math.sin(i * 78.233) * 0.5 + 0.5);
           if (omId === 'snow') { const px = ((sx * vw + now * 0.03 * (0.6 + sy) + Math.sin(now * 0.001 + i) * 18) % vw + vw) % vw, py = ((sy * vh + now * 0.07 * (0.6 + sx)) % vh); ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(px, py, 1.6 + (i % 3), 0, Math.PI * 2); ctx.fill(); }
-          else if (omId === 'thunder') { const ph = (now / 1700 + i * 0.37) % 1; if (ph < 0.06) { const px = sx * vw, py0 = sy * vh * 0.6; ctx.strokeStyle = '#fff6b0'; ctx.lineWidth = 2; ctx.globalAlpha = (1 - ph / 0.06) * 0.8; ctx.beginPath(); ctx.moveTo(px, py0); for (let q = 1; q <= 5; q++) ctx.lineTo(px + (((i * 31 + q * 17) % 41) - 20), py0 + q * 34); ctx.stroke(); ctx.globalAlpha = (0.45 + 0.35 * k) * Math.min(1, fade * 1.5); } }
+          else if (omId === 'thunder') { const ph = (now / 1700 + i * 0.37) % 1; if (ph < 0.06) { const px = sx * vw, py0 = sy * vh * 0.6; ctx.strokeStyle = '#fff6b0'; ctx.lineWidth = 1.2; ctx.globalAlpha = (1 - ph / 0.06) * 0.35; ctx.beginPath(); ctx.moveTo(px, py0); for (let q = 1; q <= 5; q++) ctx.lineTo(px + (((i * 31 + q * 17) % 41) - 20), py0 + q * 34); ctx.stroke(); ctx.globalAlpha = (0.45 + 0.35 * k) * Math.min(1, fade * 1.5); } }
           else if (omId === 'earth') { const ph = (now * 0.00008 * (0.6 + sy) + sx) % 1, px = ph * vw, py = sy * vh + Math.sin(now * 0.002 + i) * 8; ctx.fillStyle = i % 2 ? '#a07a4a' : '#6a4a2a'; ctx.fillRect(px, py, 3 + (i % 3), 3 + (i % 2)); }
           else { const ph = (now * 0.00007 * (0.6 + sx) + sy) % 1, px = sx * vw + Math.sin(now * 0.002 + i) * 10, py = vh * (1 - ph); ctx.fillStyle = i % 3 ? '#ff8a2a' : '#ffd060'; ctx.beginPath(); ctx.arc(px, py, 1.6 + (i % 2), 0, Math.PI * 2); ctx.fill(); }
         }
-        if (omId === 'thunder' && Math.sin(now / 2300) > 0.985) { ctx.globalAlpha = 0.18 * fade; ctx.fillStyle = '#fff6b0'; ctx.fillRect(0, 0, vw, vh); } // 가끔 번쩍
+        if (omId === 'thunder' && Math.sin(now / 2300) > 0.996) { ctx.globalAlpha = 0.05 * fade; ctx.fillStyle = '#fff6b0'; ctx.fillRect(0, 0, vw, vh); } // 가끔 번쩍
         ctx.globalAlpha = 1;
       } }
     // 화면 밖/UI에 가려진 위험 방향 표시
