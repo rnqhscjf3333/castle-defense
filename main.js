@@ -945,7 +945,7 @@
         if (ev.zone > 0) addFx({ k: 'pool', x: ev.x, y: ev.y, r: ev.r * 0.95, t: dl, max: ev.zone, c: ['#ff7a1a', '#ffb24a', '#ffe9a0'] });
         if (ev.freeze) addFx({ k: 'ring', x: ev.x, y: ev.y, t: dl, max: 0.9, c: '#eaf8ff', r: ev.r * 1.5, big: true });
       }
-      else if (ev.type === 'castlePulse') { const col = JOBC[ev.cfin] || JOBC[ev.cvar] || JOBC.guardian; addFx({ k: 'pulseWave', x: CX, y: CY, t: 0, max: 0.9, c: ev.shield ? '#8fd8ff' : col, r: ev.r, shield: !!ev.shield }); addFx({ k: 'ring', x: CX, y: CY, t: 0, max: 0.9, c: col, r: ev.r, grow: ev.r, big: true }); addFx({ k: 'ring', x: CX, y: CY, t: -0.12, max: 0.7, c: '#ffffff', r: ev.r * 0.7, grow: ev.r * 0.7 }); if (ev.dmg) for (let i = 0; i < 10; i++) { const a = i / 10 * 6.283; addFx({ k: 'beam', x: CX + Math.cos(a) * 40, y: CY + Math.sin(a) * 40 - 8, tx: CX + Math.cos(a) * ev.r, ty: CY + Math.sin(a) * ev.r - 8, t: 0, max: 0.35, c: col, small: true }); } }
+      else if (ev.type === 'castlePulse') { const col = JOBC[ev.cfin] || JOBC[ev.cvar] || JOBC.guardian; addFx({ k: 'pulseWave', x: CX, y: CY, t: 0, max: ev.dmg ? 1.1 : 0.9, c: ev.shield ? '#8fd8ff' : col, r: ev.r, shield: !!ev.shield, atk: !!ev.dmg }); addFx({ k: 'ring', x: CX, y: CY, t: 0, max: 0.9, c: ev.dmg ? '#ff5a3a' : col, r: ev.r, grow: ev.r, big: true }); addFx({ k: 'ring', x: CX, y: CY, t: -0.12, max: 0.7, c: '#ffffff', r: ev.r * 0.7, grow: ev.r * 0.7 }); }
       else if (ev.type === 'raise') { addFx({ k: 'burst', x: ev.x, y: ev.y, t: 0, max: 0.5, c: '#3ae68a', big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.5, c: '#7affc8', r: 28 }); }
       else if (ev.type === 'undeadFade') addFx({ k: 'burst', x: ev.x, y: ev.y, t: 0, max: 0.4, c: '#3ae68a' });
       else if (ev.type === 'marked') addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.35, c: '#ff5a5a', r: 16 });
@@ -1500,6 +1500,13 @@
       else if (f.k === 'pulseWave') { // 성 파동: 성에서 퍼져 나가는 빛의 원판 (보호막 파동은 푸른 방벽 + 육각 문양)
         const rr = 20 + (f.r - 20) * Math.min(1, p * 1.25), a = 1 - p; ctx.save(); const g = ctx.createRadialGradient(f.x, f.y, rr * 0.55, f.x, f.y, rr); g.addColorStop(0, f.c + '00'); g.addColorStop(0.7, f.c + (f.shield ? '33' : '22')); g.addColorStop(1, f.c + (f.shield ? 'bb' : '99')); ctx.globalAlpha = a; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(f.x, f.y, rr, 0, 6.283); ctx.fill();
         ctx.strokeStyle = f.shield ? '#e6f8ff' : '#fff'; ctx.lineWidth = (f.shield ? 6 : 4.5) / z; ctx.globalAlpha = Math.min(1, a * 1.3); ctx.beginPath(); ctx.arc(f.x, f.y, rr, 0, 6.283); ctx.stroke();
+        if (f.atk) { // 공격형 파동: 테두리가 붉게 타오르고 번개가 지직거린다
+          const aa = Math.min(1, (1 - p * 0.75) * 1.2); ctx.globalAlpha = aa; ctx.strokeStyle = '#ff3a2a'; ctx.lineWidth = 8 / z; ctx.beginPath(); ctx.arc(f.x, f.y, rr, 0, 6.283); ctx.stroke();
+          ctx.lineCap = 'round'; ctx.lineJoin = 'round'; const N = 26, jit = 10 + 8 * (1 - p);
+          for (let pass = 0; pass < 2; pass++) { ctx.strokeStyle = pass ? '#fff6c8' : '#ffb03a'; ctx.lineWidth = (pass ? 1.6 : 3.4) / z; ctx.globalAlpha = aa * (pass ? 1 : 0.9); ctx.beginPath();
+            for (let i = 0; i <= N; i++) { const ang = i / N * 6.283, off = (Math.sin(i * 12.9898 + now * 0.05 + pass * 3.1) * 0.5 + Math.sin(i * 78.233 + now * 0.07) * 0.5) * jit, px = f.x + Math.cos(ang) * (rr + off), py = f.y + Math.sin(ang) * (rr + off); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); } ctx.stroke(); }
+          for (let k = 0; k < 7; k++) { const ang = ((k * 0.143 + Math.floor(now / 70) * 0.37) % 1) * 6.283, len = 26 + (k % 3) * 10; ctx.globalAlpha = aa; ctx.strokeStyle = '#ffe27a'; ctx.lineWidth = 2.2 / z; ctx.beginPath(); let px = f.x + Math.cos(ang) * rr, py = f.y + Math.sin(ang) * rr; ctx.moveTo(px, py); for (let q = 1; q <= 4; q++) { px = f.x + Math.cos(ang) * (rr - q * len / 4) + (Math.sin(k * 5.1 + q * 9.7 + now * 0.06)) * 8; py = f.y + Math.sin(ang) * (rr - q * len / 4) + (Math.cos(k * 3.7 + q * 7.3 + now * 0.06)) * 8; ctx.lineTo(px, py); } ctx.stroke(); }
+        }
         if (f.shield) { ctx.globalAlpha = a * 0.6; ctx.lineWidth = 2 / z; ctx.beginPath(); for (let i = 0; i <= 6; i++) { const ang = i / 6 * 6.283 + p * 0.8, px = f.x + Math.cos(ang) * rr * 0.8, py = f.y + Math.sin(ang) * rr * 0.8; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); } ctx.stroke(); }
         ctx.restore();
       }
