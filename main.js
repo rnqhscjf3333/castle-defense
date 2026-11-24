@@ -318,7 +318,7 @@
     setText('roundTxt', '라운드 ' + Math.max(1, S.round) + ' / ' + C.FINAL_ROUND);
     rt.classList.toggle('boss', !!bi); rt.classList.toggle('nextboss', !bi && !!nb); rt.classList.toggle('act2', S.act === 2 && !bi && !nb);
     updateBossBar(); updateCastleBtn();
-    { const om = S.omen && !S.omenWait ? C.CFG.omenFx[S.omen] : null, row = $('omenRow'); if (row) { row.hidden = !om; if (om) { const tx = $('omenTxt'); if (tx.textContent !== om.text) { tx.textContent = om.text; tx.style.color = OMEN_COL[S.omen] || '#ffd'; } } } } // 사천왕의 기운 효과 표시
+    { const om = S.omen && !S.omenWait ? C.CFG.omenFx[S.omen] : null, row = $('omenRow'); if (row) { row.hidden = !om; if (om) { const tx = $('omenTxt'); const lbl = om.name + ' · ' + om.short; if (tx.textContent !== lbl) { tx.textContent = lbl; row.title = om.text; tx.style.color = OMEN_COL[S.omen] || '#ffd'; } } } } // 사천왕의 기운 효과 표시
     setText('timeTxt', fmtTime(S.t));
     setText('hpTxt', String(Math.ceil(c.hp)));
     setText('gold', S.dev ? '∞' : String(Math.floor(S.gold)));
@@ -967,6 +967,7 @@
           const a = Math.atan2(ev.ty - ev.y, ev.tx - ev.x), st = SLASH[ev.job] || SLASH[ev.ut], col = atkColor(ev.job, ev.ut);
           if (st && st.thrust) { addFx({ k: 'thrust', x: ev.tx, y: ev.ty, a, t: 0, max: 0.3, c: col, ux: ev.x, uy: ev.y }); addFx({ k: 'dust', x: ev.tx - Math.cos(a) * 8, y: ev.ty - Math.sin(a) * 8, t: 0, max: 0.5, r: 9 }); }
           else addFx({ k: 'slash', x: ev.tx, y: ev.ty, a, t: ev.dbl && ev.job === 'blademaster' ? -0.05 : 0, max: ev.job === 'berserker' ? 0.28 : 0.2, c: atkColor(ev.job, ev.ut), st, fl: !!ev.dbl });
+          addFx({ k: 'sparks', x: ev.tx, y: ev.ty, a, cone: 2.6, t: 0, max: 0.28, c: col, r: ev.job ? 24 : 18, n: ev.job ? 9 : 6, w: ev.job ? 2.6 : 2, big: !!ev.job }); // 타격 불꽃
           if (st && st.shock) addFx({ k: 'ring', x: ev.tx, y: ev.ty, t: 0, max: 0.35, c: '#ffe27a', r: 14 });
           if (ev.dbl && ev.job === 'blademaster') addFx({ k: 'line', x: ev.tx - Math.cos(a + 0.7) * 20, y: ev.ty - Math.sin(a + 0.7) * 20, tx: ev.tx + Math.cos(a + 0.7) * 20, ty: ev.ty + Math.sin(a + 0.7) * 20, t: 0, max: 0.18, c: '#bfe0ff', small: true });
         }
@@ -977,8 +978,8 @@
       else if (ev.type === 'ninjaStack') { if (fx.length < 260) addFx({ k: 'ring', x: ev.x, y: ev.y - 6, t: 0, max: 0.25, c: ev.n >= 4 ? '#ff4a3a' : '#9aa3b8', r: 8 }); }
       else if (ev.type === 'ninjaBurst') { addFx({ k: 'nburst', x: ev.x, y: ev.y, r: ev.r || 70, t: 0, max: 0.6 }); for (let i = 0; i < 4; i++) addFx({ k: 'dust', x: ev.x + (Math.random() - 0.5) * ev.r, y: ev.y + (Math.random() - 0.5) * ev.r * 0.6, t: -Math.random() * 0.1, max: 0.7, r: 12 }); addShake(4, 0.25); }
       else if (ev.type === 'curse') { if (fx.length < 260) addFx({ k: 'curse', x: ev.x, y: ev.y, t: 0, max: 0.6 }); }
-      else if (ev.type === 'emelee') { if (fx.length < 220 && cam.zoom > 0.4) { addFx({ k: 'slash', x: ev.tx, y: ev.ty, a: Math.atan2(ev.ty - ev.y, ev.tx - ev.x), t: 0, max: 0.26, c: '#ff4adf', big: true }); } }
-      else if (ev.type === 'bossShock') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.55, c: '#ffcf40', r: ev.r, big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: -0.08, max: 0.5, c: '#ff5a3a', r: ev.r * 0.7 }); for (let i = 0; i < 5; i++) addFx({ k: 'dust', x: ev.x + (Math.random() - 0.5) * ev.r, y: ev.y + (Math.random() - 0.5) * ev.r * 0.6, t: -Math.random() * 0.1, max: 0.9, r: 16 }); }
+      else if (ev.type === 'emelee') { if (fx.length < 220 && cam.zoom > 0.4) { addFx({ k: 'slash', x: ev.tx, y: ev.ty, a: Math.atan2(ev.ty - ev.y, ev.tx - ev.x), t: 0, max: 0.26, c: '#ff4adf', big: true }); addFx({ k: 'sparks', x: ev.tx, y: ev.ty, a: Math.atan2(ev.ty - ev.y, ev.tx - ev.x), cone: 2.6, t: 0, max: 0.3, c: '#ff9af0', r: 24, n: 9, big: true }); } }
+      else if (ev.type === 'bossShock') { addFx({ k: 'sparks', x: ev.x, y: ev.y, t: 0, max: 0.5, c: '#ffcf40', r: ev.r * 0.8, n: 18, w: 3.2, big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.55, c: '#ffcf40', r: ev.r, big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: -0.08, max: 0.5, c: '#ff5a3a', r: ev.r * 0.7 }); for (let i = 0; i < 5; i++) addFx({ k: 'dust', x: ev.x + (Math.random() - 0.5) * ev.r, y: ev.y + (Math.random() - 0.5) * ev.r * 0.6, t: -Math.random() * 0.1, max: 0.9, r: 16 }); }
       else if (ev.type === 'bossBlink') { for (const [x, y] of [[ev.x0, ev.y0], [ev.x1, ev.y1]]) { addFx({ k: 'ring', x, y, t: 0, max: 0.6, c: '#c77dff', big: true }); addFx({ k: 'summon', x, y, t: 0, max: 0.7 }); } toast('보스가 순간이동했습니다!'); }
       else if (ev.type === 'bossLeap') { addFx({ k: 'zone', x: ev.x, y: ev.y, r: ev.r, t: 0, max: ev.air, c: '#ff9a3a' }); toast('보스가 도약합니다!'); }
       else if (ev.type === 'portalOpen') pendingPortal = ev.n;
@@ -992,7 +993,7 @@
       else if (ev.type === 'reward') toast('보상 획득: ' + ev.name);
       else if (ev.type === 'heroSkill') {
         if (ev.kind === 'marksman') addFx({ k: 'beam', x: ev.x, y: ev.y - 11, tx: ev.tx, ty: ev.ty - 7, t: 0, max: 0.4, c: '#ffe14a' });
-        else { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.55, c: ev.kind === 'hero' ? '#ffe14a' : '#c8a46a', big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: -0.08, max: 0.5, c: '#ffffff' }); }
+        else { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.55, c: ev.kind === 'hero' ? '#ffe14a' : '#c8a46a', big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: -0.08, max: 0.5, c: '#ffffff' }); addFx({ k: 'sparks', x: ev.x, y: ev.y, t: 0, max: 0.45, c: ev.kind === 'hero' ? '#ffe14a' : '#e8d4a0', r: 70, n: 16, w: 3, big: true }); addShake(3, 0.2); }
       }
       else if (ev.type === 'dodge') { if (fx.length < 280) { addFx({ k: 'swirl', x: ev.x, y: ev.y - 4, t: 0, max: 0.45 }); addFx({ k: 'ring', x: ev.x, y: ev.y - 4, t: 0, max: 0.3, c: '#9ff4ff', r: 14 }); } }
       else if (ev.type === 'revive') {
@@ -1018,7 +1019,7 @@
       else if (ev.type === 'bossRoar') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.7, c: '#ffb04a' }); toast('돌격왕의 함성! 주변 적이 빨라집니다'); }
       else if (ev.type === 'bossFocus') { addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.8, c: '#6fe08a' }); toast((ev.name || '보스') + '이(가) 정신을 집중해 체력을 회복합니다'); }
       else if (ev.type === 'strikeWarn') addFx({ k: 'strikeW', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, w2: ev.w2, claw: ev.claw, t: 0, max: Math.max(0.2, ev.t) });
-      else if (ev.type === 'strikeHit') { addFx({ k: 'strikeH', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, w2: ev.w2, claw: ev.claw, t: 0, max: ev.shape === 'cone' ? 0.7 : ev.shape === 'line' ? 0.6 : 0.55 }); if (ev.kind !== 'ice' || ev.r > 300) addShake(ev.kind === 'slam' ? 14 : ev.kind === 'wind' ? 5 : ev.r > 250 ? 12 : 6, ev.kind === 'slam' ? 0.45 : 0.3); }
+      else if (ev.type === 'strikeHit') { { const sc = { bolt: '#fff27a', fire: '#ff9a3a', slam: '#d9a05a', frost: '#bfe8ff', ice: '#bfe8ff', slash: '#ffffff', claw: '#ff6a6a' }[ev.kind] || '#ffd27a'; addFx({ k: 'sparks', x: ev.x, y: ev.y, t: 0, max: 0.45, c: sc, r: Math.min(ev.r || 60, 110), n: 14, w: 3, big: true }); } addFx({ k: 'strikeH', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, w2: ev.w2, claw: ev.claw, t: 0, max: ev.shape === 'cone' ? 0.7 : ev.shape === 'line' ? 0.6 : 0.55 }); if (ev.kind !== 'ice' || ev.r > 300) addShake(ev.kind === 'slam' ? 14 : ev.kind === 'wind' ? 5 : ev.r > 250 ? 12 : 6, ev.kind === 'slam' ? 0.45 : 0.3); }
       else if (ev.type === 'omen') { if (ev.id !== 'dragon') showBossIntro({ name: ev.name, line: ev.line, look: ev.look, r: ev.r, long: true, omen: ev.id }); toast(ev.id === 'dragon' ? '용의 기운이 맵 가장자리에 감돕니다' : '사천왕의 기운이 맵 가장자리에 감돕니다'); if (ev.fx) setTimeout(() => toast(ev.fx), 1200); }
       else if (ev.type === 'omenEmber') addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.5, c: '#ff7a3a' });
       else if (ev.type === 'castleAwaken') { banner('성채 각성!', true); for (let i = 0; i < 4; i++) addFx({ k: 'ring', x: CX, y: CY, t: -i * 0.12, max: 1.0, c: '#ffe27a', big: true, r: 200 }); addShake(8, 0.5); }
@@ -1296,6 +1297,18 @@
   let risePulse = 0;
   let dragonFramed = 0; // 용 등장 때 화면을 맞춘 보스
   let omLast = null; // 직전에 떠 있던 사천왕의 기운 (등장 후에도 잠시 남는다)
+  // 투사체 꼬리 모양: 종류별 색·굵기·길이
+  function shotTail(sh) {
+    const jc = sh.job && JOBC[sh.job], c = sh.color;
+    if (c === 'em') return { c: '#6fa8ff', core: '#e6f2ff', w: 6, n: 14, a: 0.5, spark: '#bfe0ff' };
+    if (c === 'eb') return { c: '#7a7f8c', core: '#ffb347', w: 5, n: 11, a: 0.5, spark: '#ffd35a' };
+    if (c === 'es') return { c: '#ff8a2a', core: '#ffe08a', w: 9, n: 13, a: 0.55, spark: '#ffcf5a' };
+    if (c === 'ea') return sh.elite ? { c: '#ff4adf', core: '#ffd0f4', w: 3, n: 9, a: 0.6 } : { c: '#c0503a', core: '#ffb59a', w: 2.4, n: 8, a: 0.5 };
+    if (c === 't') return { c: '#ffb86b', core: '#fff0c8', w: 2.8, n: 7, a: 0.55 };
+    if (c === 'c') return { c: jc || '#9fb4d6', core: '#ffffff', w: 7, n: 10, a: 0.45 };
+    if (sh.crit) return { c: '#ff8a1a', core: '#fff0a0', w: 4, n: 11, a: 0.65, spark: '#ffd060' };
+    return { c: jc || '#d8d2bd', core: '#ffffff', w: sh.job ? 3.2 : 2.4, n: sh.job ? 10 : 8, a: sh.job ? 0.6 : 0.4, spark: sh.job ? jc : null };
+  }
   const OMEN_COL = { thunder: '#ffd814', snow: '#6fd0ff', earth: '#b8803c', dragon: '#ff5a1a' };
   const drawList = [], byY = (p, q) => p.y - q.y, LITE_AT = 140;
   let liteMode = false, drawnCount = 0;
@@ -1388,6 +1401,17 @@
       }
       ctx.globalAlpha = 0.25; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(sh.x, sh.y, 4, 2, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
       const px = sh.x, py = sh.y - sh.h, ang = Math.atan2(sh.vy - sh.vh, sh.vx);
+      if (sh.color !== 'h') { // 혜성 꼬리: 투사체마다 어울리는 색·굵기로 지나온 자리를 이어 그린다
+        const tp = shotTail(sh), lp = sh._lp || 0; if (sh.p < lp || !sh._tr) sh._tr = []; sh._lp = sh.p; const tr = sh._tr, lst = tr[tr.length - 1];
+        if (!lst || Math.hypot(lst[0] - px, lst[1] - py) > 1.2) tr.push([px, py]); while (tr.length > tp.n) tr.shift();
+        if (tr.length > 1) {
+          ctx.lineCap = 'round';
+          for (let i = 1; i < tr.length; i++) { const k = i / tr.length; ctx.globalAlpha = k * tp.a; ctx.strokeStyle = tp.c; ctx.lineWidth = Math.max(0.6, tp.w * k); ctx.beginPath(); ctx.moveTo(tr[i - 1][0], tr[i - 1][1]); ctx.lineTo(tr[i][0], tr[i][1]); ctx.stroke(); }
+          if (tp.core) for (let i = Math.floor(tr.length * 0.5) + 1; i < tr.length; i++) { const k = i / tr.length; ctx.globalAlpha = k * 0.7; ctx.strokeStyle = tp.core; ctx.lineWidth = Math.max(0.4, tp.w * 0.4 * k); ctx.beginPath(); ctx.moveTo(tr[i - 1][0], tr[i - 1][1]); ctx.lineTo(tr[i][0], tr[i][1]); ctx.stroke(); }
+          if (tp.spark && Math.random() < 0.5) { const q = tr[Math.max(0, tr.length - 3)]; ctx.globalAlpha = 0.8; ctx.fillStyle = tp.spark; ctx.beginPath(); ctx.arc(q[0] + (Math.random() - 0.5) * 6, q[1] + (Math.random() - 0.5) * 6, 1 + Math.random() * 1.2, 0, 6.283); ctx.fill(); }
+          ctx.globalAlpha = 1;
+        }
+      }
       if (sh.color === 'h') { // 이단심판관의 성화: 검붉은 불덩이 + 회전하는 붉은 십자 + 불꽃 꼬리
         const sp = 0.5 + 0.5 * Math.sin(now * 0.03 + sh.p * 20), ux = Math.cos(ang), uy = Math.sin(ang);
         for (let k = 3; k >= 1; k--) { ctx.globalAlpha = 0.14 * (4 - k); ctx.fillStyle = '#ff6a1a'; ctx.beginPath(); ctx.arc(px - ux * k * 5, py - uy * k * 5 - k, 5 - k * 0.8, 0, Math.PI * 2); ctx.fill(); }
@@ -1454,6 +1478,11 @@
       const f = fx[i]; if (f.t < 0) continue; // 시작 지연 중
       const p = f.t / f.max;
       if (f.k === 'burst') { ctx.globalAlpha = 1 - p; ctx.fillStyle = f.c; ctx.beginPath(); ctx.arc(f.x, f.y, (f.big ? 20 : 8) + p * (f.big ? 50 : 16), 0, Math.PI * 2); ctx.fill(); }
+      else if (f.k === 'sparks') { // 타격 불꽃: 맞은 자리에서 사방으로 튀는 짧은 선과 번쩍임
+        ctx.lineCap = 'round'; ctx.strokeStyle = f.c; ctx.lineWidth = (f.w || 2.2) * (1 - p * 0.5); const n = f.n || 7;
+        for (let i = 0; i < n; i++) { const h = Math.sin((i + 1) * 91.7 + (f.x + f.y) * 0.13) * 0.5 + 0.5, a = (f.a || 0) + ((i / n) - 0.5) * (f.cone || 6.283) + (h - 0.5) * 0.5, r0 = 4 + p * f.r * (0.6 + h * 0.6), r1 = r0 + (1 - p) * (6 + h * 8); ctx.globalAlpha = 1 - p; ctx.beginPath(); ctx.moveTo(f.x + Math.cos(a) * r0, f.y + Math.sin(a) * r0); ctx.lineTo(f.x + Math.cos(a) * r1, f.y + Math.sin(a) * r1); ctx.stroke(); }
+        ctx.globalAlpha = (1 - p) * 0.8; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(f.x, f.y, (f.big ? 9 : 5) * (1 - p * 0.7), 0, 6.283); ctx.fill(); ctx.globalAlpha = 1;
+      }
       else if (f.k === 'slash') { // 근접 타격 궤적: 전직·유닛별 색·갈래 (엘리트 적은 분홍)
         const st = f.st, w = st ? st.w : f.big ? 4.5 : 3, r0 = st ? st.r : f.big ? 20 : 15, sp = st ? st.span : 0.95, n = st ? st.n : 1; ctx.globalAlpha = 1 - p; ctx.strokeStyle = f.c; ctx.lineWidth = w * (1 - p * 0.6) / z * 1.1; ctx.lineCap = 'round';
         for (let k = 0; k < n; k++) { const off = (n === 3 ? (k - 1) * 0.34 : n === 2 ? (k ? 0.3 : -0.3) : 0) * (f.fl ? -1 : 1); ctx.beginPath(); ctx.arc(f.x - Math.cos(f.a + off) * 6, f.y - Math.sin(f.a + off) * 6, r0 * (0.7 + p * 0.5) * (k ? 0.85 : 1), f.a + off - sp, f.a + off + sp); ctx.stroke(); }
@@ -1698,7 +1727,7 @@
   function uiRects(force) {
     if (!force && uiAge < 4) { uiAge++; return uiCache; }
     uiAge = 0; const out = [];
-    for (const sel of ['#hud', '#modeBar', '#tools', '#bossbar', '#units']) {
+    for (const sel of ['#hud', '#omenRow', '#modeBar', '#tools', '#bossbar', '#units']) {
       const el = document.querySelector(sel); if (!el || el.hidden) continue;
       const r = el.getBoundingClientRect(); if (r.width > 0 && r.height > 0) out.push({ sel, l: r.left, t: r.top, r: r.right, b: r.bottom });
     }

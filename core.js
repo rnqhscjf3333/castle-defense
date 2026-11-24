@@ -140,12 +140,12 @@
     kingP2: { cdMul: 0.78, dmg: 1.25, hp: 1.9, sword: { cd: 8, len: 1100, width: 150, warn: 1.0, mul: 3.2, kb: 440 }, summon: { thunder: { cd: 9, n: 4, kind: 'wolf' }, snow: { cd: 10, n: 3, kind: 'ghost' }, earth: { cd: 10, n: 3, kind: 'ironshield' } } }, // 사천왕 2차전 강화
     // 사천왕의 기운(51라운드~): 다음 사천왕의 속성이 맵 전체에 깔리며 실제 효과를 준다 (선택지를 모두 고른 뒤부터)
     omenFx: {
-      thunder: { name: '번개의 기운', enemySpd: 1.15, text: '번개의 기운 — 적의 이동 속도 +15%' },
-      snow:    { name: '눈보라의 기운', allySpd: 0.8, text: '눈보라의 기운 — 아군의 이동 속도 -20%' },
-      earth:   { name: '대지의 기운', foeTaken: 0.88, text: '대지의 기운 — 적이 받는 피해 -12%' },
-      dragon:  { name: '불길의 기운', every: 2.5, n: 3, pct: 0.03, text: '불길의 기운 — 불씨가 떨어져 아군 3명이 2.5초마다 최대 체력의 3% 피해' },
+      thunder: { name: '번개의 기운', short: '적 이동 +15%', enemySpd: 1.15, text: '번개의 기운 — 적의 이동 속도 +15%' },
+      snow:    { name: '눈보라의 기운', short: '아군 이동 -20%', allySpd: 0.8, text: '눈보라의 기운 — 아군의 이동 속도 -20%' },
+      earth:   { name: '대지의 기운', short: '적 받는 피해 -12%', foeTaken: 0.88, text: '대지의 기운 — 적이 받는 피해 -12%' },
+      dragon:  { name: '불길의 기운', short: '불씨가 아군에 낙하', every: 2.5, n: 3, pct: 0.03, text: '불길의 기운 — 불씨가 떨어져 아군 3명이 2.5초마다 최대 체력의 3% 피해' },
     },
-    kingHp: 1.8,           // 사천왕 한 형태의 체력 = 무한 모드 보스 기본 체력 × 이 값
+    kingHp: 1.8, kingP1: 1.5,           // 사천왕 한 형태의 체력 = 무한 모드 보스 기본 체력 × 이 값
     kings: {
       thunder: { id: 'thunder', elem: 'thunder', line: '번개가 너희의 심장을 꿰뚫으리라.', name: '뇌왕', r: 36,
         look: { body: '#3a3320', head: '#f1ead2', weapon: 'sword', crown: true, style: 'overlord', elem: 'thunder' },
@@ -1059,7 +1059,7 @@
       for (const k in e.abil) if (!Array.isArray(e.abil[k])) e.t[k] = (e.abil[k].cd || 0) * (isKing(bd) ? 0.3 : 0.6); // 첫 패턴은 조금 일찍 (사천왕은 더 일찍)
       if (!bd.dragon) e.speed = Math.max(e.speed, CFG.bossSpeed); // 보스는 광전사처럼 빠르게 달려온다
       if (bd === CFG.finalBoss && r === MAX_ROUND) { const N = CFG.finalNerf; e.max = e.hp = Math.round(e.max * N.hp); e.max2 = Math.round(e.max / N.hp * N.hp2); e.dmg *= N.dmg; e.canRevive = true; }
-      if (isKing(bd)) { e.king = bd; e.canRevive = true; e.max = e.hp = Math.round(e.max * 0.55); e.max2 = Math.round(e.max * CFG.kingP2.hp); }
+      if (isKing(bd)) { e.king = bd; e.canRevive = true; const kb0 = Math.round(e.max * 0.55); e.max = e.hp = Math.round(kb0 * CFG.kingP1); e.max2 = Math.round(kb0 * CFG.kingP2.hp); } // 1차전만 체력 버프 (2차전은 그대로)
       if (bd.dragon) { e.dragon = true; e.fixed = true; e.riseT = e.riseDur = 4.2; emit(S, { type: 'dragonRise', x: x, y: y, dur: 4.2 }); e.vr = bd.vr; e.side = 0; placeDragon(e); e.flyS = null; e.lift = 0; }
       S.stats.seenB[bd.id] = 1;
       emit(S, { type: 'bossSpawn', name: bd.name, id: bd.id, line: bd.line, look: bd.look, r: e.r });
@@ -1155,7 +1155,7 @@
   // (cx,cy)에서 멀어지는 방향으로 속도를 준다. 질량이 큰 유닛은 덜 밀리고, 보스·설치형은 밀리지 않는다.
   function knock(S, t, cx, cy, power, stagger) {
     if (!power || t.dead || t.dying || t.kind === 'boss' || (t.team === 'u' && CFG.units[t.type].static)) return;
-    const K = CFG.kb, mass = t.team === 'u' ? (K.mass[t.type] || 1) : (t.air ? 0.6 : 1);
+    const K = CFG.kb, mass = t.team === 'u' ? (K.mass[t.type] || 1) : (t.air ? 0.6 : 1) * (t.elite ? 0.45 : 1); // 엘리트는 덜 밀린다
     let dx = t.x - cx, dy = t.y - cy, d = Math.hypot(dx, dy); if (d < 1) { const a = S.rng() * 6.283; dx = Math.cos(a); dy = Math.sin(a); d = 1; }
     const v = power * mass * (1 - Math.min(0.5, d / 1200)); // 멀수록 약하게
     t.kvx = (t.kvx || 0) + dx / d * v; t.kvy = (t.kvy || 0) + dy / d * v;
