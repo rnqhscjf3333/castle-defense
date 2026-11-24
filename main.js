@@ -653,7 +653,7 @@
         if (ph >= nextAtk && ph < 9) {
           nextAtk += drg ? 2.6 : 1.1; dm.x = me.x + dir * reach; dm.y = 0; me.aim = dir > 0 ? 0 : Math.PI; me.swing = 0.28;
           if (drg) { me.anim = { k: dragonSeq[dsi++ % 3], T: 1.7, left: 1.7 }; }
-          else { const dl = stageAttack(L, me, dm); pend.push({ at: t + dl, f: () => { dm.flash = 0.12; } }); }
+          else { const n0 = L.length, dl = stageAttack(L, me, dm); for (let i = L.length - 1; i >= n0; i--) if (L[i].k === 'proj') L.splice(i, 1); /* 도감에서는 원거리 모션만 보이고 투사체는 그리지 않는다 */ pend.push({ at: t + dl, f: () => { dm.flash = 0.12; } }); }
         }
         for (let i = pend.length - 1; i >= 0; i--) if (t >= pend[i].at) { pend[i].f(); pend.splice(i, 1); }
         stageBg(c2, SW, SH, scroll, gy);
