@@ -596,10 +596,19 @@
       const L = e.look || {};
       if (L.style === 'dragon') return dragon(ctx, e, s);
       const EL = L.elem && ELEM[L.elem];
-      if (L.p2) { // 각성한 모습: 등 뒤에 찢어진 날개
+      if (L.p2 || L.wings) { // 각성한 모습·용익 기사단장: 등 뒤에 찢어진 날개
         const fl0 = e.flash > 0, wf = Math.sin((e._t || 0) * 0 + (typeof performance !== 'undefined' ? performance.now() : 0) * 0.004) * 2 * s;
         ctx.fillStyle = fl0 ? FLASH : (EL ? EL.wing : '#4a0a18'); ctx.strokeStyle = '#1f0508'; ctx.lineWidth = s;
-        for (const sd of [-1, 1]) { tri(ctx, sd * 6 * s, -12 * s, sd * 34 * s, -30 * s + wf, sd * 22 * s, -4 * s); ctx.fill(); ctx.stroke(); tri(ctx, sd * 6 * s, -8 * s, sd * 30 * s, -12 * s + wf, sd * 18 * s, 6 * s); ctx.fill(); ctx.stroke(); }
+        if (L.wings && !L.p2) { // 용의 날개: 뼈대 손가락 세 갈래에 가장자리가 파인 붉은 막, 천천히 퍼덕인다
+          const fp = Math.sin((typeof performance !== 'undefined' ? performance.now() : 0) * 0.0035) * 4 * s, MEM = fl0 ? FLASH : '#6a1020', BONE = fl0 ? FLASH : '#2a0a10';
+          for (const sd of [-1, 1]) {
+            const tipX = sd * 54 * s, tipY = -40 * s + fp, m1X = sd * 46 * s, m1Y = -12 * s + fp * 0.6, m2X = sd * 34 * s, m2Y = 10 * s + fp * 0.3;
+            ctx.fillStyle = MEM; ctx.strokeStyle = '#1f0508'; ctx.lineWidth = s;
+            ctx.beginPath(); ctx.moveTo(sd * 6 * s, -13 * s); ctx.lineTo(tipX, tipY); ctx.quadraticCurveTo(sd * 46 * s, -26 * s + fp, m1X, m1Y); ctx.quadraticCurveTo(sd * 40 * s, -6 * s + fp * 0.5, m2X, m2Y); ctx.quadraticCurveTo(sd * 22 * s, 0, sd * 6 * s, -2 * s); ctx.closePath(); ctx.fill(); ctx.stroke();
+            ctx.strokeStyle = BONE; ctx.lineWidth = 1.6 * s; ctx.beginPath(); ctx.moveTo(sd * 6 * s, -13 * s); ctx.lineTo(tipX, tipY); ctx.moveTo(sd * 9 * s, -10 * s); ctx.lineTo(m1X, m1Y); ctx.moveTo(sd * 9 * s, -7 * s); ctx.lineTo(m2X, m2Y); ctx.stroke();
+            ctx.fillStyle = BONE; tri(ctx, tipX, tipY, tipX + sd * 3 * s, tipY - 5 * s, tipX - sd * 2 * s, tipY + 2 * s); ctx.fill();
+          }
+        } else for (const sd of [-1, 1]) { tri(ctx, sd * 6 * s, -12 * s, sd * 34 * s, -30 * s + wf, sd * 22 * s, -4 * s); ctx.fill(); ctx.stroke(); tri(ctx, sd * 6 * s, -8 * s, sd * 30 * s, -12 * s + wf, sd * 18 * s, 6 * s); ctx.fill(); ctx.stroke(); }
       }
       const ST = L.style, fl0 = e.flash > 0, dd = e._dir;
       if (ST) { // 암흑 기사단장·마왕: 몸 뒤로 늘어지는 보라 망토 (+ 마왕은 높게 솟은 옷깃)

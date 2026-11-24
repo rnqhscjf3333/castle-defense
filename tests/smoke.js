@@ -154,6 +154,7 @@ for (const r of [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]) {
   check('보스 전 라운드(4라운드 시작)에 다음 라운드 보스 예고 알림', C.drainEvents(g).some(e => e.type === 'notice' && e.text.includes(C.bossInfo(g, 5).name))); }
 
 // 11) 새 적의 행동
+const GUARD_RED = C.CFG.bossGuard.red; C.CFG.bossGuard.red = 0; // (다른 점검은 보스 초반 보호를 끄고 진행 — 아래 66번에서 따로 점검)
 function arena(round, kinds, bossId) { const g = C.createGame(500 + round); g.hold = true; g.captureEvents = true; g.round = round; g.phase = 'round'; g.roundT = 0; g.queue = []; g.spawnPts = 4; if (bossId) { const idx = C.CFG.bossPool.findIndex(b => b.id === bossId), slot = round / 5 - 1, cur = g.bossOrder.indexOf(idx); if (cur >= 0) [g.bossOrder[slot], g.bossOrder[cur]] = [g.bossOrder[cur], g.bossOrder[slot]]; /* 이 라운드의 보스를 지정 */ } for (const [k, x, y] of kinds) C.spawnEnemy(g, k, x, y); return g; }
 { // 사수: 성에서 멀리 떨어져 포물선 화살로 성을 맞힌다
   const g = arena(5, [['archer', 1500, 1500 - 450]]); let arrow = null, hmax = 0, hp0 = g.core.hp, minD = 1e9; g.core.atk = 0; const ar0 = g.enemies[0];
@@ -903,5 +904,17 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   check('무한 모드: 101라운드가 시작됨', g.round >= 101, g.round);
   const h = r => C.bossInfo(g, r).hp; check('무한 모드: 100라운드 이후 적 체력이 훨씬 가파르게 오름', h(115) / h(105) > 1.4 && h(125) / h(115) > 1.4 && h(105) / h(95) > h(95) / h(85) * 1.15, (h(115) / h(105)).toFixed(2));
   check('무한 모드: 10라운드마다 사천왕 재등장', ['thunder', 'snow', 'earth'].includes(C.bossInfo(g, 110).id) && C.bossInfo(g, 105).id !== 'dragon'); }
+// 67) 보스 초반 보호, 용익 기사단장
+{ C.CFG.bossGuard.red = GUARD_RED; const g = arena(60, [['boss', 700, 500]]); const b = g.enemies[0]; check('마왕 이후 보스는 등장 직후 보호 시간을 가짐', b.guardT === C.CFG.bossGuard.dur, b.guardT);
+  b.hp = b.max = 1000; C.damage(g, b, 100); const early = 1000 - b.hp; b.guardT = 0; b.hp = 1000; C.damage(g, b, 100); const late = 1000 - b.hp;
+  check('보호 중에는 받는 피해가 크게 줄어듦 (85%)', early < late * 0.2 && late > 80, early.toFixed(1) + ' vs ' + late.toFixed(1));
+  b.guardT = 1; b.hp = 1000; C.damage(g, b, 100); const fade = 1000 - b.hp; check('보호는 끝나기 전 서서히 약해짐', fade > early * 1.5 && fade < late, fade.toFixed(1));
+  const kg = arena(60, [['boss', 700, 500]]); const kk = kg.enemies[0]; kk.king = kk.king || C.CFG.kings.thunder; kk.canRevive = true; kk.guardT = 0; kk.hp = 1; C.damage(kg, kk, 5); for (let i = 0; i < 400 && kg.bossDeath && kg.bossDeath.stage !== 'revive'; i++) C.tick(kg, DT); for (let i = 0; i < 400 && kg.bossDeath; i++) C.tick(kg, DT);
+  check('1·2·30라운드 보스에는 초반 보호가 없음', arena(30, [['boss', 700, 500]]).enemies[0].guardT === 0 && arena(10, [['boss', 700, 500]], 'charger').enemies[0].guardT === 0);
+  check('사천왕 2차전도 시작하면 보호가 다시 걸림', kk.guardT > 0 || !kk.p2, kk.guardT);
+  C.CFG.bossGuard.red = 0;
+  const gg = C.createGame(5); check('90라운드는 용익 기사단장', C.bossInfo(gg, 90).id === 'drakeknight' && !!C.bossInfo(gg, 90).look.wings);
+  check('용익 기사단장은 암흑 기사단장보다 강하고 용의 기술을 씀', !!C.CFG.winged.abil.gust && !!C.CFG.winged.abil.meteor && C.CFG.winged.abil.artillery.dmg > C.CFG.act1Boss.abil.artillery.dmg && C.bossInfo(gg, 90).hp > C.bossInfo(gg, 95).hp);
+  const ag = arena(90, [['boss', 700, 500]]); const bb = ag.enemies[0]; check('90라운드 보스가 용익 기사단장으로 나옴', bb.bossId === 'drakeknight' && bb.abil.dash && bb.abil.gust, bb.bossId); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

@@ -294,7 +294,7 @@
     setText('bossHpTxt', Math.ceil(b.hp).toLocaleString() + ' / ' + b.max.toLocaleString() + '  (' + Math.ceil(pct) + '%)');
     const shielded = b.shieldT > 0, rage = !!b.enraged;
     el.classList.toggle('shielded', shielded); el.classList.toggle('rage', rage && !shielded);
-    let st = b.dying ? (S.bossDeath && S.bossDeath.stage === 'revive' ? '부활 중…' : '쓰러지는 중…') : shielded ? '방어막 — 피해를 ' + Math.round(b.shieldRed * 100) + '% 방어' : b.focusT > 0 ? '정신 집중 — 회복 중, 피해 ' + Math.round(b.abil.focus.red * 100) + '% 감소' : b.dashT > 0 ? '돌진 중!' : rage ? '분노 — 더 빠르고 강해졌다' : '패턴: ' + Object.keys(b.abil).map(k => k === 'debuff' ? b.abil.debuff.map(d => DBK[d.kind][0]).join('·') : PAT[k]).join(' · ');
+    let st = b.dying ? (S.bossDeath && S.bossDeath.stage === 'revive' ? '부활 중…' : '쓰러지는 중…') : b.guardT > 0 ? '등장 직후 보호 — 피해 대폭 감소 (' + Math.ceil(b.guardT) + '초)' : shielded ? '방어막 — 피해를 ' + Math.round(b.shieldRed * 100) + '% 방어' : b.focusT > 0 ? '정신 집중 — 회복 중, 피해 ' + Math.round(b.abil.focus.red * 100) + '% 감소' : b.dashT > 0 ? '돌진 중!' : rage ? '분노 — 더 빠르고 강해졌다' : '패턴: ' + Object.keys(b.abil).map(k => k === 'debuff' ? b.abil.debuff.map(d => DBK[d.kind][0]).join('·') : PAT[k]).join(' · ');
     if (b.grow > 1.04) st += '  |  공격력 ×' + b.grow.toFixed(1) + (b.grow >= CFG.balance.bossGrowMax - 0.01 ? ' (최대)' : ' ↑');
     setText('bossState', st);
   }
@@ -781,9 +781,9 @@
       rows = [['기본 체력', c.hp + ' (라운드마다 증가)'], ['기본 공격력', c.dmg || '—'], ['공격 속도', c.rate ? f1(c.rate) + '/초' : '—'], ['사거리', c.range || '—'], ['이동 속도', c.speed], ['처치 골드', c.gold], ['등장', sp ? sp.from + '라운드부터' : '특수 (소환·이벤트)']];
       const tr = enemyTraits(c); if (tr.length) extra += '<h3>특성</h3>' + tr.map(x => '<div class="d" style="margin:3px 0">• ' + x + '</div>').join('');
     } else if (k === 'b') {
-      const all = CFG.bossPool.concat([CFG.act1Boss, CFG.finalBoss], Object.values(CFG.kings), [CFG.dragon]), bd = all.find(x => x.id === a), isK = !!CFG.kings[a]; name = bd.name; desc = bd.line ? '“' + bd.line + '”' : ''; stageSpec = { sc: 'char', team: 'e', ek: 'boss', look: Object.assign({ r: bd.r || 30 }, bd.look), r: bd.r || 30, vr: bd.vr };
+      const all = CFG.bossPool.concat([CFG.act1Boss, CFG.winged, CFG.finalBoss], Object.values(CFG.kings), [CFG.dragon]), bd = all.find(x => x.id === a), isK = !!CFG.kings[a]; name = bd.name; desc = bd.line ? '“' + bd.line + '”' : ''; stageSpec = { sc: 'char', team: 'e', ek: 'boss', look: Object.assign({ r: bd.r || 30 }, bd.look), r: bd.r || 30, vr: bd.vr };
       try { img = portrait('e', 'boss', CFG.enemies.boss, Object.assign({ r: bd.r || 30 }, bd.look), null, true).toDataURL(); } catch (e) {}
-      const rd = bd === CFG.act1Boss ? '30라운드' : bd === CFG.finalBoss ? '50라운드' : isK ? '60·70·80라운드 (무작위 순서)' : bd === CFG.dragon ? '100라운드 (최종 보스, 몬스터 무리와 함께 싸우는 레이드)' : '5라운드마다 (무작위 순서)';
+      const rd = bd === CFG.act1Boss ? '30라운드' : bd === CFG.winged ? '90라운드 (암흑 기사단장이 용의 날개를 달고 돌아온다)' : bd === CFG.finalBoss ? '50라운드' : isK ? '60·70·80라운드 (무작위 순서)' : bd === CFG.dragon ? '100라운드 (최종 보스, 몬스터 무리와 함께 싸우는 레이드)' : '5라운드마다 (무작위 순서)';
       rows = [['등장', rd], ['체력', '라운드별 표 (5R ' + CFG.bossHp[5] + ' → 50R ' + CFG.bossHp[50] + ')'], ['기본 공격력', CFG.enemies.boss.dmg + ' (시간이 지날수록 증가)'], ['기본 공격', bd.ranged ? '원거리 마법' : '범위 근접 공격']];
       const A = bd.abil; extra += '<h3>스킬</h3>' + Object.keys(A).filter(x => x !== 'debuff').map(x => '<div class="d" style="margin:4px 0">• ' + (SK_TXT[x] ? SK_TXT[x](A[x]) : x) + '</div>').join('') + (A.debuff || []).map(d => '<div class="d" style="margin:4px 0">• ' + DBK[d.kind][0] + ' 광역기: ' + d.cd + '초마다 ' + DB_TXT[d.kind] + ' 범위(' + d.r + ')를 예고 후 터뜨립니다</div>').join('');
       if (isK) extra += '<h3>각성 후 — ' + bd.awaken.name + '</h3><div class="d" style="margin:4px 0">쓰러지면 속성에 맞는 모습으로 각성해 부활합니다.</div>' + Object.keys(bd.abil2).filter(x => x !== 'debuff').map(x => '<div class="d" style="margin:4px 0">• ' + (SK_TXT[x] ? SK_TXT[x](bd.abil2[x]) : x) + '</div>').join('');
@@ -819,7 +819,7 @@
       { const T = CFG.castleTree, items = [], add = (n, tier, path, vr, fin, parent) => items.push({ name: n.name, desc: (tier === 1 ? '1단계' : tier === 2 ? '2단계 · ' : '최종 · ') + (tier === 1 ? '' : parent), img: castlePortrait({ cpath: path, cvar: vr, cfin: fin }), lockTxt: '아직 선택하지 않았어요', seen: !!(M.codex.castle[n.id] || logged.has(n.name)), det: 'c:' + n.id });
         for (const r of T.roots) { add(r, 1, r.id, null, null, ''); for (const a of T.t2[r.id]) { add(a, 2, r.id, a.id, null, r.name); for (const f of T.t3[a.id]) add(f, 3, r.id, a.id, f.id, a.name); } } sect('성', items); }
       sect('몬스터', Object.keys(CFG.enemies).filter(k => k !== 'boss').map(k => ({ team: 'e', kind: k, cfg: CFG.enemies[k], name: CFG.enemies[k].name, desc: CFG.enemies[k].desc || '', seen: !!M.codex.enemies[k], det: 'e:' + k })));
-      sect('보스', CFG.bossPool.concat([CFG.act1Boss, CFG.finalBoss], Object.values(CFG.kings), [CFG.dragon]).map(b => ({ team: 'e', kind: 'boss', cfg: CFG.enemies.boss, look: Object.assign({ r: b.r || 30 }, b.look), name: b.name, desc: b.line ? '“' + b.line + '”' : '', seen: !!M.codex.bosses[b.id], det: 'b:' + b.id })));
+      sect('보스', CFG.bossPool.concat([CFG.act1Boss, CFG.winged, CFG.finalBoss], Object.values(CFG.kings), [CFG.dragon]).map(b => ({ team: 'e', kind: 'boss', cfg: CFG.enemies.boss, look: Object.assign({ r: b.r || 30 }, b.look), name: b.name, desc: b.line ? '“' + b.line + '”' : '', seen: !!M.codex.bosses[b.id], det: 'b:' + b.id })));
     } else if (metaTab === 'rank') {
       body.innerHTML = '<div id="rankbox"></div>'; showRank(null);
     } else if (metaTab === 'stats' && statDetail !== null && M.games[statDetail]) {
@@ -1398,6 +1398,7 @@
       if ((e.team === 'u' && (e.stunT > 0 || e.poisonT > 0 || e.weakT > 0 || e.woundT > 0)) || (e.team === 'e' && (e.stunT > 0 || e.curseT > 0 || e.burnT > 0))) statusMarks(e, now, z);
       if (e.team === 'e' && e.stk > 0) stackMarks(e, now, z);
       if (e.team === 'e' && e.burnT > 0) { ctx.fillStyle = '#ff8a2a'; for (let i = 0; i < 3; i++) { const fp = (now * 0.004 + i * 0.37 + (e.id || 0)) % 1; ctx.globalAlpha = (1 - fp) * 0.8; ctx.beginPath(); ctx.arc(e.x + (i - 1) * e.r * 0.5, e.y - e.r * 0.2 - fp * e.r * 1.4, 2.4 * (1 - fp * 0.5), 0, Math.PI * 2); ctx.fill(); } ctx.globalAlpha = 1; }
+      if (e.guardT > 0 && e.kind === 'boss') { const gk = Math.min(1, e.guardT / CFG.bossGuard.fade); ctx.globalAlpha = (0.2 + 0.1 * Math.sin(now * 0.01)) * gk; ctx.fillStyle = '#ffe08a'; ctx.beginPath(); ctx.arc(e.x, e.y - 6, e.r * 1.9, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 0.85 * gk; ctx.strokeStyle = '#fff1b8'; ctx.lineWidth = 3 / z; ctx.stroke(); ctx.globalAlpha = 1; } // 등장 직후 보호
       if (e.shieldT > 0) { ctx.globalAlpha = 0.28 + 0.12 * Math.sin(now * 0.012); ctx.fillStyle = '#8fd8ff'; ctx.beginPath(); ctx.arc(e.x, e.y - 6, e.r * 1.7, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 0.9; ctx.strokeStyle = '#d8f2ff'; ctx.lineWidth = 2.5 / z; ctx.stroke(); ctx.globalAlpha = 1; }
       if (e.hp < e.max || e.kind === 'boss') hpBar(e);
     }

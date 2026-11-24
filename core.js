@@ -106,6 +106,11 @@
     ],
     // 1막 마지막(30라운드) 보스: 암흑 기사단장. 처치하면 연출과 함께 2막이 열린다.
     act1Boss: { id: 'darkknight', line: '어둠 앞에 무릎을 꿇어라.', name: '암흑 기사단장', look: { body: '#2b2f3f', head: '#2e3140', weapon: 'sword', style: 'darkknight' }, abil: { summon: { cd: 10, n: 2, kind: 'bomber' }, artillery: { cd: 6, dmg: 70, radius: 105, count: 2, flight: 1.5 }, sword: { cd: 9, len: 900, width: 110, warn: 1.1, mul: 2.4, kb: 320 }, shield: { cd: 16, dur: 3, red: 0.6 }, rage: { at: 0.35, speed: 1.3, rate: 1.4, dmg: 1.4 }, debuff: [{ kind: 'stun', cd: 13, r: 110 }, { kind: 'wound', cd: 15, r: 160 }] } },
+    // 90라운드: 암흑 기사단장이 용의 날개를 달고 더 강해져 돌아온다 (새로운 보스)
+    winged: { id: 'drakeknight', line: '용의 날개로 하늘까지 어둠으로 물들이리라.', name: '용익 기사단장', r: 38, look: { body: '#2b2f3f', head: '#2e3140', weapon: 'sword', style: 'darkknight', wings: true },
+      abil: { summon: { cd: 9, n: 3, kind: 'wyrmling' }, artillery: { cd: 5, dmg: 120, radius: 110, count: 3, flight: 1.4 }, sword: { cd: 7, len: 1000, width: 130, warn: 1.0, mul: 3.0, kb: 380 }, shield: { cd: 14, dur: 3, red: 0.6 }, rage: { at: 0.4, speed: 1.4, rate: 1.5, dmg: 1.5 },
+        dash: { cd: 9, dur: 1.2, mul: 2.6, shock: { r: 230, kb: 520, mul: 2.0 } }, gust: { cd: 13, r: 620, warn: 1.0, kb: 520 }, meteor: { cd: 8, n: 6, r: 90, warn: 1.0, mul: 2.0, at: 0.6, kb: 320 },
+        debuff: [{ kind: 'stun', cd: 12, r: 120 }, { kind: 'wound', cd: 14, r: 165 }, { kind: 'weak', cd: 13, r: 160 }] } },
     // 최종 보스(50라운드): 마왕
     finalBoss: { id: 'overlord', line: '모든 것은 이 어둠 속에서 끝난다.', name: '마왕', r: 38, look: { body: '#2a2438', head: '#ebe6f4', weapon: 'sword', crown: true, style: 'overlord' }, abil: { summon: { cd: 11, n: 3, kind: 'bomber' }, artillery: { cd: 5, dmg: 130, radius: 115, count: 2, flight: 1.4 }, sword: { cd: 10, len: 1100, width: 150, warn: 1.1, mul: 3, kb: 420 }, shield: { cd: 12, dur: 3.5, red: 0.7 }, rage: { at: 0.4, speed: 1.4, rate: 1.5, dmg: 1.5 }, dash: { cd: 9, dur: 1.2, mul: 2.5 }, debuff: [{ kind: 'stun', cd: 10, r: 120 }, { kind: 'poison', cd: 11, r: 150 }, { kind: 'weak', cd: 13, r: 170 }, { kind: 'wound', cd: 14, r: 170 }] } },
     // 마왕(50라운드): 1·2형태. 체력·공격을 너프하는 대신 한 번 쓰러져도 각성해서 부활한다
@@ -145,7 +150,8 @@
       earth:   { name: '대지의 기운', short: '적 받는 피해 -12%', foeTaken: 0.88, text: '대지의 기운 — 적이 받는 피해 -12%' },
       dragon:  { name: '불길의 기운', short: '불씨가 아군에 낙하', every: 2.5, n: 3, pct: 0.03, text: '불길의 기운 — 불씨가 떨어져 아군 3명이 2.5초마다 최대 체력의 3% 피해' },
     },
-    kingHp: 1.8, kingP1: 1.5,           // 사천왕 한 형태의 체력 = 무한 모드 보스 기본 체력 × 이 값
+    kingHp: 2.0, kingP1: 1.5, wingedHp: 2.0, // 용익 기사단장 체력 배율
+    bossGuard: { dur: 8, fade: 2, red: 0.85 }, // 보스가 나타난 직후(그리고 2차전 시작 직후) 8초간 받는 피해 -85% (마지막 2초 동안 서서히 사라진다)           // 사천왕 한 형태의 체력 = 무한 모드 보스 기본 체력 × 이 값
     kings: {
       thunder: { id: 'thunder', elem: 'thunder', line: '번개가 너희의 심장을 꿰뚫으리라.', name: '뇌왕', r: 36,
         look: { body: '#3a3320', head: '#f1ead2', weapon: 'sword', crown: true, style: 'overlord', elem: 'thunder' },
@@ -164,7 +170,7 @@
         abil2: { dash: { cd: 5, dur: 1.2, mul: 3.4, shock: { r: 260, kb: 640, mul: 2.4 } }, hammer: { cd: 6.5, r: 170, warn: 1.1, mul: 3.4, stun: 1.3, kb: 700 }, quake: { cd: 9, n: 7, r: 100, warn: 1.0, mul: 2.2, kb: 420 }, rage: { at: 0.4, speed: 1.3, rate: 1.4, dmg: 1.4 }, debuff: [{ kind: 'wound', cd: 12, r: 160 }] } },
     },
     // 100라운드: 거대한 용 (몬스터 무리가 함께 몰려오는 레이드). 성 둘레를 빼고 땅이 무너져 절벽이 된다. 용은 네 방향 중 한 곳에 고정되어 있다가 날아올랐다가 다른 곳에 내려앉는다.
-    dragon: { id: 'dragon', line: '대지는 사라지고… 오직 불길만이 남으리라.', name: '재앙의 용', r: 130, vr: 260, dragon: true, hpMul: 2.4, anchorX: 520, anchorY: 420, cut: 260, plateau: 440, monsterFrac: 0.3, waveEvery: 16, waveFrac: 0.07, // r=판정, vr=그림 크기(몸집이 아주 커서 지도에는 상반신만 보인다). 북쪽은 cut만큼 직각으로 깎여 평평한 단상(폭 plateau×2)이 되고 용은 그 가장자리에서 솟는다. 나머지 세 자리(서·동·남)에서는 몬스터가 나온다
+    dragon: { id: 'dragon', line: '대지는 사라지고… 오직 불길만이 남으리라.', name: '재앙의 용', r: 130, vr: 260, dragon: true, hpMul: 3.0, anchorX: 520, anchorY: 420, cut: 260, plateau: 440, monsterFrac: 0.3, waveEvery: 16, waveFrac: 0.07, // r=판정, vr=그림 크기(몸집이 아주 커서 지도에는 상반신만 보인다). 북쪽은 cut만큼 직각으로 깎여 평평한 단상(폭 plateau×2)이 되고 용은 그 가장자리에서 솟는다. 나머지 세 자리(서·동·남)에서는 몬스터가 나온다
      
       look: { style: 'dragon', body: '#a3262a', head: '#d9482c' },
       abil: { artillery: { cd: 5, dmg: 85, radius: 100, count: 3, flight: 1.5 }, breath: { cd: 11, len: 1150, half: 0.3, warn: 1.4, mul: 3, kb: 380 }, tail: { cd: 7, r: 215, warn: 0.7, mul: 2.2, kb: 720 }, gust: { cd: 16, r: 760, warn: 1.0, kb: 540 }, meteor: { cd: 9, n: 8, r: 85, warn: 1.0, mul: 2.0, at: 0.5, kb: 320 }, rage: { at: 0.3, speed: 1, rate: 1.3, dmg: 1.4 }, fly: { at: 0.5, up: 1.8, away: 10, passes: 5, span: 1000, barrage: 0.4, r: 95, mul: 1.9, back: 3.0, landR: 420, landMul: 2.2 } }, deathT: 7 },
@@ -326,7 +332,7 @@
     castle: { max: 10, extra: 3, costExtra: [10000, 15000, 22000], awk: { hp: 0.5, atk: 0.6, rate: 0.25, range: 60, cannons: 2 }, cost: [220, 380, 640, 1000, 1550, 2350, 3500, 5000, 7000], popBase: 8, popPer: 3, hp: 350, atk: 0.16, roundAtk: 0.012, range: 22, rate: 0.06, cannonLv: [3, 5, 7] },
     // 엘리트: 일반 몬스터가 일정 확률로 훨씬 강하고 크게 나온다. 확률은 라운드가 갈수록 커져 최대 max
     elite: { from: 3, perRound: 0.0025, max: 0.10, hp: 3, dmg: 1.6, size: 1.35, gold: 4, speed: 1.05 },
-    endless: { hpLin: 0.064, hpQuad: 0.000375, cnt: 0.011, bossBase: 60000, bossExp: 0.6, marMul: 0.9, postBoss: 1.25, // 용(100라운드) 이후: 체력 배율이 더 가파르게 오른다 (라운드마다 +12%p + 제곱항), 수·속도도 가속
+    endless: { hpLin: 0.064, hpQuad: 0.000375, cnt: 0.011, bossBase: 60000, bossExp: 0.6, marMul: 0.9, postBoss: 1.8, // 용(100라운드) 이후: 체력 배율이 더 가파르게 오른다 (라운드마다 +12%p + 제곱항), 수·속도도 가속
       infLin: 0.12, infQuad: 0.004, infCnt: 0.02, infSpd: 0.006, infSpdCap: 1.7 }, // 무한 모드(51라운드~) 난이도 곡선: 체력 배율 1+lin·n+quad·n², 적 수 +cnt·n (n = 50라운드 이후 지난 라운드)
     dmgVar: 0.15,                     // 모든 공격 피해에 공격력 ±15% 오차
     legendChance: 0.007,              // 30라운드 이후, 카드 한 칸마다 전설 카드가 나올 확률 (아주 낮음)
@@ -939,6 +945,7 @@
     if (r === MAX_ROUND) return CFG.finalBoss;
     if (r === ACT1_END) return CFG.act1Boss;
     if (r === FINAL_ROUND) return CFG.dragon;
+    if (r === 90) return CFG.winged;
     if (r > MAX_ROUND && r >= 60 && r <= 80 && r % 10 === 0) return CFG.kings[S.kingOrder[(r - 60) / 10]];
     if (r > FINAL_ROUND && r % 10 === 0) return CFG.kings[S.kingOrder[(r / 10) % 3]]; // 무한 모드(101~): 10라운드마다 사천왕이 다시 나온다
     if (r > MAX_ROUND) return r % 5 === 0 ? CFG.bossPool[(r / 5) % CFG.bossPool.length] : null; // 무한 모드: 5라운드마다 보스 (마왕은 50라운드에만 나온다)
@@ -946,7 +953,7 @@
     return r < ACT1_END ? CFG.bossPool[S.bossOrder[r / 5 - 1]] : CFG.bossPool[S.bossOrder2[(r - 35) / 5]];
   }
   const endBase = r => CFG.endless.bossBase * Math.pow(endF(r), CFG.endless.bossExp);
-  const bossBaseHp = r => r === FINAL_ROUND ? endBase(r) * CFG.dragon.hpMul : ((r > MAX_ROUND && r <= 80) || r > FINAL_ROUND) && r % 10 === 0 ? endBase(r) * CFG.kingHp : CFG.bossHp[r] || (r > MAX_ROUND ? CFG.endless.bossBase * Math.pow(endF(r), CFG.endless.bossExp) * (r % 10 === 0 ? CFG.endless.marMul : 1) * CFG.endless.postBoss : CFG.bossHp[MAX_ROUND]);
+  const bossBaseHp = r => r === FINAL_ROUND ? endBase(r) * CFG.dragon.hpMul : r === 90 ? endBase(r) * CFG.endless.postBoss * CFG.wingedHp : ((r > MAX_ROUND && r <= 80) || r > FINAL_ROUND) && r % 10 === 0 ? endBase(r) * CFG.kingHp : CFG.bossHp[r] || (r > MAX_ROUND ? CFG.endless.bossBase * Math.pow(endF(r), CFG.endless.bossExp) * (r % 10 === 0 ? CFG.endless.marMul : 1) * CFG.endless.postBoss : CFG.bossHp[MAX_ROUND]);
   const bossInfo = (S, r) => { const d = bossDefFor(S, r); return d ? Object.assign({ hp: bossBaseHp(r) }, d) : null; };
   // 풀 보스의 패턴 수치를 라운드에 맞춰 조정 (15라운드 = 기준). 일찍 나오면 약하게, 늦게 나오면 강하게.
   const SUMMON_UP = { grunt: 'captain', shield: 'ironshield', archer: 'crossbow', bomber: 'sapper', shaman: 'warlock' }; // 소환 졸개의 강화형
@@ -1066,7 +1073,8 @@
       emit(S, { type: 'elite', x, y, kind });
     }
     if (bd) {
-      e.bossName = bd.name; e.bossId = bd.id; e.look = bd.look; if (bd.ranged) { e.ranged = true; e.range = bd.ranged.range; } e.abil = (bd === CFG.finalBoss || bd === CFG.act1Boss || isKing(bd) || bd.dragon) ? bd.abil : scaleAbil(bd.abil, r); e.t = {};
+      e.guardT = r > MAX_ROUND ? CFG.bossGuard.dur : 0; // 등장 직후 보호 (마왕 이후의 보스부터)
+      e.bossName = bd.name; e.bossId = bd.id; e.look = bd.look; if (bd.ranged) { e.ranged = true; e.range = bd.ranged.range; } e.abil = (bd === CFG.finalBoss || bd === CFG.act1Boss || bd === CFG.winged || isKing(bd) || bd.dragon) ? bd.abil : scaleAbil(bd.abil, r); e.t = {};
       for (const k in e.abil) if (!Array.isArray(e.abil[k])) e.t[k] = (e.abil[k].cd || 0) * (isKing(bd) ? 0.3 : 0.6); // 첫 패턴은 조금 일찍 (사천왕은 더 일찍)
       if (!bd.dragon) e.speed = Math.max(e.speed, CFG.bossSpeed); // 보스는 광전사처럼 빠르게 달려온다
       if (bd === CFG.finalBoss && r === MAX_ROUND) { const N = CFG.finalNerf; e.max = e.hp = Math.round(e.max * N.hp); e.max2 = Math.round(e.max / N.hp * N.hp2); e.dmg *= N.dmg; e.canRevive = true; }
@@ -1117,7 +1125,7 @@
       if (D.revive) { // 각성: 모습이 바뀌고 체력이 0에서 다시 차오른다 (땅도 보스의 속성에 맞게 무너진다)
         D.stage = 'revive'; S.cliffTheme = b.king ? b.king.id : 'dark'; D.t0 = D.t; b.p2 = true; b.flash = 0; b.bossName = N.name; b.look = N.look; b.r = N.r; b.max = b.max2; b.hp = 0; b.gold = 0;
         b.abil = b.king ? kingP2(b) : p2Abil(b.abil); b.t = {}; for (const k in b.abil) if (!Array.isArray(b.abil[k])) b.t[k] = (b.abil[k].cd || 0) * (b.king ? 0.3 : 0.6);
-        b.life = 0; b.enraged = false; b.rushDone = true; b.age = 0; b.enr = false; b.cd = 1;
+        b.life = 0; b.enraged = false; b.rushDone = true; b.age = 0; b.enr = false; b.cd = 1; b.guardT = S.round > MAX_ROUND ? CFG.bossGuard.dur : 0; // 2차전도 시작 직후에는 보호 (사천왕·용 등 마왕 이후)
         emit(S, { type: 'bossRevive', x: b.x, y: b.y, r: b.r, name: b.bossName, dur: N.reviveT });
         return;
       }
@@ -1202,6 +1210,7 @@
     bombardier: { artillery: ['목표, 저 성벽 앞 놈들!', '장전 완료, 발사!', '불꽃놀이를 보여 주마!'], barrage: ['전 포대, 일제 사격!', '하늘을 포연으로 덮어라!'] },
     warden: { shield: ['이 방패 앞에 무릎 꿇어라!', '단단함을 보여 주마!'], aura: ['철벽 진형!', '내 뒤로 모여라!'], focus: ['흔들리지 않는다…', '호흡을 가다듬는다…'], stomp: ['성벽처럼 밀어 주마!'] },
     berserker: { stomp: ['으아아, 부숴 버린다!', '피를 보여라!'], dash: ['죽어라, 죽어라!', '찢어 주마!'], rage: ['피가... 피가 끓는다!', '더 싸우자! 더!'] },
+    drakeknight: { sword: ['용의 불길과 함께 베어 주마!', '날개 아래 모두 엎드려라!'], summon: ['새끼 용들아, 나서라!', '하늘의 군대여!'], dash: ['하늘에서 내리꽂는다!'], gust: ['날개짓 한 번이면 충분하다!'] },
     darkknight: { sword: ['어둠의 검을 받아라!', '이 검이 네 운명이다!'], summon: ['어둠의 병사들이여!', '나의 군대여, 앞으로!'], dash: ['어둠이 덮친다!'] },
     overlord: { sword: ['어둠에 삼켜져라!', '이 검 앞에 모든 것이 무너진다!'], claw: ['갈기갈기 찢어 주마!', '절망의 손톱을 받아라!'], summon: ['나의 종들이여, 깨어나라!', '끝없는 군단이 일어선다!'], drain: ['네 생명을 내놓아라!', '그 생명, 나의 것이다!'], rage: ['감히 나를 몰아붙이다니!', '어둠이 끓어오른다!'] },
   };
@@ -1257,6 +1266,7 @@
     if (src && tgt.team === 'u' && !src.dead) { tgt.foe = src; tgt.rvT = 6; } // 맞은 유닛이 때린 적을 기억 (자유 모드 반격용)
     if (CFG.dmgVar) dmg *= 1 + (S.rng() * 2 - 1) * CFG.dmgVar; // 공격력 ±N% 오차
     if (tgt.team === 'e' && tgt.shieldT > 0) dmg *= 1 - tgt.shieldRed; // 보스 방어막 동안 피해 감소
+    if (tgt.team === 'e' && tgt.guardT > 0) { const G = CFG.bossGuard; dmg *= 1 - G.red * Math.min(1, tgt.guardT / G.fade); } // 보스 등장 직후의 보호
     if (tgt.team === 'e' && tgt.focusT > 0 && tgt.abil && tgt.abil.focus) dmg *= 1 - tgt.abil.focus.red; // 광전사: 정신 집중 중 피해 감소
     if (tgt.team === 'e' && tgt.markT > 0) dmg *= 1 + tgt.markAmp; // 사냥꾼의 표식
     if (tgt.team === 'u' && tgt.blT > 0) dmg *= 1 - tgt.blD; // 주교의 축복
@@ -1637,7 +1647,7 @@
   function bossTick(S, e, dt) {
     const A = e.abil;
     e.speedMul = 1; e.rateMul = 1; e.dmgMul = 1;
-    e.life = (e.life || 0) + dt; const B = CFG.balance;
+    e.life = (e.life || 0) + dt; const B = CFG.balance; if (e.guardT > 0) e.guardT -= dt;
     e.grow = Math.min(B.bossGrowMax, 1 + B.bossGrow * Math.max(0, e.life - B.bossGrowDelay)); // 시간이 지날수록 기본 공격이 강해진다
     e.dmgMul = e.grow * (!e.ranged && !e.dragon && !e.king && !A.siege ? CFG.balance.bossMelee : 1); // 근접 보스의 기본 공격은 더 강하다
     if (e.anim && (e.anim.left -= dt) <= 0) e.anim = null;
