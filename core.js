@@ -106,8 +106,8 @@
     ],
     // 1막 마지막(30라운드) 보스: 암흑 기사단장. 처치하면 연출과 함께 2막이 열린다.
     act1Boss: { id: 'darkknight', line: '어둠 앞에 무릎을 꿇어라.', name: '암흑 기사단장', look: { body: '#2b2f3f', head: '#2e3140', weapon: 'sword', style: 'darkknight' }, abil: { summon: { cd: 10, n: 2, kind: 'bomber' }, artillery: { cd: 6, dmg: 70, radius: 105, count: 2, flight: 1.5 }, sword: { cd: 9, len: 900, width: 110, warn: 1.1, mul: 2.4, kb: 320 }, shield: { cd: 16, dur: 3, red: 0.6 }, rage: { at: 0.35, speed: 1.3, rate: 1.4, dmg: 1.4 }, debuff: [{ kind: 'stun', cd: 13, r: 110 }, { kind: 'wound', cd: 15, r: 160 }] } },
-    // 90라운드: 암흑 기사단장이 용의 날개를 달고 더 강해져 돌아온다 (새로운 보스)
-    winged: { id: 'drakeknight', line: '용의 날개로 하늘까지 어둠으로 물들이리라.', name: '용익 기사단장', r: 38, look: { body: '#2b2f3f', head: '#2e3140', weapon: 'sword', style: 'darkknight', wings: true },
+    // 90라운드: 암흑 기사단장이 용의 피를 받아 용인이 되어 더 강해져 돌아온다 (새로운 보스)
+    winged: { id: 'drakeknight', line: '용의 피를 받아 다시 일어났다. 하늘까지 불태워 주마.', name: '용인 기사단장', r: 38, look: { body: '#3a2530', head: '#4a2a2a', weapon: 'sword', style: 'darkknight', wings: true },
       abil: { summon: { cd: 9, n: 3, kind: 'wyrmling' }, artillery: { cd: 5, dmg: 120, radius: 110, count: 3, flight: 1.4 }, sword: { cd: 7, len: 1000, width: 130, warn: 1.0, mul: 3.0, kb: 380 }, shield: { cd: 14, dur: 3, red: 0.6 }, rage: { at: 0.4, speed: 1.4, rate: 1.5, dmg: 1.5 },
         dash: { cd: 9, dur: 1.2, mul: 2.6, shock: { r: 230, kb: 520, mul: 2.0 } }, gust: { cd: 13, r: 620, warn: 1.0, kb: 520 }, meteor: { cd: 8, n: 6, r: 90, warn: 1.0, mul: 2.0, at: 0.6, kb: 320 },
         debuff: [{ kind: 'stun', cd: 12, r: 120 }, { kind: 'wound', cd: 14, r: 165 }, { kind: 'weak', cd: 13, r: 160 }] } },
