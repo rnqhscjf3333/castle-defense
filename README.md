@@ -364,3 +364,8 @@ node tools/balance.mjs sweep bossPool.4.abil.artillery.dmg 90,60 60             
 ## 개발자용 로그 조회 (서버)
 - `server/apps-script.gs`의 `doGet`에 `?action=logs|errors|feedback&key=…&n=20`(최근 n줄, 최대 50)이 추가됐다.
 - 비밀키는 코드/저장소에 넣지 않는다. Apps Script [프로젝트 설정] → [스크립트 속성]에 `READ_KEY`를 추가해야 켜지고, 없으면 항상 거부한다.
+
+## 통계 서버 저장 (최신)
+- 한 판이 끝나면(`Meta.finish`) 통계 한 줄(`type: 'game'`: 라운드·처치·시간·골드·점수·인구·성 레벨 + 상세 `d`: 전직·성 선택·마지막 성/유닛 그림·라운드별 선택 기록 최근 150줄)을 서버 `games` 탭에 저장한다. 서버가 `{ok:true}`로 답해야 보낸 것으로 표시(`cd-games-sent`)하고, 못 보낸 기록은 접속 7초 뒤 한 번에 12개씩 다시 보낸다 (최근 40판).
+- 같은 `pid`+기록시각은 서버에서 한 번만 저장한다. 개인정보는 보내지 않는다(익명 `pid`만).
+- 서버 코드(`server/apps-script.gs`)를 새 버전으로 다시 배포해야 동작한다. `?action=games&key=…`로 조회할 수 있다.

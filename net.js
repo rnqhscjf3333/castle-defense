@@ -107,5 +107,18 @@
   }
   setTimeout(flushFb, 4000);
 
-  window.Net = { configured: !!API, feedback, resumeRun: () => { run.sent = false; }, pid, sendError, setSource: f => { getS = f; }, begin, sample, lag, sendLog, top, submit, scoreOf, name: () => ls.get('cd-name') || '', setName: v => { v = String(v || '').replace(/[<>&"'`]/g, '').trim().slice(0, 12); if (v) ls.set('cd-name', v); return v; }, localTop };
+  // ── 통계(한 판 기록)를 서버에도 저장: 서버가 받았다고 답해야 보낸 것으로 표시하고, 못 보낸 것은 다음 접속 때 다시 보낸다 ──
+  const GKEY = 'cd-games-sent';
+  const sentSet = () => { try { return new Set(JSON.parse(ls.get(GKEY) || '[]')); } catch (e) { return new Set(); } };
+  const markSent = at => { const s = sentSet(); s.add(at); ls.set(GKEY, JSON.stringify([...s].slice(-300))); };
+  const gamePayload = g => ({ type: 'game', v: CFG.VERSION, pid, at: g.at, mode: g.mode, round: g.round, win: !!g.win, kills: g.kills, time: g.time, earned: g.earned, spent: g.spent, score: g.score, pop: g.pop, castle: g.castle, d: { jobs: g.jobs, cn: g.cn, fin: g.fin, ul: g.ul, log: (g.log || []).slice(-150) } });
+  let gBusy = false;
+  async function sendGame(g) { if (!API || !g || !g.at || sentSet().has(g.at)) return; try { if (await postFb(gamePayload(g))) markSent(g.at); } catch (e) {} }
+  async function syncGames() { // 아직 서버에 없는 최근 기록을 한 번에 몇 개씩 올린다
+    if (!API || gBusy || !window.Meta) return; gBusy = true;
+    try { const sent = sentSet(), list = (Meta.data().games || []).slice(0, 40).filter(g => g.at && !sent.has(g.at)).slice(0, 12); for (const g of list) await sendGame(g); } finally { gBusy = false; }
+  }
+  setTimeout(syncGames, 7000);
+
+  window.Net = { configured: !!API, sendGame, syncGames, feedback, resumeRun: () => { run.sent = false; }, pid, sendError, setSource: f => { getS = f; }, begin, sample, lag, sendLog, top, submit, scoreOf, name: () => ls.get('cd-name') || '', setName: v => { v = String(v || '').replace(/[<>&"'`]/g, '').trim().slice(0, 12); if (v) ls.set('cd-name', v); return v; }, localTop };
 })();

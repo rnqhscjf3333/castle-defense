@@ -100,6 +100,7 @@
     const rs = C.runSummary(S); M.games.unshift({ at: Date.now(), mode: S.mode, round: S.round, win: !!S.win, kills: S.kills, time: Math.round(S.t), earned: Math.round(S.stats.earned), spent: Math.round(S.stats.spent), score: score || 0, pop: C.popCount(S), castle: S.castle.lv, log: S.log, jobs: rs.jobs, cn: rs.cn, fin: rs.fin, ul: rs.ul });
     M.games.length = Math.min(M.games.length, 100); for (let i = 40; i < M.games.length; i++) delete M.games[i].log; // 자세한 기록은 최근 40판만 보관 (저장 공간)
     run = null; check(); save();
+    try { if (window.Net && Net.sendGame) Net.sendGame(M.games[0]); } catch (e) {} // 통계도 서버에 저장
   }
   window.Meta = { ACH, data: () => M, begin, sync, finish, onUnlock: f => { onUnlock = f; }, reset() { M = blank(); save(); } };
 })();

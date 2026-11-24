@@ -39,6 +39,8 @@ function errors_() { return sheet_('errors', ['시각', '버전', 'pid', 'run', 
 
 function feedback_() { return sheet_('feedback', ['시각', '종류', '내용', '닉네임', '라운드', '버전', 'pid', '화면', '브라우저']); }
 
+function games_() { return sheet_('games', ['시각', '기록시각', 'pid', '버전', '모드', '라운드', '승리', '처치', '시간(초)', '번 골드', '쓴 골드', '점수', '인구', '성 레벨', '상세(JSON)']); }
+
 function valid_(o) {
   return o && typeof o.score === 'number' && o.round >= 1 && o.round <= MAX_ROUND && o.kills >= 0 && o.kills < 100000 &&
     o.score <= (MAX_ROUND + 1) * 100000 + 99999 && o.time >= (o.round - 1) * 8; // 라운드는 40초마다 넘어가므로, 라운드 수에 비해 게임 시간이 너무 짧으면 거부
@@ -59,6 +61,13 @@ function doPost(e) {
     } else if (o.type === 'feedback') { // 설정 창의 '개발자에게 피드백'
       var txt = String(o.text || '').slice(0, 1000);
       if (txt) { feedback_().appendRow([now, String(o.cat || '').slice(0, 10), txt, String(o.name || '').slice(0, 12), o.round || 0, o.v, o.pid, o.env ? o.env.w + 'x' + o.env.h : '', o.env ? String(o.env.ua || '').slice(0, 120) : '']); out.ok = true; } else out.error = 'empty';
+    } else if (o.type === 'game') { // 게임 안 통계의 한 판 기록 (같은 pid·기록시각은 한 번만)
+      if (o.pid && o.at && o.round >= 1 && o.round <= MAX_ROUND && o.kills >= 0 && o.kills < 100000) {
+        var sh = games_(), last = sh.getLastRow(), dup = false;
+        if (last > 1) { var from = Math.max(2, last - 400), vals = sh.getRange(from, 2, last - from + 1, 2).getValues(); for (var i = 0; i < vals.length; i++) if (String(vals[i][0]) === String(o.at) && String(vals[i][1]) === String(o.pid)) { dup = true; break; } }
+        if (!dup) sh.appendRow([now, o.at, o.pid, o.v, o.mode === 'free' ? 'free' : 'normal', o.round, o.win ? 'Y' : 'N', o.kills, o.time, o.earned, o.spent, o.score, o.pop, o.castle, pack_(o.d)]);
+        out.ok = true;
+      } else out.error = 'invalid';
     } else if (o.type === 'log') {
       logs_().appendRow([now, o.status, o.v, o.pid, o.run, o.seed, o.round, o.act, o.win ? 'Y' : 'N', o.kills, o.time, o.real, o.coreHp, o.gold, o.buys,
         JSON.stringify(o.units), JSON.stringify(o.cards), JSON.stringify(o.jobs), JSON.stringify(o.coreDmgBy), o.lag ? o.lag.n + '/' + o.lag.ms : '', JSON.stringify(o.env), JSON.stringify(o.timeline).slice(0, 45000), o.mode === 'free' ? 'free' : 'normal']);
@@ -73,7 +82,7 @@ function doPost(e) {
 function readTab_(e) {
   var want = PropertiesService.getScriptProperties().getProperty('READ_KEY');
   if (!want || String(e.parameter.key || '') !== want) return { ok: false, error: 'denied' };
-  var name = e.parameter.action, fn = name === 'logs' ? logs_ : name === 'errors' ? errors_ : name === 'feedback' ? feedback_ : null;
+  var name = e.parameter.action, fn = name === 'logs' ? logs_ : name === 'errors' ? errors_ : name === 'feedback' ? feedback_ : name === 'games' ? games_ : null;
   if (!fn) return { ok: false, error: 'bad action' };
   var sh = fn(), n = Math.min(50, Math.max(1, +(e.parameter.n || 20))), last = sh.getLastRow(), head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
   if (last < 2) return { ok: true, head: head, rows: [] };
