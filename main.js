@@ -529,6 +529,8 @@
       const V = CFG.cardVals, line = cfg.line || type, jm = (S.jobMods && S.jobMods[line]) || {}, pf = S.perks || {}, pc = x => Math.round(x * 1000) / 10 + '%';
       let red = (line === 'sword' ? (V.guard || 0) * (pf.guard || 0) : 0) + (jm.def || 0); const redT = Math.min(0.7, red + (S.aura ? S.aura.def : 0));
       rows.push(['피해 감소', pc(Math.min(0.7, red)) + (S.aura && S.aura.def > 0 ? ' (오라 안 ' + pc(redT) + ')' : '') + ' · 최대 70%']);
+      { const bd = (V.blessDef || 0) * ((S.jobMods && S.jobMods.priest && S.jobMods.priest.bless) || 0), tot = r0 => 1 - (1 - bd) * (1 - r0); // 사제 축복(곱연산)까지 합친 값
+        if (bd > 0) rows.push(['피해 감소 (축복 포함)', pc(tot(Math.min(0.7, red))) + (S.aura && S.aura.def > 0 ? ' (오라 안 ' + pc(tot(redT)) + ')' : '') + ' · 축복 범위 안 (축복 ' + pc(bd) + ')']); }
       const dg = line === 'archer' ? Math.min(0.6, (V.dodge || 0) * (pf.dodge || 0) + (jm.dodge || 0)) : 0; rows.push(['회피', pc(dg)]);
       const cr = line === 'archer' ? Math.min(1, (V.crit || 0) * (pf.crit || 0) + (jm.crit || 0)) : 0; rows.push(['치명타', cr > 0 ? pc(cr) + ' (피해 ×' + V.critMul + ')' : '0%']);
       const ex = []; if (jm.regen) ex.push('초당 회복 ' + pc(jm.regen)); if (jm.lifesteal) ex.push('흡혈 ' + pc(jm.lifesteal)); if (jm.stun) ex.push('기절 ' + pc(jm.stun)); if (jm.cleave) ex.push('광역 베기 ' + pc(jm.cleave)); if (jm.dbl) ex.push('연속 공격 ' + pc(jm.dbl)); if (jm.reflect) ex.push('반사 ' + pc(jm.reflect)); if (jm.knock) ex.push('밀치기 ' + jm.knock); if (jm.splash) ex.push('폭발 ' + pc(jm.splash)); if (jm.berserk) ex.push('광폭화 ' + pc(jm.berserk));
