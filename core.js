@@ -1701,14 +1701,16 @@
       }
       if (!e.flown && !e.flyS && e.hp <= e.max * F.at && e.riseT <= 0) { e.flyS = 'up'; e.flyT = F.up; e.anim = { k: 'roar', T: F.up, left: F.up }; emit(S, { type: 'dragonUp', x: e.x, y: e.y }); }
     }
-    if (A.rush && !e.rushDone && e.rushW === undefined) { // 등장 직후 돌진 경로를 먼저 보여 준다
-      e.rushW = A.rush.warn || 0.9; const t0 = nearest(S.gU, e.x, e.y, 1500) || S.core; emit(S, { type: 'bossRush', x: e.x, y: e.y, tx: t0.x, ty: t0.y, warn: e.rushW });
+    if (A.rush && !e.rushDone && e.rushW === undefined) { // 등장 직후 돌진 경로를 먼저 보여 준다 (경로는 이 순간 정해져, 돌진은 그 직선을 그대로 달린다)
+      e.rushW = A.rush.warn || 0.9; const t0 = nearest(S.gU, e.x, e.y, 1500) || S.core, d0 = Math.hypot(t0.x - e.x, t0.y - e.y) || 1;
+      e.rushDx = (t0.x - e.x) / d0; e.rushDy = (t0.y - e.y) / d0; e.rushL = d0; e.rushRun = 0; emit(S, { type: 'bossRush', x: e.x, y: e.y, tx: t0.x, ty: t0.y, warn: e.rushW });
     }
     if (A.rush && !e.rushDone && e.rushW > 0) { e.rushW -= dt; e.speedMul = 0; }
-    else if (A.rush && !e.rushDone) { // 등장하자마자 가장 가까운 아군에게 돌진, 닿으면 충격파로 주변 아군을 기절시킨다 (아군이 없으면 성)
-      e.speedMul *= A.rush.mul; const rt = nearest(S.gU, e.x, e.y, 1500);
-      if ((rt ? Math.hypot(rt.x - e.x, rt.y - e.y) - rt.r - e.r <= 24 : Math.hypot(e.x - CX, e.y - CY) <= A.rush.until) || e.life > 7) {
-        e.rushDone = true;
+    else if (A.rush && !e.rushDone) { // 정해 둔 직선을 따라 돌진, 아군에 닿거나 목표 지점을 지나면 충격파로 주변 아군을 기절시킨다 (아군이 없으면 성)
+      e.rushGo = true; const sp = e.speed * A.rush.mul * dt; e.x += e.rushDx * sp; e.y += e.rushDy * sp; e.rushRun += sp; e.aim = Math.atan2(e.rushDy, e.rushDx); e.swing = 0.25;
+      let touch = false; for (const u of S.units) if (!u.dead && Math.hypot(u.x - e.x, u.y - e.y) - u.r - e.r <= 24) { touch = true; break; }
+      if (touch || e.rushRun >= e.rushL + 150 || Math.hypot(e.x - CX, e.y - CY) <= (S.units.some(u => !u.dead) ? 0 : A.rush.until) || e.life > 7) {
+        e.rushDone = true; e.rushGo = false;
         for (const u of S.units) if (!u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= A.rush.r + u.r) { u.stunT = Math.max(u.stunT || 0, A.rush.stun); knock(S, u, e.x, e.y, 520, 0); }
         emit(S, { type: 'bossShock', x: e.x, y: e.y, r: A.rush.r });
       }
@@ -1961,7 +1963,7 @@
     let tgt = nearest(S.gU, e.x, e.y, (e.abil && e.abil.rush && !e.rushDone) || e.dashT > 0 ? 1500 : e.aggro);
     if (e.dashT > 0 || (e.abil && e.abil.rush && !e.rushDone)) { let bs = null, bdd = Infinity; for (const u of S.units) { if (u.dead || (u.type !== 'sword' && u.line !== 'sword' && u.type !== 'legendsword')) continue; const d = Math.hypot(u.x - e.x, u.y - e.y); if (d < bdd) { bdd = d; bs = u; } } if (bs) tgt = bs; } // 돌진은 가장 가까운 검사부터 // 등장 돌진 중에는 거리와 상관없이 가장 가까운 아군
     if (e.leapT > 0 || e.leapW > 0) return; // 도약 준비·도약 중
-    if (e.rushW > 0 && !e.rushDone) return; // 강습 준비 중 (경로를 보여 주는 동안 제자리)
+    if ((e.rushW > 0 || e.rushGo) && !e.rushDone) return; // 강습 준비 중(경로를 보여 주는 동안 제자리)·강습 중(정해 둔 직선으로만 이동)
     if (e.abil && e.abil.siege && !(tgt && Math.hypot(tgt.x - e.x, tgt.y - e.y) < 110)) { moveToward(e, c.x, c.y, dt, e.abil.siege.dist, spm); return; } // 멀리서 포격만 하는 보스
     if (e.ranged) { // 사수: 사거리 끝에서 멈춰 포물선 화살을 쏜다
       const t = tgt || c, d = Math.hypot(t.x - e.x, t.y - e.y) - t.r - e.r;

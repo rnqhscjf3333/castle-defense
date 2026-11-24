@@ -998,7 +998,7 @@
       }
       else if (ev.type === 'bossLeap') { addFx({ k: 'leapMark', x: ev.x, y: ev.y, fx: ev.fx, fy: ev.fy, r: ev.r, t: 0, max: (ev.warn || 0.7) + ev.air, warn: ev.warn || 0.7 }); toast('보스가 도약합니다! 표시된 곳을 피하세요'); }
       else if (ev.type === 'bossLeapGo') { addFx({ k: 'blinkTrail', x: ev.fx, y: ev.fy, tx: ev.x, ty: ev.y, t: 0, max: 0.5, c: '#ffb24a', thin: true }); addFx({ k: 'sparks', x: ev.fx, y: ev.fy, t: 0, max: 0.4, c: '#ffd9a0', r: 40, n: 10, w: 2.4 }); addShake(2, 0.15); }
-      else if (ev.type === 'bossRush') { addFx({ k: 'rushPath', x: ev.x, y: ev.y, tx: ev.tx, ty: ev.ty, t: 0, max: ev.warn }); toast('보스가 돌진합니다! 붉은 경로를 피하세요'); }
+      else if (ev.type === 'bossRush') { addFx({ k: 'rushPath', x: ev.x, y: ev.y, tx: ev.tx, ty: ev.ty, t: 0, max: ev.warn }); }
       else if (ev.type === 'portalOpen') pendingPortal = ev.n;
       else if (ev.type === 'bossSlam') addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.4, c: '#ff5a3a', r: ev.r, big: true });
       else if (ev.type === 'enrage') toast('적이 오래 살아남아 격노합니다! 점점 더 강해져요');
