@@ -705,7 +705,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
     for (let i = 0; i < 300; i++) { C.tick(g, DT); if (t.markT > 0) marked = true; if (t.stk > stacks) stacks = t.stk; for (const ev of C.drainEvents(g)) if (ev.type === 'ninjaBurst') burst = ev; }
     check('닌자: 표창이 쌓이다가 5스택에서 폭발 (스택 증가 → 폭발 이벤트)', stacks >= 2 && !!burst && burst.r === 40, 'stk ' + stacks);
     { const [g2, u2] = mkA(['ranger', 'ninja']); const t2 = C.spawnEnemy(g2, 'brute', u2.x + 120, u2.y); t2.speed = 0; t2.dmg = 0; t2.hp = t2.max = 1e9; let sh = null; for (let i = 0; i < 120 && !sh; i++) { C.tick(g2, DT); sh = g2.shots.find(x => x.job === 'ninja') || null; }
-      check('닌자: 표창은 포물선 없이 직선으로 빠르게 날아감', !!sh && sh.H === 0 && sh.T < 0.25, sh && (sh.H + '/' + sh.T.toFixed(2))); }
+      check('닌자: 표창은 포물선 없이 직선으로 빠르게 날아감', !!sh && sh.H === 0 && sh.T < 0.3 && sh.T >= 0.14, sh && (sh.H + '/' + sh.T.toFixed(2))); }
     check('닌자: 폭발은 쌓인 적만 받고 주변·먼 적은 피해 없음 / 표식(받는 피해 증가)은 없음', t.hp < t.max && n2.hp === n2.max && far.hp === far.max && !marked); }
   // 수호사제: 치유하면 보호막
   { const g = C.createGame(88); g.gold = 1e9; g.phase = 'round'; g.hold = true; g.queue = []; g.core.atk = 0; g.core.hp = g.core.max = 1e9; g.buyCd.priest = 0; g.buyCd.sword = 0; C.buy(g, 'priest'); const sw = C.buy(g, 'sword').unit; for (const id of ['cleric', 'warden']) { const o = C.jobOptions(g).find(x => x.id === id); g.jobs.offer = { boss: 't', list: [o] }; C.pickJob(g, 0); } sw.hp = sw.max * 0.4; for (let i = 0; i < 100; i++) C.tick(g, DT); check('수호사제: 치유한 아군에게 보호막', sw.ward > 0 || sw.hp > sw.max * 0.4, 'ward ' + Math.round(sw.ward || 0)); }

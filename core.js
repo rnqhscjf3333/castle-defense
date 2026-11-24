@@ -1331,7 +1331,7 @@
     const ang = Math.atan2(tgt.y - from.y, tgt.x - from.x), sx = from.x + Math.cos(ang) * m.len, sy = from.y + Math.sin(ang) * m.len;
     const dx = tgt.x - sx, dy = tgt.y - sy, d = Math.hypot(dx, dy), cf = CFG.shots;
     const flat = !!(extra && extra.flat); // 직선 투사체(닌자 표창): 포물선 없이 빠르게 곧장 날아간다
-    const T = extra && extra.T ? extra.T : Math.max(flat ? 0.07 : cf.minT, d / spd);
+    const T = extra && extra.T ? extra.T : Math.max(flat ? 0.14 : cf.minT, d / spd);
     const H = flat ? 0 : clamp(cf.arc * d + cf.arcMin, cf.arcMin, cf.arcMax);
     const s = S.shotPool.length ? S.shotPool.pop() : {}; // 쓴 투사체 객체를 재사용 (풀링)
     s.x = sx; s.y = sy; s.sx = sx; s.sy = sy; s.p = 0; s.T = T; s.H = H; s.h = m.h0; s.h0 = m.h0; s.vx = 0; s.vy = 0; s.vh = 0; s.t = tgt; s.from = from; s.dmg = dmg; s.color = color; s.job = from.job || null; s.elite = !!from.elite;
@@ -1647,7 +1647,7 @@
           const cc = line === 'archer' ? V().crit * S.perks.crit + S.jobMods.archer.crit : 0;
           let dm = atk, isCrit = false; if (cc > 0 && S.rng() < cc) { dm *= V().critMul; isCrit = true; emit(S, { type: 'crit', x: t.x, y: t.y }); }
           if (jma.rifle) snipe(S, u, t, dm, isCrit); // 명사수: 저격총 — 포물선 없이 일직선으로 꿰뚫는다
-          else if (jma.stack) fire(S, u, t, dm, CFG.arrowSpeed * 2.6, 'a', Object.assign({ flat: true }, isCrit ? { crit: true } : {}, arrow)); // 닌자: 표창은 직선으로 빠르게
+          else if (jma.stack) fire(S, u, t, dm, CFG.arrowSpeed * 1.7, 'a', Object.assign({ flat: true }, isCrit ? { crit: true } : {}, arrow)); // 닌자: 표창은 직선으로 빠르게
           else fire(S, u, t, dm, CFG.arrowSpeed, 'a', isCrit ? Object.assign({ crit: true }, arrow) : arrow);
         }
       }
