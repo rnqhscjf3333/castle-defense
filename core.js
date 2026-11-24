@@ -326,7 +326,8 @@
     castle: { max: 10, extra: 3, costExtra: [10000, 15000, 22000], awk: { hp: 0.5, atk: 0.6, rate: 0.25, range: 60, cannons: 2 }, cost: [220, 380, 640, 1000, 1550, 2350, 3500, 5000, 7000], popBase: 8, popPer: 3, hp: 350, atk: 0.16, roundAtk: 0.012, range: 22, rate: 0.06, cannonLv: [3, 5, 7] },
     // 엘리트: 일반 몬스터가 일정 확률로 훨씬 강하고 크게 나온다. 확률은 라운드가 갈수록 커져 최대 max
     elite: { from: 3, perRound: 0.0025, max: 0.10, hp: 3, dmg: 1.6, size: 1.35, gold: 4, speed: 1.05 },
-    endless: { hpLin: 0.064, hpQuad: 0.000375, cnt: 0.011, bossBase: 60000, bossExp: 0.6, marMul: 0.9, postBoss: 1.25 }, // 무한 모드(51라운드~) 난이도 곡선: 체력 배율 1+lin·n+quad·n², 적 수 +cnt·n (n = 50라운드 이후 지난 라운드)
+    endless: { hpLin: 0.064, hpQuad: 0.000375, cnt: 0.011, bossBase: 60000, bossExp: 0.6, marMul: 0.9, postBoss: 1.25, // 용(100라운드) 이후: 체력 배율이 더 가파르게 오른다 (라운드마다 +12%p + 제곱항), 수·속도도 가속
+      infLin: 0.12, infQuad: 0.004, infCnt: 0.02, infSpd: 0.006, infSpdCap: 1.7 }, // 무한 모드(51라운드~) 난이도 곡선: 체력 배율 1+lin·n+quad·n², 적 수 +cnt·n (n = 50라운드 이후 지난 라운드)
     dmgVar: 0.15,                     // 모든 공격 피해에 공격력 ±15% 오차
     legendChance: 0.007,              // 30라운드 이후, 카드 한 칸마다 전설 카드가 나올 확률 (아주 낮음)
     rarityWeight: { common: 70, rare: 25, epic: 5 },
@@ -429,10 +430,10 @@
   // ───────────── 난이도 곡선 ─────────────
   // 체력은 선형, R20 이후 "대혼란" 단계에서 증가율이 커진다. 공격력은 체력 증가의 절반만 반영.
   // 난이도 수치는 CFG.balance에 모여 있다 (시뮬레이터가 덮어써서 조정한다)
-  const enemyCount = r => { const b = CFG.balance, f = x => Math.floor(b.countBase + b.countLinear * x + b.countQuad * x * x); return r > ACT1_END ? Math.floor((f(ACT1_END) + b.countPost * (r - ACT1_END)) * (1 + CFG.endless.cnt * endE(r))) : f(r); };
+  const enemyCount = r => { const b = CFG.balance, f = x => Math.floor(b.countBase + b.countLinear * x + b.countQuad * x * x); return r > ACT1_END ? Math.floor((f(ACT1_END) + b.countPost * (r - ACT1_END)) * (1 + CFG.endless.cnt * endE(r)) * (1 + CFG.endless.infCnt * Math.max(0, r - FINAL_ROUND))) : f(r); };
   // 무한 모드(51라운드~): 체력·공격·수·속도가 가파르게 오른다
   const endE = r => Math.max(0, r - MAX_ROUND);
-  const endF = r => { const e = endE(r), E = CFG.endless; return e ? 1 + E.hpLin * e + E.hpQuad * e * e : 1; };
+  const endF = r => { const e = endE(r), E = CFG.endless, i = Math.max(0, r - FINAL_ROUND); return e ? (1 + E.hpLin * e + E.hpQuad * e * e) * (1 + E.infLin * i + E.infQuad * i * i) : 1; };
   const hpMul = r => { const b = CFG.balance; return endF(r) * (1 + b.hpSlope * (Math.min(r, b.lateFrom) - 1) + b.hpSlopeLate * Math.max(0, Math.min(r, ACT1_END) - b.lateFrom) + b.hpSlopePost * Math.max(0, r - ACT1_END)); };
   const dmgMul = r => 1 + CFG.balance.dmgShare * (hpMul(r) - 1);
   const spawnPointCount = r => (r > ACT1_END ? 8 : r > 15 ? 6 : r > 5 ? 4 : 2); // 기본 길 2개 → 5라운드 뒤 4개 → 15라운드 뒤 6개 → 2막 8개
@@ -442,7 +443,7 @@
   const extraCount = r => r > MAX_ROUND ? Math.min(8, Math.floor((r - MAX_ROUND - 1) / 5) + 1) : 0;
   const extraAngles = n => EXTRA_ORDER.slice(0, n).map(k => 0.4 + Math.PI / 8 + k * Math.PI / 4);
   const spawnAngles = pts => { const b = 0.4, P = Math.PI; return [b, b + P, b + P / 2, b + 1.5 * P, b + P / 4, b + 1.25 * P, b + 0.75 * P, b + 1.75 * P].slice(0, pts); };
-  const enemySpeedMul = r => (r >= CFG.balance.lateFrom ? CFG.balance.lateSpeed : 1) * (r > ACT1_END ? CFG.balance.postSpeed : 1) * Math.min(1.35, 1 + 0.007 * endE(r));
+  const enemySpeedMul = r => (r >= CFG.balance.lateFrom ? CFG.balance.lateSpeed : 1) * (r > ACT1_END ? CFG.balance.postSpeed : 1) * Math.min(1.35 + (r > FINAL_ROUND ? CFG.endless.infSpdCap - 1.35 : 0), 1 + 0.007 * endE(r) + CFG.endless.infSpd * Math.max(0, r - FINAL_ROUND));
   // 비용 = 기본 비용 × 배율^(지금까지 뽑은 유닛 수). 모든 유닛 종류가 함께 오른다.
   // 가격 = 기본가 × (전체 인구 × 2%) × (같은 종류 인구 × 4%): 한 종류만 계속 뽑으면 예전(6%씩)과 비슷하고, 병력을 잃으면 가격도 같이 내려가 복구하기 쉽다
   const unitCostOf = (S, type) => { let all = 0, same = 0; for (const u of S.units) if (!u.dead && UNIT_TYPES.includes(u.type)) { all++; if (u.type === type) same++; } return Math.round(CFG.units[type].cost * (1 + CFG.economy.costRound * Math.max(0, S.round - 1)) * Math.pow(CFG.economy.costAll, all) * Math.pow(1 + CFG.economy.costType, same)); };
@@ -657,6 +658,14 @@
     return true;
   }
   // 마왕 처치: 마왕에게 당한 병사들이 정신을 되찾는다 — 지금까지 쓰러진 유닛이 모두 돌아오고 전원 체력이 가득 찬다
+  // 엔딩 뒤 무한 모드: 용을 쓰러뜨려 클리어한 판을 이어서 계속한다 (101라운드부터, 적이 훨씬 빠르게 강해진다)
+  function continueInfinite(S) {
+    if (!S.win || !S.over || S.round !== FINAL_ROUND) return false;
+    S.over = false; S.win = false; S.cleared = true; S.infinite = true; S.cliff = 0; S.cliffTheme = null; S.dragonIntro = null; S.dragonWaveT = undefined; S.bossDeath = null;
+    S.enemies.length = 0; S.queue.length = 0; S.strikes.length = 0; S.pools.length = 0; S.rain.length = 0; S.omen = null; S.omenWait = false; S.omenEv = null;
+    S.core.hp = Math.max(S.core.hp, S.core.max * 0.8);
+    emit(S, { type: 'infinite' }); return true;
+  }
   function reviveForEndless(S, boss) {
     S.endless = true; S.cinematic = { name: boss.bossName, kind: 'endless' };
     const n = 0; // (병사 부활·전원 회복은 없다)
@@ -931,12 +940,13 @@
     if (r === ACT1_END) return CFG.act1Boss;
     if (r === FINAL_ROUND) return CFG.dragon;
     if (r > MAX_ROUND && r >= 60 && r <= 80 && r % 10 === 0) return CFG.kings[S.kingOrder[(r - 60) / 10]];
+    if (r > FINAL_ROUND && r % 10 === 0) return CFG.kings[S.kingOrder[(r / 10) % 3]]; // 무한 모드(101~): 10라운드마다 사천왕이 다시 나온다
     if (r > MAX_ROUND) return r % 5 === 0 ? CFG.bossPool[(r / 5) % CFG.bossPool.length] : null; // 무한 모드: 5라운드마다 보스 (마왕은 50라운드에만 나온다)
     if (r % 5 !== 0 || r < 5 || r > 45) return null;
     return r < ACT1_END ? CFG.bossPool[S.bossOrder[r / 5 - 1]] : CFG.bossPool[S.bossOrder2[(r - 35) / 5]];
   }
   const endBase = r => CFG.endless.bossBase * Math.pow(endF(r), CFG.endless.bossExp);
-  const bossBaseHp = r => r === FINAL_ROUND ? endBase(r) * CFG.dragon.hpMul : (r > MAX_ROUND && r <= 80 && r % 10 === 0) ? endBase(r) * CFG.kingHp : CFG.bossHp[r] || (r > MAX_ROUND ? CFG.endless.bossBase * Math.pow(endF(r), CFG.endless.bossExp) * (r % 10 === 0 ? CFG.endless.marMul : 1) * CFG.endless.postBoss : CFG.bossHp[MAX_ROUND]);
+  const bossBaseHp = r => r === FINAL_ROUND ? endBase(r) * CFG.dragon.hpMul : ((r > MAX_ROUND && r <= 80) || r > FINAL_ROUND) && r % 10 === 0 ? endBase(r) * CFG.kingHp : CFG.bossHp[r] || (r > MAX_ROUND ? CFG.endless.bossBase * Math.pow(endF(r), CFG.endless.bossExp) * (r % 10 === 0 ? CFG.endless.marMul : 1) * CFG.endless.postBoss : CFG.bossHp[MAX_ROUND]);
   const bossInfo = (S, r) => { const d = bossDefFor(S, r); return d ? Object.assign({ hp: bossBaseHp(r) }, d) : null; };
   // 풀 보스의 패턴 수치를 라운드에 맞춰 조정 (15라운드 = 기준). 일찍 나오면 약하게, 늦게 나오면 강하게.
   const SUMMON_UP = { grunt: 'captain', shield: 'ironshield', archer: 'crossbow', bomber: 'sapper', shaman: 'warlock' }; // 소환 졸개의 강화형
@@ -1017,6 +1027,7 @@
     if (r === 10) text += ' · 스폰 지점 증가';
     if (r === 20) text += ' · 대혼란';
     if (r === FINAL_ROUND) text = '최종 라운드';
+    if (r === FINAL_ROUND + 1) { text = '라운드 101 · 무한 모드'; emit(S, { type: 'notice', text: '무한 모드! 이제부터 적이 훨씬 빠르게 강해집니다' }); }
     if (r === MAX_ROUND + 1) { text = '라운드 51 · 사천왕의 기운이 다가온다'; emit(S, { type: 'notice', text: '마왕을 쓰러뜨렸다! 맵 가장자리의 기운이 다음 사천왕을 알린다' }); }
     emit(S, boss ? { type: 'banner', text: '⚠ 보스 라운드 · ' + boss.name, boss: true } : { type: 'banner', text });
     const next = bossDefFor(S, r + 1);
@@ -2078,7 +2089,7 @@
 
   return {
     CFG, MAX_ROUND, ACT1_END, extraAngles, EXTRA_RING, ROUND_TIME, SPAWN_TIME, PREP_TIME, SPAWN_RING, UNIT_TYPES, CARD_DEFS,
-    p2Abil, createGame, tick, buy, openAwaken, openLegacy, cmpDesc, FINAL_ROUND, castleMax, repairCastle, repairCost, devSetup, runSummary, ctNode, jobDef, coreGuard, hitCore, pickCastle, autoCastle, castleOptions, describeCastle, jobBack, classOptions, enqueue, cancelProd, goldBound, checkRun, upgradeCastle, castleCost, popCap, popGain, popCount, specialCount, endCinematic, jumpToRound, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo, drainEvents, pickCard, reroll, describeTaken, openCards,
+    p2Abil, createGame, tick, buy, openAwaken, openLegacy, cmpDesc, FINAL_ROUND, castleMax, repairCastle, repairCost, devSetup, continueInfinite, runSummary, ctNode, jobDef, coreGuard, hitCore, pickCastle, autoCastle, castleOptions, describeCastle, jobBack, classOptions, enqueue, cancelProd, goldBound, checkRun, upgradeCastle, castleCost, popCap, popGain, popCount, specialCount, endCinematic, jumpToRound, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo, drainEvents, pickCard, reroll, describeTaken, openCards,
     unitCostOf, enemyCount, hpMul, dmgMul, mulberry32, damage,
   };
 });

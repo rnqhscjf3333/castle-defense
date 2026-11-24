@@ -315,7 +315,7 @@
   function updateHud() {
     const c = S.core;
     const bi = C.bossInfo(S, S.round), nb = C.bossInfo(S, S.round + 1), rt = $('roundTxt');
-    setText('roundTxt', '라운드 ' + Math.max(1, S.round) + ' / ' + C.FINAL_ROUND);
+    setText('roundTxt', S.infinite || S.round > C.FINAL_ROUND ? '라운드 ' + S.round + ' · 무한' : '라운드 ' + Math.max(1, S.round) + ' / ' + C.FINAL_ROUND);
     rt.classList.toggle('boss', !!bi); rt.classList.toggle('nextboss', !bi && !!nb); rt.classList.toggle('act2', S.act === 2 && !bi && !nb);
     updateBossBar(); updateCastleBtn();
     { const om = S.omen && !S.omenWait ? C.CFG.omenFx[S.omen] : null, row = $('omenRow'); if (row) { row.hidden = !om; if (om) { const tx = $('omenTxt'); const lbl = om.name + ' · ' + om.short; if (tx.textContent !== lbl) { tx.textContent = lbl; row.title = om.text; tx.style.color = OMEN_COL[S.omen] || '#ffd'; } } } } // 사천왕의 기운 효과 표시
@@ -1021,6 +1021,7 @@
       else if (ev.type === 'strikeWarn') addFx({ k: 'strikeW', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, w2: ev.w2, claw: ev.claw, t: 0, max: Math.max(0.2, ev.t) });
       else if (ev.type === 'strikeHit') { { const sc = { bolt: '#fff27a', fire: '#ff9a3a', slam: '#d9a05a', frost: '#bfe8ff', ice: '#bfe8ff', slash: '#ffffff', claw: '#ff6a6a' }[ev.kind] || '#ffd27a'; addFx({ k: 'sparks', x: ev.x, y: ev.y, t: 0, max: 0.45, c: sc, r: Math.min(ev.r || 60, 110), n: 14, w: 3, big: true }); } addFx({ k: 'strikeH', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, w2: ev.w2, claw: ev.claw, t: 0, max: ev.shape === 'cone' ? 0.7 : ev.shape === 'line' ? 0.6 : 0.55 }); if (ev.kind !== 'ice' || ev.r > 300) addShake(ev.kind === 'slam' ? 14 : ev.kind === 'wind' ? 5 : ev.r > 250 ? 12 : 6, ev.kind === 'slam' ? 0.45 : 0.3); }
       else if (ev.type === 'omen') { if (ev.id !== 'dragon') showBossIntro({ name: ev.name, line: ev.line, look: ev.look, r: ev.r, long: true, omen: ev.id }); toast(ev.id === 'dragon' ? '용의 기운이 맵 가장자리에 감돕니다' : '사천왕의 기운이 맵 가장자리에 감돕니다'); if (ev.fx) setTimeout(() => toast(ev.fx), 1200); }
+      else if (ev.type === 'infinite') { addFx({ k: 'ring', x: CX, y: CY, t: 0, max: 1.0, c: '#c77dff', big: true, r: 220 }); }
       else if (ev.type === 'omenEmber') addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.5, c: '#ff7a3a' });
       else if (ev.type === 'castleAwaken') { banner('성채 각성!', true); for (let i = 0; i < 4; i++) addFx({ k: 'ring', x: CX, y: CY, t: -i * 0.12, max: 1.0, c: '#ffe27a', big: true, r: 200 }); addShake(8, 0.5); }
       else if (ev.type === 'dragonRise') { banner(ev.back ? '용이 하늘에서 내려온다!!' : '재앙의 용이 모습을 드러낸다!!', true); flash('#ff3a1a', ev.back ? 0.2 : 0.45); addShake(ev.back ? 4 : 14, ev.back ? 0.5 : 1.2); if (!ev.back) { // 단상 가장자리에 충격파와 먼지·불씨가 터진다
@@ -1871,12 +1872,17 @@
     $('ovTitle').textContent = win ? '게임 클리어! 재앙의 용을 쓰러뜨렸다' : '성이 무너졌어요';
     $('ovBody').innerHTML = '<div class="stat"><div><b>' + reached + '</b>도달 라운드</div><div><b>' + S.kills + '</b>처치</div><div><b>' + fmtTime(S.t) + '</b>시간</div></div>'
       + '<p>최고 기록: ' + Math.max(best, reached) + '라운드</p>'
+      + (win && S.round === C.FINAL_ROUND ? '<div id="infBox"><p>엔딩은 끝났지만 전쟁은 끝나지 않았어요. 무한 모드에서는 적이 훨씬 빠르게 강해집니다.</p><button id="goInf" class="main">♾ 무한 모드 계속하기</button></div>' : '')
       + '<div id="regbox"><input id="nameIn" maxlength="12" placeholder="닉네임 (최대 12자)" autocomplete="off"><input id="msgIn" maxlength="30" placeholder="랭킹에 남길 한마디 (최대 30자)" autocomplete="off"><button id="regBtn">랭킹 등록</button></div><div id="rankbox"></div>';
     $('go').textContent = '다시 시작'; $('btnRank').classList.add('hidden'); $('btnToMenu').classList.remove('hidden');
     $('overlay').classList.remove('hidden');
     if (!S.dev) Meta.finish(S, C, Net.scoreOf(S.win, S.round, S.kills, S.t));
     Net.sendLog(S, 'end');
     const ended = S, myScore = Net.scoreOf(S.win, S.round, S.kills, S.t);
+    if ($('goInf')) $('goInf').addEventListener('click', () => { // 엔딩 뒤 무한 모드: 같은 판을 이어서 계속한다
+      if (!C.continueInfinite(S)) return; $('overlay').classList.add('hidden'); $('btnToMenu').classList.add('hidden'); running = true; defeating = false;
+      centerOnCore(); banner('무한 모드 돌입!', true); toast('무한 모드: 이제부터 적이 훨씬 빠르게 강해집니다');
+    });
     $('nameIn').value = Net.name();
     if (S.dev) { $('regbox').remove(); $('ovBody').insertAdjacentHTML('beforeend', '<p style="color:#9fd8ff">개발자 모드로 한 판이라 기록·랭킹에 올리지 않아요.</p>'); showRank(null); return; }
     const reg = async () => {

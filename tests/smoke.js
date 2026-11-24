@@ -895,5 +895,13 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
 { const A = id => C.CFG.bossPool.find(b => b.id === id).abil; check('도약은 돌격왕에게, 광전사에는 없음', !!A('charger').leap && !A('berserker').leap);
   const g = arena(10, [['boss', 700, 500]], 'berserker'); const b = g.enemies[0]; g.units.length = 0; g.gold = 1e6; g.buyCd.sword = 0; C.buy(g, 'sword'); for (let i = 0; i < 400 && !g.units.length; i++) C.tick(g, DT);
   const u = g.units[0]; u.hp = u.max = 1e9; b.hp = b.max * 0.5; const h0 = b.hp; C.damage(g, u, 100, false, b); check('광전사: 준 피해의 일부만큼 회복', b.hp > h0 && b.hp - h0 <= 100 * 0.26, Math.round(b.hp - h0)); }
+// 66) 엔딩 뒤 무한 모드
+{ const g = C.createGame(31); g.captureEvents = true; C.devSetup(g, 100); for (let i = 0; i < 30 * 10; i++) { if (g.cards.offer) C.pickCard(g, 0); if (g.jobs.offer) C.pickJob(g, 0); if (g.cOffer) C.pickCastle(g, 0); C.tick(g, DT); }
+  check('엔딩 전에는 무한 모드로 이어갈 수 없음', !C.continueInfinite(g)); g.win = true; g.over = true; g.round = 100;
+  check('엔딩 뒤 무한 모드로 이어짐', C.continueInfinite(g) && !g.over && !g.win && g.infinite && g.cliff === 0);
+  g.core.hp = g.core.max = 1e12; let r0 = g.round; for (let i = 0; i < 30 * 60 * 6 && g.round <= 100; i++) { for (const u of g.units) u.hp = u.max; C.tick(g, DT); }
+  check('무한 모드: 101라운드가 시작됨', g.round >= 101, g.round);
+  const h = r => C.bossInfo(g, r).hp; check('무한 모드: 100라운드 이후 적 체력이 훨씬 가파르게 오름', h(115) / h(105) > 1.6 && h(125) / h(115) > 1.6 && h(105) / h(95) > 1.0, (h(115) / h(105)).toFixed(2));
+  check('무한 모드: 10라운드마다 사천왕 재등장', ['thunder', 'snow', 'earth'].includes(C.bossInfo(g, 110).id) && C.bossInfo(g, 105).id !== 'dragon'); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);
