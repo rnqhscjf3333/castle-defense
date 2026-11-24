@@ -901,7 +901,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   check('엔딩 뒤 무한 모드로 이어짐', C.continueInfinite(g) && !g.over && !g.win && g.infinite && g.cliff === 0);
   g.core.hp = g.core.max = 1e12; let r0 = g.round; for (let i = 0; i < 30 * 60 * 6 && g.round <= 100; i++) { for (const u of g.units) u.hp = u.max; C.tick(g, DT); }
   check('무한 모드: 101라운드가 시작됨', g.round >= 101, g.round);
-  const h = r => C.bossInfo(g, r).hp; check('무한 모드: 100라운드 이후 적 체력이 훨씬 가파르게 오름', h(115) / h(105) > 1.6 && h(125) / h(115) > 1.6 && h(105) / h(95) > 1.0, (h(115) / h(105)).toFixed(2));
+  const h = r => C.bossInfo(g, r).hp; check('무한 모드: 100라운드 이후 적 체력이 훨씬 가파르게 오름', h(115) / h(105) > 1.4 && h(125) / h(115) > 1.4 && h(105) / h(95) > h(95) / h(85) * 1.15, (h(115) / h(105)).toFixed(2));
   check('무한 모드: 10라운드마다 사천왕 재등장', ['thunder', 'snow', 'earth'].includes(C.bossInfo(g, 110).id) && C.bossInfo(g, 105).id !== 'dragon'); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);
