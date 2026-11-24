@@ -689,10 +689,21 @@
   // ───────────── 개발자 모드: r라운드에 맞는 성·강화·전직·유닛을 알아서 갖춰 준다 (골드 무한, 랭킹·기록 제외) ─────────────
   const DEV_GOLD = 1e9;
   const DEV_W = {"default": 1, "c_bomb": 3.28, "u_pierce": 2.75, "a_def": 2.7, "a_atk": 0.55, "a_heal": 1.19, "c_chain": 2.04, "s_hero": 2.03, "s_marksman": 1.63, "s_ballista": 1.23, "s_repeaters": 1.06, "u_aoeheal": 1.63, "u_charge": 1.1, "u_crit": 0.5, "u_range": 0.45, "s_golem": 0.55, "s_turret": 0.47, "c_atk": 0.9, "c_rate": 0.42, "c_splash": 0.85, "c_range": 0.34, "u_guard": 0.47, "u_revive": 0.42, "a_spd": 0.42, "a_rad": 1.18, "f_hp": 0.39, "f_repair": 0.39, "f_thorn": 0.32, "u_hp:sword": 0.55, "u_atk:sword": 0.55, "u_rate:sword": 0.44, "u_hp:archer": 0.82, "u_atk:archer": 0.47, "u_rate:archer": 0.91, "u_hp:priest": 0.39, "u_atk:priest": 0.39, "u_rate:priest": 0.41};
-  function devSetup(S, r) {
-    S.dev = true; S.gold = DEV_GOLD;
+  // (개발자 모드) 고른 전직(jobs: {sword:[1차,2차], archer:[..], priest:[..]})과 성 갈래(castle: [갈래, 유형, 최종형])를 먼저 적용한다. 고르지 않은 곳은 자동.
+  function devPickJobs(S, jobs) {
+    if (!jobs) return;
+    for (const type of UNIT_TYPES) for (const id of (jobs[type] || [])) { const o = jobOptions(S).find(x => x.type === type && x.id === id); if (!o) break; S.jobs.offer = { boss: '개발자', list: [o] }; pickJob(S, 0); S.jobs.offer = null; }
+  }
+  function devCastle(S, ids) {
+    for (let i = 0; i < 3; i++) {
+      checkCastleChoice(S); if (!S.cOffer) break; const want = ids && ids[S.cnodes.length], k = want ? S.cOffer.list.findIndex(x => x.id === want) : -1;
+      pickCastle(S, k >= 0 ? k : (S.cnodes.length + 1) % S.cOffer.list.length);
+    }
+  }
+  function devSetup(S, r, opts) {
+    S.dev = true; S.gold = DEV_GOLD; opts = opts || {};
     const lv = clamp(1 + Math.floor(r / 6), 1, CFG.castle.max); for (let i = 1; i < lv; i++) upgradeCastle(S, true);
-    autoCastle(S);
+    devCastle(S, opts.castle);
     const fill = frac => { // 검사 3 : 궁수 2 : 사제 1 비율로 인구를 채운다
       const want = Math.floor(Math.min(popCap(S) * frac, 10 + r, 90)), ratio = ['sword', 'sword', 'sword', 'archer', 'archer', 'priest'];
       for (let i = 0; popCount(S) < want && i < 400; i++) { const t = ratio[i % 6]; S.buyCd[t] = 0; S.gold = DEV_GOLD; if (!buy(S, t).ok) break; }
@@ -701,6 +712,7 @@
     const score = c => DEV_W[c.key] ?? DEV_W[c.id] ?? DEV_W.default ?? 1;
     const picks = Math.floor((r - 1) * 0.85);
     for (let i = 0; i < picks; i++) { openCards(S, i % 5 === 4); const o = S.cards.offer; if (!o) break; let bi = 0; for (let k = 1; k < o.length; k++) if (score(o[k]) > score(o[bi])) bi = k; pickCard(S, bi); }
+    devPickJobs(S, opts.jobs);
     const prefer = ['r_army', 'r_fort', 'r_knights', 'r_snipers', 'r_golem']; let nb = 0;
     for (let br = 5; br < r; br += 5) { // 지나온 보스 라운드마다 승급 / 보상을 알아서 고른다
       S.round = br; openJobs(S, '개발자'); nb++;
@@ -711,7 +723,7 @@
         pickJob(S, bi);
       }
     }
-    autoCastle(S);
+    devCastle(S, opts.castle);
     fill(0.9);
     for (const u of S.units) if (!u.dead) { refreshUnit(S, u); u.hp = u.max; }
     S.core.hp = S.core.max; S.gold = DEV_GOLD;

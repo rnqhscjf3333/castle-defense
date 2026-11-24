@@ -933,5 +933,10 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
     check('강습: 돌진 직전에 경로를 예고하고 그 사이에는 움직이지 않음', !!ev && ev.warn > 0 && !moved && ev.tx !== undefined, ev && ev.warn); for (let i = 0; i < 30 * 1.5; i++) C.tick(g, DT); check('강습: 예고가 끝나면 돌진함', Math.abs(b.x - x0) > 100, Math.round(Math.abs(b.x - x0))); }
   { const { g, b } = mk('summoner', 10); g.captureEvents = true; b.abil = { blink: { cd: 13, minR: 300, maxR: 460 } }; b.t = { blink: 0 }; b.life = 5; let ev = null; for (let i = 0; i < 60 && !ev; i++) { C.tick(g, DT); ev = C.drainEvents(g).find(e => e.type === 'bossBlink') || null; }
     check('순간이동: 출발지와 도착지 좌표 이벤트', !!ev && ev.x0 !== undefined && ev.x1 !== undefined && Math.hypot(ev.x1 - ev.x0, ev.y1 - ev.y0) > 100); } }
+// 70) 개발자 모드: 전직·성 직접 선택
+{ const g = C.createGame(8); C.devSetup(g, 60, { jobs: { sword: ['knight', 'paladin'], archer: ['ranger', 'ninja'], priest: ['bard', 'shaman'] }, castle: ['necro', 'horde', 'deathknight'] });
+  check('개발자 모드: 고른 전직이 적용됨', JSON.stringify(g.jobs.sword.ids) === '["knight","paladin"]' && JSON.stringify(g.jobs.archer.ids) === '["ranger","ninja"]' && JSON.stringify(g.jobs.priest.ids) === '["bard","shaman"]', JSON.stringify([g.jobs.sword.ids, g.jobs.archer.ids]));
+  check('개발자 모드: 고른 성 갈래가 적용됨', JSON.stringify(g.cnodes) === '["necro","horde","deathknight"]', JSON.stringify(g.cnodes));
+  const h = C.createGame(9); C.devSetup(h, 40, { jobs: { archer: ['ranger'] } }); check('개발자 모드: 일부만 고르면 나머지는 자동', h.jobs.archer.ids[0] === 'ranger' && h.jobs.archer.ids.length === 2 && h.cnodes.length >= 2, JSON.stringify(h.jobs.archer.ids)); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

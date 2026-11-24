@@ -330,6 +330,10 @@ body.comicOn { overflow: hidden; }
 .arow.done .ic { background: linear-gradient(180deg, #ffd96a, #f1a62a); color: #2a1400; } .arow .tx { flex: 1; min-width: 0; } .arow .nm { font-weight: 700; } .arow .ds { color: var(--muted); font-size: 11.5px; }
 .arow .bar { height: 4px; border-radius: 2px; background: #2a3244; margin-top: 4px; overflow: hidden; } .arow .bar i { display: block; height: 100%; background: #6fc3ff; } .arow.done .bar i { background: #ffd166; } .arow .pc { font-size: 11px; color: var(--muted); flex: none; }
 #title.menu #tMenu { gap: 9px; } #tMenu button { padding: 11px 10px; font-size: 16px; }
+.devpk { display: grid; grid-template-columns: 54px 1fr 1fr; gap: 6px 6px; align-items: center; margin: 10px 0 12px; font-size: 13px; }
+.devpk label { opacity: .85; }
+.devpk select { min-width: 0; padding: 6px 6px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255,255,255,.06); color: var(--ink); font-size: 13px; }
+.devpk .hd { grid-column: 1 / -1; font-weight: 700; margin-top: 4px; color: var(--accent); }
 #btnToMenu.hidden { display: none; }
 .regName { margin: 6px 0; font-size: 14px; opacity: .9; }
 .infGuide { margin: 12px 0 6px; padding: 10px 14px; text-align: left; border-radius: 12px; border: 1px solid rgba(199,125,255,.45); background: linear-gradient(180deg, rgba(120,60,180,.22), rgba(40,20,70,.25)); }
@@ -478,9 +482,10 @@ table.rank tr.top.me td { outline: 1px solid rgba(255,204,64,.8); outline-offset
 
 <div id="devPanel" class="modal hidden"><div class="panel mbox">
   <div class="mhead"><h2>🛠 개발자 모드</h2><button class="mclose" data-close="devPanel">✕</button></div>
-  <p class="mhint" style="margin:0 0 10px">고른 라운드부터 시작합니다. 골드는 무한이고, 성 레벨·강화 카드·전직·보스 보상·유닛은 그 라운드에 맞게 자동으로 갖춰집니다.<br><b style="color:#ff9a9a">기록·업적·랭킹에는 올라가지 않아요.</b></p>
+  <p class="mhint" style="margin:0 0 10px">고른 라운드부터 시작합니다. 골드는 무한이고, 성 레벨·강화 카드·보스 보상·유닛은 그 라운드에 맞게 자동으로 갖춰집니다. 전직과 성 갈래는 아래에서 직접 고르거나 '자동'으로 둘 수 있어요.<br><b style="color:#ff9a9a">기록·업적·랭킹에는 올라가지 않아요.</b></p>
   <div class="vrow"><label for="devRound">시작 라운드</label><input type="range" id="devRound" min="2" max="100" step="1" value="30"><b id="devRoundV" style="width:62px">30라운드</b></div>
   <div id="devPresets" class="devp"><button data-r="10">10</button><button data-r="20">20</button><button data-r="30">30</button><button data-r="40">40</button><button data-r="50">50</button><button data-r="60">60</button><button data-r="80">80</button><button data-r="99">99</button></div>
+  <div id="devPicks" class="devpk"></div>
   <div class="mlist"><button id="devGo" class="main">이 라운드로 시작</button></div>
 </div></div>
 
@@ -536,13 +541,13 @@ table.rank tr.top.me td { outline: 1px solid rgba(255,204,64,.8); outline-offset
   </div>
 </div>
 
-<script src="core.js?v=20261125a"></script>
-<script src="figures.js?v=20261125a"></script>
-<script src="scenery.js?v=20261125a"></script>
-<script src="config.js?v=20261125a"></script>
-<script src="meta.js?v=20261125a"></script>
-<script src="net.js?v=20261125a"></script>
-<script src="audio.js?v=20261125a"></script>
-<script src="main.js?v=20261125a"></script>
+<script src="core.js?v=20261125c"></script>
+<script src="figures.js?v=20261125c"></script>
+<script src="scenery.js?v=20261125c"></script>
+<script src="config.js?v=20261125c"></script>
+<script src="meta.js?v=20261125c"></script>
+<script src="net.js?v=20261125c"></script>
+<script src="audio.js?v=20261125c"></script>
+<script src="main.js?v=20261125c"></script>
 </body>
 </html>

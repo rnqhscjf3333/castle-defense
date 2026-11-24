@@ -1877,7 +1877,7 @@
     for (const t of C.UNIT_TYPES) { ucards[t].last = undefined; ucards[t].n = undefined; }
     cine = null; $('cine').classList.add('hidden'); $('cine').classList.remove('on'); Scenery.setAct(1, false);
     const sr = +params.get('startRound'); if (sr > 1) C.jumpToRound(S, sr); // 디버그: 해당 라운드로 바로 시작
-    const dr = devRound || +params.get('dev'); if (dr > 1) C.devSetup(S, dr); // 개발자 모드: 라운드에 맞게 갖춰 시작 (골드 무한, 기록 제외)
+    const dr = devRound || +params.get('dev'); if (dr > 1) { C.devSetup(S, dr, devPicks || undefined); devPicks = null; } // 개발자 모드: 라운드에 맞게 갖춰 시작 (골드 무한, 기록 제외)
     centerOnCore();
     // 디버그: ?warp=초 → 봇이 미리 진행 (스크린샷/점검용)
     if (params.get('bot')) startBot();
@@ -2085,11 +2085,33 @@
   $('mColl').addEventListener('click', e => { e.stopPropagation(); openMeta('codex'); });
   $('mRank').addEventListener('click', e => { e.stopPropagation(); openMeta('rank'); });
   $('tSet').addEventListener('click', e => { e.stopPropagation(); openModal('setMenu'); });
+  // 개발자 모드: 전직·성 갈래를 직접 고른다 ('자동'이면 라운드에 맞게 알아서)
+  let devPicks = null;
+  const DEV_LINES = [['sword', '검사'], ['archer', '궁수'], ['priest', '사제']];
+  function renderDevPicks() {
+    const box = $('devPicks'); if (!box) return; const saved = (() => { try { return JSON.parse(store.get('cd-devpicks') || '{}'); } catch (e) { return {}; } })(), T = CFG.castleTree;
+    const opt = (list, sel) => '<option value="">자동</option>' + list.map(x => '<option value="' + x.id + '"' + (x.id === sel ? ' selected' : '') + '>' + x.name + '</option>').join('');
+    let h = '<div class="hd">전직</div>';
+    for (const [t, nm] of DEV_LINES) { const j = saved.jobs && saved.jobs[t] || []; h += '<label>' + nm + '</label><select data-job="' + t + '" data-tier="0">' + opt(CFG.jobs[t].t1, j[0]) + '</select><select data-job="' + t + '" data-tier="1">' + opt(j[0] ? (CFG.jobs[t].t2[j[0]] || []) : [], j[1]) + '</select>'; }
+    const c = saved.castle || [];
+    h += '<div class="hd">성</div><label>갈래</label><select data-cs="0">' + opt(T.roots, c[0]) + '</select><span></span><label>유형</label><select data-cs="1">' + opt(c[0] ? (T.t2[c[0]] || []) : [], c[1]) + '</select><span></span><label>최종형</label><select data-cs="2">' + opt(c[1] ? (T.t3[c[1]] || []) : [], c[2]) + '</select><span></span>';
+    box.innerHTML = h;
+    box.querySelectorAll('select').forEach(sel => sel.addEventListener('change', () => { // 윗단계를 바꾸면 아래 단계 선택지를 새로 채운다
+      const cur = readDevPicks(); if (sel.dataset.job && sel.dataset.tier === '0') cur.jobs[sel.dataset.job] = sel.value ? [sel.value] : []; if (sel.dataset.cs !== undefined) cur.castle = cur.castle.slice(0, +sel.dataset.cs + 1).filter(Boolean);
+      store.set('cd-devpicks', JSON.stringify(cur)); renderDevPicks();
+    }));
+  }
+  function readDevPicks() {
+    const box = $('devPicks'), out = { jobs: {}, castle: [] }; if (!box) return out;
+    for (const [t] of DEV_LINES) { const a = box.querySelector('[data-job="' + t + '"][data-tier="0"]'), b = box.querySelector('[data-job="' + t + '"][data-tier="1"]'); const ids = []; if (a && a.value) { ids.push(a.value); if (b && b.value) ids.push(b.value); } out.jobs[t] = ids; }
+    const cs = [0, 1, 2].map(i => (box.querySelector('[data-cs="' + i + '"]') || {}).value || ''); for (const id of cs) { if (!id) break; out.castle.push(id); }
+    return out;
+  }
   const devRoundSet = v => { v = Math.max(2, Math.min(100, Math.round(+v || 2))); $('devRound').value = v; $('devRoundV').textContent = v + '라운드'; return v; };
   $('devRound').addEventListener('input', () => devRoundSet($('devRound').value));
   for (const b of document.querySelectorAll('#devPresets button')) b.addEventListener('click', () => devRoundSet(b.dataset.r));
-  $('devGo').addEventListener('click', e => { e.stopPropagation(); const r = devRoundSet($('devRound').value); store.set('cd-devround', String(r)); closeModals(); startFromTitle(r); });
-  $('tDev').addEventListener('click', e => { e.stopPropagation(); devRoundSet(+store.get('cd-devround') || 30); openModal('devPanel'); }); // 투명 버튼: 타이틀 왼쪽 위 모서리
+  $('devGo').addEventListener('click', e => { e.stopPropagation(); const r = devRoundSet($('devRound').value); store.set('cd-devround', String(r)); devPicks = readDevPicks(); store.set('cd-devpicks', JSON.stringify(devPicks)); closeModals(); startFromTitle(r); });
+  $('tDev').addEventListener('click', e => { e.stopPropagation(); devRoundSet(+store.get('cd-devround') || 30); renderDevPicks(); openModal('devPanel'); }); // 투명 버튼: 타이틀 왼쪽 위 모서리
   $('mHow').addEventListener('click', e => { e.stopPropagation(); drawHowImgs(); $('howto').classList.remove('hidden'); });
   let howDrawn = false;
   function drawHowImgs() { // 게임 방법의 번호별 그림은 게임 안의 실제 그림을 그대로 쓴다
