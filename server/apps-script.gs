@@ -68,7 +68,21 @@ function doPost(e) {
   return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
 }
 
+// 개발자용 읽기 전용 조회: ?action=logs|errors|feedback&key=비밀키&n=20 (최근 n줄, 최대 50)
+// 비밀키는 코드에 적지 않고 [프로젝트 설정] → [스크립트 속성]에 READ_KEY 라는 이름으로 넣는다. 속성이 없으면 이 기능은 꺼져 있다.
+function readTab_(e) {
+  var want = PropertiesService.getScriptProperties().getProperty('READ_KEY');
+  if (!want || String(e.parameter.key || '') !== want) return { ok: false, error: 'denied' };
+  var name = e.parameter.action, fn = name === 'logs' ? logs_ : name === 'errors' ? errors_ : name === 'feedback' ? feedback_ : null;
+  if (!fn) return { ok: false, error: 'bad action' };
+  var sh = fn(), n = Math.min(50, Math.max(1, +(e.parameter.n || 20))), last = sh.getLastRow(), head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  if (last < 2) return { ok: true, head: head, rows: [] };
+  var from = Math.max(2, last - n + 1), rows = sh.getRange(from, 1, last - from + 1, sh.getLastColumn()).getValues().map(function (r) { return r.map(function (c) { return c instanceof Date ? c.toISOString() : (typeof c === 'string' && c.length > 6000 ? c.slice(0, 6000) : c); }); });
+  return { ok: true, head: head, rows: rows };
+}
+
 function doGet(e) {
+  if (e.parameter && e.parameter.action) return ContentService.createTextOutput(JSON.stringify(readTab_(e))).setMimeType(ContentService.MimeType.JSON);
   var n = Math.min(50, Math.max(1, +(e.parameter.n || 20))), rows = scores_().getDataRange().getValues(), list = [];
   for (var i = 1; i < rows.length; i++) list.push({ name: rows[i][1], score: rows[i][2], round: rows[i][3], win: rows[i][4] === 'Y', kills: rows[i][5], time: rows[i][6], mode: rows[i][11] === 'free' ? 'free' : 'normal', at: new Date(rows[i][0]).getTime(), msg: String(rows[i][12] || ''), row: i });
   list.sort(function (a, b) { return b.score - a.score; });
