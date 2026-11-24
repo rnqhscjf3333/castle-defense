@@ -917,5 +917,8 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   const gg = C.createGame(5); check('90라운드는 용인 기사단장', C.bossInfo(gg, 90).id === 'drakeknight' && !!C.bossInfo(gg, 90).look.wings);
   check('용인 기사단장은 암흑 기사단장보다 강하고 용의 기술을 씀', !!C.CFG.winged.abil.gust && !!C.CFG.winged.abil.meteor && C.CFG.winged.abil.artillery.dmg > C.CFG.act1Boss.abil.artillery.dmg && C.bossInfo(gg, 90).hp > C.bossInfo(gg, 95).hp);
   const ag = arena(90, [['boss', 700, 500]]); const bb = ag.enemies[0]; check('90라운드 보스가 용인 기사단장으로 나옴', bb.bossId === 'drakeknight' && bb.abil.dash && bb.abil.gust, bb.bossId); }
+// 68) 마왕 2차전에는 등장 직후 보호가 없다
+{ C.CFG.bossGuard.red = GUARD_RED; const g = arena(50, [['boss', 1500, 1280]]); g.act = 2; g.round = 50; g.queue = []; const b = g.enemies[0]; g.core.atk = 1e6; g.core.hp = g.core.max = 1e9; b.guardT = 0; b.hp = 1; C.damage(g, b, 5);
+  for (let i = 0; i < 900 && !(b.p2 && !b.dying); i++) C.tick(g, DT); check('마왕 2차전에는 등장 직후 보호가 걸리지 않음', b.p2 && !(b.guardT > 0), b.guardT); C.CFG.bossGuard.red = 0; }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

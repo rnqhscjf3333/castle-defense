@@ -1898,7 +1898,7 @@
     $('ovTitle').textContent = win ? '게임 클리어! 재앙의 용을 쓰러뜨렸다' : '성이 무너졌어요';
     $('ovBody').innerHTML = '<div class="stat"><div><b>' + reached + '</b>도달 라운드</div><div><b>' + S.kills + '</b>처치</div><div><b>' + fmtTime(S.t) + '</b>시간</div></div>'
       + '<p>최고 기록: ' + Math.max(best, reached) + '라운드</p>'
-      + '<div id="regbox"><input id="nameIn" maxlength="12" placeholder="닉네임 (최대 12자)" autocomplete="off"><input id="msgIn" maxlength="30" placeholder="랭킹에 남길 한마디 (최대 30자)" autocomplete="off"><button id="regBtn">랭킹 등록</button></div><div id="rankbox"></div>';
+      + '<div id="regbox">' + (Net.name() ? '<div class="regName">👤 ' + Net.name().replace(/[<>&"']/g, '') + '</div>' : '<input id="nameIn" maxlength="12" placeholder="닉네임 (최대 12자)" autocomplete="off">') + '<input id="msgIn" maxlength="30" placeholder="랭킹에 남길 한마디 (최대 30자)" autocomplete="off"><button id="regBtn">랭킹 등록</button></div><div id="rankbox"></div>';
     $('go').textContent = '다시 시작'; $('btnRank').classList.add('hidden'); $('btnToMenu').classList.remove('hidden');
     $('overlay').classList.remove('hidden');
     if (!S.dev) Meta.finish(S, C, Net.scoreOf(S.win, S.round, S.kills, S.t));
@@ -1906,12 +1906,11 @@
     const ended = S, myScore = Net.scoreOf(S.win, S.round, S.kills, S.t);
     if (S.dev) { $('regbox').remove(); $('ovBody').insertAdjacentHTML('beforeend', '<p style="color:#9fd8ff">개발자 모드로 한 판이라 기록·랭킹에 올리지 않아요.</p>'); showRank(null); return; }
     const reg = async () => {
-      const name = $('nameIn').value; $('regBtn').disabled = true; $('regBtn').textContent = '등록 중…';
+      const name = $('nameIn') ? $('nameIn').value : Net.name(); $('regBtn').disabled = true; $('regBtn').textContent = '등록 중…';
       const res = await Net.submit(ended, name, $('msgIn').value); $('regbox').remove(); if (res && res.rejected) { $('ovBody').insertAdjacentHTML('beforeend', '<p style="color:#ff9a9a">기록이 비정상적이라 랭킹에 올리지 않았어요.</p>'); } showRank(res && res.rejected ? null : myScore);
     };
     $('regBtn').addEventListener('click', reg);
-    $('nameIn').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') reg(); });
-    $('nameIn').addEventListener('keyup', e => e.stopPropagation());
+    if ($('nameIn')) { $('nameIn').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') reg(); }); $('nameIn').addEventListener('keyup', e => e.stopPropagation()); }
     $('msgIn').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') reg(); }); $('msgIn').addEventListener('keyup', e => e.stopPropagation());
     showRank(null);
   }

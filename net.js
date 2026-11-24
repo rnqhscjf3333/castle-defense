@@ -77,7 +77,7 @@
   async function top(n) {
     if (!API) return { server: false, list: localTop().slice(0, n) };
     try {
-      const r = await fetch(API + (API.includes('?') ? '&' : '?') + 'action=top&n=' + n, { redirect: 'follow' });
+      const r = await fetch(API + (API.includes('?') ? '&' : '?') + 'n=' + n, { redirect: 'follow' });
       const j = await r.json(); if (j && Array.isArray(j.list)) return { server: true, list: j.list };
     } catch (e) {}
     return { server: false, list: localTop().slice(0, n), failed: true };

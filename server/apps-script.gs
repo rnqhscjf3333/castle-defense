@@ -91,7 +91,7 @@ function readTab_(e) {
 }
 
 function doGet(e) {
-  if (e.parameter && e.parameter.action) return ContentService.createTextOutput(JSON.stringify(readTab_(e))).setMimeType(ContentService.MimeType.JSON);
+  if (e.parameter && ['logs', 'errors', 'feedback', 'games'].indexOf(e.parameter.action) >= 0) return ContentService.createTextOutput(JSON.stringify(readTab_(e))).setMimeType(ContentService.MimeType.JSON);
   var n = Math.min(50, Math.max(1, +(e.parameter.n || 20))), rows = scores_().getDataRange().getValues(), list = [];
   for (var i = 1; i < rows.length; i++) list.push({ name: rows[i][1], score: rows[i][2], round: rows[i][3], win: rows[i][4] === 'Y', kills: rows[i][5], time: rows[i][6], mode: rows[i][11] === 'free' ? 'free' : 'normal', at: new Date(rows[i][0]).getTime(), msg: String(rows[i][12] || ''), row: i });
   list.sort(function (a, b) { return b.score - a.score; });
