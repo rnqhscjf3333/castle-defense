@@ -473,7 +473,7 @@
   $('pickBack').addEventListener('click', () => { if (S) C.jobBack(S); });
   $('btnReroll').addEventListener('click', () => { if (S) C.reroll(S); });
 
-  const MODALS = ['setMenu', 'infoPanel', 'metaPanel', 'devPanel'];
+  const MODALS = ['setMenu', 'infoPanel', 'metaPanel', 'devPanel', 'fbPanel'];
   const anyModal = () => MODALS.some(id => !$(id).classList.contains('hidden'));
   function openModal(id) { $(id).classList.remove('hidden'); if (S && running) paused = true; if (id === 'setMenu') { syncVol(); const ing = !!(S && running); $('setMenu').classList.toggle('titleMode', !ing); $('sResume').textContent = ing ? '계속하기' : '닫기'; } }
   function closeModals() { for (const id of MODALS) $(id).classList.add('hidden'); paused = false; stopStage(); }
@@ -489,6 +489,19 @@
   $('sSfx').addEventListener('change', () => A2.play('kill')); // 놓았을 때 효과음 미리듣기
   function recordAbandon() { if (S && running && !S.over && S.round >= 2 && !S.dev) { Meta.finish(S, C, 0); Net.sendLog(S, 'abandon', true); } }
   $('sNick').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') $('sNickSave').click(); }); $('sNick').addEventListener('keyup', e => e.stopPropagation());
+  // 개발자에게 피드백 (설정 창에서 열림)
+  { const t = $('fbText'); for (const ev of ['keydown', 'keyup']) t.addEventListener(ev, e => e.stopPropagation());
+    t.addEventListener('input', () => setText('fbCount', t.value.length + ' / 1000'));
+    $('sFb').addEventListener('click', () => { $('setMenu').classList.add('hidden'); $('fbPanel').classList.remove('hidden'); $('fbMsg').textContent = '닉네임과 현재 라운드, 기기 화면 크기가 함께 전달돼요.'; });
+    $('fbBack').addEventListener('click', () => { $('fbPanel').classList.add('hidden'); $('setMenu').classList.remove('hidden'); });
+    $('fbSend').addEventListener('click', async () => {
+      if (!t.value.trim()) { $('fbMsg').textContent = '내용을 입력해 주세요.'; return; }
+      const b = $('fbSend'); b.disabled = true; $('fbMsg').textContent = '보내는 중…';
+      const r = await Net.feedback($('fbCat').value, t.value, S ? S.round : 0); b.disabled = false;
+      if (r.ok) { t.value = ''; setText('fbCount', '0 / 1000'); $('fbMsg').textContent = '보냈어요. 소중한 의견 고맙습니다!'; toast('피드백을 보냈어요. 고맙습니다!'); }
+      else if (r.saved) $('fbMsg').textContent = '지금은 서버에 전달하지 못해 기기에 저장해 두었어요. 나중에 접속하면 자동으로 다시 보냅니다.';
+      else $('fbMsg').textContent = '내용을 입력해 주세요.';
+    }); }
   $('sNickSave').addEventListener('click', () => { const v = Net.setName($('sNick').value); if (v) { $('sNick').value = v; toast('닉네임을 "' + v + '"(으)로 바꿨어요'); } else toast('닉네임을 입력해 주세요'); });
   $('sRestart').addEventListener('click', () => { closeModals(); recordAbandon(); newGame(); });
   $('sMenu').addEventListener('click', () => { closeModals(); recordAbandon(); running = false; showTitle(); });

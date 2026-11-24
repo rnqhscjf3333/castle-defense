@@ -94,5 +94,18 @@
   }
 
   window.addEventListener('online', flush); setTimeout(flush, 2000);
-  window.Net = { configured: !!API, pid, sendError, setSource: f => { getS = f; }, begin, sample, lag, sendLog, top, submit, scoreOf, name: () => ls.get('cd-name') || '', setName: v => { v = String(v || '').replace(/[<>&"'`]/g, '').trim().slice(0, 12); if (v) ls.set('cd-name', v); return v; }, localTop };
+  // ── 개발자에게 피드백: 서버가 받았다고 답해야 성공으로 본다. 못 보냈으면 기기에 저장해 두었다가 다음에 다시 시도한다 ──
+  const FKEY = 'cd-fb-pending';
+  const loadFb = () => { try { return JSON.parse(ls.get(FKEY) || '[]'); } catch (e) { return []; } };
+  async function postFb(o) { try { const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(o), redirect: 'follow' }); if (!r.ok) return false; const j = await r.json(); return !!(j && j.ok); } catch (e) { return false; } }
+  async function flushFb() { if (!API) return; const q = loadFb(); if (!q.length) return; const rest = []; for (const o of q) if (!(await postFb(o))) rest.push(o); ls.set(FKEY, JSON.stringify(rest.slice(-10))); }
+  async function feedback(cat, text, round) {
+    text = String(text || '').trim().slice(0, 1000); if (!text) return { ok: false, why: 'empty' };
+    const o = { type: 'feedback', cat: ['bug', 'idea', 'balance', 'etc'].includes(cat) ? cat : 'etc', text, v: CFG.VERSION, pid, name: ls.get('cd-name') || '', round: round || 0, env: { w: innerWidth, h: innerHeight, touch: 'ontouchstart' in window, ua: navigator.userAgent.slice(0, 120) } };
+    if (API && await postFb(o)) return { ok: true };
+    const q = loadFb(); q.push(o); ls.set(FKEY, JSON.stringify(q.slice(-10))); return { ok: false, saved: true, server: !!API };
+  }
+  setTimeout(flushFb, 4000);
+
+  window.Net = { configured: !!API, feedback, pid, sendError, setSource: f => { getS = f; }, begin, sample, lag, sendLog, top, submit, scoreOf, name: () => ls.get('cd-name') || '', setName: v => { v = String(v || '').replace(/[<>&"'`]/g, '').trim().slice(0, 12); if (v) ls.set('cd-name', v); return v; }, localTop };
 })();

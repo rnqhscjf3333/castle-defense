@@ -37,6 +37,8 @@ function logs_() { return sheet_('logs', ['시각', '상태', '버전', 'pid', '
 
 function errors_() { return sheet_('errors', ['시각', '버전', 'pid', 'run', '위치', '메시지', '스택', '라운드', '게임시간', 'seed', '유닛', '적', '성채HP', '강화', '화면', '브라우저', '실제시간']); }
 
+function feedback_() { return sheet_('feedback', ['시각', '종류', '내용', '닉네임', '라운드', '버전', 'pid', '화면', '브라우저']); }
+
 function valid_(o) {
   return o && typeof o.score === 'number' && o.round >= 1 && o.round <= MAX_ROUND && o.kills >= 0 && o.kills < 100000 &&
     o.score <= (MAX_ROUND + 1) * 100000 + 99999 && o.time >= (o.round - 1) * 8; // 라운드는 40초마다 넘어가므로, 라운드 수에 비해 게임 시간이 너무 짧으면 거부
@@ -54,6 +56,9 @@ function doPost(e) {
     } else if (o.type === 'error') { // 게임 중 발생한 오류 (멈춤 원인 추적용)
       errors_().appendRow([now, o.v, o.pid, o.run, o.where, o.msg, o.stack, o.round, o.t, o.seed, o.units, o.enemies, o.coreHp, JSON.stringify(o.cards), o.w + 'x' + o.h, o.ua, o.real]);
       out.ok = true;
+    } else if (o.type === 'feedback') { // 설정 창의 '개발자에게 피드백'
+      var txt = String(o.text || '').slice(0, 1000);
+      if (txt) { feedback_().appendRow([now, String(o.cat || '').slice(0, 10), txt, String(o.name || '').slice(0, 12), o.round || 0, o.v, o.pid, o.env ? o.env.w + 'x' + o.env.h : '', o.env ? String(o.env.ua || '').slice(0, 120) : '']); out.ok = true; } else out.error = 'empty';
     } else if (o.type === 'log') {
       logs_().appendRow([now, o.status, o.v, o.pid, o.run, o.seed, o.round, o.act, o.win ? 'Y' : 'N', o.kills, o.time, o.real, o.coreHp, o.gold, o.buys,
         JSON.stringify(o.units), JSON.stringify(o.cards), JSON.stringify(o.jobs), JSON.stringify(o.coreDmgBy), o.lag ? o.lag.n + '/' + o.lag.ms : '', JSON.stringify(o.env), JSON.stringify(o.timeline).slice(0, 45000), o.mode === 'free' ? 'free' : 'normal']);
