@@ -120,7 +120,7 @@
     capBonus: 2, capLift: ['u_charge', 'u_pierce', 'u_crit', 'u_range', 'u_aoeheal', 'u_hbuff', 'a_heal', 'a_atk', 'a_def', 'a_spd', 'a_rad', 'f_repair', 'f_thorn'],
     // 2차 전직 각성 (사천왕 처치: 60·70·80라운드에 한 계열씩 업그레이드). 2차 전직 효과에 아래 수치가 한 번 더 더해진다.
     awaken: {
-      paladin:     { name: '각성 팔라딘',   desc: '체력 +50%·방어 +6%·초당 회복 +3%·기절 확률 +5% 추가', mods: { hp: 0.5, def: 0.06, regen: 0.03, stun: 0.05 } },
+      paladin:     { name: '각성 팔라딘',   desc: '체력 +50%·방어 +6%·초당 회복 +3%·기절 확률 +8% 추가', mods: { hp: 0.5, def: 0.06, regen: 0.03, stun: 0.08 } },
       warlord:     { name: '각성 워로드',   desc: '체력 +60%·공격력 +60%·공격 속도 +15%·사거리 +8 추가 (밀어내기는 그대로)', mods: { hp: 0.6, atk: 0.6, rate: 0.15, range: 8 } },
       blademaster: { name: '각성 검성',     desc: '공격력 +60%·광역 베기 +30%·연속 공격 +10% 추가', mods: { atk: 0.6, cleave: 0.3, dbl: 0.1 } },
       berserker:   { name: '각성 버서커',   desc: '공격력 +80%·광역 베기 +30%·광폭화 +80%·흡혈 +5% 추가', mods: { atk: 0.8, cleave: 0.3, berserk: 0.8, lifesteal: 0.05 } },
@@ -212,7 +212,7 @@
           { id: 'inferno', name: '대화염', kind: '지속형', desc: '불길 지대가 7초 동안 더 넓고 강하게 타오릅니다.', par: { blast: { zone: 3, zmul: 0.25, r: 30 } } },
         ],
         frost: [
-          { id: 'zero', name: '절대영도', kind: '제어형', desc: '폭발이 적을 1.6초 동안 완전히 얼립니다 (보스는 얼지 않음).', par: { blast: { freeze: 1.6 } } },
+          { id: 'zero', name: '절대영도', kind: '제어형', desc: '폭발이 더 자주(주기 -2.5초), 더 넓게(범위 +20) 터지고 적을 2.6초 동안 완전히 얼립니다. 일반 몬스터 무리를 묶어 두는 데 강합니다 (보스는 얼지 않음).', par: { blast: { freeze: 2.6, cd: -2.5, r: 20 } } },
           { id: 'shatter', name: '빙하 파쇄', kind: '공격형', desc: '폭발 피해 ×1.7, 감속 5초.', par: { blast: { mul: 2.1, slow: 1.5 } } },
         ],
         judge: [
@@ -243,7 +243,7 @@
         ],
         t2: {
           knight: [
-            { id: 'paladin', name: '팔라딘', desc: '성스러운 갑옷과 철퇴를 든 완전 방어형. 체력 +50%, 피해 12% 방어, 초당 체력 3% 회복. 대신 공격력 -35%. 때릴 때 12% 확률로 적을 1.2초 기절시킴 (보스는 기절하지 않음)', mods: { hp: 0.5, def: 0.12, regen: 0.03, atk: -0.35, stun: 0.12 } },
+            { id: 'paladin', name: '팔라딘', desc: '성스러운 갑옷과 철퇴를 든 완전 방어형. 체력 +50%, 피해 12% 방어, 초당 체력 3% 회복. 대신 공격력 -35%. 때릴 때 18% 확률로 적을 1.2초 기절시킴 (보스는 기절하지 않음)', mods: { hp: 0.5, def: 0.12, regen: 0.03, atk: -0.35, stun: 0.18 } },
             { id: 'warlord', name: '워로드', desc: '긴 랜스를 든 돌격 기사. 공격력 +130%, 체력 +40%, 사거리 +14. 대신 공격 속도 -35%. 찌르면 적을 크게 밀어냄 (보스는 밀리지 않음)', mods: { hp: 0.4, atk: 1.3, rate: -0.35, range: 14, knock: 300 } },
           ],
           blade: [

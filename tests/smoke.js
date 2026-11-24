@@ -943,5 +943,9 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   g.jobMods.sword.stun = 1; g.gold = 1e6; g.buyCd.sword = 0; C.buy(g, 'sword'); for (let i = 0; i < 400 && !g.units.length; i++) C.tick(g, DT);
   const x0 = b.x; b.stunT = 3; b.frozenT = 3; o.stunT = 3; for (let i = 0; i < 5; i++) C.tick(g, DT);
   check('보스는 기절·빙결 상태가 곧바로 해제됨', !(b.stunT > 0) && !(b.frozenT > 0)); check('일반 적은 기절이 그대로 유지됨', o.stunT > 0, o.stunT); }
+// 72) 팔라딘 기절 확률·절대영도 강화
+{ const g = C.createGame(12); C.devSetup(g, 80, { castle: ['arcane', 'frost', 'zero'] }); const B = g.cpar && g.cpar.blast;
+  check('절대영도: 더 자주(주기 단축)·더 넓게·더 오래 얼림', !!B && B.freeze >= 2.6 && B.cd < 9 && B.r > 100, B && JSON.stringify(B));
+  const base = C.CFG.jobs.sword.t2.knight.find(x => x.id === 'paladin'); check('팔라딘 기절 확률 18%', base.mods.stun === 0.18); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);
