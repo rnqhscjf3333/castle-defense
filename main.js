@@ -1872,26 +1872,35 @@
     }, 150 + i * 260);
     setTimeout(() => { const d2 = $('defeat'); d2.classList.remove('on'); setTimeout(() => d2.classList.add('hidden'), 400); $('cv').classList.remove('defeating'); document.body.classList.remove('defeating'); defeating = false; showEnd(false); }, 3600);
   }
-  function showEnd(win) {
-    running = false;
+  // 100라운드 클리어: 랭킹 대신 무한 모드 안내를 먼저 보여 준다 (계속하거나, 여기서 끝내고 랭킹에 등록)
+  function showEnd(win) { if (win && S && !S.infinite && S.round === C.FINAL_ROUND) showInfiniteGuide(); else showResult(win); }
+  function showInfiniteGuide() {
+    running = false; const gb = $('go'), tm = $('btnToMenu'), rk = $('btnRank'); gb.style.display = 'none'; tm.classList.add('hidden'); rk.classList.add('hidden');
+    $('ovTitle').textContent = '게임 클리어! 재앙의 용을 쓰러뜨렸다';
+    $('ovBody').innerHTML = '<div class="stat"><div><b>' + S.round + '</b>도달 라운드</div><div><b>' + S.kills + '</b>처치</div><div><b>' + fmtTime(S.t) + '</b>시간</div></div>'
+      + '<div class="infGuide"><h3>♾ 무한 모드가 열렸어요</h3><ul><li>같은 판이 <b>101라운드</b>부터 이어집니다 (성 체력 80% 회복)</li><li>적의 체력·수·속도가 <b>훨씬 빠르게</b> 강해집니다</li><li>10라운드마다 사천왕이 다시 나타납니다</li><li>쓰러지면 도달한 라운드가 기록돼요. 더 멀리 갈수록 랭킹이 높아집니다</li></ul></div>'
+      + '<div class="infBtns"><button id="goInf" class="infMain">♾ 무한 모드 계속하기</button><button id="goEnd" class="infSub">여기서 끝내고 랭킹 등록</button></div>';
+    $('overlay').classList.remove('hidden');
+    $('goInf').addEventListener('click', () => {
+      if (!C.continueInfinite(S)) return; gb.style.display = ''; $('overlay').classList.add('hidden'); running = true; defeating = false;
+      centerOnCore(); banner('무한 모드 돌입!', true); toast('무한 모드: 이제부터 적이 훨씬 빠르게 강해집니다');
+    });
+    $('goEnd').addEventListener('click', () => { gb.style.display = ''; showResult(true); });
+  }
+  function showResult(win) {
+    running = false; $('go').style.display = '';
     const best = +(store.get('cd-best') || 0);
     const reached = S.round;
     if (reached > best) store.set('cd-best', String(reached));
     $('ovTitle').textContent = win ? '게임 클리어! 재앙의 용을 쓰러뜨렸다' : '성이 무너졌어요';
     $('ovBody').innerHTML = '<div class="stat"><div><b>' + reached + '</b>도달 라운드</div><div><b>' + S.kills + '</b>처치</div><div><b>' + fmtTime(S.t) + '</b>시간</div></div>'
       + '<p>최고 기록: ' + Math.max(best, reached) + '라운드</p>'
-      + (win && S.round === C.FINAL_ROUND ? '<div id="infBox"><p>엔딩은 끝났지만 전쟁은 끝나지 않았어요. 무한 모드에서는 적이 훨씬 빠르게 강해집니다.</p><button id="goInf" class="main">♾ 무한 모드 계속하기</button></div>' : '')
       + '<div id="regbox"><input id="nameIn" maxlength="12" placeholder="닉네임 (최대 12자)" autocomplete="off"><input id="msgIn" maxlength="30" placeholder="랭킹에 남길 한마디 (최대 30자)" autocomplete="off"><button id="regBtn">랭킹 등록</button></div><div id="rankbox"></div>';
     $('go').textContent = '다시 시작'; $('btnRank').classList.add('hidden'); $('btnToMenu').classList.remove('hidden');
     $('overlay').classList.remove('hidden');
     if (!S.dev) Meta.finish(S, C, Net.scoreOf(S.win, S.round, S.kills, S.t));
     Net.sendLog(S, 'end');
     const ended = S, myScore = Net.scoreOf(S.win, S.round, S.kills, S.t);
-    if ($('goInf')) $('goInf').addEventListener('click', () => { // 엔딩 뒤 무한 모드: 같은 판을 이어서 계속한다
-      if (!C.continueInfinite(S)) return; $('overlay').classList.add('hidden'); $('btnToMenu').classList.add('hidden'); running = true; defeating = false;
-      centerOnCore(); banner('무한 모드 돌입!', true); toast('무한 모드: 이제부터 적이 훨씬 빠르게 강해집니다');
-    });
-    $('nameIn').value = Net.name();
     if (S.dev) { $('regbox').remove(); $('ovBody').insertAdjacentHTML('beforeend', '<p style="color:#9fd8ff">개발자 모드로 한 판이라 기록·랭킹에 올리지 않아요.</p>'); showRank(null); return; }
     const reg = async () => {
       const name = $('nameIn').value; $('regBtn').disabled = true; $('regBtn').textContent = '등록 중…';
