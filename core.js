@@ -495,9 +495,9 @@
   ];
   // 보스 개성 패턴: rush(등장하자마자 성 한복판으로 돌진 + 충격파) · blink(순간이동) · leap(밀집한 아군 위로 도약) · siege(멀리서 포격만)
   { const BA = id => CFG.bossPool.find(b => b.id === id).abil;
-    Object.assign(BA('charger'), { rush: { mul: 5, until: 170, r: 120, stun: 0.9 } });
+    Object.assign(BA('charger'), { rush: { mul: 5, until: 170, r: 120, stun: 0.9 }, leap: { cd: 11, r: 110, mul: 1.4, air: 0.8 } });
     Object.assign(BA('summoner'), { blink: { cd: 13, minR: 300, maxR: 460 } });
-    Object.assign(BA('berserker'), { leap: { cd: 11, r: 110, mul: 1.4, air: 0.8 } });
+    Object.assign(BA('berserker'), { lifesteal: { frac: 0.25 } }); // 입힌 피해의 일부를 체력으로 회복
     Object.assign(CFG.act1Boss.abil, { rush: { mul: 3.6, until: 180, r: 115, stun: 0.9 }, blink: { cd: 14, minR: 300, maxR: 460 } });
     Object.assign(CFG.finalBoss.abil, { rush: { mul: 3.6, until: 190, r: 125, stun: 1.0 }, blink: { cd: 14, minR: 320, maxR: 480 }, leap: { cd: 12, r: 115, mul: 1.5, air: 0.8 } });
   }
@@ -1261,7 +1261,8 @@
       const rf = S.jobMods && S.jobMods[lineOf(tgt.type)] ? S.jobMods[lineOf(tgt.type)].reflect : 0;
       if (rf && src && src.team === 'e' && !src.dead && dmg > 0) damage(S, src, dmg * rf); // 워로드: 받은 피해의 일부를 되돌린다
     }
-    tgt.hp -= dmg; if (S.t >= (tgt.flashAt || 0)) { tgt.flash = 0.1; tgt.flashAt = S.t + 0.4; } // 흰색 번쩍임은 0.4초에 한 번만 (연타에도 흰색으로 굳지 않게)
+    tgt.hp -= dmg; if (src && src.abil && src.abil.lifesteal && tgt.team === 'u' && !src.dead && !src.dying) src.hp = Math.min(src.max, src.hp + dmg * src.abil.lifesteal.frac); // 광전사: 준 피해만큼 흡혈
+    if (S.t >= (tgt.flashAt || 0)) { tgt.flash = 0.1; tgt.flashAt = S.t + 0.4; } // 흰색 번쩍임은 0.4초에 한 번만 (연타에도 흰색으로 굳지 않게)
     if (S.captureEvents) numNote(S, tgt, dmg, crit ? 'c' : 'd');
     if (tgt.hp > 0) return;
     let rp = null; if (tgt.team === 'u' && !isStatic(tgt) && !tgt.undead) { let bd = 1e9; for (const p of S.units) if (p.type === 'priest' && !p.dead && p !== tgt && p.rv > 0) { const d = Math.hypot(p.x - tgt.x, p.y - tgt.y); if (d < bd) { bd = d; rp = p; } } }

@@ -563,9 +563,9 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   { const { g, b } = mk('charger'); const d0 = Math.hypot(b.x - 1500, b.y - 1500); for (let i = 0; i < 30 * 2; i++) C.tick(g, DT); check('돌격왕: 등장하자마자 성 쪽으로 돌진', Math.hypot(b.x - 1500, b.y - 1500) < d0 - 350 || b.rushDone, `${d0.toFixed(0)} → ${Math.hypot(b.x - 1500, b.y - 1500).toFixed(0)}`); }
   { const { g, b } = mk('summoner'); g.captureEvents = true; let ev = null; b.speed = 0; for (let i = 0; i < 30 * 14 && !ev; i++) { C.tick(g, DT); ev = C.drainEvents(g).find(e => e.type === 'bossBlink') || null; }
     check('소환사: 순간이동', !!ev && Math.hypot(ev.x1 - ev.x0, ev.y1 - ev.y0) > 300, ev ? `이동 거리 ${Math.hypot(ev.x1 - ev.x0, ev.y1 - ev.y0).toFixed(0)}` : '없음'); }
-  { const { g, b } = mk('berserker'); g.gold = 1e7; for (let i = 0; i < 4; i++) { g.buyCd.sword = 0; const u = C.buy(g, 'sword').unit; u.x = 1500 + 300 + i * 10; u.y = 1500; u.hx = u.x; u.hy = u.y; u.max = u.hp = 1e9; } b.x = 1500 + 400; b.y = 1500; b.speed = 0; g.captureEvents = true; let ev = null, sh = null;
+  { const { g, b } = mk('charger'); delete b.abil.rush; delete b.abil.dash; g.gold = 1e7; for (let i = 0; i < 4; i++) { g.buyCd.sword = 0; const u = C.buy(g, 'sword').unit; u.x = 1500 + 300 + i * 10; u.y = 1500; u.hx = u.x; u.hy = u.y; u.max = u.hp = 1e9; } b.x = 1500 + 400; b.y = 1500; b.speed = 0; g.captureEvents = true; let ev = null, sh = null;
     for (let i = 0; i < 30 * 12 && !sh; i++) { C.tick(g, DT); for (const e of C.drainEvents(g)) { if (e.type === 'bossLeap') ev = e; if (e.type === 'bossShock') sh = e; } }
-    check('광전사: 아군이 몰린 곳으로 도약해 내려찍음', !!ev && !!sh && Math.hypot(b.x - 1500, b.y - 1500) < 330, ev ? '도약 후 거리 ' + Math.hypot(b.x - 1500, b.y - 1500).toFixed(0) : '없음'); }
+    check('돌격왕: 아군이 몰린 곳으로 도약해 내려찍음', !!ev && !!sh && Math.hypot(b.x - 1500, b.y - 1500) < 330, ev ? '도약 후 거리 ' + Math.hypot(b.x - 1500, b.y - 1500).toFixed(0) : '없음'); }
   { const { g, b } = mk('bombardier'); for (let i = 0; i < 30 * 40; i++) C.tick(g, DT); const d = Math.hypot(b.x - 1500, b.y - 1500); check('포격대장: 원거리 공격 — 성에서 떨어져 싸움 (사거리 115)', b.ranged && d > 150 && d < 300, d.toFixed(0)); }
 }
 // 43) 인구 제한 + 성 업그레이드(능력치·대포·인구)
@@ -891,5 +891,9 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   const e1 = sn.units[0].x, e2 = ba.units[0].x; for (let i = 0; i < 30; i++) { C.tick(sn, DT); C.tick(ba, DT); } check('눈보라의 기운: 아군 이동 속도 감소', Math.abs(sn.units[0].x - e1) <= Math.abs(ba.units[0].x - e2) + 0.01);
   const w = mk('earth'); const gr = w.enemies[0]; gr.hp = gr.max = 1000; C.damage(w, gr, 100, false, null); check('대지의 기운: 적이 받는 피해 감소', Math.round(gr.hp) === 1000 - Math.round(100 * C.CFG.omenFx.earth.foeTaken));
   const d = mk('dragon'); d.omenT = 99; const u0 = d.units[0]; u0.hp = u0.max; C.tick(d, DT); check('불길의 기운: 불씨가 아군에게 피해', u0.hp < u0.max); }
+// 65) 도약은 돌격왕, 광전사는 흡혈
+{ const A = id => C.CFG.bossPool.find(b => b.id === id).abil; check('도약은 돌격왕에게, 광전사에는 없음', !!A('charger').leap && !A('berserker').leap);
+  const g = arena(10, [['boss', 700, 500]], 'berserker'); const b = g.enemies[0]; g.units.length = 0; g.gold = 1e6; g.buyCd.sword = 0; C.buy(g, 'sword'); for (let i = 0; i < 400 && !g.units.length; i++) C.tick(g, DT);
+  const u = g.units[0]; u.hp = u.max = 1e9; b.hp = b.max * 0.5; const h0 = b.hp; C.damage(g, u, 100, false, b); check('광전사: 준 피해의 일부만큼 회복', b.hp > h0 && b.hp - h0 <= 100 * 0.26, Math.round(b.hp - h0)); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);
