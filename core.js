@@ -1095,7 +1095,7 @@
   // 보스 체력이 0이 되면: 남은 졸개가 모두 쓰러지고, 시간이 멈춘 채 보스의 사망 모션이 흐른 뒤 라운드가 끝난다.
   // 50라운드 마왕은 여기서 한 번 더 부활한다 (체력이 다시 차오르며 모습이 바뀐다).
   function beginBossDeath(S, b) {
-    b.dying = true; b.hp = 0; b.shieldT = 0; b.dashT = 0; b.dashDx = undefined; b.leapT = 0; b.focusT = 0; b.hidden = false; b.lift = 0; b.flyS = null; b.shx = undefined; b.riseT = 0;
+    b.dying = true; b.hp = 0; b.shieldT = 0; b.dashT = 0; b.dashDx = undefined; b.leapT = 0; b.leapW = 0; b.focusT = 0; b.hidden = false; b.lift = 0; b.flyS = null; b.shx = undefined; b.riseT = 0;
     const revive = !!b.canRevive && !b.p2 && (!S.endless || !!b.king);
     S.gold += b.gold; S.stats.earned += b.gold; S.kills++; S.stats.killBy.boss = (S.stats.killBy.boss || 0) + 1; if (!revive) S.stats.bossKills++;
     emit(S, { type: 'kill', x: b.x, y: b.y, boss: true });
@@ -1678,7 +1678,11 @@
       }
       if (!e.flown && !e.flyS && e.hp <= e.max * F.at && e.riseT <= 0) { e.flyS = 'up'; e.flyT = F.up; e.anim = { k: 'roar', T: F.up, left: F.up }; emit(S, { type: 'dragonUp', x: e.x, y: e.y }); }
     }
-    if (A.rush && !e.rushDone) { // 등장하자마자 가장 가까운 아군에게 돌진, 닿으면 충격파로 주변 아군을 기절시킨다 (아군이 없으면 성)
+    if (A.rush && !e.rushDone && e.rushW === undefined) { // 등장 직후 돌진 경로를 먼저 보여 준다
+      e.rushW = A.rush.warn || 0.9; const t0 = nearest(S.gU, e.x, e.y, 1500) || S.core; emit(S, { type: 'bossRush', x: e.x, y: e.y, tx: t0.x, ty: t0.y, warn: e.rushW });
+    }
+    if (A.rush && !e.rushDone && e.rushW > 0) { e.rushW -= dt; e.speedMul = 0; }
+    else if (A.rush && !e.rushDone) { // 등장하자마자 가장 가까운 아군에게 돌진, 닿으면 충격파로 주변 아군을 기절시킨다 (아군이 없으면 성)
       e.speedMul *= A.rush.mul; const rt = nearest(S.gU, e.x, e.y, 1500);
       if ((rt ? Math.hypot(rt.x - e.x, rt.y - e.y) - rt.r - e.r <= 24 : Math.hypot(e.x - CX, e.y - CY) <= A.rush.until) || e.life > 7) {
         e.rushDone = true;
@@ -1697,8 +1701,9 @@
         emit(S, { type: 'bossBlink', x0, y0, x1: e.x, y1: e.y }); bossSay(S, e, null, 'blink');
       }
     }
-    if (A.leap) { // 도약: 아군이 가장 밀집한 곳을 향해 날아올라 내려찍는다
-      if (e.leapT > 0) {
+    if (A.leap) { // 도약: 아군이 가장 밀집한 곳을 향해 날아올라 내려찍는다 (뛰기 전에 착지 지점과 이동 경로를 미리 보여 준다)
+      if (e.leapW > 0) { e.leapW -= dt; e.speedMul = 0; if (e.leapW <= 0) { e.leapT = A.leap.air; emit(S, { type: 'bossLeapGo', x: e.leapX, y: e.leapY, fx: e.x, fy: e.y }); } }
+      else if (e.leapT > 0) {
         e.leapT -= dt; e.speedMul = 0; const k = Math.min(1, dt / Math.max(0.03, e.leapT + dt)); e.x += (e.leapX - e.x) * k; e.y += (e.leapY - e.y) * k;
         if (e.leapT <= 0) {
           for (const u of S.units) if (!u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= A.leap.r + u.r) { damage(S, u, e.dmg * e.dmgMul * A.leap.mul, false, e); u.stunT = Math.max(u.stunT || 0, 0.8); knock(S, u, e.x, e.y, 480, 0); }
@@ -1710,7 +1715,7 @@
           let best = null, bn = -1;
           for (const u of S.units) { if (u.dead || Math.hypot(u.x - e.x, u.y - e.y) > 650) continue; let n = 0; for (const o of S.units) if (!o.dead && Math.hypot(o.x - u.x, o.y - u.y) <= A.leap.r) n++; if (n > bn) { bn = n; best = u; } }
           if (!best) e.t.leap = 1.5;
-          else { e.t.leap = A.leap.cd; e.leapT = A.leap.air; e.leapX = best.x; e.leapY = best.y; emit(S, { type: 'bossLeap', x: best.x, y: best.y, r: A.leap.r, air: A.leap.air, fx: e.x, fy: e.y }); bossSay(S, e, null, 'leap'); }
+          else { e.t.leap = A.leap.cd; e.leapW = A.leap.warn || 0.7; e.leapX = best.x; e.leapY = best.y; emit(S, { type: 'bossLeap', x: best.x, y: best.y, r: A.leap.r, air: A.leap.air, warn: e.leapW, fx: e.x, fy: e.y }); bossSay(S, e, null, 'leap'); }
         }
       }
     }
@@ -1931,7 +1936,8 @@
     const c = S.core, spm = e.speedMul * (S.omen === 'thunder' && !S.omenWait ? CFG.omenFx.thunder.enemySpd : 1) * (e.hasteT > 0 ? e.hasteMul : 1) * (e.slowT > 0 ? 0.45 : 1) * (boost > 1 ? Math.min(1.5, 1 + (boost - 1) * 0.2) : 1), dmg = e.dmg * boost * e.dmgMul * (e.curseT > 0 ? 0.75 : 1), cdTime = 1 / (e.rate * e.rateMul || 1);
     let tgt = nearest(S.gU, e.x, e.y, (e.abil && e.abil.rush && !e.rushDone) || e.dashT > 0 ? 1500 : e.aggro);
     if (e.dashT > 0 || (e.abil && e.abil.rush && !e.rushDone)) { let bs = null, bdd = Infinity; for (const u of S.units) { if (u.dead || (u.type !== 'sword' && u.line !== 'sword' && u.type !== 'legendsword')) continue; const d = Math.hypot(u.x - e.x, u.y - e.y); if (d < bdd) { bdd = d; bs = u; } } if (bs) tgt = bs; } // 돌진은 가장 가까운 검사부터 // 등장 돌진 중에는 거리와 상관없이 가장 가까운 아군
-    if (e.leapT > 0) return; // 도약 중
+    if (e.leapT > 0 || e.leapW > 0) return; // 도약 준비·도약 중
+    if (e.rushW > 0 && !e.rushDone) return; // 강습 준비 중 (경로를 보여 주는 동안 제자리)
     if (e.abil && e.abil.siege && !(tgt && Math.hypot(tgt.x - e.x, tgt.y - e.y) < 110)) { moveToward(e, c.x, c.y, dt, e.abil.siege.dist, spm); return; } // 멀리서 포격만 하는 보스
     if (e.ranged) { // 사수: 사거리 끝에서 멈춰 포물선 화살을 쏜다
       const t = tgt || c, d = Math.hypot(t.x - e.x, t.y - e.y) - t.r - e.r;

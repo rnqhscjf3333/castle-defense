@@ -920,5 +920,16 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
 // 68) 마왕 2차전에는 등장 직후 보호가 없다
 { C.CFG.bossGuard.red = GUARD_RED; const g = arena(50, [['boss', 1500, 1280]]); g.act = 2; g.round = 50; g.queue = []; const b = g.enemies[0]; g.core.atk = 1e6; g.core.hp = g.core.max = 1e9; b.guardT = 0; b.hp = 1; C.damage(g, b, 5);
   for (let i = 0; i < 900 && !(b.p2 && !b.dying); i++) C.tick(g, DT); check('마왕 2차전에는 등장 직후 보호가 걸리지 않음', b.p2 && !(b.guardT > 0), b.guardT); C.CFG.bossGuard.red = 0; }
+// 69) 도약·강습·순간이동 예고/표시
+{ const mk = (id, round) => { const g = arena(round, [['boss', 1500 + 600, 1500]], id); g.core.hp = g.core.max = 1e9; g.core.atk = 0; return { g, b: g.enemies[0] }; };
+  { const { g, b } = mk('charger', 10); g.captureEvents = true; delete b.abil.dash; delete b.abil.rush; delete b.abil.roar; g.gold = 1e7; for (let i = 0; i < 4; i++) { g.buyCd.sword = 0; const u = C.buy(g, 'sword').unit; u.x = 1500 + 500 + i * 8; u.y = 1500; u.hx = u.x; u.hy = u.y; u.hp = u.max = 1e9; }
+    b.x = 2000 + 100; b.y = 1500; b.speed = 0; b.t.leap = 0; b.life = 5; let ev = null, x0 = null, goAt = null, still = true; const t0 = g.t;
+    for (let i = 0; i < 30 * 4; i++) { C.tick(g, DT); for (const e of C.drainEvents(g)) { if (e.type === 'bossLeap' && !ev) { ev = e; x0 = b.x; } if (e.type === 'bossLeapGo' && goAt === null) goAt = g.t - t0; } if (ev && goAt === null && Math.abs(b.x - x0) > 1) still = false; }
+    check('도약: 뛰기 전에 착지 지점·경로를 예고하고 그동안 제자리에 서 있음', !!ev && ev.warn > 0 && ev.fx !== undefined && still && goAt !== null, ev && ev.warn); }
+  { const { g, b } = mk('charger', 10); g.captureEvents = true; b.abil = { rush: { mul: 5, until: 170, r: 120, stun: 0.9 } }; b.t = {}; let ev = null, moved = false; const x0 = b.x;
+    for (let i = 0; i < 30 * 0.6; i++) { C.tick(g, DT); for (const e of C.drainEvents(g)) if (e.type === 'bossRush') ev = e; if (Math.abs(b.x - x0) > 3) moved = true; }
+    check('강습: 돌진 직전에 경로를 예고하고 그 사이에는 움직이지 않음', !!ev && ev.warn > 0 && !moved && ev.tx !== undefined, ev && ev.warn); for (let i = 0; i < 30 * 1.5; i++) C.tick(g, DT); check('강습: 예고가 끝나면 돌진함', Math.abs(b.x - x0) > 100, Math.round(Math.abs(b.x - x0))); }
+  { const { g, b } = mk('summoner', 10); g.captureEvents = true; b.abil = { blink: { cd: 13, minR: 300, maxR: 460 } }; b.t = { blink: 0 }; b.life = 5; let ev = null; for (let i = 0; i < 60 && !ev; i++) { C.tick(g, DT); ev = C.drainEvents(g).find(e => e.type === 'bossBlink') || null; }
+    check('순간이동: 출발지와 도착지 좌표 이벤트', !!ev && ev.x0 !== undefined && ev.x1 !== undefined && Math.hypot(ev.x1 - ev.x0, ev.y1 - ev.y0) > 100); } }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

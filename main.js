@@ -990,8 +990,15 @@
       else if (ev.type === 'curse') { if (fx.length < 260) addFx({ k: 'curse', x: ev.x, y: ev.y, t: 0, max: 0.6 }); }
       else if (ev.type === 'emelee') { if (fx.length < 220 && cam.zoom > 0.4) { addFx({ k: 'slash', x: ev.tx, y: ev.ty, a: Math.atan2(ev.ty - ev.y, ev.tx - ev.x), t: 0, max: 0.26, c: '#ff4adf', big: true }); addFx({ k: 'sparks', x: ev.tx, y: ev.ty, a: Math.atan2(ev.ty - ev.y, ev.tx - ev.x), cone: 2.6, t: 0, max: 0.3, c: '#ff9af0', r: 24, n: 9, big: true }); } }
       else if (ev.type === 'bossShock') { addFx({ k: 'sparks', x: ev.x, y: ev.y, t: 0, max: 0.5, c: '#ffcf40', r: ev.r * 0.8, n: 18, w: 3.2, big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.55, c: '#ffcf40', r: ev.r, big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: -0.08, max: 0.5, c: '#ff5a3a', r: ev.r * 0.7 }); for (let i = 0; i < 5; i++) addFx({ k: 'dust', x: ev.x + (Math.random() - 0.5) * ev.r, y: ev.y + (Math.random() - 0.5) * ev.r * 0.6, t: -Math.random() * 0.1, max: 0.9, r: 16 }); }
-      else if (ev.type === 'bossBlink') { for (const [x, y] of [[ev.x0, ev.y0], [ev.x1, ev.y1]]) { addFx({ k: 'ring', x, y, t: 0, max: 0.6, c: '#c77dff', big: true }); addFx({ k: 'summon', x, y, t: 0, max: 0.7 }); } toast('보스가 순간이동했습니다!'); }
-      else if (ev.type === 'bossLeap') { addFx({ k: 'zone', x: ev.x, y: ev.y, r: ev.r, t: 0, max: ev.air, c: '#ff9a3a' }); toast('보스가 도약합니다!'); }
+      else if (ev.type === 'bossBlink') {
+        addFx({ k: 'blinkTrail', x: ev.x0, y: ev.y0, tx: ev.x1, ty: ev.y1, t: 0, max: 1.1, c: '#c77dff' }); // 출발지에서 도착지까지 남는 보랏빛 궤적
+        addFx({ k: 'ring', x: ev.x0, y: ev.y0, t: 0, max: 0.5, c: '#c77dff', big: true }); addFx({ k: 'sparks', x: ev.x0, y: ev.y0, t: 0, max: 0.5, c: '#e6c8ff', r: 60, n: 14, w: 2.6 }); // 사라지는 자리
+        addFx({ k: 'ring', x: ev.x1, y: ev.y1, t: 0, max: 0.7, c: '#c77dff', big: true }); addFx({ k: 'ring', x: ev.x1, y: ev.y1, t: -0.1, max: 0.6, c: '#ffffff', r: 40 }); addFx({ k: 'pillar', x: ev.x1, y: ev.y1, t: 0, max: 1.0, c: '#d9a8ff' }); addFx({ k: 'sparks', x: ev.x1, y: ev.y1, t: 0, max: 0.55, c: '#e6c8ff', r: 80, n: 18, w: 3, big: true }); addFx({ k: 'blinkMark', x: ev.x1, y: ev.y1, t: 0, max: 1.6 }); // 나타난 자리
+        addShake(3, 0.2); toast('보스가 순간이동했습니다! 보라색 표시된 곳에 나타났어요');
+      }
+      else if (ev.type === 'bossLeap') { addFx({ k: 'leapMark', x: ev.x, y: ev.y, fx: ev.fx, fy: ev.fy, r: ev.r, t: 0, max: (ev.warn || 0.7) + ev.air, warn: ev.warn || 0.7 }); toast('보스가 도약합니다! 표시된 곳을 피하세요'); }
+      else if (ev.type === 'bossLeapGo') { addFx({ k: 'blinkTrail', x: ev.fx, y: ev.fy, tx: ev.x, ty: ev.y, t: 0, max: 0.5, c: '#ffb24a', thin: true }); addFx({ k: 'sparks', x: ev.fx, y: ev.fy, t: 0, max: 0.4, c: '#ffd9a0', r: 40, n: 10, w: 2.4 }); addShake(2, 0.15); }
+      else if (ev.type === 'bossRush') { addFx({ k: 'rushPath', x: ev.x, y: ev.y, tx: ev.tx, ty: ev.ty, t: 0, max: ev.warn }); toast('보스가 돌진합니다! 붉은 경로를 피하세요'); }
       else if (ev.type === 'portalOpen') pendingPortal = ev.n;
       else if (ev.type === 'bossSlam') addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.4, c: '#ff5a3a', r: ev.r, big: true });
       else if (ev.type === 'enrage') toast('적이 오래 살아남아 격노합니다! 점점 더 강해져요');
@@ -1685,6 +1692,32 @@
         ctx.globalAlpha = 0.9; ctx.strokeStyle = f.c; ctx.lineWidth = 3 / z; ctx.setLineDash([10 / z, 7 / z]); ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
         ctx.globalAlpha = 0.5; ctx.lineWidth = 2 / z; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (1 - p), 0, Math.PI * 2); ctx.stroke();
         ctx.globalAlpha = 1; drawFall(ctx, f.kind, f.x, f.y, f.r, p, 'zone');
+      }
+      else if (f.k === 'leapMark') { // 도약: 뛰어오를 경로(점선 포물선 + 화살표)와 착지 지점(붉은 원)을 미리 보여 준다
+        const wp = Math.min(1, f.t / f.warn), land = p, mx = (f.fx + f.x) / 2, my = (f.fy + f.y) / 2 - Math.min(160, Math.hypot(f.x - f.fx, f.y - f.fy) * 0.45), pu = 0.5 + 0.5 * Math.sin(now * 0.02);
+        ctx.save(); ctx.lineCap = 'round'; ctx.globalAlpha = 0.75 * (1 - land * 0.6); ctx.strokeStyle = '#ffd27a'; ctx.lineWidth = 3 / z; ctx.setLineDash([9 / z, 8 / z]); ctx.lineDashOffset = -now * 0.03 / z; ctx.beginPath(); ctx.moveTo(f.fx, f.fy); ctx.quadraticCurveTo(mx, my, f.x, f.y); ctx.stroke(); ctx.setLineDash([]);
+        const ah = Math.atan2(f.y - my, f.x - mx); ctx.fillStyle = '#ffd27a'; ctx.beginPath(); ctx.moveTo(f.x + Math.cos(ah) * 12, f.y + Math.sin(ah) * 12); ctx.lineTo(f.x + Math.cos(ah + 2.5) * 10, f.y + Math.sin(ah + 2.5) * 10); ctx.lineTo(f.x + Math.cos(ah - 2.5) * 10, f.y + Math.sin(ah - 2.5) * 10); ctx.closePath(); ctx.fill();
+        ctx.globalAlpha = 0.14 + 0.14 * pu; ctx.fillStyle = '#ff4a2a'; ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, 6.283); ctx.fill();
+        ctx.globalAlpha = 0.9; ctx.strokeStyle = '#ff6a3a'; ctx.lineWidth = 3 / z; ctx.setLineDash([10 / z, 7 / z]); ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, 6.283); ctx.stroke(); ctx.setLineDash([]);
+        ctx.globalAlpha = 0.6; ctx.lineWidth = 2 / z; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (1 - p), 0, 6.283); ctx.stroke();
+        ctx.globalAlpha = 0.9; ctx.lineWidth = 3 / z; ctx.beginPath(); ctx.moveTo(f.x - 9, f.y - 9); ctx.lineTo(f.x + 9, f.y + 9); ctx.moveTo(f.x + 9, f.y - 9); ctx.lineTo(f.x - 9, f.y + 9); ctx.stroke(); void wp; ctx.restore();
+      }
+      else if (f.k === 'rushPath') { // 돌진: 보스가 달려갈 직선 경로를 붉은 띠와 화살표로 보여 준다
+        const dx = f.tx - f.x, dy = f.ty - f.y, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, nx = -uy, ny = ux, w = 34, a = Math.min(1, f.t / 0.15) * (1 - Math.max(0, (p - 0.85) / 0.15));
+        ctx.save(); ctx.globalAlpha = 0.2 * a + 0.08 * Math.sin(now * 0.02); ctx.fillStyle = '#ff3a2a'; ctx.beginPath(); ctx.moveTo(f.x + nx * w, f.y + ny * w); ctx.lineTo(f.tx + nx * w, f.ty + ny * w); ctx.lineTo(f.tx - nx * w, f.ty - ny * w); ctx.lineTo(f.x - nx * w, f.y - ny * w); ctx.closePath(); ctx.fill();
+        ctx.globalAlpha = 0.85 * a; ctx.strokeStyle = '#ff5a3a'; ctx.lineWidth = 3 / z; ctx.setLineDash([12 / z, 8 / z]); ctx.lineDashOffset = -now * 0.05 / z; ctx.beginPath(); ctx.moveTo(f.x + nx * w, f.y + ny * w); ctx.lineTo(f.tx + nx * w, f.ty + ny * w); ctx.moveTo(f.x - nx * w, f.y - ny * w); ctx.lineTo(f.tx - nx * w, f.ty - ny * w); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = '#ff7a4a'; for (let i = 0; i < 4; i++) { const q = ((now * 0.0016 + i / 4) % 1) * L; ctx.beginPath(); ctx.moveTo(f.x + ux * (q + 16), f.y + uy * (q + 16)); ctx.lineTo(f.x + ux * q + nx * 12, f.y + uy * q + ny * 12); ctx.lineTo(f.x + ux * q - nx * 12, f.y + uy * q - ny * 12); ctx.closePath(); ctx.fill(); }
+        ctx.restore();
+      }
+      else if (f.k === 'blinkTrail') { // 순간이동·도약 궤적: 출발지에서 도착지까지 빛나는 선이 남았다가 흩어진다
+        const dx = f.tx - f.x, dy = f.ty - f.y, L = Math.hypot(dx, dy) || 1; ctx.save(); ctx.lineCap = 'round'; ctx.globalAlpha = (1 - p) * 0.8; ctx.strokeStyle = f.c; ctx.lineWidth = (f.thin ? 4 : 9) * (1 - p * 0.7) / z * 1.1; ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(f.tx, f.ty); ctx.stroke();
+        ctx.globalAlpha = (1 - p) * 0.9; ctx.strokeStyle = '#fff'; ctx.lineWidth = (f.thin ? 1.5 : 3) / z; ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(f.tx, f.ty); ctx.stroke();
+        ctx.fillStyle = f.c; for (let i = 0; i < 8; i++) { const q = (i + 0.5) / 8, jx = Math.sin(i * 7.3 + f.t * 9) * 8, jy = Math.cos(i * 5.1 + f.t * 9) * 8; ctx.globalAlpha = (1 - p) * 0.7; ctx.beginPath(); ctx.arc(f.x + dx * q + jx, f.y + dy * q + jy, 3 * (1 - p), 0, 6.283); ctx.fill(); }
+        ctx.restore();
+      }
+      else if (f.k === 'blinkMark') { // 순간이동 도착 지점 표시: 보라색 이중 원과 아래로 향하는 화살표
+        const a = 1 - Math.max(0, (p - 0.6) / 0.4), bob = Math.sin(now * 0.012) * 4; ctx.save(); ctx.globalAlpha = 0.85 * a; ctx.strokeStyle = '#d9a8ff'; ctx.lineWidth = 3 / z; ctx.beginPath(); ctx.arc(f.x, f.y, 34 + 4 * Math.sin(now * 0.01), 0, 6.283); ctx.stroke(); ctx.globalAlpha = 0.4 * a; ctx.beginPath(); ctx.arc(f.x, f.y, 52, 0, 6.283); ctx.stroke();
+        ctx.globalAlpha = 0.95 * a; ctx.fillStyle = '#e6c8ff'; ctx.beginPath(); ctx.moveTo(f.x, f.y - 56 + bob); ctx.lineTo(f.x - 10, f.y - 72 + bob); ctx.lineTo(f.x + 10, f.y - 72 + bob); ctx.closePath(); ctx.fill(); ctx.restore();
       }
       else if (f.k === 'impact') drawImpact(ctx, f, p, z);
       else if (f.k === 'drainLn') { // 암흑 흡수: 마왕과 병사들을 잇는 검붉은 선 (잠시 출렁이며 사라진다)
