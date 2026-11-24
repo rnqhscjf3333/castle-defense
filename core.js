@@ -150,6 +150,7 @@
       earth:   { name: '대지의 기운', short: '적 받는 피해 -12%', foeTaken: 0.88, text: '대지의 기운 — 적이 받는 피해 -12%' },
       dragon:  { name: '불길의 기운', short: '불씨가 아군에 낙하', every: 2.5, n: 3, pct: 0.03, text: '불길의 기운 — 불씨가 떨어져 아군 3명이 2.5초마다 최대 체력의 3% 피해' },
     },
+    ninjaBurst: 9, // 닌자 5스택 폭발 배율 (표창 피해 × 이 값, 단일 대상)
     kingHp: 2.0, kingP1: 1.5, wingedHp: 2.0, // 용익 기사단장 체력 배율
     bossGuard: { dur: 8, fade: 2, red: 0.85 }, // 보스(1차전·단일 형태)가 나타난 직후 8초간 받는 피해 -85% (마지막 2초 동안 서서히 사라진다)           // 사천왕 한 형태의 체력 = 무한 모드 보스 기본 체력 × 이 값
     kings: {
@@ -263,7 +264,7 @@
           ],
           ranger: [
             { id: 'stormarcher', name: '폭풍사수', desc: '세 갈래 질풍 화살. 공격 속도 +40%, 치명타 확률 +15%, 바람처럼 공격을 30% 확률로 회피', mods: { rate: 0.4, crit: 0.15, dodge: 0.3 } },
-            { id: 'ninja', name: '닌자', desc: '표창을 던지는 암살자. 공격력 +30%, 이동 속도 +25%, 사거리 -50. 표창이 5개 쌓인 적은 폭발해 그 적에게 큰 피해(표창 피해의 4배, 주변 적은 받지 않음). 표창은 직선으로 빠르게 날아감', mods: { atk: 0.3, speed: 0.25, range: -50, stack: 1 } },
+            { id: 'ninja', name: '닌자', desc: '표창을 던지는 암살자. 공격력 +30%, 이동 속도 +25%, 사거리 -50. 표창이 5개 쌓인 적은 폭발해 그 적에게 큰 피해(표창 피해의 9배, 주변 적은 받지 않음 — 보스처럼 단일 대상에게 강함). 표창은 직선으로 빠르게 날아감', mods: { atk: 0.3, speed: 0.25, range: -50, stack: 1 } },
           ],
         },
       },
@@ -1340,7 +1341,7 @@
       if (s.curse && !s.t.dead) { const t = s.t; t.curseT = 4; t.burnT = 4; t.burnD = s.dmg * 0.25; t.burnAcc = t.burnAcc || 0; emit(S, { type: 'curse', x: t.x, y: t.y }); } // 약화(공격력 감소) + 성화 화상
       if (s.stack && !s.t.dead) { // 닌자: 표창이 박힌다 — 5개가 쌓이면 폭발
         const t = s.t; t.stk = (t.stk || 0) + 1; t.stkT = 6;
-        if (t.stk >= 5) { t.stk = 0; const bd = s.dmg * (s.bm || 4); damage(S, t, bd * (t.rres || 1)); emit(S, { type: 'ninjaBurst', x: t.x, y: t.y, r: 40 }); } // 폭발은 표창이 쌓인 그 적만 받는다
+        if (t.stk >= 5) { t.stk = 0; const bd = s.dmg * (s.bm || CFG.ninjaBurst); damage(S, t, bd * (t.rres || 1)); emit(S, { type: 'ninjaBurst', x: t.x, y: t.y, r: 40 }); } // 폭발은 표창이 쌓인 그 적만 받는다
         else emit(S, { type: 'ninjaStack', x: t.x, y: t.y, n: t.stk });
       }
       if (s.splash) { const R = 55, t = s.t; eachNear(S.gE, t.x, t.y, R, e => { if (e !== t) damage(S, e, s.dmg * s.splash); }); emit(S, { type: 'boom', x: t.x, y: t.y, r: R }); } // 포격수: 폭발 화살
@@ -1622,7 +1623,7 @@
             if (!(u.lsFx > 0)) { u.lsFx = 0.3; emit(S, { type: 'leech', x: u.x, y: u.y, tx: t.x, ty: t.y, amt: Math.round(leech * jmf.lifesteal) }); }
           }
         } else {
-          const line = lineOf(u.type), pc = (line === 'archer' ? pierceCount(S) : 0) + (CFG.units[u.type].pierce | 0), jma = S.jobMods[line] || {}, arrow = (pc > 0 || jma.splash || jma.mark || jma.stack) ? Object.assign(pc > 0 ? { pierce: true, pc } : {}, jma.splash ? { splash: jma.splash } : {}, jma.mark ? { mark: jma.mark } : {}, jma.stack ? { stack: 1, bm: 4 * (1 + jma.burst) } : {}) : null;
+          const line = lineOf(u.type), pc = (line === 'archer' ? pierceCount(S) : 0) + (CFG.units[u.type].pierce | 0), jma = S.jobMods[line] || {}, arrow = (pc > 0 || jma.splash || jma.mark || jma.stack) ? Object.assign(pc > 0 ? { pierce: true, pc } : {}, jma.splash ? { splash: jma.splash } : {}, jma.mark ? { mark: jma.mark } : {}, jma.stack ? { stack: 1, bm: CFG.ninjaBurst * (1 + jma.burst) } : {}) : null;
           const cc = line === 'archer' ? V().crit * S.perks.crit + S.jobMods.archer.crit : 0;
           let dm = atk, isCrit = false; if (cc > 0 && S.rng() < cc) { dm *= V().critMul; isCrit = true; emit(S, { type: 'crit', x: t.x, y: t.y }); }
           if (jma.rifle) snipe(S, u, t, dm, isCrit); // 명사수: 저격총 — 포물선 없이 일직선으로 꿰뚫는다
