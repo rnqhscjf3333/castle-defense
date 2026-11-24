@@ -212,7 +212,7 @@
           { id: 'inferno', name: '대화염', kind: '지속형', desc: '불길 지대가 7초 동안 더 넓고 강하게 타오릅니다.', par: { blast: { zone: 3, zmul: 0.25, r: 30 } } },
         ],
         frost: [
-          { id: 'zero', name: '절대영도', kind: '제어형', desc: '폭발이 적을 1.6초 동안 완전히 얼립니다 (보스는 짧게).', par: { blast: { freeze: 1.6 } } },
+          { id: 'zero', name: '절대영도', kind: '제어형', desc: '폭발이 적을 1.6초 동안 완전히 얼립니다 (보스는 얼지 않음).', par: { blast: { freeze: 1.6 } } },
           { id: 'shatter', name: '빙하 파쇄', kind: '공격형', desc: '폭발 피해 ×1.7, 감속 5초.', par: { blast: { mul: 2.1, slow: 1.5 } } },
         ],
         judge: [
@@ -243,7 +243,7 @@
         ],
         t2: {
           knight: [
-            { id: 'paladin', name: '팔라딘', desc: '성스러운 갑옷과 철퇴를 든 완전 방어형. 체력 +50%, 피해 12% 방어, 초당 체력 3% 회복. 대신 공격력 -35%. 때릴 때 12% 확률로 적을 1.2초 기절시킴 (보스는 짧게)', mods: { hp: 0.5, def: 0.12, regen: 0.03, atk: -0.35, stun: 0.12 } },
+            { id: 'paladin', name: '팔라딘', desc: '성스러운 갑옷과 철퇴를 든 완전 방어형. 체력 +50%, 피해 12% 방어, 초당 체력 3% 회복. 대신 공격력 -35%. 때릴 때 12% 확률로 적을 1.2초 기절시킴 (보스는 기절하지 않음)', mods: { hp: 0.5, def: 0.12, regen: 0.03, atk: -0.35, stun: 0.12 } },
             { id: 'warlord', name: '워로드', desc: '긴 랜스를 든 돌격 기사. 공격력 +130%, 체력 +40%, 사거리 +14. 대신 공격 속도 -35%. 찌르면 적을 크게 밀어냄 (보스는 밀리지 않음)', mods: { hp: 0.4, atk: 1.3, rate: -0.35, range: 14, knock: 300 } },
           ],
           blade: [
@@ -1434,7 +1434,7 @@
       for (let i = 0; i < cand.length; i += step) { const e = cand[i]; if (e.dead || used.some(p => Math.hypot(p[0] - e.x, p[1] - e.y) < B.r * 1.2)) continue; let n = 0; for (const o of cand) if (Math.hypot(o.x - e.x, o.y - e.y) <= B.r) n++; if (n > bn) { bn = n; best = e; } }
       if (!best) break; used.push([best.x, best.y]);
       const x = best.x, y = best.y, dmg = c.atk * B.mul;
-      eachNear(S.gE, x, y, B.r, o => { damage(S, o, dmg); if (B.slow > 0) o.slowT = Math.max(o.slowT || 0, B.slow); if (B.freeze > 0) o.frozenT = Math.max(o.frozenT || 0, o.kind === 'boss' ? B.freeze * 0.35 : B.freeze); });
+      eachNear(S.gE, x, y, B.r, o => { damage(S, o, dmg); if (B.slow > 0) o.slowT = Math.max(o.slowT || 0, B.slow); if (B.freeze > 0 && o.kind !== 'boss') o.frozenT = Math.max(o.frozenT || 0, B.freeze); });
       if (B.zone > 0) S.rain.push({ x, y, r: B.r * 0.95, t: B.zone, tick: 0.3, mul: B.zmul, atk: c.atk, every: 0.5, fx: 'fire', fire: true });
       emit(S, { type: 'castleBlast', x, y, r: B.r, k, zone: B.zone, cvar: c.cvar, cfin: c.cfin, freeze: B.freeze > 0, slow: B.slow > 0 });
     }
@@ -1561,9 +1561,9 @@
     }
     u.swing = 0.4;
   }
-  function stunEnemy(S, t, dur) { // 적 기절: 보스는 짧게만
-    if (t.dead || t.dying || t.hidden || t.riseT > 0) return;
-    t.stunT = Math.max(t.stunT || 0, t.kind === 'boss' ? dur * 0.3 : dur); emit(S, { type: 'stun', x: t.x, y: t.y });
+  function stunEnemy(S, t, dur) { // 적 기절: 보스는 기절하지 않는다
+    if (t.dead || t.dying || t.hidden || t.riseT > 0 || t.kind === 'boss') return;
+    t.stunT = Math.max(t.stunT || 0, dur); emit(S, { type: 'stun', x: t.x, y: t.y });
   }
   function snipe(S, u, t, dm, crit) { // 일직선 저격: 총구에서 사거리 끝까지, 선 위의 모든 적에게 피해
     const ang = Math.atan2(t.y - u.y, t.x - u.x), ux = Math.cos(ang), uy = Math.sin(ang), sx = u.x + ux * 16, sy = u.y + uy * 16, len = u.range + 90, ex = sx + ux * len, ey = sy + uy * len;
@@ -1936,6 +1936,7 @@
   }
   function updateEnemy(S, e, dt) {
     e.cd -= dt; e.age += dt;
+    if (e.kind === 'boss') { e.stunT = 0; e.frozenT = 0; } // 보스는 기절·빙결에 걸리지 않는다
     if (e.frozenT > 0) { e.frozenT -= dt; return; } // 절대영도: 얼어붙음
     if (e.stunT > 0) { e.stunT -= dt; return; } // 팔라딘의 기절
     const boost = enrageMul(e.age);

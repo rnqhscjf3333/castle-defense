@@ -938,5 +938,10 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   check('개발자 모드: 고른 전직이 적용됨', JSON.stringify(g.jobs.sword.ids) === '["knight","paladin"]' && JSON.stringify(g.jobs.archer.ids) === '["ranger","ninja"]' && JSON.stringify(g.jobs.priest.ids) === '["bard","shaman"]', JSON.stringify([g.jobs.sword.ids, g.jobs.archer.ids]));
   check('개발자 모드: 고른 성 갈래가 적용됨', JSON.stringify(g.cnodes) === '["necro","horde","deathknight"]', JSON.stringify(g.cnodes));
   const h = C.createGame(9); C.devSetup(h, 40, { jobs: { archer: ['ranger'] } }); check('개발자 모드: 일부만 고르면 나머지는 자동', h.jobs.archer.ids[0] === 'ranger' && h.jobs.archer.ids.length === 2 && h.cnodes.length >= 2, JSON.stringify(h.jobs.archer.ids)); }
+// 71) 보스는 기절·빙결 면역
+{ const g = arena(30, [['boss', 700, 500], ['grunt', 900, 500]]); const b = g.enemies[0], o = g.enemies[1]; g.units.length = 0; b.guardT = 0;
+  g.jobMods.sword.stun = 1; g.gold = 1e6; g.buyCd.sword = 0; C.buy(g, 'sword'); for (let i = 0; i < 400 && !g.units.length; i++) C.tick(g, DT);
+  const x0 = b.x; b.stunT = 3; b.frozenT = 3; o.stunT = 3; for (let i = 0; i < 5; i++) C.tick(g, DT);
+  check('보스는 기절·빙결 상태가 곧바로 해제됨', !(b.stunT > 0) && !(b.frozenT > 0)); check('일반 적은 기절이 그대로 유지됨', o.stunT > 0, o.stunT); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);
