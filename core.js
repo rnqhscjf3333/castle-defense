@@ -1450,7 +1450,7 @@
   }
   function castPulse(S) { // 수호: 아군 치유·보호막, 공격형은 주변 적에게 피해
     const P = S.cpar.pulse, c = S.core;
-    for (const u of S.units) { if (u.dead || u.undead || isStatic(u) || Math.hypot(u.x - c.x, u.y - c.y) > P.r) continue; if (P.heal > 0) applyHeal(S, u, u.max * P.heal); if (P.shield > 0) u.ward = Math.min(u.max * 0.3, (u.ward || 0) + u.max * P.shield); }
+    for (const u of S.units) { if (u.dead || u.undead || isStatic(u) || Math.hypot(u.x - c.x, u.y - c.y) > P.r) continue; if (P.heal > 0) applyHeal(S, u, u.max * P.heal); if (P.shield > 0) { u.ward = Math.min(u.max * 0.3, (u.ward || 0) + u.max * P.shield); u.wardFx = 0.45; } }
     if (P.dmg > 0) eachNear(S.gE, c.x, c.y, P.r, o => damage(S, o, c.atk * P.dmg));
     emit(S, { type: 'castlePulse', r: P.r, cvar: c.cvar, cfin: c.cfin, dmg: P.dmg > 0, shield: P.shield > 0 });
     S.cp = Math.max(2, P.cd);

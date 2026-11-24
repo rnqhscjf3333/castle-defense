@@ -945,7 +945,7 @@
         if (ev.zone > 0) addFx({ k: 'pool', x: ev.x, y: ev.y, r: ev.r * 0.95, t: dl, max: ev.zone, c: ['#ff7a1a', '#ffb24a', '#ffe9a0'] });
         if (ev.freeze) addFx({ k: 'ring', x: ev.x, y: ev.y, t: dl, max: 0.9, c: '#eaf8ff', r: ev.r * 1.5, big: true });
       }
-      else if (ev.type === 'castlePulse') { const col = JOBC[ev.cfin] || JOBC[ev.cvar] || JOBC.guardian; addFx({ k: 'ring', x: CX, y: CY, t: 0, max: 0.9, c: col, r: ev.r, big: true }); addFx({ k: 'ring', x: CX, y: CY, t: -0.12, max: 0.7, c: '#ffffff', r: ev.r * 0.7 }); if (ev.dmg) for (let i = 0; i < 10; i++) { const a = i / 10 * 6.283; addFx({ k: 'beam', x: CX + Math.cos(a) * 40, y: CY + Math.sin(a) * 40 - 8, tx: CX + Math.cos(a) * ev.r, ty: CY + Math.sin(a) * ev.r - 8, t: 0, max: 0.35, c: col, small: true }); } }
+      else if (ev.type === 'castlePulse') { const col = JOBC[ev.cfin] || JOBC[ev.cvar] || JOBC.guardian; addFx({ k: 'pulseWave', x: CX, y: CY, t: 0, max: 0.9, c: ev.shield ? '#8fd8ff' : col, r: ev.r, shield: !!ev.shield }); addFx({ k: 'ring', x: CX, y: CY, t: 0, max: 0.9, c: col, r: ev.r, grow: ev.r, big: true }); addFx({ k: 'ring', x: CX, y: CY, t: -0.12, max: 0.7, c: '#ffffff', r: ev.r * 0.7, grow: ev.r * 0.7 }); if (ev.dmg) for (let i = 0; i < 10; i++) { const a = i / 10 * 6.283; addFx({ k: 'beam', x: CX + Math.cos(a) * 40, y: CY + Math.sin(a) * 40 - 8, tx: CX + Math.cos(a) * ev.r, ty: CY + Math.sin(a) * ev.r - 8, t: 0, max: 0.35, c: col, small: true }); } }
       else if (ev.type === 'raise') { addFx({ k: 'burst', x: ev.x, y: ev.y, t: 0, max: 0.5, c: '#3ae68a', big: true }); addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.5, c: '#7affc8', r: 28 }); }
       else if (ev.type === 'undeadFade') addFx({ k: 'burst', x: ev.x, y: ev.y, t: 0, max: 0.4, c: '#3ae68a' });
       else if (ev.type === 'marked') addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.35, c: '#ff5a5a', r: 16 });
@@ -1497,6 +1497,12 @@
       const f = fx[i]; if (f.t < 0) continue; // 시작 지연 중
       const p = f.t / f.max;
       if (f.k === 'burst') { ctx.globalAlpha = 1 - p; ctx.fillStyle = f.c; ctx.beginPath(); ctx.arc(f.x, f.y, (f.big ? 20 : 8) + p * (f.big ? 50 : 16), 0, Math.PI * 2); ctx.fill(); }
+      else if (f.k === 'pulseWave') { // 성 파동: 성에서 퍼져 나가는 빛의 원판 (보호막 파동은 푸른 방벽 + 육각 문양)
+        const rr = 20 + (f.r - 20) * Math.min(1, p * 1.25), a = 1 - p; ctx.save(); const g = ctx.createRadialGradient(f.x, f.y, rr * 0.55, f.x, f.y, rr); g.addColorStop(0, f.c + '00'); g.addColorStop(0.7, f.c + (f.shield ? '33' : '22')); g.addColorStop(1, f.c + (f.shield ? 'bb' : '99')); ctx.globalAlpha = a; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(f.x, f.y, rr, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = f.shield ? '#e6f8ff' : '#fff'; ctx.lineWidth = (f.shield ? 6 : 4.5) / z; ctx.globalAlpha = Math.min(1, a * 1.3); ctx.beginPath(); ctx.arc(f.x, f.y, rr, 0, 6.283); ctx.stroke();
+        if (f.shield) { ctx.globalAlpha = a * 0.6; ctx.lineWidth = 2 / z; ctx.beginPath(); for (let i = 0; i <= 6; i++) { const ang = i / 6 * 6.283 + p * 0.8, px = f.x + Math.cos(ang) * rr * 0.8, py = f.y + Math.sin(ang) * rr * 0.8; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); } ctx.stroke(); }
+        ctx.restore();
+      }
       else if (f.k === 'sparks') { // 타격 불꽃: 맞은 자리에서 사방으로 튀는 짧은 선과 번쩍임
         ctx.lineCap = 'round'; ctx.strokeStyle = f.c; ctx.lineWidth = (f.w || 2.2) * (1 - p * 0.5); const n = f.n || 7;
         for (let i = 0; i < n; i++) { const h = Math.sin((i + 1) * 91.7 + (f.x + f.y) * 0.13) * 0.5 + 0.5, a = (f.a || 0) + ((i / n) - 0.5) * (f.cone || 6.283) + (h - 0.5) * 0.5, r0 = 4 + p * f.r * (0.6 + h * 0.6), r1 = r0 + (1 - p) * (6 + h * 8); ctx.globalAlpha = 1 - p; ctx.beginPath(); ctx.moveTo(f.x + Math.cos(a) * r0, f.y + Math.sin(a) * r0); ctx.lineTo(f.x + Math.cos(a) * r1, f.y + Math.sin(a) * r1); ctx.stroke(); }
