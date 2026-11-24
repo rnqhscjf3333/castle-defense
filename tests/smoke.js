@@ -947,5 +947,13 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
 { const g = C.createGame(12); C.devSetup(g, 80, { castle: ['arcane', 'frost', 'zero'] }); const B = g.cpar && g.cpar.blast;
   check('절대영도: 더 자주(주기 단축)·더 넓게·더 오래 얼림', !!B && B.freeze >= 2.6 && B.cd < 9 && B.r > 100, B && JSON.stringify(B));
   const base = C.CFG.jobs.sword.t2.knight.find(x => x.id === 'paladin'); check('팔라딘 기절 확률 18%', base.mods.stun === 0.18); }
+// 73) 원혼의 복수(아군이 쓰러지면 100% 망령), 망령은 항상 자유 모드처럼 추격
+{ const g = C.createGame(14); C.devSetup(g, 80, { castle: ['necro', 'bind', 'harvest'] }); g.phase = 'round'; g.hold = true; g.queue = []; g.enemies.length = 0; g.cb = 99; for (const u of g.units) if (u.type === 'priest') u.rv = 0; // (사제 부활이 먼저 가로채지 않도록)
+  check('원혼의 복수: 성 효과 적용', !!(g.cpar && g.cpar.raise && g.cpar.raise.fallen), JSON.stringify(g.cpar && g.cpar.raise));
+  const real = g.units.filter(u => !u.undead && !u.dead); let ok = 0, tries = 0; for (const f of real.slice(0, 5)) { if (g.units.filter(u => u.undead && !u.dead).length >= g.cpar.raise.max) break; const n0 = g.units.filter(u => u.undead && !u.dead).length; f.hp = 1; C.damage(g, f, 1e9); tries++; if (g.units.filter(u => u.undead && !u.dead).length === n0 + 1) ok++; }
+  check('아군이 쓰러지면 100% 확률로 망령이 나옴', tries > 0 && ok === tries, ok + '/' + tries);
+  const ud = g.units.find(u => u.undead && !u.dead); check('망령은 쓰러진 아군에 비례한 능력을 가짐', !!ud && ud.max > 30 && ud.atk >= 3 && ud.ttl > 0);
+  g.mode = 'normal'; g.units.forEach(u => { if (!u.undead) { u.dead = true; } }); ud.x = 1500 + C.CFG.leash + 200; ud.y = 1500; ud.hx = 1500 + 80; ud.hy = 1500; const e = C.spawnEnemy(g, 'grunt', ud.x + 150, ud.y); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e9; const d0 = Math.hypot(e.x - ud.x, e.y - ud.y); ud.ttl = 99; ud.hp = ud.max = 1e9; for (let i = 0; i < 60; i++) C.tick(g, DT);
+  check('망령은 기본 모드에서도 성 밖 멀리 있는 적을 쫓아가 공격 (자유 모드처럼)', e.hp < e.max, Math.round(d0) + ' → ' + Math.round(Math.hypot(e.x - ud.x, e.y - ud.y))); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

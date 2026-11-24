@@ -228,7 +228,7 @@
           { id: 'deathknight', name: '죽음의 기사', kind: '정예형', desc: '엘리트 적도 병사로 부활시키고, 망자 체력·공격력 +60%.', par: { raise: { elite: 1, hp: 0.6, atk: 0.6 } } },
         ],
         bind: [
-          { id: 'harvest', name: '영혼 수확', kind: '경제형', desc: '적을 병사로 부활시킬 때마다 그 적의 골드만큼 받습니다. 확률 +3%.', par: { raise: { bounty: 1, chance: 0.03, dur: 2 } } },
+          { id: 'harvest', name: '원혼의 복수', kind: '복수형', desc: '아군이 쓰러지면 100% 확률로 그 자리에서 망령이 되어 일어나 싸웁니다 (최대 인원 제한은 그대로). 적 부활 확률 +3%, 망자 지속 +2초.', par: { raise: { fallen: 1, chance: 0.03, dur: 2 } } },
           { id: 'immortal', name: '불멸의 망자', kind: '지속형', desc: '망자 지속 +8초, 최대 +2명, 체력 +30%.', par: { raise: { dur: 8, max: 2, hp: 0.3 } } },
         ],
       },
@@ -1310,7 +1310,7 @@
       if (S.cpar && S.cpar.raise) raiseUndead(S, tgt);
     }
     else if (tgt.type === 'undead') emit(S, { type: 'undeadFade', x: tgt.x, y: tgt.y });
-    else { if (S.fallen.length < 80) S.fallen.push(tgt.type); const k = src && src.team === 'e' ? { kind: src.kind, look: src.look, r: src.r, elite: !!src.elite } : null; emit(S, { type: 'udead', x: tgt.x, y: tgt.y, ut: tgt.type, job: tgt.job, jt: tgt.jobTier, by: k }); }
+    else { if (S.cpar && S.cpar.raise && S.cpar.raise.fallen) raiseFallen(S, tgt); if (S.fallen.length < 80) S.fallen.push(tgt.type); const k = src && src.team === 'e' ? { kind: src.kind, look: src.look, r: src.r, elite: !!src.elite } : null; emit(S, { type: 'udead', x: tgt.x, y: tgt.y, ut: tgt.type, job: tgt.job, jt: tgt.jobTier, by: k }); }
   }
   // 발사 위치: 몸 중심이 아니라 그림의 포구/활 위치 (조준 방향으로 len만큼 나간 지점, 높이 h0에서 출발)
   const MUZZLE = {
@@ -1424,6 +1424,14 @@
     u.speed = Math.max(55, Math.min(140, e.speed * 1.05)); u.rate = Math.max(0.6, Math.min(2.2, e.rate || 1)); u.range = Math.max(24, Math.min(44, e.range || 26)); u.zk = e.kind;
     if (R.bounty) { S.gold += e.gold * R.bounty; S.stats.earned += e.gold * R.bounty; }
     emit(S, { type: 'raise', x: e.x, y: e.y });
+  }
+  function raiseFallen(S, f) { // 원혼의 복수: 쓰러진 아군이 100% 확률로 망령이 되어 일어난다 (능력은 쓰러진 아군에 비례)
+    const R = S.cpar && S.cpar.raise; if (!R || !R.fallen || f.undead || isStatic(f)) return;
+    let n = 0; for (const o of S.units) if (!o.dead && o.undead) n++; if (n >= R.max) return;
+    const u = addUnit(S, 'undead'); u.undead = true; u.ttl = R.dur; u.x = f.x; u.y = f.y; u.hx = f.x; u.hy = f.y;
+    u.max = u.hp = Math.min(6000, Math.max(30, f.max * R.hp)); u.atk = Math.max(3, f.atk * R.atk); u.r = Math.max(8, Math.min(24, f.r)); u.tint = 0;
+    u.speed = Math.max(70, Math.min(140, f.speed * 1.05)); u.rate = Math.max(0.6, Math.min(2.2, f.rate || 1)); u.range = Math.max(24, Math.min(44, f.range || 26)); u.zk = lineOf(f.type) === 'archer' ? 'archer' : lineOf(f.type) === 'priest' ? 'shaman' : 'grunt';
+    emit(S, { type: 'raise', x: f.x, y: f.y });
   }
   function castBlast(S) { // 마탑: 가장 밀집한 적 무리에 마법 폭발
     const B = S.cpar.blast, c = S.core, cand = S.enemies.filter(e => !e.dead && Math.hypot(e.x - c.x, e.y - c.y) <= c.range + 330);
@@ -1601,7 +1609,7 @@
     const find = (x, y) => (melee ? nearest(S.gE, x, y, aggro) : nearestBoth(S, x, y, aggro));
     let tgt = find(u.x, u.y);
     { const th = find(u.hx, u.hy); if (th && th !== tgt) { const sc = e => Math.hypot(e.x - u.x, e.y - u.y) + CFG.ai.homeBias * Math.hypot(e.x - u.hx, e.y - u.hy); if (!tgt || sc(th) < sc(tgt)) tgt = th; } }
-    const free = S.mode === 'free';
+    const free = S.mode === 'free' || !!u.undead; // 망자(망령)는 기본 모드에서도 자유 모드처럼 주변 적을 쫓아가 공격한다
     if (u.rvT > 0) { u.rvT -= dt; if (u.rvT <= 0) u.foe = null; }
     if (free && u.foe && !u.foe.dead && u.foe.hp > 0) tgt = u.foe; // (자유 모드) 사거리 밖이어도 나를 공격한 적에게 가서 반격한다
     if (!tgt) { const dg = S.enemies.find(e => e.fixed && !e.dead && !e.hidden); if (dg && Math.hypot(dg.x - u.x, dg.y - u.y) <= 900) tgt = dg; } // 가까이 싸울 적이 없으면 고정된 용에게 달려가 공격한다
