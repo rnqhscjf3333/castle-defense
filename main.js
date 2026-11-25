@@ -641,7 +641,10 @@
         const x = f.x + (f.tx - f.x) * p, y = f.y + (f.ty - f.y) * p - Math.sin(p * Math.PI) * 5, ang = Math.atan2(f.ty - f.y, f.tx - f.x); c2.lineWidth = lw;
         if (f.star) { c2.translate(x, y); c2.rotate(p * 25); c2.beginPath(); for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2; c2.moveTo(0, 0); c2.lineTo(Math.cos(a) * 5 * wm * 0.5, Math.sin(a) * 5 * wm * 0.5); c2.lineTo(Math.cos(a + 0.5) * 2 * wm * 0.5, Math.sin(a + 0.5) * 2 * wm * 0.5); } c2.closePath(); c2.fillStyle = '#e8e0f0'; c2.fill(); c2.strokeStyle = f.c; c2.stroke(); }
         else if (f.orb) { c2.globalAlpha = 0.45; c2.beginPath(); c2.arc(x, y, 6 * wm * 0.5, 0, 7); c2.fill(); c2.globalAlpha = 1; c2.fillStyle = '#ffd0a0'; c2.beginPath(); c2.arc(x, y, 2.6 * wm * 0.5, 0, 7); c2.fill(); }
-        else { c2.beginPath(); c2.moveTo(x - Math.cos(ang) * 6 * wm * 0.6, y - Math.sin(ang) * 6 * wm * 0.6); c2.lineTo(x + Math.cos(ang) * 2, y + Math.sin(ang) * 2); c2.stroke(); }
+        else { // 화살·탄: 꼬리를 끌며 날아간다 (색·굵기는 직업·유닛별)
+          const tl = (f.star ? 26 : 22) * wm * 0.6, g2 = c2.createLinearGradient(x - Math.cos(ang) * tl, y - Math.sin(ang) * tl, x, y); g2.addColorStop(0, f.c + '00'); g2.addColorStop(1, f.c);
+          c2.strokeStyle = g2; c2.lineWidth = lw * 1.6; c2.beginPath(); c2.moveTo(x - Math.cos(ang) * tl, y - Math.sin(ang) * tl); c2.lineTo(x, y); c2.stroke();
+          c2.strokeStyle = '#fff'; c2.globalAlpha = 0.9; c2.lineWidth = Math.max(1, lw * 0.6); c2.beginPath(); c2.moveTo(x - Math.cos(ang) * 6 * wm * 0.6, y - Math.sin(ang) * 6 * wm * 0.6); c2.lineTo(x + Math.cos(ang) * 2, y + Math.sin(ang) * 2); c2.stroke(); }
       }
       else if (f.k === 'snipe') { c2.globalAlpha = (1 - p) * 0.5; c2.lineWidth = 3.6 * wm; c2.beginPath(); c2.moveTo(f.x, f.y); c2.lineTo(f.tx, f.ty); c2.stroke(); c2.globalAlpha = 1 - p * p; c2.strokeStyle = '#fffbe0'; c2.lineWidth = 1.2 * wm; c2.beginPath(); c2.moveTo(f.x, f.y); c2.lineTo(f.tx, f.ty); c2.stroke(); }
       else if (f.k === 'beam') { c2.globalAlpha = (1 - p) * 0.8; c2.lineWidth = 2.2 * wm; c2.beginPath(); c2.moveTo(f.x, f.y); c2.lineTo(f.tx, f.ty); c2.stroke(); c2.globalAlpha = 1 - p; c2.font = '700 ' + 9 * wm + 'px sans-serif'; c2.textAlign = 'center'; c2.fillText('+', f.tx, f.ty - 8 - p * 14); }
@@ -676,7 +679,7 @@
         if (ph >= nextAtk && ph < 9) {
           nextAtk += drg ? 2.6 : 1.1; dm.x = me.x + dir * reach; dm.y = 0; me.aim = dir > 0 ? 0 : Math.PI; me.swing = 0.28;
           if (drg) { me.anim = { k: dragonSeq[dsi++ % 3], T: 1.7, left: 1.7 }; }
-          else { const n0 = L.length, dl = stageAttack(L, me, dm); for (let i = L.length - 1; i >= n0; i--) if (L[i].k === 'proj') L.splice(i, 1); /* 도감에서는 원거리 모션만 보이고 투사체는 그리지 않는다 */ pend.push({ at: t + dl, f: () => { dm.flash = 0.12; } }); }
+          else { const dl = stageAttack(L, me, dm); pend.push({ at: t + dl, f: () => { dm.flash = 0.12; } }); }
         }
         for (let i = pend.length - 1; i >= 0; i--) if (t >= pend[i].at) { pend[i].f(); pend.splice(i, 1); }
         stageBg(c2, SW, SH, scroll, gy);
@@ -710,7 +713,9 @@
   // ── 랭킹 상세: 그 판의 최종 성과 유닛이 실제로 싸우는 장면
   function runScene(sp, SW, SH) {
     const g = sp.g, cx = SW * 0.42, cy = SH * 0.52, L = [], units = [], foes = [];
-    const list = (g.ul || []).filter(u => CFG.units[u[0]]); let total = list.reduce((a, u) => a + u[3], 0); const sc = total > 18 ? 18 / total : 1;
+    // 특수 유닛(골렘·용사·포탑 등)은 빼고, 검사·궁수·사제가 최종 전직(가장 높은 단계)으로 2명씩만 나온다
+    const list = ['sword', 'archer', 'priest'].map(t => { const rows = (g.ul || []).filter(u => u[0] === t).sort((a, b) => (b[2] || 0) - (a[2] || 0) || b[3] - a[3]); return rows.length ? [t, rows[0][1], rows[0][2], 2] : [t, null, 0, 2]; });
+    const sc = 1;
     const c = { x: cx, y: cy, lv: g.castle || 10, cannons: (g.fin && g.fin[3]) || 3, max: 1, hp: 1, flash: 0, swing: 0, cpath: g.fin && g.fin[0], cvar: g.fin && g.fin[1], cfin: g.fin && g.fin[2], aim: -0.4 };
     const groups = { sword: [], archer: [], priest: [] };
     for (const [t, job, tier, n] of list) { const cfg = CFG.units[t], gr = t === 'priest' ? 'priest' : (cfg.range >= 60 || cfg.static) ? 'archer' : 'sword', m = Math.max(1, Math.round(n * sc)); for (let i = 0; i < m && units.length < 20; i++) { const u = { team: 'u', type: t, id: units.length + 1, x: 0, y: 0, r: cfg.r || 10, flash: 0, swing: 0, aim: 0, hp: 1, max: 1, job: job || null, jobTier: tier || 0, cd: rnd(0, 1), cfg, static: !!cfg.static, rangeW: cfg.range || 0 }; groups[gr].push(u); units.push(u); } }
