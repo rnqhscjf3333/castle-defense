@@ -173,10 +173,10 @@
         abil2: { dash: { cd: 5, dur: 1.2, mul: 3.4, shock: { r: 260, kb: 640, mul: 2.4 } }, hammer: { cd: 6.5, r: 170, warn: 1.1, mul: 3.4, stun: 1.3, kb: 700 }, quake: { cd: 9, n: 7, r: 100, warn: 1.0, mul: 2.2, kb: 420 }, rage: { at: 0.4, speed: 1.3, rate: 1.4, dmg: 1.4 }, debuff: [{ kind: 'wound', cd: 12, r: 160 }] } },
     },
     // 100라운드: 거대한 용 (몬스터 무리가 함께 몰려오는 레이드). 성 둘레를 빼고 땅이 무너져 절벽이 된다. 용은 네 방향 중 한 곳에 고정되어 있다가 날아올랐다가 다른 곳에 내려앉는다.
-    dragon: { id: 'dragon', line: '대지는 사라지고… 오직 불길만이 남으리라.', name: '재앙의 용', r: 130, vr: 260, dragon: true, hpMul: 3.0, anchorX: 520, anchorY: 420, cut: 260, plateau: 440, monsterFrac: 0.3, waveEvery: 16, waveFrac: 0.07, // r=판정, vr=그림 크기(몸집이 아주 커서 지도에는 상반신만 보인다). 북쪽은 cut만큼 직각으로 깎여 평평한 단상(폭 plateau×2)이 되고 용은 그 가장자리에서 솟는다. 나머지 세 자리(서·동·남)에서는 몬스터가 나온다
+    dragon: { id: 'dragon', line: '대지는 사라지고… 오직 불길만이 남으리라.', name: '재앙의 용', r: 130, vr: 260, dragon: true, hpMul: 3.0, atkMul: 0.75, anchorX: 520, anchorY: 420, cut: 260, plateau: 440, monsterFrac: 0.2, waveEvery: 16, waveFrac: 0.045, // r=판정, vr=그림 크기(몸집이 아주 커서 지도에는 상반신만 보인다). 북쪽은 cut만큼 직각으로 깎여 평평한 단상(폭 plateau×2)이 되고 용은 그 가장자리에서 솟는다. 나머지 세 자리(서·동·남)에서는 몬스터가 나온다
      
       look: { style: 'dragon', body: '#a3262a', head: '#d9482c' },
-      abil: { artillery: { cd: 5, dmg: 85, radius: 100, count: 3, flight: 1.5 }, breath: { cd: 11, len: 1150, half: 0.3, warn: 1.4, mul: 3, kb: 380 }, tail: { cd: 7, r: 215, warn: 0.7, mul: 2.2, kb: 720 }, gust: { cd: 16, r: 760, warn: 1.0, kb: 540 }, meteor: { cd: 9, n: 8, r: 85, warn: 1.0, mul: 2.0, at: 0.5, kb: 320 }, rage: { at: 0.3, speed: 1, rate: 1.3, dmg: 1.4 }, fly: { at: 0.5, up: 1.8, away: 10, passes: 5, span: 1000, barrage: 0.4, r: 95, mul: 1.9, back: 3.0, landR: 420, landMul: 2.2 } }, deathT: 7 },
+      abil: { artillery: { cd: 5, dmg: 64, radius: 100, count: 3, flight: 1.5 }, breath: { cd: 11, len: 1150, half: 0.3, warn: 1.4, mul: 3, kb: 380 }, tail: { cd: 7, r: 215, warn: 0.7, mul: 2.2, kb: 720 }, gust: { cd: 16, r: 760, warn: 1.0, kb: 540 }, meteor: { cd: 9, n: 8, r: 85, warn: 1.0, mul: 2.0, at: 0.5, kb: 320 }, rage: { at: 0.3, speed: 1, rate: 1.3, dmg: 1.4 }, fly: { at: 0.5, up: 1.8, away: 10, passes: 5, span: 1000, barrage: 0.4, r: 95, mul: 1.9, back: 3.0, landR: 420, landMul: 2.2 } }, deathT: 7 },
     bossDeathT: 2.8,       // 보스 사망 연출 길이(초): 이 동안 시간이 멈추고 카메라가 보스를 비춘다
     // 보스 보상: 전직이 모두 끝난 뒤(35라운드~)에는 보스를 처치하면 이 중 3가지가 제시된다
     rewards: [
@@ -1095,7 +1095,7 @@
       if (!bd.dragon) e.speed = Math.max(e.speed, CFG.bossSpeed); // 보스는 광전사처럼 빠르게 달려온다
       if (bd === CFG.finalBoss && r === MAX_ROUND) { const N = CFG.finalNerf; e.max = e.hp = Math.round(e.max * N.hp); e.max2 = Math.round(e.max / N.hp * N.hp2); e.dmg *= N.dmg; e.canRevive = true; }
       if (isKing(bd)) { e.king = bd; e.canRevive = true; const kb0 = Math.round(e.max * 0.55); e.max = e.hp = Math.round(kb0 * CFG.kingP1); e.max2 = Math.round(kb0 * CFG.kingP2.hp); } // 1차전만 체력 버프 (2차전은 그대로)
-      if (bd.dragon) { e.dragon = true; e.fixed = true; e.riseT = e.riseDur = 4.2; emit(S, { type: 'dragonRise', x: x, y: y, dur: 4.2 }); e.vr = bd.vr; e.side = 0; placeDragon(e); e.flyS = null; e.lift = 0; }
+      if (bd.dragon) { e.dmg *= bd.atkMul; e.dragon = true; e.fixed = true; e.riseT = e.riseDur = 4.2; emit(S, { type: 'dragonRise', x: x, y: y, dur: 4.2 }); e.vr = bd.vr; e.side = 0; placeDragon(e); e.flyS = null; e.lift = 0; }
       S.stats.seenB[bd.id] = 1;
       emit(S, { type: 'bossSpawn', name: bd.name, id: bd.id, line: bd.line, look: bd.look, r: e.r });
     }
