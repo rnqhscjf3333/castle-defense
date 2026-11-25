@@ -308,7 +308,7 @@
     }
     const cost = C.castleCost(S), full = C.popCount(S) >= C.popCap(S);
     const key = lv + '|' + cost + '|' + S.core.cannons + '|' + (S.gold >= cost) + '|' + full;
-    if (cb.key === key) return; cb.key = key; castleBtn.querySelector('.nmt').textContent = '성';
+    if (cb.key === key) return; cb.key = key; castleBtn.querySelector('.nmt').textContent = '성'; castleBtn.querySelector('.cdfill').style.height = '0%'; // 수리 쿨타임 표시가 업그레이드 버튼에 남지 않게
     cb.lv.textContent = 'Lv.' + lv; cb.ds.textContent = max ? '최대 레벨 · 성 수리' : '인구 +' + C.popGain(lv + 1) + ' · 공격·체력↑' + (CFG.castle.cannonLv.includes(lv + 1) ? ' · 대포 +1' : '');
     cb.cost.textContent = max ? 'MAX' : cost + 'G'; castleBtn.classList.toggle('off', max || S.gold < cost); castleBtn.classList.toggle('need', full && !max);
   }
