@@ -116,10 +116,12 @@ body.introOn #omenRow { opacity: 0; }
 #btnRank.hidden { display: none; }
 #btnToMenu { margin-top: 10px; padding: 12px 18px; font-size: 15px; background: transparent; color: var(--ink); border: 1px solid var(--line); border-radius: 12px; cursor: pointer; }
 #regbox { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px; }
-#msgIn { flex: 1 1 100%; order: 3; min-width: 0; padding: 10px 12px; font-size: 14px; background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 10px; color: var(--ink); } #regBtn { order: 2; }
+#msgIn { flex: 1 1 0; order: 1; min-width: 0; padding: 10px 12px; font-size: 14px; background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 10px; color: var(--ink); } #regBtn { order: 2; }
 #nameIn { flex: 1; order: 1; min-width: 0; padding: 10px 12px; font-size: 15px; background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 10px; color: var(--ink); }
-#regBtn { padding: 10px 14px; font-size: 14px; font-weight: 700; background: var(--gold); color: #1d1500; border: 0; border-radius: 10px; cursor: pointer; }
-#regBtn:disabled { opacity: .6; }
+#regBtn, #msgBtn { order: 2; padding: 10px 14px; font-size: 14px; font-weight: 700; background: var(--gold); color: #1d1500; border: 0; border-radius: 10px; cursor: pointer; }
+#regBtn:disabled, #msgBtn:disabled { opacity: .6; }
+#regbox .regName { flex: 1 1 100%; }
+#nameIn { flex: 1 1 0; min-width: 0; }
 .rnote { font-size: 11px; opacity: .7; font-weight: 400; }
 .rankhead { margin-top: 10px; font-size: 12px; color: var(--muted); text-align: left; }
 table.rank { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 4px; }
@@ -542,13 +544,13 @@ table.rank tr.top.me td { outline: 1px solid rgba(255,204,64,.8); outline-offset
   </div>
 </div>
 
-<script src="core.js?v=20261125p"></script>
-<script src="figures.js?v=20261125p"></script>
-<script src="scenery.js?v=20261125p"></script>
-<script src="config.js?v=20261125p"></script>
-<script src="meta.js?v=20261125p"></script>
-<script src="net.js?v=20261125p"></script>
-<script src="audio.js?v=20261125p"></script>
-<script src="main.js?v=20261125p"></script>
+<script src="core.js?v=20261125q"></script>
+<script src="figures.js?v=20261125q"></script>
+<script src="scenery.js?v=20261125q"></script>
+<script src="config.js?v=20261125q"></script>
+<script src="meta.js?v=20261125q"></script>
+<script src="net.js?v=20261125q"></script>
+<script src="audio.js?v=20261125q"></script>
+<script src="main.js?v=20261125q"></script>
 </body>
 </html>
