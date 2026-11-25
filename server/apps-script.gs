@@ -61,6 +61,9 @@ function doPost(e) {
     } else if (o.type === 'feedback') { // 설정 창의 '개발자에게 피드백'
       var txt = String(o.text || '').slice(0, 1000);
       if (txt) { feedback_().appendRow([now, String(o.cat || '').slice(0, 10), txt, String(o.name || '').slice(0, 12), o.round || 0, o.v, o.pid, o.env ? o.env.w + 'x' + o.env.h : '', o.env ? String(o.env.ua || '').slice(0, 120) : '']); out.ok = true; } else out.error = 'empty';
+    } else if (o.type === 'msg') { // 이미 올라간 기록에 한마디를 붙인다 (같은 pid·run의 가장 최근 기록)
+      var sh0 = scores_(), last0 = sh0.getLastRow(), txt0 = String(o.msg || '').replace(/[<>&"'`]/g, '').slice(0, 30);
+      if (o.pid && o.run && txt0 && last0 > 1) { var f0 = Math.max(2, last0 - 400), v0 = sh0.getRange(f0, 9, last0 - f0 + 1, 2).getValues(); for (var k0 = v0.length - 1; k0 >= 0; k0--) if (String(v0[k0][0]) === String(o.pid) && String(v0[k0][1]) === String(o.run)) { sh0.getRange(f0 + k0, 13).setValue(txt0); out.ok = true; break; } }
     } else if (o.type === 'game') { // 게임 안 통계의 한 판 기록 (같은 pid·기록시각은 한 번만)
       if (o.pid && o.at && o.round >= 1 && o.round <= MAX_ROUND && o.kills >= 0 && o.kills < 100000) {
         var sh = games_(), last = sh.getLastRow(), dup = false;

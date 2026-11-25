@@ -1950,21 +1950,24 @@
     $('ovTitle').textContent = win ? '게임 클리어! 재앙의 용을 쓰러뜨렸다' : '성이 무너졌어요';
     $('ovBody').innerHTML = '<div class="stat"><div><b>' + reached + '</b>도달 라운드</div><div><b>' + S.kills + '</b>처치</div><div><b>' + fmtTime(S.t) + '</b>시간</div></div>'
       + '<p>최고 기록: ' + Math.max(best, reached) + '라운드</p>'
-      + '<div id="regbox">' + (Net.name() ? '<div class="regName">👤 ' + Net.name().replace(/[<>&"']/g, '') + '</div>' : '<input id="nameIn" maxlength="12" placeholder="닉네임 (최대 12자)" autocomplete="off">') + '<input id="msgIn" maxlength="30" placeholder="랭킹에 남길 한마디 (최대 30자)" autocomplete="off"><button id="regBtn">랭킹 등록</button></div><div id="rankbox"></div>';
+      + '<div id="regbox">' + (Net.name() ? '<div class="regName">👤 ' + Net.name().replace(/[<>&"']/g, '') + ' · 기록을 올리는 중…</div>' : '<input id="nameIn" maxlength="12" placeholder="닉네임 (최대 12자)" autocomplete="off"><button id="regBtn">랭킹 등록</button>') + '</div><div id="rankbox"></div>';
     $('go').textContent = '다시 시작'; $('btnRank').classList.add('hidden'); $('btnToMenu').classList.remove('hidden');
     $('overlay').classList.remove('hidden');
     if (!S.dev) Meta.finish(S, C, Net.scoreOf(S.win, S.round, S.kills, S.t));
     Net.sendLog(S, 'end');
     const ended = S, myScore = Net.scoreOf(S.win, S.round, S.kills, S.t);
     if (S.dev) { $('regbox').remove(); $('ovBody').insertAdjacentHTML('beforeend', '<p style="color:#9fd8ff">개발자 모드로 한 판이라 기록·랭킹에 올리지 않아요.</p>'); showRank(null); return; }
-    const reg = async () => {
-      const name = $('nameIn') ? $('nameIn').value : Net.name(); $('regBtn').disabled = true; $('regBtn').textContent = '등록 중…';
-      const res = await Net.submit(ended, name, $('msgIn').value); $('regbox').remove(); if (res && res.rejected) { $('ovBody').insertAdjacentHTML('beforeend', '<p style="color:#ff9a9a">기록이 비정상적이라 랭킹에 올리지 않았어요.</p>'); } showRank(res && res.rejected ? null : myScore, true);
+    const reg = async () => { // 기록은 게임이 끝나면 자동으로 올라간다 (닉네임이 아직 없을 때만 이름을 먼저 받는다). 한마디는 올린 뒤에 덧붙인다
+      const name = $('nameIn') ? $('nameIn').value : Net.name(); if ($('regBtn')) { $('regBtn').disabled = true; $('regBtn').textContent = '등록 중…'; }
+      const res = await Net.submit(ended, name, ''); if (!$('regbox')) return;
+      if (res && res.rejected) { $('regbox').remove(); $('ovBody').insertAdjacentHTML('beforeend', '<p style="color:#ff9a9a">기록이 비정상적이라 랭킹에 올리지 않았어요.</p>'); showRank(null, true); return; }
+      $('regbox').innerHTML = '<div class="regName">👤 ' + String(res.name).replace(/[<>&"']/g, '') + ' · 랭킹에 올라갔어요</div><input id="msgIn" maxlength="30" placeholder="한마디 남기기 (최대 30자)" autocomplete="off"><button id="msgBtn">한마디 붙이기</button>';
+      const sendMsg = async () => { const v = $('msgIn').value.trim(); if (!v) return; $('msgBtn').disabled = true; $('msgBtn').textContent = '저장 중…'; const r2 = await Net.addMsg(res, v); if (!$('regbox')) return; $('regbox').innerHTML = '<div class="regName">👤 ' + String(res.name).replace(/[<>&"']/g, '') + ' · ' + (r2.ok || !r2.server ? '한마디를 남겼어요' : '한마디 저장 실패 (서버)') + '</div>'; showRank(myScore, true); };
+      $('msgBtn').addEventListener('click', sendMsg); $('msgIn').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') sendMsg(); }); $('msgIn').addEventListener('keyup', e => e.stopPropagation());
+      showRank(myScore, true);
     };
-    $('regBtn').addEventListener('click', reg);
-    if ($('nameIn')) { $('nameIn').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') reg(); }); $('nameIn').addEventListener('keyup', e => e.stopPropagation()); }
-    $('msgIn').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') reg(); }); $('msgIn').addEventListener('keyup', e => e.stopPropagation());
-    showRank(null);
+    if ($('regBtn')) { $('regBtn').addEventListener('click', reg); $('nameIn').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') reg(); }); $('nameIn').addEventListener('keyup', e => e.stopPropagation()); showRank(null); }
+    else reg();
   }
   // 랭킹 표: 서버가 있으면 서버 순위, 없으면 이 브라우저의 개인 기록
   let rankList = [], rankScroll = null, rankCache = null; // 랭킹은 불러오는 데 오래 걸려서, 새로고침 버튼을 누르기 전까지 받아 둔 표를 다시 쓴다
