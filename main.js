@@ -863,6 +863,7 @@
   $('metaBody').addEventListener('click', e => {
     if (e.target.closest('#codexBack')) { codexSel = null; renderMeta(); $('metaBody').scrollTop = listScroll; return; }
     const cc = e.target.closest('.cc[data-det]'); if (cc) { if (cc.classList.contains('lock')) { toast(cc.querySelector('.s').textContent); return; } listScroll = $('metaBody').scrollTop; codexSel = cc.dataset.det; renderMeta(); $('metaBody').scrollTop = 0; return; }
+    if (e.target.closest('#rankRefresh')) { showRank(null, true); return; }
     if (e.target.closest('#rankBack')) { rankScroll = listScroll; renderMeta(); return; }
     const rr = e.target.closest('tr[data-ri]'); if (rr) { const g = rankList[+rr.dataset.ri]; if (g) { listScroll = $('metaBody').scrollTop; const d = g.d || g.detail || {}; $('metaBody').innerHTML = gameDetail(Object.assign({}, g, d, { name: g.name, at: g.at || Date.now() }), 'rankBack'); $('metaBody').scrollTop = 0; } return; }
     if (e.target.closest('#statBack')) { statDetail = null; renderMeta(); $('metaBody').scrollTop = listScroll; return; } const tr = e.target.closest('tr[data-gi]'); if (tr) { listScroll = $('metaBody').scrollTop; statDetail = +tr.dataset.gi; renderMeta(); $('metaBody').scrollTop = 0; } });
@@ -1953,7 +1954,7 @@
     if (S.dev) { $('regbox').remove(); $('ovBody').insertAdjacentHTML('beforeend', '<p style="color:#9fd8ff">개발자 모드로 한 판이라 기록·랭킹에 올리지 않아요.</p>'); showRank(null); return; }
     const reg = async () => {
       const name = $('nameIn') ? $('nameIn').value : Net.name(); $('regBtn').disabled = true; $('regBtn').textContent = '등록 중…';
-      const res = await Net.submit(ended, name, $('msgIn').value); $('regbox').remove(); if (res && res.rejected) { $('ovBody').insertAdjacentHTML('beforeend', '<p style="color:#ff9a9a">기록이 비정상적이라 랭킹에 올리지 않았어요.</p>'); } showRank(res && res.rejected ? null : myScore);
+      const res = await Net.submit(ended, name, $('msgIn').value); $('regbox').remove(); if (res && res.rejected) { $('ovBody').insertAdjacentHTML('beforeend', '<p style="color:#ff9a9a">기록이 비정상적이라 랭킹에 올리지 않았어요.</p>'); } showRank(res && res.rejected ? null : myScore, true);
     };
     $('regBtn').addEventListener('click', reg);
     if ($('nameIn')) { $('nameIn').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') reg(); }); $('nameIn').addEventListener('keyup', e => e.stopPropagation()); }
@@ -1961,16 +1962,16 @@
     showRank(null);
   }
   // 랭킹 표: 서버가 있으면 서버 순위, 없으면 이 브라우저의 개인 기록
-  let rankList = [], rankScroll = null;
-  async function showRank(mine) {
-    const box = $('rankbox'); if (!box) return; box.innerHTML = '<p>랭킹 불러오는 중…</p>';
-    const r = await Net.top(10); if (!$('rankbox')) return;
+  let rankList = [], rankScroll = null, rankCache = null; // 랭킹은 불러오는 데 오래 걸려서, 새로고침 버튼을 누르기 전까지 받아 둔 표를 다시 쓴다
+  async function showRank(mine, force) {
+    const box = $('rankbox'); if (!box) return;
+    let r = !force && rankCache; if (!r) { box.innerHTML = '<p>랭킹 불러오는 중…</p>'; r = await Net.top(10); if (!$('rankbox')) return; if (r.server) rankCache = r; }
     const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     // 서버가 한마디·상세 기록을 내려주지 않아도, 이 브라우저에서 올린 기록이면 저장해 둔 값을 붙여 보여 준다
     { const loc = Net.localTop(); for (const e of r.list) { const l = loc.find(x => x.name === e.name && x.score === e.score); if (l) { if (!e.msg && l.msg) e.msg = l.msg; if (!e.d && !e.detail && l.d) e.d = l.d; } } }
     let hit = false; rankList = r.list;
     const rows = r.list.map((e, i) => { const me = mine != null && !hit && e.score === mine; if (me) hit = true; return '<tr class="clk' + (i < 3 ? ' top r' + (i + 1) : '') + (me ? ' me' : '') + '" data-ri="' + i + '"><td>' + (i < 3 ? '<span class="medal m' + (i + 1) + '">' + (i + 1) + '</span>' : (i + 1)) + '</td><td>' + (i === 0 ? '<span class="crown">👑</span>' : '') + esc(e.name) + (e.msg ? '<div class="rmsg">“' + esc(e.msg) + '”</div>' : '') + '</td><td>' + (e.win ? '클리어' : e.round + '라운드') + '</td><td>' + fmtTime(e.time) + '</td></tr>'; }).join('');
-    box.innerHTML = '<div class="rankhead">' + (r.server ? '전체 랭킹' : (Net.configured ? '서버에 연결하지 못해 내 기록만 표시' : '내 기록 (서버 미설정)')) + '</div>'
+    box.innerHTML = '<div class="rankhead">' + (r.server ? '전체 랭킹 <span class="rnote">(한 이름당 최대 3개)</span>' : (Net.configured ? '서버에 연결하지 못해 내 기록만 표시' : '내 기록 (서버 미설정)')) + ' <button class="btn" id="rankRefresh" style="padding:2px 10px;font-size:12px;margin-left:8px">⟳ 새로고침</button></div>'
       + (rows ? '<table class="rank"><tr><th>#</th><th>닉네임 · 한마디</th><th>기록</th><th>시간</th></tr>' + rows + '</table>' : '<p>아직 기록이 없어요.</p>');
     if (rankScroll !== null) { const mb = $('metaBody'); if (mb) mb.scrollTop = rankScroll; rankScroll = null; }
   }

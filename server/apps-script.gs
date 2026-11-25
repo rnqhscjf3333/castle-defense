@@ -95,8 +95,8 @@ function doGet(e) {
   var n = Math.min(50, Math.max(1, +(e.parameter.n || 20))), rows = scores_().getDataRange().getValues(), list = [];
   for (var i = 1; i < rows.length; i++) list.push({ name: rows[i][1], score: rows[i][2], round: rows[i][3], win: rows[i][4] === 'Y', kills: rows[i][5], time: rows[i][6], mode: rows[i][11] === 'free' ? 'free' : 'normal', at: new Date(rows[i][0]).getTime(), msg: String(rows[i][12] || ''), row: i });
   list.sort(function (a, b) { return b.score - a.score; });
-  // 같은 이름의 중복 기록은 최고 점수만 남긴다
-  var seen = {}, uniq = []; list.forEach(function (x) { var k = x.name + '|' + x.mode; if (!seen[k]) { seen[k] = 1; uniq.push(x); } });
+  // 같은 이름은 점수가 높은 기록 3개까지만 남긴다
+  var seen = {}, uniq = []; list.forEach(function (x) { var k = String(x.name); seen[k] = (seen[k] || 0) + 1; if (seen[k] <= 3) uniq.push(x); });
   var out = uniq.slice(0, n); out.forEach(function (x) { var t = rows[x.row][13]; if (t) { try { x.d = JSON.parse(t); } catch (er) {} } delete x.row; }); // 상세 기록도 함께 내려보낸다
   return ContentService.createTextOutput(JSON.stringify({ ok: true, list: out })).setMimeType(ContentService.MimeType.JSON);
 }
