@@ -336,7 +336,7 @@
     // 엘리트: 일반 몬스터가 일정 확률로 훨씬 강하고 크게 나온다. 확률은 라운드가 갈수록 커져 최대 max
     elite: { from: 3, perRound: 0.0025, max: 0.10, hp: 3, dmg: 1.6, size: 1.35, gold: 4, speed: 1.05 },
     endless: { hpLin: 0.064, hpQuad: 0.000375, cnt: 0.011, bossBase: 60000, bossExp: 0.6, marMul: 0.9, postBoss: 1.8, // 용(100라운드) 이후: 체력 배율이 더 가파르게 오른다 (라운드마다 +12%p + 제곱항), 수·속도도 가속
-      infLin: 0.12, infQuad: 0.004, infCnt: 0.02, infSpd: 0.006, infSpdCap: 1.7 }, // 무한 모드(51라운드~) 난이도 곡선: 체력 배율 1+lin·n+quad·n², 적 수 +cnt·n (n = 50라운드 이후 지난 라운드)
+      infLin: 0.09, infQuad: 0.003, infCnt: 0.015, infSpd: 0.0045, infSpdCap: 1.7 }, // 무한 모드(51라운드~) 난이도 곡선: 체력 배율 1+lin·n+quad·n², 적 수 +cnt·n (n = 50라운드 이후 지난 라운드)
     dmgVar: 0.15,                     // 모든 공격 피해에 공격력 ±15% 오차
     legendChance: 0.007,              // 30라운드 이후, 카드 한 칸마다 전설 카드가 나올 확률 (아주 낮음)
     rarityWeight: { common: 70, rare: 25, epic: 5 },
