@@ -117,7 +117,7 @@
     bossSpeed: 105,
     finalNerf: { hp: 0.75, dmg: 0.65, hp2: 1.25, cdMul: 0.85, rageAt: 0.5, reviveT: 3.4, r: 44, name: '각성한 마왕', look: { body: '#7a1424', head: '#ecd2c4', weapon: 'claws', crown: true, p2: true, style: 'overlord' } },
     // 50라운드 클리어 뒤에는 강화 카드의 레벨 제한이 이만큼 풀린다 (아래 목록의 카드만)
-    capBonus: 2, capLift: ['u_charge', 'u_pierce', 'u_crit', 'u_range', 'u_aoeheal', 'u_hbuff', 'a_heal', 'a_atk', 'a_def', 'a_spd', 'a_rad', 'f_repair', 'f_thorn'],
+    capBonus: 2, capLift: ['u_charge', 'u_pierce', 'u_crit', 'u_range', 'u_aoeheal', 'u_hbuff', 'a_heal', 'a_atk', 'a_spd', 'a_rad', 'f_repair', 'f_thorn'],
     // 2차 전직 각성 (사천왕 처치: 60·70·80라운드에 한 계열씩 업그레이드). 2차 전직 효과에 아래 수치가 한 번 더 더해진다.
     awaken: {
       paladin:     { name: '각성 팔라딘',   desc: '체력 +50%·방어 +6%·초당 회복 +3%·기절 확률 +8% 추가', mods: { hp: 0.5, def: 0.06, regen: 0.03, stun: 0.08 } },
@@ -516,7 +516,7 @@
   const AURA_IDS = ['a_heal', 'a_atk', 'a_def', 'a_spd'];
 
   function genericText(def, type, lv, cap) {
-    const p = Math.round(CFG.upPct[def.generic] * 100 * lv * (type === 'priest' ? 2 : 1));
+    const p = Math.round(CFG.upPct[def.generic] * 100 * lv); // 사제도 실제 강화 폭은 다른 계열과 같다 (statsOf k = 1)
     const priest = type === 'priest';
     const stat = def.generic === 'atk' && priest ? '치유량' : def.generic === 'rate' && priest ? '치유 속도' : STAT_NAME[def.generic];
     return { name: TN[type] + ' · ' + stat, desc: TN[type] + ' ' + stat + ' +' + p + '% (Lv ' + lv + '/' + (cap || def.max) + ')' };

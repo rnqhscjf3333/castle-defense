@@ -966,5 +966,10 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   check('수호 공격 파동이 적을 살짝 밀어냄(보스 제외)', (e.kvx || 0) > 0 && (e.kvx || 0) < 400, 'kvx=' + (e.kvx || 0)); }
 { const g = arena(3, []); applyById(g, 's_turret'); const tu = g.units.find(u => u.type === 'turret'); const a0 = tu.atk, h0 = tu.max; g.round = 60; C.refreshUnit ? C.refreshUnit(g, tu) : null;
   check('포탑은 후반 라운드에서 더 강해짐', !C.refreshUnit || (tu.atk > a0 * 2 && tu.max > h0 * 2), a0 + '→' + tu.atk); }
+
+// 75. 사제 강화 카드 설명 = 실제 강화 폭, 철벽 오라는 방어 상한 때문에 무한 단계에서도 5레벨까지만
+{ const g = C.createGame(3); applyById(g, 'u_atk', 'priest'); const card = C.describeTaken(g).find(d => d.key === 'u_atk:priest');
+  check('사제 치유량 카드 설명이 실제 값(+15%)과 같음', card && card.desc.includes('+' + Math.round(C.CFG.upPct.atk * 100) + '%'), card && card.desc);
+  check('철벽 오라는 상한 확장 대상이 아님 (6·7레벨은 효과가 없어서)', !C.CFG.capLift.includes('a_def')); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);
