@@ -345,6 +345,18 @@ body.comicOn { overflow: hidden; }
 .arow.done .ic { background: linear-gradient(180deg, #ffd96a, #f1a62a); color: #2a1400; } .arow .tx { flex: 1; min-width: 0; } .arow .nm { font-weight: 700; } .arow .ds { color: var(--muted); font-size: 11.5px; }
 .arow .bar { height: 4px; border-radius: 2px; background: #2a3244; margin-top: 4px; overflow: hidden; } .arow .bar i { display: block; height: 100%; background: #6fc3ff; } .arow.done .bar i { background: #ffd166; } .arow .pc { font-size: 11px; color: var(--muted); flex: none; }
 #title.menu #tMenu { gap: 9px; } #tMenu button { padding: 11px 10px; font-size: 16px; }
+/* 시작 화면이 화면 높이에 맞게 줄어든다 (휴대폰 주소창 때문에 실제 높이가 짧아도 로고 위쪽·버튼 아래쪽이 잘리지 않게) */
+#title.menu .logo { margin-top: 0; }
+#title.menu .logo img { margin-top: 0; max-height: clamp(100px, calc(100vh - 430px), 40vh); max-height: clamp(100px, calc(100dvh - 430px), 40dvh); }
+#title.menu #tMenu { margin-top: clamp(10px, 3vh, 40px); }
+#title.menu .logo p { margin-top: 2px; }
+@media (max-height: 640px) { #title.menu #tMenu { gap: 7px; } #title.menu #tMenu button { padding: 9px 10px; font-size: 15px; } #title.menu .logo img { max-height: clamp(90px, calc(100dvh - 380px), 40dvh); } }
+@media (max-height: 520px) and (min-aspect-ratio: 1/1) { /* 가로로 눕힌 휴대폰: 로고는 왼쪽, 메뉴는 오른쪽 */
+  #title.menu { flex-direction: row; gap: 5vw; }
+  #title.menu .logo img { max-height: 72dvh; max-height: 72vh; width: auto; max-width: 46vw; }
+  #title.menu .logo p { display: none; }
+  #title.menu #tMenu { margin-top: 0; width: min(240px, 40vw); }
+}
 .devpk { display: grid; grid-template-columns: 54px 1fr 1fr; gap: 6px 6px; align-items: center; margin: 10px 0 12px; font-size: 13px; }
 .devpk label { opacity: .85; }
 .devpk select { min-width: 0; padding: 6px 6px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255,255,255,.06); color: var(--ink); font-size: 13px; }
@@ -556,13 +568,13 @@ table.rank tr.top.me td { outline: 1px solid rgba(255,204,64,.8); outline-offset
   </div>
 </div>
 
-<script src="core.js?v=20261127d"></script>
-<script src="figures.js?v=20261127d"></script>
-<script src="scenery.js?v=20261127d"></script>
-<script src="config.js?v=20261127d"></script>
-<script src="meta.js?v=20261127d"></script>
-<script src="net.js?v=20261127d"></script>
-<script src="audio.js?v=20261127d"></script>
-<script src="main.js?v=20261127d"></script>
+<script src="core.js?v=20261127e"></script>
+<script src="figures.js?v=20261127e"></script>
+<script src="scenery.js?v=20261127e"></script>
+<script src="config.js?v=20261127e"></script>
+<script src="meta.js?v=20261127e"></script>
+<script src="net.js?v=20261127e"></script>
+<script src="audio.js?v=20261127e"></script>
+<script src="main.js?v=20261127e"></script>
 </body>
 </html>
