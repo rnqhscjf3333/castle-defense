@@ -94,8 +94,19 @@ function autoScore_(sc, g, d, now) { // g = 통계 한 판 {pid, round, kills, w
   if (scoreRow_(sc, g.pid, g.round, g.kills, g.win)) return false;
   var o = { score: scoreOf_(g.win, g.round, g.kills, g.time), round: g.round, kills: g.kills, time: g.time }; if (!valid_(o)) return false;
   var det = d && typeof d === 'object' ? d : {}; det.earned = g.earned; det.spent = g.spent; det.pop = g.pop; det.castle = g.castle; det.auto = 1;
-  sc.appendRow([now, name, o.score, g.round, g.win ? 'Y' : 'N', g.kills, g.time, g.v, g.pid, '', '', g.mode === 'free' ? 'free' : 'normal', '', pack_(det)]);
+  var when = +g.at > 0 ? new Date(+g.at) : now; // 랭킹 시각 = 그 판이 끝난 시각 (통계의 기록시각)
+  sc.appendRow([when, name, o.score, g.round, g.win ? 'Y' : 'N', g.kills, g.time, g.v, g.pid, '', '', g.mode === 'free' ? 'free' : 'normal', '', pack_(det)]);
   return true;
+}
+// 자동 등록된 랭킹 행의 시각을 그 판이 끝난 시각으로 고친다 (예전에 '지금'으로 들어간 행)
+function fixAutoScoreTimes() {
+  var sc = scores_(), gs = games_(), sl = sc.getLastRow(), gl = gs.getLastRow(), n = 0; if (sl < 2 || gl < 2) return 0;
+  var gv = gs.getRange(2, 1, gl - 1, 8).getValues(), at = {};
+  for (var i = 0; i < gv.length; i++) at[[gv[i][2], +gv[i][5], gv[i][6] === 'Y' ? 1 : 0, +gv[i][7]].join('|')] = +gv[i][1];
+  var sv = sc.getRange(2, 1, sl - 1, 14).getValues();
+  for (var j = 0; j < sv.length; j++) { var r = sv[j]; if (String(r[9]) !== '' || String(r[13]).indexOf('"auto":1') < 0) continue;
+    var t = at[[r[8], +r[3], r[4] === 'Y' ? 1 : 0, +r[5]].join('|')]; if (t > 0 && Math.abs(new Date(r[0]).getTime() - t) > 60000) { sc.getRange(j + 2, 1).setValue(new Date(t)); n++; } }
+  return n;
 }
 // 예전 기록 채우기: Apps Script 편집기에서 이 함수를 골라 [실행]하거나, ?action=backfill&key=READ_KEY 로 부른다
 function backfillScores() {
@@ -105,7 +116,8 @@ function backfillScores() {
     var sc = scores_(), gs = games_(), last = gs.getLastRow(), n = 0, now = new Date(); if (last < 2) return 0;
     var v = gs.getRange(2, 1, last - 1, Math.max(15, gs.getLastColumn())).getValues();
     for (var i = 0; i < v.length; i++) { var r = v[i], d = null; try { d = r[14] ? JSON.parse(r[14]) : null; } catch (er) {}
-      if (autoScore_(sc, { name: r[15] || '', pid: r[2], v: r[3], mode: r[4], round: +r[5], win: r[6] === 'Y', kills: +r[7], time: +r[8], earned: r[9], spent: r[10], pop: r[12], castle: r[13] }, d, now)) n++; }
+      if (autoScore_(sc, { at: r[1], name: r[15] || '', pid: r[2], v: r[3], mode: r[4], round: +r[5], win: r[6] === 'Y', kills: +r[7], time: +r[8], earned: r[9], spent: r[10], pop: r[12], castle: r[13] }, d, now)) n++; }
+    fixAutoScoreTimes();
     return n;
   } finally { lock.releaseLock(); }
 }
