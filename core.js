@@ -1161,8 +1161,10 @@
   const coreGuard = S => { let n = 0; for (const u of S.units) if (!u.dead && !u.undead && !isStatic(u)) n++; return Math.min(CFG.balance.guardMax, CFG.balance.guardPerUnit * n); };
   function hitCore(S, dmg, src) {
     if (src === '폭파병') dmg *= CFG.balance.bomberCoreMul; // 폭파병은 성 피해가 전체의 대부분이라 성에 대한 폭발력을 줄였다
+    const raw0 = dmg;
     dmg *= 1 - coreGuard(S); // 병사가 살아 있을수록 성이 덜 맞는다 (병사가 성을 지킨다)
     if (S.cpar && S.cpar.cdef) dmg *= 1 - S.cpar.cdef; // 빙결 결계·수호 방벽·영혼 결속: 성이 받는 피해 감소
+    cbAdd(S, 'core', 1, dmg); cbAdd(S, 'core', 2, raw0 - dmg);
     const c = S.core; c.hp -= dmg; if (S.t >= (c.flashAt || 0)) { c.flash = 0.12; c.flashAt = S.t + 0.4; }
     const by = S.coreDmgBy; const k = src || '기타'; by[k] = (by[k] || 0) + dmg; // 어떤 공격에 성이 많이 맞는지 (밸런스 진단용)
     if (c.hp <= 0 && !S.over && S.cpar && S.cpar.lastStand && !S.lsUsed) { S.lsUsed = true; c.hp = c.max * 0.5; emit(S, { type: 'lastStand' }); return; } // 불사 결계: 한 번 되살아난다
@@ -1274,6 +1276,10 @@
     if (k.shape !== 'cone' && k.shape !== 'line' && Math.hypot(S.core.x - k.x, S.core.y - k.y) <= k.r + S.core.r && base > 0) hitCore(S, base * CFG.balance.shellCoreMul, k.kind === 'fire' ? '용의 불길' : '사천왕 공격');
     emit(S, { type: 'strikeHit', x: k.x, y: k.y, r: k.r, kind: k.kind, shape: k.shape, ang: k.ang, half: k.half, len: k.len, w2: k.w2, claw: k.claw, hit });
   }
+  // 전투 기록: 유닛 종류별 [준 피해, 받은 피해, 막은 피해, 치유량]. BY = 지금 공격·치유 중인 아군 종류 (성 = 'core')
+  let BY = null;
+  const cbKey = (S, u) => !u ? null : u === S.core ? 'core' : u.team !== 'u' ? null : u.undead ? 'undead' : u.type;
+  const cbAdd = (S, k, i, v) => { if (!k || !(v > 0)) return; const m = S.stats.cb || (S.stats.cb = {}), a = m[k] || (m[k] = [0, 0, 0, 0]); a[i] += v; };
   function damage(S, tgt, dmg, crit, src) {
     if (tgt.dead || tgt.dying || tgt.hidden || tgt.riseT > 0) return;
     if (S.omen === 'earth' && !S.omenWait && tgt.team === 'e') dmg *= CFG.omenFx.earth.foeTaken; // 대지의 기운
@@ -1285,10 +1291,11 @@
     if (tgt.team === 'e' && tgt.guardT > 0) { const G = CFG.bossGuard; dmg *= 1 - G.red * Math.min(1, tgt.guardT / G.fade); } // 보스 등장 직후의 보호
     if (tgt.team === 'e' && tgt.focusT > 0 && tgt.abil && tgt.abil.focus) dmg *= 1 - tgt.abil.focus.red; // 광전사: 정신 집중 중 피해 감소
     if (tgt.team === 'e' && tgt.markT > 0) dmg *= 1 + tgt.markAmp; // 사냥꾼의 표식
+    const raw = dmg;
     if (tgt.team === 'u' && tgt.blT > 0) dmg *= 1 - tgt.blD; // 주교의 축복
     if (tgt.team === 'u') {
       { const dd = lineOf(tgt.type) === 'archer' ? (S.perks.dodge ? V().dodge * S.perks.dodge : 0) + (S.jobMods ? S.jobMods.archer.dodge : 0) : 0; // 궁수 회피 (카드 + 폭풍사수)
-        if (dd > 0 && S.rng() < Math.min(0.6, dd)) { tgt.dodgeT = 0.4; emit(S, { type: 'dodge', x: tgt.x, y: tgt.y, job: tgt.job }); return; } }
+        if (dd > 0 && S.rng() < Math.min(0.6, dd)) { cbAdd(S, cbKey(S, tgt), 2, raw); tgt.dodgeT = 0.4; emit(S, { type: 'dodge', x: tgt.x, y: tgt.y, job: tgt.job }); return; } }
       let red = 0;
       if (tgt.aura) red += S.aura.def;
       if (S.perks.guard && lineOf(tgt.type) === 'sword') red += V().guard * S.perks.guard;
@@ -1296,8 +1303,10 @@
       dmg *= 1 - Math.min(0.7, red);
       if (tgt.ward > 0) { const ab = Math.min(tgt.ward, dmg); tgt.ward -= ab; dmg -= ab; if (ab > 0) tgt.wardFx = 0.25; } // 수호사제·수호 방벽의 보호막
       const rf = S.jobMods && S.jobMods[lineOf(tgt.type)] ? S.jobMods[lineOf(tgt.type)].reflect : 0;
-      if (rf && src && src.team === 'e' && !src.dead && dmg > 0) damage(S, src, dmg * rf); // 워로드: 받은 피해의 일부를 되돌린다
+      if (rf && src && src.team === 'e' && !src.dead && dmg > 0) { const pb = BY; BY = cbKey(S, tgt); damage(S, src, dmg * rf); BY = pb; } // 워로드: 받은 피해의 일부를 되돌린다
     }
+    if (tgt.team === 'u') { const k = cbKey(S, tgt); cbAdd(S, k, 1, dmg); cbAdd(S, k, 2, raw - dmg); }
+    else cbAdd(S, src && src.team === 'u' ? cbKey(S, src) : BY, 0, Math.min(dmg, Math.max(0, tgt.hp)));
     tgt.hp -= dmg; if (src && src.abil && src.abil.lifesteal && tgt.team === 'u' && !src.dead && !src.dying) src.hp = Math.min(src.max, src.hp + dmg * src.abil.lifesteal.frac); // 광전사: 준 피해만큼 흡혈
     if (S.t >= (tgt.flashAt || 0)) { tgt.flash = 0.1; tgt.flashAt = S.t + 0.4; } // 흰색 번쩍임은 0.4초에 한 번만 (연타에도 흰색으로 굳지 않게)
     if (S.captureEvents) numNote(S, tgt, dmg, crit ? 'c' : 'd');
@@ -1416,7 +1425,13 @@
   function autoCastle(S, pick) { // (개발자 모드·테스트) 성 갈래 선택을 자동으로 처리한다
     for (let i = 0; i < 3; i++) { checkCastleChoice(S); if (!S.cOffer) break; pickCastle(S, pick === undefined ? (S.cnodes.length + 1) % S.cOffer.list.length : Math.min(pick, S.cOffer.list.length - 1)); }
   }
-  function runSummary(S) { return { jobs: describeJobs(S).map(j => [j.className, j.names.join(' › ')]), cn: S.cnodes.map(id => { const n = ctNode(id); return n ? n.name : id; }), pop: popCount(S), castle: S.castle.lv, earned: Math.round(S.stats.earned), spent: Math.round(S.stats.spent), fin: [S.core.cpath || null, S.core.cvar || null, S.core.cfin || null, S.core.cannons || 0], ul: finalUnits(S), log: S.log }; }
+  // 상세 기록용: 강화 요약 (계열별 체력·공격·속도 단계와 %, 보스 보상 전군 강화, 받은 카드) + 유닛별 전투 기록
+  function upSummary(S) {
+    const lines = UNIT_TYPES.map(t => { const l = S.up[t]; return [t, l.hp, l.atk, l.rate, l.speed]; });
+    return { lines, pct: CFG.upPct, boss: S.bossUp ? [S.bossUp.hp || 0, S.bossUp.atk || 0] : [0, 0], cards: describeTaken(S).filter(d => !(d.key.includes(':'))).map(d => [d.name, d.lv, d.max, d.cat, d.desc]) };
+  }
+  const cbSummary = S => { const o = {}, m = S.stats.cb || {}; for (const k in m) o[k] = m[k].map(v => Math.round(v)); return o; };
+  function runSummary(S) { return { cb: cbSummary(S), us: upSummary(S), jobs: describeJobs(S).map(j => [j.className, j.names.join(' › ')]), cn: S.cnodes.map(id => { const n = ctNode(id); return n ? n.name : id; }), pop: popCount(S), castle: S.castle.lv, earned: Math.round(S.stats.earned), spent: Math.round(S.stats.spent), fin: [S.core.cpath || null, S.core.cvar || null, S.core.cfin || null, S.core.cannons || 0], ul: finalUnits(S), log: S.log }; }
   function finalUnits(S) { const m = new Map(); for (const u of S.units) { if (u.dead || u.undead) continue; const k = u.type + '|' + (u.job || '') + '|' + (u.jobTier || 0); m.set(k, (m.get(k) || 0) + 1); } return [...m.entries()].map(([k, n]) => { const a = k.split('|'); return [a[0], a[1], +a[2], n]; }); }
   function describeCastle(S) { return S.cnodes.map(id => ctNode(id)).filter(Boolean).map(n => ({ id: n.id, name: n.name, kind: n.kind, desc: n.desc })); }
   function raiseUndead(S, e) { // 사령: 처치한 일반 적이 일정 확률로 망자가 되어 잠시 아군으로 싸운다
@@ -1446,7 +1461,7 @@
       if (!best) break; used.push([best.x, best.y]);
       const x = best.x, y = best.y, dmg = c.atk * B.mul;
       eachNear(S.gE, x, y, B.r, o => { damage(S, o, dmg); if (B.slow > 0) o.slowT = Math.max(o.slowT || 0, B.slow); if (B.freeze > 0 && o.kind !== 'boss') o.frozenT = Math.max(o.frozenT || 0, B.freeze); });
-      if (B.zone > 0) S.rain.push({ x, y, r: B.r * 0.95, t: B.zone, tick: 0.3, mul: B.zmul, atk: c.atk, every: 0.5, fx: 'fire', fire: true });
+      if (B.zone > 0) S.rain.push({ by: 'core', x, y, r: B.r * 0.95, t: B.zone, tick: 0.3, mul: B.zmul, atk: c.atk, every: 0.5, fx: 'fire', fire: true });
       emit(S, { type: 'castleBlast', x, y, r: B.r, k, zone: B.zone, cvar: c.cvar, cfin: c.cfin, freeze: B.freeze > 0, slow: B.slow > 0 });
     }
     S.cb = B.cd;
@@ -1497,7 +1512,7 @@
     if (S.perks.hbuff && t.team === 'u' && amt > 0) t.hbT = V().hbuffT; // 사제 · 격려: 치유받으면 잠시 공격력 상승
     t.hwT = (t.hwT || 0); if (S.t - t.hwT >= 1) { t.hwT = S.t; t.hw = 0; }
     const room = Math.max(0, t.max * CFG.balance.healCap - (t.hw || 0)); amt = Math.min(amt, room, t.max - t.hp);
-    if (amt > 0) { t.hp += amt; t.hw = (t.hw || 0) + amt; if (S.captureEvents && t.team === 'u') numNote(S, t, amt, 'h'); }
+    if (amt > 0) { cbAdd(S, BY, 3, amt); t.hp += amt; t.hw = (t.hw || 0) + amt; if (S.captureEvents && t.team === 'u') numNote(S, t, amt, 'h'); }
     return amt;
   }
   function nearestBoth(S, x, y, range) {
@@ -1559,7 +1574,7 @@
     }
     if (sk.kind === 'rain') { // 화살비: 가까운 적 위에 지대를 만든다
       const t = nearest(S.gE, u.x, u.y, sk.r * 0.9); if (!t) return;
-      S.rain.push({ x: t.x, y: t.y, r: sk.rad, t: sk.dur, tick: 0.15, mul: sk.mul, atk, every: sk.every });
+      S.rain.push({ by: BY, x: t.x, y: t.y, r: sk.rad, t: sk.dur, tick: 0.15, mul: sk.mul, atk, every: sk.every });
       emit(S, { type: 'rainZone', x: t.x, y: t.y, r: sk.rad, dur: sk.dur }); u.swing = 0.4; return;
     }
     if (sk.n) {
@@ -1981,7 +1996,7 @@
     if (e.blast) { if (reach <= 6) explode(S, e); return; } // 폭파병: 닿으면 터진다
     if (e.cd <= 0 && reach <= e.range + 2) {
       e.cd = cdTime; e.swing = 0.25; e.aim = Math.atan2(t.y - e.y, t.x - e.x);
-      if (t === c) { hitCore(S, dmg, e.kind === 'boss' ? '보스 근접' : '근접(' + (CFG.enemies[e.kind] ? CFG.enemies[e.kind].name : e.kind) + ')'); if (S.perks.thorn) damage(S, e, dmg * V().thorn * S.perks.thorn); }
+      if (t === c) { hitCore(S, dmg, e.kind === 'boss' ? '보스 근접' : '근접(' + (CFG.enemies[e.kind] ? CFG.enemies[e.kind].name : e.kind) + ')'); if (S.perks.thorn) { BY = 'core'; damage(S, e, dmg * V().thorn * S.perks.thorn); BY = null; } }
       else {
         damage(S, t, dmg, false, e); if (e.poison && !t.dead) t.poisonT = Math.max(t.poisonT || 0, e.poison);
         if (e.kind === 'boss') { // 보스의 기본 공격은 범위 공격: 맞은 대상 주변의 아군도 함께 피해
@@ -2040,7 +2055,7 @@
     for (const u of S.units) {
       if (u.dead) continue;
       u.aura = A.on && Math.hypot(u.x - CX, u.y - CY) <= A.r ? 1 : 0;
-      if (u.aura && A.heal > 0 && !u.undead && u.hp < u.max) u.hp = Math.min(u.max, u.hp + u.max * A.heal * dt);
+      if (u.aura && A.heal > 0 && !u.undead && u.hp < u.max) { const h = Math.min(u.max - u.hp, u.max * A.heal * dt); cbAdd(S, 'core', 3, h); u.hp += h; }
       gridAdd(S.gU, u);
     }
     for (const e of S.enemies) if (!e.dead && !e.hidden) gridAdd(e.air ? S.gA : S.gE, e); // 공중형은 따로: 근접·성·범위 공격은 닿지 않고 궁수 계열·포탑만 겨눈다
@@ -2059,8 +2074,8 @@
         if (c.cannons > 1) { const seen = new Set([t]); for (let i = 1; i < c.cannons; i++) { const t2 = nearestExcl(S.gE, c.x, c.y, c.range, seen) || nearestExcl(S.gA, c.x, c.y, c.range, seen) || t; seen.add(t2); fire(S, c, t2, c.atk, CFG.shellSpeed, 'c'); } } // 대포가 여러 문이면 서로 다른 적을 겨눈다
       }
     }
-    if (S.perks.bomb) { S.bombCd -= dt; if (S.bombCd <= 0) bigBomb(S); }
-    castleSkillTick(S, dt);
+    BY = 'core'; if (S.perks.bomb) { S.bombCd -= dt; if (S.bombCd <= 0) bigBomb(S); }
+    castleSkillTick(S, dt); BY = null;
 
     // 유닛: 대기 자리는 사방에 퍼지되 적이 오는 쪽으로 약간 쏠린다
     // 경계 상태에 따라 쏠림을 부드럽게 바꾼다
@@ -2077,6 +2092,7 @@
         if (u.weakT > 0) u.weakT -= dt; if (u.woundT > 0) u.woundT -= dt;
         if (u.stunT > 0) { u.stunT -= dt; continue; } // 기절: 이동도 공격도 못 한다
       }
+      BY = cbKey(S, u);
       if (CFG.units[u.type].static) { updateStatic(S, u, dt); continue; }
       const jm = S.jobMods[lineOf(u.type)];
       if (jm && jm.regen && u.hp < u.max) u.hp = Math.min(u.max, u.hp + u.max * jm.regen * dt);
@@ -2090,6 +2106,7 @@
       const bx = u.x - CX, by = u.y - CY, bd = Math.hypot(bx, by), bmin = CFG.core.blockR + u.r * 0.6;
       if (bd < bmin) { if (bd < 1) { u.x = CX + bmin; } else { u.x = CX + bx / bd * bmin; u.y = CY + by / bd * bmin; } }
     }
+    BY = null;
     for (let i = S.strikes.length - 1; i >= 0; i--) { const k = S.strikes[i]; if (!k) continue; k.t -= dt; if (k.t > 0) continue; S.strikes.splice(i, 1); resolveStrike(S, k); }
     // 보스 상태이상 구역: 예고 시간이 지나면 범위 안의 아군에게 걸린다
     for (let i = S.zones.length - 1; i >= 0; i--) {
@@ -2105,7 +2122,7 @@
     }
     for (let i = S.rain.length - 1; i >= 0; i--) { // 화살비 지대: 남아 있는 동안 일정 간격으로 범위 안의 적을 맞힌다
       const rn = S.rain[i]; if (!rn) continue; rn.t -= dt; if (rn.t <= 0) { S.rain.splice(i, 1); continue; }
-      rn.tick -= dt; if (rn.tick <= 0) { rn.tick += rn.every; eachNear(S.gE, rn.x, rn.y, rn.r, o => damage(S, o, rn.atk * rn.mul * (rn.fire ? 1 : (o.rres || 1)))); emit(S, { type: rn.fire ? 'fireTick' : 'rainTick', x: rn.x, y: rn.y, r: rn.r }); }
+      rn.tick -= dt; if (rn.tick <= 0) { rn.tick += rn.every; BY = rn.by || null; eachNear(S.gE, rn.x, rn.y, rn.r, o => damage(S, o, rn.atk * rn.mul * (rn.fire ? 1 : (o.rres || 1)))); emit(S, { type: rn.fire ? 'fireTick' : 'rainTick', x: rn.x, y: rn.y, r: rn.r }); BY = null; }
     }
     for (let i = S.pools.length - 1; i >= 0; i--) {
       const pl = S.pools[i]; if (!pl) continue; pl.t -= dt; if (pl.t <= 0) { S.pools.splice(i, 1); continue; }
@@ -2123,7 +2140,7 @@
       s.x = s.sx + (tx - s.sx) * p; s.y = s.sy + (ty - s.sy) * p;
       s.h = 4 * s.H * p * (1 - p) + s.h0 * (1 - p); // 포구 높이에서 출발해 포물선을 그리며 지면 목표에 떨어진다
       s.vx = (tx - s.sx) / s.T; s.vy = (ty - s.sy) / s.T; s.vh = (4 * s.H * (1 - 2 * p) - s.h0) / s.T; // 화면에서 화살 방향을 그리기 위한 속도
-      if (s.p >= 1) { resolveShot(S, s); s.t = null; S.shotPool.push(s); S.shots.splice(i, 1); }
+      if (s.p >= 1) { BY = cbKey(S, s.from); resolveShot(S, s); BY = null; s.t = null; S.shotPool.push(s); S.shots.splice(i, 1); }
     }
 
     if (S.captureEvents) flushNums(S);

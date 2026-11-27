@@ -840,10 +840,39 @@
   }
   let statDetail = null;
   // 한 판의 상세: 라운드별로 고른 강화 카드·전직·성 업그레이드·뽑은 유닛, 그리고 그때 있었던 다른 선택지
+  // 상세 기록 맨 위: 강화 정리 (전직 · 계열별 체력/공격/속도 단계와 % · 보스 보상 전군 강화 · 받은 특수 카드)
+  function upgradeBox(g, esc) {
+    const U = g.us; if (!U) return (g.win || g.round > C.FINAL_ROUND) ? '<div class="clrbig">🐉 100라운드 클리어' + (g.round > C.FINAL_ROUND ? ' · 무한 모드 ' + g.round + '라운드' : '') + '</div>' : '';
+    const jobOf = {}; for (const j of (g.jobs || [])) jobOf[j[0]] = j[1];
+    const SN = { hp: '체력', atk: '공격력', rate: '공격 속도', speed: '이동 속도' }, PN = { atk: '치유량', rate: '치유 속도' };
+    let rows = '';
+    for (const [t, hp, atk, rate, speed] of U.lines) {
+      const cn = CFG.units[t].name, lv = { hp, atk, rate, speed }, parts = [];
+      for (const s of ['hp', 'atk', 'rate', 'speed']) if (lv[s] > 0) parts.push('<span class="upc">' + (t === 'priest' && PN[s] || SN[s]) + ' <b>Lv ' + lv[s] + '</b> <i>+' + Math.round(U.pct[s] * 100 * lv[s]) + '%</i></span>');
+      rows += '<tr><td class="ul">' + esc(cn) + (jobOf[cn] ? '<div class="uj">' + esc(jobOf[cn]) + '</div>' : '<div class="uj dim">전직 없음</div>') + '</td><td>' + (parts.length ? parts.join(' ') : '<span class="dim">강화 없음</span>') + '</td></tr>';
+    }
+    const bu = U.boss || [0, 0]; if (bu[0] || bu[1]) rows += '<tr><td class="ul">전군 강화<div class="uj">보스 보상</div></td><td><span class="upc">체력 <b>+' + bu[0] + '단계</b> <i>+' + Math.round(U.pct.hp * 100 * bu[0]) + '%</i></span> <span class="upc">공격력 <b>+' + bu[1] + '단계</b> <i>+' + Math.round(U.pct.atk * 100 * bu[1]) + '%</i></span></td></tr>';
+    const cards = (U.cards || []).map(c => '<span class="chip" title="' + esc(c[4] || '') + '">' + esc(c[0]) + ' <b>' + c[1] + '/' + c[2] + '</b></span>').join('');
+    return '<h3>강화 정리' + ((g.win || g.round > C.FINAL_ROUND) ? ' <span class="clr">🐉 100라운드 클리어</span>' : '') + '</h3><table class="uptab">' + rows + '</table>' + (cards ? '<div class="chips">' + cards + '</div>' : '');
+  }
+  // 유닛 종류별 전투 기록: 준 피해 · 받은 피해 · 막은 피해(방어·보호막·회피) · 치유량
+  function combatBox(g, esc) {
+    const cb = g.cb; if (!cb || !Object.keys(cb).length) return '';
+    const jobOf = {}; for (const [t, job, tier] of (g.ul || [])) if (job && (!jobOf[t] || tier > jobOf[t][1])) jobOf[t] = [job, tier];
+    const nm = k => k === 'core' ? '성 (대포·성 능력·오라)' : k === 'undead' ? '망자' : (CFG.units[k] ? CFG.units[k].name : k);
+    const fmt = v => v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : v >= 1e4 ? (v / 1e3).toFixed(0) + 'K' : Math.round(v).toLocaleString();
+    const ks = Object.keys(cb).sort((a, b) => cb[b][0] - cb[a][0]), mx = [0, 1, 2, 3].map(i => Math.max(1, ...ks.map(k => cb[k][i]))), tot = ks.reduce((s, k) => s + cb[k][0], 0) || 1;
+    const cell = (v, i, col) => '<td><div class="cbv">' + (v > 0 ? fmt(v) : '-') + '</div><div class="cbb"><i style="width:' + (v / mx[i] * 100).toFixed(1) + '%;background:' + col + '"></i></div></td>';
+    let rows = '';
+    for (const k of ks) { const a = cb[k]; let jn = ''; if (jobOf[k]) { try { const jd = C.jobDef(k, jobOf[k][0]); if (jd) jn = jd.name; } catch (e) {} }
+      rows += '<tr><td class="ul">' + esc(nm(k)) + (jn ? '<div class="uj">' + esc(jn) + '</div>' : '') + '<div class="uj dim">딜 ' + Math.round(a[0] / tot * 100) + '%</div></td>' + cell(a[0], 0, '#ff8a5a') + cell(a[1], 1, '#c070ff') + cell(a[2], 2, '#6fb8ff') + cell(a[3], 3, '#6fe08a') + '</tr>'; }
+    return '<h3>유닛별 전투 기록</h3><div class="cbwrap"><table class="cbtab"><tr><th>유닛</th><th>준 피해</th><th>받은 피해</th><th>막은 피해</th><th>치유</th></tr>' + rows + '</table></div><div class="d">막은 피해 = 방어·축복·보호막으로 줄인 양과 회피한 공격. 치유 = 그 유닛이 회복시킨 양 (성은 오라·파동 포함).</div>';
+  }
   function gameDetail(g, backId) {
     const esc = t => String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
     let h = '<button class="backbtn" id="' + (backId || 'statBack') + '">← 목록으로</button><h3 style="margin-top:8px">' + (g.name ? esc(g.name) + ' · ' : '') + dfmt(g.at) + (g.win ? ' · 게임 클리어' : '') + '</h3>'
       + '<div class="pickrow"><div><b>전직</b> ' + (g.jobs ? (g.jobs.length ? g.jobs.map(j => esc(j[0]) + ': ' + esc(j[1])).join(' / ') : '없음') : '기록 없음') + '</div><div><b>성</b> ' + (g.cn ? (g.cn.length ? g.cn.map(esc).join(' › ') : '선택 없음') : '기록 없음') + '</div></div>'
+      + upgradeBox(g, esc)
       + '<div class="sumrow"><div><b>' + g.round + '</b>도달 라운드</div><div><b>' + g.kills.toLocaleString() + '</b>처치</div><div><b>' + fmtTime(g.time) + '</b>플레이 시간</div>' + (g.earned === undefined ? '' : '<div><b>' + g.earned.toLocaleString() + '</b>번 골드</div><div><b>' + (g.spent || 0).toLocaleString() + '</b>쓴 골드</div><div><b>Lv.' + (g.castle || 1) + ' · ' + (g.pop || 0) + '명</b>마지막 성 · 유닛</div>') + '</div>';
     if (g.fin || g.ul) {
       let chips = '';
@@ -851,6 +880,7 @@
       stageSpec = { sc: 'run', g };
       h += '<h3>최종 성과 유닛</h3><div class="stagebox run"><canvas id="stageCv"></canvas></div>' + (chips ? '<div class="chips">' + chips + '</div>' : '');
     }
+    h += combatBox(g, esc);
     if (!g.log) return h + '<div class="d">이 판의 자세한 라운드별 기록은 저장되어 있지 않아요.</div>';
     const rounds = new Map(), get = r => { if (!rounds.has(r)) rounds.set(r, []); return rounds.get(r); };
     for (const e of g.log) {
@@ -2009,7 +2039,7 @@
     // 서버가 한마디·상세 기록을 내려주지 않아도, 이 브라우저에서 올린 기록이면 저장해 둔 값을 붙여 보여 준다
     { const loc = Net.localTop(); for (const e of r.list) { const l = loc.find(x => x.name === e.name && x.score === e.score); if (l) { if (!e.msg && l.msg) e.msg = l.msg; if (!e.d && !e.detail && l.d) e.d = l.d; } } }
     let hit = false; rankList = r.list;
-    const rows = r.list.map((e, i) => { const me = mine != null && !hit && e.score === mine; if (me) hit = true; return '<tr class="clk' + (i < 3 ? ' top r' + (i + 1) : '') + (me ? ' me' : '') + '" data-ri="' + i + '"><td>' + (i < 3 ? '<span class="medal m' + (i + 1) + '">' + (i + 1) + '</span>' : (i + 1)) + '</td><td>' + (i === 0 ? '<span class="crown">👑</span>' : '') + esc(e.name) + (e.msg ? '<div class="rmsg">“' + esc(e.msg) + '”</div>' : '') + '</td><td>' + (e.win ? '클리어' : e.round + '라운드') + '</td><td>' + fmtTime(e.time) + '</td></tr>'; }).join('');
+    const rows = r.list.map((e, i) => { const me = mine != null && !hit && e.score === mine; if (me) hit = true; return '<tr class="clk' + (i < 3 ? ' top r' + (i + 1) : '') + (me ? ' me' : '') + '" data-ri="' + i + '"><td>' + (i < 3 ? '<span class="medal m' + (i + 1) + '">' + (i + 1) + '</span>' : (i + 1)) + '</td><td>' + (i === 0 ? '<span class="crown">👑</span>' : '') + esc(e.name) + (e.msg ? '<div class="rmsg">“' + esc(e.msg) + '”</div>' : '') + '</td><td>' + (e.win ? '<span class="clr">🐉 100 클리어</span>' : e.round > C.FINAL_ROUND ? e.round + '라운드<div class="clr">🐉 100 클리어 · 무한</div>' : e.round + '라운드') + '</td><td>' + fmtTime(e.time) + '</td></tr>'; }).join('');
     box.innerHTML = '<div class="rankhead">' + (r.server ? '전체 랭킹 <span class="rnote">(한 이름당 최대 3개)</span>' : (Net.configured ? '서버에 연결하지 못해 내 기록만 표시' : '내 기록 (서버 미설정)')) + ' <button class="btn" id="rankRefresh" style="padding:2px 10px;font-size:12px;margin-left:8px">⟳ 새로고침</button></div>'
       + (rows ? '<table class="rank"><tr><th>#</th><th>닉네임 · 한마디</th><th>기록</th><th>시간</th></tr>' + rows + '</table>' : '<p>아직 기록이 없어요.</p>');
     if (rankScroll !== null) { const mb = $('metaBody'); if (mb) mb.scrollTop = rankScroll; rankScroll = null; }

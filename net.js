@@ -118,7 +118,7 @@
   const GKEY = 'cd-games-sent';
   const sentSet = () => { try { return new Set(JSON.parse(ls.get(GKEY) || '[]')); } catch (e) { return new Set(); } };
   const markSent = at => { const s = sentSet(); s.add(at); ls.set(GKEY, JSON.stringify([...s].slice(-300))); };
-  const gamePayload = g => ({ type: 'game', v: CFG.VERSION, pid, at: g.at, mode: g.mode, round: g.round, win: !!g.win, kills: g.kills, time: g.time, earned: g.earned, spent: g.spent, score: g.score, pop: g.pop, castle: g.castle, d: { jobs: g.jobs, cn: g.cn, fin: g.fin, ul: g.ul, log: (g.log || []).slice(-150) } });
+  const gamePayload = g => ({ type: 'game', v: CFG.VERSION, pid, at: g.at, mode: g.mode, round: g.round, win: !!g.win, kills: g.kills, time: g.time, earned: g.earned, spent: g.spent, score: g.score, pop: g.pop, castle: g.castle, d: { jobs: g.jobs, cn: g.cn, fin: g.fin, ul: g.ul, cb: g.cb, us: g.us, log: (g.log || []).slice(-150) } });
   let gBusy = false;
   async function sendGame(g) { if (!API || !g || !g.at || sentSet().has(g.at)) return; try { if (await postFb(gamePayload(g))) markSent(g.at); } catch (e) {} }
   async function syncGames() { // 아직 서버에 없는 최근 기록을 한 번에 몇 개씩 올린다
