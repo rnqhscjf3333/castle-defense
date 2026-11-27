@@ -1141,7 +1141,7 @@
       if (D.revive) { // 각성: 모습이 바뀌고 체력이 0에서 다시 차오른다 (땅도 보스의 속성에 맞게 무너진다)
         D.stage = 'revive'; S.cliffTheme = b.king ? b.king.id : 'dark'; D.t0 = D.t; b.p2 = true; b.flash = 0; b.bossName = N.name; b.look = N.look; b.r = N.r; b.max = b.max2; b.hp = 0; b.gold = 0;
         b.abil = b.king ? kingP2(b) : p2Abil(b.abil); b.t = {}; for (const k in b.abil) if (!Array.isArray(b.abil[k])) b.t[k] = (b.abil[k].cd || 0) * (b.king ? 0.3 : 0.6);
-        b.life = 0; b.enraged = false; b.rushDone = true; b.age = 0; b.enr = false; b.cd = 1; b.guardT = 0; // 2차전(마왕·사천왕)에는 등장 직후 보호가 없다
+        b.life = 0; b.castT = 0; b.enraged = false; b.rushDone = true; b.age = 0; b.enr = false; b.cd = 1; b.guardT = 0; // 2차전(마왕·사천왕)에는 등장 직후 보호가 없다
         emit(S, { type: 'bossRevive', x: b.x, y: b.y, r: b.r, name: b.bossName, dur: N.reviveT });
         return;
       }
@@ -1685,6 +1685,7 @@
 
   // ───────────── 적 AI ─────────────
   // 보스 고유 패턴: 돌진 / 소환 / 포격 / 방어막 / 분노. 속도·공격 배율은 e.speedMul 등에 반영된다.
+  const bossBusy = e => e.dashT > 0 || e.leapW > 0 || e.leapT > 0 || e.rushW > 0 || (e.rushGo && !e.rushDone); // 돌격·도약·강습 중에는 예고형 직선 기술을 시작하지 않는다
   function bossTick(S, e, dt) {
     const A = e.abil;
     e.speedMul = 1; e.rateMul = 1; e.dmgMul = 1;
@@ -1698,6 +1699,7 @@
       if (!e.enraged) { e.enraged = true; emit(S, { type: 'bossRage', name: e.bossName, x: e.x, y: e.y }); bossSay(S, e, null, 'rage'); }
       e.speedMul *= A.rage.speed; e.rateMul = A.rage.rate; e.dmgMul *= A.rage.dmg;
     }
+    if (e.castT > 0) { e.castT -= dt; e.speedMul = 0; return; } // 검기·손톱을 예고한 뒤 발사할 때까지는 제자리에서 다른 기술을 쓰지 않는다
     if (A.fly) { // 용: 체력이 절반이 되면 한 번 하늘로 날아올라 모습을 감추고, 그림자만 땅 위를 돌며 불덩이를 떨어뜨린다. 시간이 지나면 북쪽 단상으로 다시 솟아오른다
       const F = A.fly;
       if (e.flyS === 'up') { e.flyT -= dt; e.lift = 1 - Math.max(0, e.flyT) / F.up; e.speedMul = 0; if (e.flyT <= 0) { e.flyS = 'away'; e.flyT = F.away; e.hidden = true; e.t.barrage = 0.6; e.shT = 0; e.shx = CX; e.shy = CY - 320; emit(S, { type: 'dragonAway', x: e.x, y: e.y }); } return; }
@@ -1835,11 +1837,11 @@
     }
     if (A.sword) { // 암흑 기사단장·마왕(1형태): 거대한 검기를 일직선으로 쏜다 (예고 후 발사)
       e.t.sword -= dt;
-      if (e.t.sword <= 0 && e.life > 2) { const tg = nearestUnit(S, e.x, e.y, A.sword.len); if (!tg) e.t.sword = 1.5; else { e.t.sword = A.sword.cd; const ang = Math.atan2(tg.y - e.y, tg.x - e.x); addStrike(S, e, { shape: 'line', x: e.x, y: e.y, ang, len: A.sword.len, w2: A.sword.width, r: A.sword.width, t: A.sword.warn, mul: A.sword.mul, kb: A.sword.kb, kind: 'slash' }); } }
+      if (e.t.sword <= 0 && e.life > 2 && !bossBusy(e)) { const tg = nearestUnit(S, e.x, e.y, A.sword.len); if (!tg) e.t.sword = 1.5; else { e.t.sword = A.sword.cd; e.castT = A.sword.warn; const ang = Math.atan2(tg.y - e.y, tg.x - e.x); addStrike(S, e, { shape: 'line', x: e.x, y: e.y, ang, len: A.sword.len, w2: A.sword.width, r: A.sword.width, t: A.sword.warn, mul: A.sword.mul, kb: A.sword.kb, kind: 'slash' }); } }
     }
     if (A.claw) { // 각성한 마왕·용: 손을 휘둘러 몸 중심에서 목표 방향 직선 한 줄기와 양옆으로 살짝 틀어진 두 줄기가 뻗는다
       e.t.claw -= dt;
-      if (e.t.claw <= 0 && e.life > 2) { const tg = nearestUnit(S, e.x, e.y, A.claw.len); if (!tg) e.t.claw = 1.5; else { e.t.claw = A.claw.cd; const base = Math.atan2(tg.y - e.y, tg.x - e.x); for (let i = 0; i < A.claw.n; i++) addStrike(S, e, { shape: 'line', x: e.x, y: e.y, ang: base + (i - (A.claw.n - 1) / 2) * (A.claw.spread || 0.4), len: A.claw.len, w2: A.claw.width, r: A.claw.width, t: A.claw.warn, mul: A.claw.mul, kb: A.claw.kb, kind: 'slash', claw: true }); } }
+      if (e.t.claw <= 0 && e.life > 2 && !bossBusy(e)) { const tg = nearestUnit(S, e.x, e.y, A.claw.len); if (!tg) e.t.claw = 1.5; else { e.t.claw = A.claw.cd; if (!e.dragon) e.castT = A.claw.warn; const base = Math.atan2(tg.y - e.y, tg.x - e.x); for (let i = 0; i < A.claw.n; i++) addStrike(S, e, { shape: 'line', x: e.x, y: e.y, ang: base + (i - (A.claw.n - 1) / 2) * (A.claw.spread || 0.4), len: A.claw.len, w2: A.claw.width, r: A.claw.width, t: A.claw.warn, mul: A.claw.mul, kb: A.claw.kb, kind: 'slash', claw: true }); } }
     }
     if (A.lance) { // 각성한 뇌왕: 번개 창을 가까운 아군 둘에게 꽂아 관통시킨다
       e.t.lance -= dt;
@@ -1973,6 +1975,7 @@
     if (e.age > ENRAGE_AFTER && !e.enr) { e.enr = true; if (S.enrageSaid !== S.round) { S.enrageSaid = S.round; emit(S, { type: 'enrage' }); } }
     if (e.riseT > 0) { e.riseT -= dt; e.life = 0; if (e.fromSky && e.riseT <= 0) { e.fromSky = false; emit(S, { type: 'dragonLand', x: e.x, y: e.y }); } return; } // 용이 땅 아래에서 솟아오르는 동안은 움직이지도 공격하지도 못한다
     if (e.abil) bossTick(S, e, dt);
+    if (e.castT > 0) return; // 검기·손톱 예고 중: 이동·기본 공격도 멈춘다 (moveToward는 속도 배율 0을 1로 취급하므로 여기서 끊는다)
     if (e.focusT > 0) return; // 정신 집중 중
     if (e.fixed) return; // 용: 제자리에 고정 (스킬만 쓴다)
     if (e.kind === 'shaman') return updateShaman(S, e, dt);

@@ -971,5 +971,15 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
 { const g = C.createGame(3); applyById(g, 'u_atk', 'priest'); const card = C.describeTaken(g).find(d => d.key === 'u_atk:priest');
   check('사제 치유량 카드 설명이 실제 값(+15%)과 같음', card && card.desc.includes('+' + Math.round(C.CFG.upPct.atk * 100) + '%'), card && card.desc);
   check('철벽 오라는 상한 확장 대상이 아님 (6·7레벨은 효과가 없어서)', !C.CFG.capLift.includes('a_def')); }
+
+// 76. 검기를 예고한 뒤 발사될 때까지 보스는 제자리에서 다른 기술(돌격 등)을 쓰지 않는다
+{ const g = arena(50, []); const b = C.spawnEnemy(g, 'boss', g.core.x + 420, g.core.y) || g.enemies[g.enemies.length - 1]; b.guardT = 0;
+  C.spawnEnemy(g, 'grunt', g.core.x + 200, g.core.y); g.units.length || null;
+  b.abil = { sword: { cd: 30, len: 1000, width: 130, warn: 1.0, mul: 1, kb: 0 }, dash: { cd: 0.1, dur: 1.2, mul: 2.2 } }; b.t = { sword: 0, dash: 0.05 }; b.life = 3; b.rushDone = true; b.rushW = 0; b.rushGo = false;
+  // 검기 대상이 될 아군
+  g.gold += 1e5; C.buy(g, 'sword'); const u = g.units[g.units.length - 1]; u.x = b.x - 150; u.y = b.y;
+  let dashedDuring = false, x0 = null, moved = 0, casting = 0;
+  for (let i = 0; i < 30 * 2; i++) { C.tick(g, DT); if (b.castT > 0) { casting++; if (x0 === null) x0 = b.x; moved = Math.max(moved, Math.abs(b.x - x0)); if (b.dashT > 0) dashedDuring = true; } }
+  check('검기 예고 중에는 돌격하지 않고 제자리', casting > 20 && !dashedDuring && moved < 3, 'cast ' + casting + '틱, 이동 ' + Math.round(moved)); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);
