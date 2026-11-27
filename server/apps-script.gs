@@ -46,13 +46,54 @@ function valid_(o) {
     o.score <= (MAX_ROUND + 1) * 100000 + 99999 && o.time >= (o.round - 1) * 8; // 라운드는 40초마다 넘어가므로, 라운드 수에 비해 게임 시간이 너무 짧으면 거부
 }
 
+
+// ── 랭킹 자동 등록: 같은 기기(pid)가 예전에 쓴 닉네임으로, 랭킹에 없는 판을 채운다 ──
+function scoreOf_(win, round, kills, time) { return (round + (win ? 1 : 0)) * 100000 + (win ? Math.max(0, 99999 - Math.floor(time)) : Math.min(99999, kills)); }
+function nameOf_(sc, pid) { // 이 pid가 랭킹에 마지막으로 쓴 닉네임
+  var last = sc.getLastRow(); if (last < 2 || !pid) return '';
+  var v = sc.getRange(2, 2, last - 1, 8).getValues(); // 이름(2) … pid(9)
+  for (var i = v.length - 1; i >= 0; i--) if (String(v[i][7]) === String(pid) && v[i][0]) return String(v[i][0]);
+  return '';
+}
+function scoreRow_(sc, pid, round, kills, win) { // 같은 판(같은 pid·라운드·처치·승리)이 이미 랭킹에 있으면 그 행 번호
+  var last = sc.getLastRow(); if (last < 2) return 0;
+  var from = Math.max(2, last - 3000), v = sc.getRange(from, 4, last - from + 1, 6).getValues(); // 라운드(4) 승리(5) 처치(6) … pid(9)
+  for (var i = v.length - 1; i >= 0; i--) if (String(v[i][5]) === String(pid) && +v[i][0] === +round && +v[i][2] === +kills && (v[i][1] === 'Y') === !!win) return from + i;
+  return 0;
+}
+function autoScore_(sc, g, d, now) { // g = 통계 한 판 {pid, round, kills, win, time, mode, v, earned, spent, pop, castle}
+  if (!g.pid || !(g.round >= 2)) return false;
+  var name = nameOf_(sc, g.pid); if (!name) return false;
+  if (scoreRow_(sc, g.pid, g.round, g.kills, g.win)) return false;
+  var o = { score: scoreOf_(g.win, g.round, g.kills, g.time), round: g.round, kills: g.kills, time: g.time }; if (!valid_(o)) return false;
+  var det = d && typeof d === 'object' ? d : {}; det.earned = g.earned; det.spent = g.spent; det.pop = g.pop; det.castle = g.castle; det.auto = 1;
+  sc.appendRow([now, name, o.score, g.round, g.win ? 'Y' : 'N', g.kills, g.time, g.v, g.pid, '', '', g.mode === 'free' ? 'free' : 'normal', '', pack_(det)]);
+  return true;
+}
+// 예전 기록 채우기: Apps Script 편집기에서 이 함수를 골라 [실행]하거나, ?action=backfill&key=READ_KEY 로 부른다
+function backfillScores() {
+  var lock = LockService.getScriptLock(); lock.waitLock(30000);
+  try {
+    var sc = scores_(), gs = games_(), last = gs.getLastRow(), n = 0, now = new Date(); if (last < 2) return 0;
+    var v = gs.getRange(2, 1, last - 1, 15).getValues();
+    for (var i = 0; i < v.length; i++) { var r = v[i], d = null; try { d = r[14] ? JSON.parse(r[14]) : null; } catch (er) {}
+      if (autoScore_(sc, { pid: r[2], v: r[3], mode: r[4], round: +r[5], win: r[6] === 'Y', kills: +r[7], time: +r[8], earned: r[9], spent: r[10], pop: r[12], castle: r[13] }, d, now)) n++; }
+    return n;
+  } finally { lock.releaseLock(); }
+}
+
 function doPost(e) {
   var out = { ok: false };
   try {
     var o = JSON.parse(e.postData.contents), now = new Date();
     if (o.type === 'score') {
       if (valid_(o)) {
-        scores_().appendRow([now, String(o.name || '').slice(0, 12), o.score, o.round, o.win ? 'Y' : 'N', o.kills, o.time, o.v, o.pid, o.run, o.seed, o.mode === 'free' ? 'free' : 'normal', String(o.msg || '').replace(/[<>&"'`]/g, '').slice(0, 30), pack_(o.detail)]);
+        var lk = LockService.getScriptLock(); lk.waitLock(20000);
+        try {
+          var scs = scores_(), row = o.pid ? scoreRow_(scs, o.pid, o.round, o.kills, o.win) : 0;
+          if (row) { scs.getRange(row, 2).setValue(String(o.name || '').slice(0, 12)); scs.getRange(row, 10).setValue(o.run || ''); if (o.msg) scs.getRange(row, 13).setValue(String(o.msg).replace(/[<>&"'`]/g, '').slice(0, 30)); if (o.detail) scs.getRange(row, 14).setValue(pack_(o.detail)); } // 자동 등록된 같은 판이면 그 행을 채운다
+          else scs.appendRow([now, String(o.name || '').slice(0, 12), o.score, o.round, o.win ? 'Y' : 'N', o.kills, o.time, o.v, o.pid, o.run, o.seed, o.mode === 'free' ? 'free' : 'normal', String(o.msg || '').replace(/[<>&"'`]/g, '').slice(0, 30), pack_(o.detail)]);
+        } finally { lk.releaseLock(); }
         out.ok = true;
       } else out.error = 'invalid';
     } else if (o.type === 'error') { // 게임 중 발생한 오류 (멈춤 원인 추적용)
@@ -69,6 +110,7 @@ function doPost(e) {
         var sh = games_(), last = sh.getLastRow(), dup = false;
         if (last > 1) { var from = Math.max(2, last - 400), vals = sh.getRange(from, 2, last - from + 1, 2).getValues(); for (var i = 0; i < vals.length; i++) if (String(vals[i][0]) === String(o.at) && String(vals[i][1]) === String(o.pid)) { dup = true; break; } }
         if (!dup) sh.appendRow([now, o.at, o.pid, o.v, o.mode === 'free' ? 'free' : 'normal', o.round, o.win ? 'Y' : 'N', o.kills, o.time, o.earned, o.spent, o.score, o.pop, o.castle, pack_(o.d)]);
+        if (!dup) { var lk2 = LockService.getScriptLock(); lk2.waitLock(20000); try { out.ranked = autoScore_(scores_(), o, o.d, now); } finally { lk2.releaseLock(); } } // 랭킹 등록을 안 하고 끝낸 판도 예전 닉네임으로 랭킹에 올린다
         out.ok = true;
       } else out.error = 'invalid';
     } else if (o.type === 'log') {
@@ -94,6 +136,7 @@ function readTab_(e) {
 }
 
 function doGet(e) {
+  if (e.parameter && e.parameter.action === 'backfill') { var want = PropertiesService.getScriptProperties().getProperty('READ_KEY'); var res = want && String(e.parameter.key || '') === want ? { ok: true, added: backfillScores() } : { ok: false, error: 'denied' }; return ContentService.createTextOutput(JSON.stringify(res)).setMimeType(ContentService.MimeType.JSON); }
   if (e.parameter && ['logs', 'errors', 'feedback', 'games'].indexOf(e.parameter.action) >= 0) return ContentService.createTextOutput(JSON.stringify(readTab_(e))).setMimeType(ContentService.MimeType.JSON);
   var n = Math.min(50, Math.max(1, +(e.parameter.n || 20))), rows = scores_().getDataRange().getValues(), list = [];
   for (var i = 1; i < rows.length; i++) list.push({ name: rows[i][1], score: rows[i][2], round: rows[i][3], win: rows[i][4] === 'Y', kills: rows[i][5], time: rows[i][6], mode: rows[i][11] === 'free' ? 'free' : 'normal', at: new Date(rows[i][0]).getTime(), msg: String(rows[i][12] || ''), row: i });
