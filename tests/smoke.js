@@ -981,5 +981,11 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   let dashedDuring = false, x0 = null, moved = 0, casting = 0;
   for (let i = 0; i < 30 * 2; i++) { C.tick(g, DT); if (b.castT > 0) { casting++; if (x0 === null) x0 = b.x; moved = Math.max(moved, Math.abs(b.x - x0)); if (b.dashT > 0) dashedDuring = true; } }
   check('검기 예고 중에는 돌격하지 않고 제자리', casting > 20 && !dashedDuring && moved < 3, 'cast ' + casting + '틱, 이동 ' + Math.round(moved)); }
+// 77. 강습 예고선은 실제로 멈출 지점까지만 그려지고, 보스는 그 지점에서 멈춘다
+for (const dist of [80, 400]) { const g = C.createGame(7); g.hold = true; g.round = 50; g.phase = 'round'; g.roundT = 0; g.queue = []; g.spawnPts = 4; g.gold += 1e6;
+  const bx = g.core.x + 900, by = g.core.y; C.buy(g, 'sword'); const u = g.units[g.units.length - 1]; u.x = bx - dist; u.y = by;
+  C.spawnEnemy(g, 'boss', bx, by); const b = g.enemies.find(e => e.kind === 'boss'); b.guardT = 0;
+  for (let i = 0; i < 360 && !b.rushDone; i++) C.tick(g, DT);
+  check('강습은 예고선 끝에서 멈춤 (아군 ' + dist + ')', b.rushDone && Math.abs(b.rushRun - b.rushStop) < 1 && b.rushStop < dist + 40, '예고 ' + Math.round(b.rushStop) + ' / 달림 ' + Math.round(b.rushRun)); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

@@ -1685,6 +1685,15 @@
 
   // ───────────── 적 AI ─────────────
   // 보스 고유 패턴: 돌진 / 소환 / 포격 / 방어막 / 분노. 속도·공격 배율은 e.speedMul 등에 반영된다.
+  // 강습이 실제로 멈출 지점(출발점에서 잰 거리): 직선 위에서 처음 닿는 아군, 경로 끝 +150, 아군이 없을 때 성 앞, 등장 7초 제한 중 가장 가까운 곳
+  function rushStopAt(S, e, R) {
+    const ux = e.rushDx, uy = e.rushDy, ox = e.x, oy = e.y; let s = e.rushL + 150;
+    const any = S.units.some(u => !u.dead);
+    for (const u of S.units) { if (u.dead) continue; const rx = u.x - ox, ry = u.y - oy, along = rx * ux + ry * uy, perp = Math.abs(rx * uy - ry * ux), RR = u.r + e.r + 24; if (perp > RR) continue; const hit = along - Math.sqrt(RR * RR - perp * perp); if (along + RR < 0) continue; s = Math.min(s, Math.max(0, hit)); }
+    if (!any) { const cx = CX - ox, cy = CY - oy, along = cx * ux + cy * uy, perp = Math.abs(cx * uy - cy * ux), U = R.until; if (perp <= U) s = Math.min(s, Math.max(0, along - Math.sqrt(U * U - perp * perp))); }
+    s = Math.min(s, Math.max(0, e.speed * R.mul * (7 - (e.life || 0) - (e.rushW > 0 ? e.rushW : 0)))); // 등장 7초가 지나면 멈춘다
+    return (e.rushRun || 0) + s;
+  }
   const bossBusy = e => e.dashT > 0 || e.leapW > 0 || e.leapT > 0 || e.rushW > 0 || (e.rushGo && !e.rushDone); // 돌격·도약·강습 중에는 예고형 직선 기술을 시작하지 않는다
   function bossTick(S, e, dt) {
     const A = e.abil;
@@ -1723,13 +1732,14 @@
     }
     if (A.rush && !e.rushDone && e.rushW === undefined) { // 등장 직후 돌진 경로를 먼저 보여 준다 (경로는 이 순간 정해져, 돌진은 그 직선을 그대로 달린다)
       e.rushW = A.rush.warn || 0.9; const t0 = nearest(S.gU, e.x, e.y, 1500) || S.core, d0 = Math.hypot(t0.x - e.x, t0.y - e.y) || 1;
-      e.rushDx = (t0.x - e.x) / d0; e.rushDy = (t0.y - e.y) / d0; e.rushL = d0; e.rushRun = 0; emit(S, { type: 'bossRush', x: e.x, y: e.y, tx: t0.x, ty: t0.y, warn: e.rushW });
+      e.rushDx = (t0.x - e.x) / d0; e.rushDy = (t0.y - e.y) / d0; e.rushL = d0; e.rushRun = 0; e.rushX0 = e.x; e.rushY0 = e.y; e.rushStop = rushStopAt(S, e, A.rush);
+      emit(S, { type: 'bossRush', id: e.id, x: e.x, y: e.y, tx: e.x + e.rushDx * e.rushStop, ty: e.y + e.rushDy * e.rushStop, warn: e.rushW });
     }
-    if (A.rush && !e.rushDone && e.rushW > 0) { e.rushW -= dt; e.speedMul = 0; }
+    if (A.rush && !e.rushDone && e.rushW > 0) { e.rushW -= dt; e.speedMul = 0; e.rushStop = rushStopAt(S, e, A.rush); } // 예고 중에도 아군이 움직이면 멈출 지점을 다시 계산해 예고선 길이를 맞춘다
     else if (A.rush && !e.rushDone) { // 정해 둔 직선을 따라 돌진, 아군에 닿거나 목표 지점을 지나면 충격파로 주변 아군을 기절시킨다 (아군이 없으면 성)
-      e.rushGo = true; const sp = e.speed * A.rush.mul * dt; e.x += e.rushDx * sp; e.y += e.rushDy * sp; e.rushRun += sp; e.aim = Math.atan2(e.rushDy, e.rushDx); e.swing = 0.25;
+      e.rushGo = true; const sp = Math.max(0, Math.min(e.speed * A.rush.mul * dt, e.rushStop != null ? e.rushStop - e.rushRun : Infinity)); e.x += e.rushDx * sp; e.y += e.rushDy * sp; e.rushRun += sp; // 예고선 끝을 넘어가지 않는다 e.aim = Math.atan2(e.rushDy, e.rushDx); e.swing = 0.25;
       let touch = false; for (const u of S.units) if (!u.dead && Math.hypot(u.x - e.x, u.y - e.y) - u.r - e.r <= 24) { touch = true; break; }
-      if (touch || e.rushRun >= e.rushL + 150 || Math.hypot(e.x - CX, e.y - CY) <= (S.units.some(u => !u.dead) ? 0 : A.rush.until) || e.life > 7) {
+      if (touch || e.rushRun >= e.rushL + 150 || (e.rushStop != null && e.rushRun >= e.rushStop - 0.5) || Math.hypot(e.x - CX, e.y - CY) <= (S.units.some(u => !u.dead) ? 0 : A.rush.until) || e.life > 7) {
         e.rushDone = true; e.rushGo = false;
         for (const u of S.units) if (!u.dead && Math.hypot(u.x - e.x, u.y - e.y) <= A.rush.r + u.r) { u.stunT = Math.max(u.stunT || 0, A.rush.stun); knock(S, u, e.x, e.y, 520, 0); }
         emit(S, { type: 'bossShock', x: e.x, y: e.y, r: A.rush.r });

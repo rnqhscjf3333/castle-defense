@@ -29,7 +29,7 @@
   function addFx(o) {
     if (fx.length >= 300) return;
     const f = fxPool.length ? fxPool.pop() : {};
-    f.ang = o.ang; f.half = o.half; f.len = o.len; f.kind = o.kind; f.shape = o.shape; f.k = o.k; f.x = o.x; f.y = o.y; f.tx = o.tx; f.ty = o.ty; f.t = o.t || 0; f.max = o.max; f.c = o.c; f.r = o.r; f.big = o.big; f.enemy = o.enemy; f.small = o.small; f.v = o.v; f.n = o.n; f.a = o.a; f.w2 = o.w2; f.grow = o.grow; f.claw = o.claw; f.st = o.st; f.fl = o.fl; f.j = o.j; f.ux = o.ux; f.uy = o.uy;
+    f.ang = o.ang; f.half = o.half; f.len = o.len; f.kind = o.kind; f.shape = o.shape; f.k = o.k; f.x = o.x; f.y = o.y; f.tx = o.tx; f.ty = o.ty; f.t = o.t || 0; f.max = o.max; f.c = o.c; f.r = o.r; f.big = o.big; f.enemy = o.enemy; f.small = o.small; f.v = o.v; f.n = o.n; f.a = o.a; f.w2 = o.w2; f.grow = o.grow; f.claw = o.claw; f.st = o.st; f.fl = o.fl; f.j = o.j; f.ux = o.ux; f.uy = o.uy; f.id = o.id;
     fx.push(f);
   }
   const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
@@ -1047,7 +1047,7 @@
       }
       else if (ev.type === 'bossLeap') { addFx({ k: 'leapMark', x: ev.x, y: ev.y, fx: ev.fx, fy: ev.fy, r: ev.r, t: 0, max: (ev.warn || 0.7) + ev.air, warn: ev.warn || 0.7 }); toast('보스가 도약합니다! 표시된 곳을 피하세요'); }
       else if (ev.type === 'bossLeapGo') { addFx({ k: 'blinkTrail', x: ev.fx, y: ev.fy, tx: ev.x, ty: ev.y, t: 0, max: 0.5, c: '#ffb24a', thin: true }); addFx({ k: 'sparks', x: ev.fx, y: ev.fy, t: 0, max: 0.4, c: '#ffd9a0', r: 40, n: 10, w: 2.4 }); addShake(2, 0.15); }
-      else if (ev.type === 'bossRush') { addFx({ k: 'rushPath', x: ev.x, y: ev.y, tx: ev.tx, ty: ev.ty, t: 0, max: ev.warn }); }
+      else if (ev.type === 'bossRush') { addFx({ k: 'rushPath', id: ev.id, x: ev.x, y: ev.y, tx: ev.tx, ty: ev.ty, ang: Math.atan2(ev.ty - ev.y, ev.tx - ev.x), t: 0, max: ev.warn }); }
       else if (ev.type === 'portalOpen') pendingPortal = ev.n;
       else if (ev.type === 'bossSlam') addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.4, c: '#ff5a3a', r: ev.r, big: true });
       else if (ev.type === 'enrage') toast('적이 오래 살아남아 격노합니다! 점점 더 강해져요');
@@ -1285,6 +1285,21 @@
     }
     ctx.restore();
   }
+  // 예고 장판 공통 그리기: 반투명한 전체 범위 + 안에서 차오르는 반투명 범위. 둘이 같아지는 순간 실제 피해가 들어간다.
+  // o.shape: 'circle'(x,y,r) · 'line'(x,y,ang,len,w2: 시작점에서 끝으로 차오름) · 'cone'(x,y,ang,len,half: 반지름이 커짐)
+  function telePath(ctx, o, k) {
+    ctx.beginPath();
+    if (o.shape === 'line') { const c = Math.cos(o.ang), s2 = Math.sin(o.ang), L = o.len * k, w = o.w2 / 2; ctx.moveTo(o.x - s2 * w, o.y + c * w); ctx.lineTo(o.x + c * L - s2 * w, o.y + s2 * L + c * w); ctx.lineTo(o.x + c * L + s2 * w, o.y + s2 * L - c * w); ctx.lineTo(o.x + s2 * w, o.y - c * w); ctx.closePath(); }
+    else if (o.shape === 'cone') { ctx.moveTo(o.x, o.y); ctx.arc(o.x, o.y, o.len * k, o.ang - o.half, o.ang + o.half); ctx.closePath(); }
+    else ctx.arc(o.x, o.y, Math.max(0, o.r * k), 0, Math.PI * 2);
+  }
+  function drawTele(ctx, z, o, p, col) {
+    const q = Math.max(0, Math.min(1, p));
+    ctx.save(); ctx.fillStyle = col; ctx.strokeStyle = col;
+    telePath(ctx, o, 1); ctx.globalAlpha = 0.16; ctx.fill(); ctx.globalAlpha = 0.85; ctx.lineWidth = 2.5 / z; ctx.stroke(); // 전체 범위
+    if (q > 0) { telePath(ctx, o, q); ctx.globalAlpha = 0.2 + 0.18 * q; ctx.fill(); ctx.globalAlpha = 0.95; ctx.lineWidth = 1.6 / z; ctx.strokeStyle = '#fff2ec'; ctx.stroke(); } // 차오르는 범위
+    ctx.restore();
+  }
   const STRIKE_COL = { bolt: '#ffe14a', ice: '#8fd8ff', rock: '#c28a52', fire: '#ff6a2a', wind: '#d8f2ff', slash: '#c8203a', hammer: '#d9a441', sweep: '#dfe3f0', slam: '#c28a52' };
   // ── 100라운드: 성 주변만 남기고 땅이 무너져 절벽이 된다 ──
   // 남는 땅 = 성 둘레 원 + 용이 서는 네 자리의 받침 + 그 사이를 잇는 십자 다리
@@ -1463,9 +1478,7 @@
     for (const sh of S.shots) {
       if (sh.aoe) { // 보스 포격: 떨어질 지점을 미리 경고
         const pp = Math.min(1, sh.p), tx = sh.t.x, ty = sh.t.y;
-        ctx.globalAlpha = 0.12 + 0.18 * pp; ctx.fillStyle = '#ff3b3b'; ctx.beginPath(); ctx.arc(tx, ty, sh.aoe, 0, Math.PI * 2); ctx.fill();
-        ctx.globalAlpha = 0.5 + 0.4 * Math.sin(now * 0.02); ctx.strokeStyle = '#ff5a5a'; ctx.lineWidth = 2.5 / z; ctx.setLineDash([8 / z, 6 / z]); ctx.beginPath(); ctx.arc(tx, ty, sh.aoe, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
-        ctx.globalAlpha = 0.7; ctx.beginPath(); ctx.arc(tx, ty, sh.aoe * (1 - pp), 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
+        drawTele(ctx, z, { x: tx, y: ty, r: sh.aoe }, pp, '#ff3b3b'); ctx.globalAlpha = 1;
       }
       ctx.globalAlpha = 0.25; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(sh.x, sh.y, 4, 2, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
       const px = sh.x, py = sh.y - sh.h, ang = Math.atan2(sh.vy - sh.vh, sh.vx);
@@ -1683,10 +1696,9 @@
       else if (f.k === 'strikeW' && f.claw) { // 마왕의 손톱: 손가락 하나가 긋는 초승달 모양 발톱 자국이 예고된다 (세 줄기가 나란히)
         const pu = 0.5 + 0.5 * Math.sin(now * 0.025), w = f.w2 / 2; ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.ang);
         const crescent = (L, ww) => { ctx.beginPath(); const N = 18, bend = Math.min(60, ww * 1.2); for (let i = 0; i <= N; i++) { const t = i / N, x = L * t, y = bend * t * t - ww * 0.95 * Math.pow(1 - t, 0.85); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } for (let i = N; i >= 0; i--) { const t = i / N, x = L * t, y = bend * t * t + ww * 0.3 * Math.pow(1 - t, 0.85); ctx.lineTo(x, y); } ctx.closePath(); }; // 끝이 뾰족하게 휘어진 발톱 모양
-        ctx.globalAlpha = 0.07 + 0.05 * pu; ctx.fillStyle = '#c8203a'; ctx.fillRect(0, -w, f.len, w * 2); ctx.globalAlpha = 0.35; ctx.strokeStyle = '#ff6a7a'; ctx.lineWidth = 1.5 / z; ctx.setLineDash([10 / z, 8 / z]); ctx.strokeRect(0, -w, f.len, w * 2); ctx.setLineDash([]);
-        ctx.globalAlpha = 0.45 + 0.25 * pu; ctx.fillStyle = '#c8203a'; crescent(f.len, w); ctx.fill(); ctx.globalAlpha = 0.9; ctx.strokeStyle = '#ff9aa6'; ctx.lineWidth = 3 / z; ctx.stroke();
+        drawTele(ctx, z, { shape: 'line', x: 0, y: 0, ang: 0, len: f.len, w2: w * 2 }, p, '#c8203a');
+        ctx.globalAlpha = 0.18 + 0.12 * pu; ctx.fillStyle = '#c8203a'; crescent(f.len, w); ctx.fill(); ctx.globalAlpha = 0.9; ctx.strokeStyle = '#ff9aa6'; ctx.lineWidth = 3 / z; ctx.stroke();
         ctx.globalAlpha = 0.9; ctx.strokeStyle = '#ff6a7a'; ctx.lineWidth = 2.2 / z; ctx.stroke();
-        ctx.globalAlpha = 0.9; ctx.fillStyle = '#ffd0d6'; ctx.beginPath(); ctx.moveTo(f.len * p - 12, -w * 0.5); ctx.lineTo(f.len * p + 22, 0); ctx.lineTo(f.len * p - 12, w * 0.5); ctx.closePath(); ctx.globalAlpha = 0.5; ctx.fill(); // 차오르는 발톱 끝
         ctx.restore(); ctx.globalAlpha = 1;
       }
       else if (f.k === 'strikeH' && f.claw) { // 손톱 자국: 발톱이 긋고 지나간 깊은 상처 (밝은 가장자리 + 검붉은 속)
@@ -1702,12 +1714,7 @@
       }
       else if (f.k === 'strikeW') { // 사천왕·용의 예고 범위 (원형 또는 부채꼴)
         const col = STRIKE_COL[f.kind] || '#ff6a2a', pu = 0.5 + 0.5 * Math.sin(now * 0.025);
-        ctx.fillStyle = col; ctx.strokeStyle = col; ctx.globalAlpha = 0.14 + 0.16 * pu;
-        ctx.beginPath(); if (f.shape === 'line') { ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.ang); ctx.rect(0, -f.w2 / 2, f.len, f.w2); ctx.restore(); } else if (f.shape === 'cone') { ctx.moveTo(f.x, f.y); ctx.arc(f.x, f.y, f.len, f.ang - f.half, f.ang + f.half); ctx.closePath(); } else ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill();
-        ctx.globalAlpha = 0.9; ctx.lineWidth = 3 / z; ctx.setLineDash([10 / z, 7 / z]); ctx.stroke(); ctx.setLineDash([]);
-        if (f.shape === 'line') { ctx.globalAlpha = 0.5; ctx.lineWidth = 2 / z; ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.ang); ctx.beginPath(); ctx.moveTo(f.len * p, -f.w2 / 2); ctx.lineTo(f.len * p, f.w2 / 2); ctx.stroke(); ctx.restore(); }
-        else if (f.shape !== 'cone') { ctx.globalAlpha = 0.55; ctx.lineWidth = 2 / z; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (1 - p), 0, Math.PI * 2); ctx.stroke(); }
-        else { ctx.globalAlpha = 0.5; ctx.lineWidth = 2 / z; ctx.beginPath(); ctx.arc(f.x, f.y, f.len * p, f.ang - f.half, f.ang + f.half); ctx.stroke(); }
+        drawTele(ctx, z, f, p, col); void pu;
         if (f.shape === 'circle' && f.kind !== 'bolt' && f.kind !== 'wind' && f.kind !== 'slash' && f.kind !== 'sweep' && f.kind !== 'slam') { ctx.globalAlpha = 1; drawFall(ctx, f.kind, f.x, f.y, f.r, p, 'strike'); }
         if (f.kind === 'sweep') { // 무기를 휘두르는 예고: 초승달 칼날 자국이 보스 둘레를 돈다
           ctx.save(); ctx.translate(f.x, f.y); ctx.lineCap = 'round'; const rot = p * p * 12.5;
@@ -1778,25 +1785,22 @@
         ctx.globalAlpha = 1;
       }
       else if (f.k === 'zone') { // 보스 광역 상태이상 예고 범위
-        const pu = 0.5 + 0.5 * Math.sin(now * 0.02); ctx.globalAlpha = 0.16 + 0.14 * pu; ctx.fillStyle = f.c; ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill();
-        ctx.globalAlpha = 0.9; ctx.strokeStyle = f.c; ctx.lineWidth = 3 / z; ctx.setLineDash([10 / z, 7 / z]); ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
-        ctx.globalAlpha = 0.5; ctx.lineWidth = 2 / z; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (1 - p), 0, Math.PI * 2); ctx.stroke();
+        drawTele(ctx, z, { x: f.x, y: f.y, r: f.r }, p, f.c);
         ctx.globalAlpha = 1; drawFall(ctx, f.kind, f.x, f.y, f.r, p, 'zone');
       }
       else if (f.k === 'leapMark') { // 도약: 뛰어오를 경로(점선 포물선 + 화살표)와 착지 지점(붉은 원)을 미리 보여 준다
         const wp = Math.min(1, f.t / f.warn), land = p, mx = (f.fx + f.x) / 2, my = (f.fy + f.y) / 2 - Math.min(160, Math.hypot(f.x - f.fx, f.y - f.fy) * 0.45), pu = 0.5 + 0.5 * Math.sin(now * 0.02);
         ctx.save(); ctx.lineCap = 'round'; ctx.globalAlpha = 0.75 * (1 - land * 0.6); ctx.strokeStyle = '#ffd27a'; ctx.lineWidth = 3 / z; ctx.setLineDash([9 / z, 8 / z]); ctx.lineDashOffset = -now * 0.03 / z; ctx.beginPath(); ctx.moveTo(f.fx, f.fy); ctx.quadraticCurveTo(mx, my, f.x, f.y); ctx.stroke(); ctx.setLineDash([]);
         const ah = Math.atan2(f.y - my, f.x - mx); ctx.fillStyle = '#ffd27a'; ctx.beginPath(); ctx.moveTo(f.x + Math.cos(ah) * 12, f.y + Math.sin(ah) * 12); ctx.lineTo(f.x + Math.cos(ah + 2.5) * 10, f.y + Math.sin(ah + 2.5) * 10); ctx.lineTo(f.x + Math.cos(ah - 2.5) * 10, f.y + Math.sin(ah - 2.5) * 10); ctx.closePath(); ctx.fill();
-        ctx.globalAlpha = 0.14 + 0.14 * pu; ctx.fillStyle = '#ff4a2a'; ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, 6.283); ctx.fill();
-        ctx.globalAlpha = 0.9; ctx.strokeStyle = '#ff6a3a'; ctx.lineWidth = 3 / z; ctx.setLineDash([10 / z, 7 / z]); ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, 6.283); ctx.stroke(); ctx.setLineDash([]);
-        ctx.globalAlpha = 0.6; ctx.lineWidth = 2 / z; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (1 - p), 0, 6.283); ctx.stroke();
-        ctx.globalAlpha = 0.9; ctx.lineWidth = 3 / z; ctx.beginPath(); ctx.moveTo(f.x - 9, f.y - 9); ctx.lineTo(f.x + 9, f.y + 9); ctx.moveTo(f.x + 9, f.y - 9); ctx.lineTo(f.x - 9, f.y + 9); ctx.stroke(); void wp; ctx.restore();
+        drawTele(ctx, z, { x: f.x, y: f.y, r: f.r }, p, '#ff4a2a'); void pu;
+        ctx.globalAlpha = 0.9; ctx.strokeStyle = '#ff6a3a'; ctx.lineWidth = 3 / z; ctx.beginPath(); ctx.moveTo(f.x - 9, f.y - 9); ctx.lineTo(f.x + 9, f.y + 9); ctx.moveTo(f.x + 9, f.y - 9); ctx.lineTo(f.x - 9, f.y + 9); ctx.stroke(); void wp; ctx.restore();
       }
-      else if (f.k === 'rushPath') { // 돌진: 보스가 달려갈 직선 경로를 붉은 띠와 화살표로 보여 준다
-        const dx = f.tx - f.x, dy = f.ty - f.y, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, nx = -uy, ny = ux, w = 34, a = Math.min(1, f.t / 0.15) * (1 - Math.max(0, (p - 0.85) / 0.15));
-        ctx.save(); ctx.globalAlpha = 0.2 * a + 0.08 * Math.sin(now * 0.02); ctx.fillStyle = '#ff3a2a'; ctx.beginPath(); ctx.moveTo(f.x + nx * w, f.y + ny * w); ctx.lineTo(f.tx + nx * w, f.ty + ny * w); ctx.lineTo(f.tx - nx * w, f.ty - ny * w); ctx.lineTo(f.x - nx * w, f.y - ny * w); ctx.closePath(); ctx.fill();
-        ctx.globalAlpha = 0.85 * a; ctx.strokeStyle = '#ff5a3a'; ctx.lineWidth = 3 / z; ctx.setLineDash([12 / z, 8 / z]); ctx.lineDashOffset = -now * 0.05 / z; ctx.beginPath(); ctx.moveTo(f.x + nx * w, f.y + ny * w); ctx.lineTo(f.tx + nx * w, f.ty + ny * w); ctx.moveTo(f.x - nx * w, f.y - ny * w); ctx.lineTo(f.tx - nx * w, f.ty - ny * w); ctx.stroke(); ctx.setLineDash([]);
-        ctx.fillStyle = '#ff7a4a'; for (let i = 0; i < 4; i++) { const q = ((now * 0.0016 + i / 4) % 1) * L; ctx.beginPath(); ctx.moveTo(f.x + ux * (q + 16), f.y + uy * (q + 16)); ctx.lineTo(f.x + ux * q + nx * 12, f.y + uy * q + ny * 12); ctx.lineTo(f.x + ux * q - nx * 12, f.y + uy * q - ny * 12); ctx.closePath(); ctx.fill(); }
+      else if (f.k === 'rushPath') { // 강습: 보스가 달려가 실제로 멈출 지점까지만 직선 경로를 보여 준다 (아군이 움직이면 길이도 따라 바뀐다)
+        const be = f.id != null && S.enemies.find(e => e.id === f.id && !e.dead); if (be && be.rushStop != null && !be.rushDone) { f.tx = f.x + Math.cos(f.ang) * be.rushStop; f.ty = f.y + Math.sin(f.ang) * be.rushStop; }
+        const L = Math.max(1, Math.hypot(f.tx - f.x, f.ty - f.y)), ux = Math.cos(f.ang), uy = Math.sin(f.ang), nx = -uy, ny = ux;
+        drawTele(ctx, z, { shape: 'line', x: f.x, y: f.y, ang: f.ang, len: L, w2: 68 }, p, '#ff3a2a');
+        ctx.save(); ctx.globalAlpha = 0.8; ctx.fillStyle = '#ffb08a'; for (let i = 0; i < 4; i++) { const q = ((now * 0.0016 + i / 4) % 1) * L; ctx.beginPath(); ctx.moveTo(f.x + ux * (q + 16), f.y + uy * (q + 16)); ctx.lineTo(f.x + ux * q + nx * 12, f.y + uy * q + ny * 12); ctx.lineTo(f.x + ux * q - nx * 12, f.y + uy * q - ny * 12); ctx.closePath(); ctx.fill(); }
+        ctx.globalAlpha = 0.95; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 4 / z; ctx.beginPath(); ctx.moveTo(f.tx + nx * 40, f.ty + ny * 40); ctx.lineTo(f.tx - nx * 40, f.ty - ny * 40); ctx.stroke(); // 멈출 지점
         ctx.restore();
       }
       else if (f.k === 'blinkTrail') { // 순간이동·도약 궤적: 출발지에서 도착지까지 빛나는 선이 남았다가 흩어진다
