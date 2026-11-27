@@ -473,7 +473,7 @@
   $('pickBack').addEventListener('click', () => { if (S) C.jobBack(S); });
   $('btnReroll').addEventListener('click', () => { if (S) C.reroll(S); });
 
-  const MODALS = ['setMenu', 'infoPanel', 'metaPanel', 'devPanel', 'fbPanel', 'omenPanel'];
+  const MODALS = ['setMenu', 'infoPanel', 'metaPanel', 'devPanel', 'fbPanel', 'omenPanel', 'patchPanel'];
   const anyModal = () => MODALS.some(id => !$(id).classList.contains('hidden'));
   function openModal(id) { $(id).classList.remove('hidden'); if (S && running) paused = true; if (id === 'setMenu') { syncVol(); const ing = !!(S && running); $('setMenu').classList.toggle('titleMode', !ing); $('sResume').textContent = ing ? '계속하기' : '닫기'; } }
   function closeModals() { for (const id of MODALS) $(id).classList.add('hidden'); paused = false; stopStage(); }
@@ -2148,7 +2148,26 @@
   }
   const titleEl = $('title');
   function showTitle() { titleEl.classList.remove('hidden', 'out', 'menu'); $('tMsg').textContent = ''; $('tVer').textContent = 'v' + ((window.CD_CONFIG || {}).VERSION || ''); }
-  function openMenu() { if (titleEl.classList.contains('menu')) return; titleEl.classList.add('menu'); A2.init(); A2.play('ui'); }
+  function openMenu() { if (titleEl.classList.contains('menu')) return; titleEl.classList.add('menu'); A2.init(); A2.play('ui'); if (patchUnseen()) setTimeout(() => { if (titleEl.classList.contains('menu') && !anyModal()) openPatch(0); }, 450); }
+  // 패치 노트: 최신 패치를 아직 안 봤으면 메뉴가 열릴 때 한 번 자동으로 보여 주고, 왼쪽 위 버튼으로 언제든 이전 패치까지 넘겨 볼 수 있다
+  const PATCHES = window.CD_PATCHES || [];
+  let patchI = 0;
+  const patchUnseen = () => !!PATCHES.length && store.get('cd-patch-seen') !== PATCHES[0].id;
+  function renderPatch() {
+    const p = PATCHES[patchI]; if (!p) return; const esc = t => String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+    $('pTitle').innerHTML = esc(p.title) + (patchI === 0 ? '<span class="pnew">최신</span>' : ''); $('pDate').textContent = p.date + ' 패치 (' + (patchI + 1) + ' / ' + PATCHES.length + ')';
+    $('pBody').innerHTML = p.items.map(t => '<li>' + esc(t) + '</li>').join(''); $('pBody').scrollTop = 0;
+    $('pPrev').disabled = patchI >= PATCHES.length - 1; $('pNext').disabled = patchI <= 0;
+    $('pChips').innerHTML = PATCHES.map((q, i) => '<button data-pi="' + i + '"' + (i === patchI ? ' class="on"' : '') + '>' + esc(q.date) + '</button>').join('');
+    const on = $('pChips').querySelector('.on'); if (on) on.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }
+  function openPatch(i) { if (!PATCHES.length) return; patchI = i || 0; renderPatch(); openModal('patchPanel'); store.set('cd-patch-seen', PATCHES[0].id); syncPatchDot(); }
+  function syncPatchDot() { const d = document.querySelector('#mPatch .pdot'); if (d) d.classList.toggle('hidden', !patchUnseen()); }
+  $('pPrev').addEventListener('click', e => { e.stopPropagation(); if (patchI < PATCHES.length - 1) { patchI++; renderPatch(); } }); // 이전 = 더 오래된 패치
+  $('pNext').addEventListener('click', e => { e.stopPropagation(); if (patchI > 0) { patchI--; renderPatch(); } });
+  $('pChips').addEventListener('click', e => { const b = e.target.closest('[data-pi]'); if (b) { e.stopPropagation(); patchI = +b.dataset.pi; renderPatch(); } });
+  $('mPatch').addEventListener('click', e => { e.stopPropagation(); openPatch(0); });
+  if (!PATCHES.length) $('mPatch').classList.add('hidden'); syncPatchDot();
   // 닉네임이 저장돼 있지 않으면 시작 전에 입력받는다
   function ensureNick(cb) {
     if (Net.name() || params.get('bot') || params.get('nonick')) { cb(); return; }
