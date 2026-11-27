@@ -841,8 +841,18 @@
   let statDetail = null;
   // 한 판의 상세: 라운드별로 고른 강화 카드·전직·성 업그레이드·뽑은 유닛, 그리고 그때 있었던 다른 선택지
   // 상세 기록 맨 위: 강화 정리 (전직 · 계열별 체력/공격/속도 단계와 % · 보스 보상 전군 강화 · 받은 특수 카드)
+  // 예전 기록(강화 요약이 저장되기 전): 라운드별 기록의 카드 선택에서 강화 단계를 되살린다
+  function usFromLog(g) {
+    if (!g.log) return null; const TN = { '검사': 'sword', '궁수': 'archer', '사제': 'priest' }, SN = { '체력': 'hp', '공격력': 'atk', '치유량': 'atk', '공격 속도': 'rate', '치유 속도': 'rate', '이동 속도': 'speed' };
+    const lv = { sword: {}, archer: {}, priest: {} }, other = new Map(); let any = false;
+    for (const e of g.log) { if (e[0] !== 'c') continue; any = true; const nm = String(e[2]), p = nm.split(' · '), t = TN[p[0]], st = SN[p[1]];
+      if (t && st && p.length === 2) lv[t][st] = Math.max(lv[t][st] || 0, e[3]); else other.set(nm, Math.max(other.get(nm) || 0, e[3])); }
+    if (!any) return null;
+    const max = (n, l) => { const d = C.CARD_DEFS.find(x => x.name === n); return !d ? '?' : l > d.max ? d.max + CFG.capBonus : d.max; }; // 50라운드 이후 늘어난 최대 레벨
+    return { lines: ['sword', 'archer', 'priest'].map(t => [t, lv[t].hp || 0, lv[t].atk || 0, lv[t].rate || 0, lv[t].speed || 0]), pct: CFG.upPct, boss: [0, 0], cards: [...other].map(([n, l]) => [n, l, max(n, l), '', '']), old: true };
+  }
   function upgradeBox(g, esc) {
-    const U = g.us; if (!U) return (g.win || g.round > C.FINAL_ROUND) ? '<div class="clrbig">🐉 100라운드 클리어' + (g.round > C.FINAL_ROUND ? ' · 무한 모드 ' + g.round + '라운드' : '') + '</div>' : '';
+    const U = g.us || usFromLog(g); if (!U) return (g.win || g.round > C.FINAL_ROUND) ? '<div class="clrbig">🐉 100라운드 클리어' + (g.round > C.FINAL_ROUND ? ' · 무한 모드 ' + g.round + '라운드' : '') + '</div>' : '';
     const jobOf = {}; for (const j of (g.jobs || [])) jobOf[j[0]] = j[1];
     const SN = { hp: '체력', atk: '공격력', rate: '공격 속도', speed: '이동 속도' }, PN = { atk: '치유량', rate: '치유 속도' };
     let rows = '';
@@ -853,11 +863,11 @@
     }
     const bu = U.boss || [0, 0]; if (bu[0] || bu[1]) rows += '<tr><td class="ul">전군 강화<div class="uj">보스 보상</div></td><td><span class="upc">체력 <b>+' + bu[0] + '단계</b> <i>+' + Math.round(U.pct.hp * 100 * bu[0]) + '%</i></span> <span class="upc">공격력 <b>+' + bu[1] + '단계</b> <i>+' + Math.round(U.pct.atk * 100 * bu[1]) + '%</i></span></td></tr>';
     const cards = (U.cards || []).map(c => '<span class="chip" title="' + esc(c[4] || '') + '">' + esc(c[0]) + ' <b>' + c[1] + '/' + c[2] + '</b></span>').join('');
-    return '<h3>강화 정리' + ((g.win || g.round > C.FINAL_ROUND) ? ' <span class="clr">🐉 100라운드 클리어</span>' : '') + '</h3><table class="uptab">' + rows + '</table>' + (cards ? '<div class="chips">' + cards + '</div>' : '');
+    return '<h3>강화 정리' + ((g.win || g.round > C.FINAL_ROUND) ? ' <span class="clr">🐉 100라운드 클리어</span>' : '') + '</h3>' + (U.old ? '<div class="d">예전 기록이라 카드 선택 기록으로 되살린 값이에요 (보스 보상 전군 강화는 빠져 있어요).</div>' : '') + '<table class="uptab">' + rows + '</table>' + (cards ? '<div class="chips">' + cards + '</div>' : '');
   }
   // 유닛 종류별 전투 기록: 준 피해 · 받은 피해 · 막은 피해(방어·보호막·회피) · 치유량
   function combatBox(g, esc) {
-    const cb = g.cb; if (!cb || !Object.keys(cb).length) return '';
+    const cb = g.cb; if (!cb || !Object.keys(cb).length) return '<h3>유닛별 전투 기록</h3><div class="d">이 판은 유닛별 딜량 기록 기능이 생기기 전(11월 27일 이전)에 끝난 판이라 딜량·피격·치유 기록이 없어요. 이후에 끝낸 판부터 보여요.</div>';
     const jobOf = {}; for (const [t, job, tier] of (g.ul || [])) if (job && (!jobOf[t] || tier > jobOf[t][1])) jobOf[t] = [job, tier];
     const nm = k => k === 'core' ? '성 (대포·성 능력·오라)' : k === 'undead' ? '망자' : (CFG.units[k] ? CFG.units[k].name : k);
     const fmt = v => v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : v >= 1e4 ? (v / 1e3).toFixed(0) + 'K' : Math.round(v).toLocaleString();
@@ -2194,7 +2204,7 @@
   $('devRound').addEventListener('input', () => devRoundSet($('devRound').value));
   for (const b of document.querySelectorAll('#devPresets button')) b.addEventListener('click', () => devRoundSet(b.dataset.r));
   $('devGo').addEventListener('click', e => { e.stopPropagation(); const r = devRoundSet($('devRound').value); store.set('cd-devround', String(r)); devPicks = readDevPicks(); store.set('cd-devpicks', JSON.stringify(devPicks)); closeModals(); startFromTitle(r); });
-  $('tDev').addEventListener('click', e => { e.stopPropagation(); devRoundSet(+store.get('cd-devround') || 30); renderDevPicks(); openModal('devPanel'); }); // 투명 버튼: 타이틀 왼쪽 위 모서리
+  $('tDev').addEventListener('click', e => { e.stopPropagation(); devRoundSet(+store.get('cd-devround') || 30); renderDevPicks(); openModal('devPanel'); }); // 투명 버튼: 타이틀 왼쪽 아래 모서리
   $('mHow').addEventListener('click', e => { e.stopPropagation(); drawHowImgs(); $('howto').classList.remove('hidden'); });
   let howDrawn = false;
   function drawHowImgs() { // 게임 방법의 번호별 그림은 게임 안의 실제 그림을 그대로 쓴다

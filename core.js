@@ -823,7 +823,7 @@
     for (const key in S.cards.taken) {
       const [id, type] = key.split(':'), def = DEF[id], lv = S.cards.taken[key];
       const gt = def.generic ? genericText(def, type, lv) : null, name = gt ? gt.name : def.name;
-      out.push({ key, name, lv, rar: def.rar, max: def.max, cat: def.cat, desc: gt ? gt.desc : (def.desc ? def.desc(lv) : '') });
+      out.push({ key, name, lv, rar: def.rar, max: capOf(S, def), cat: def.cat, desc: gt ? gt.desc : (def.desc ? def.desc(lv) : '') });
     }
     return out;
   }
