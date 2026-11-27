@@ -19,6 +19,7 @@ var MAX_ROUND = 999; // 무한 모드
 function sheet_(name, header) {
   var ss = SpreadsheetApp.getActiveSpreadsheet(), sh = ss.getSheetByName(name);
   if (!sh) { sh = ss.insertSheet(name); sh.appendRow(header); sh.setFrozenRows(1); }
+  else if (sh.getLastColumn() < header.length) sh.getRange(1, 1, 1, header.length).setValues([header]); // 나중에 늘어난 열(닉네임 등)의 제목을 채운다
   return sh;
 }
 function scores_() {
@@ -33,13 +34,13 @@ function pack_(d) {
   if (t.length > 45000 && d.log && d.log.length) { var c = JSON.parse(t); while (JSON.stringify(c).length > 45000 && c.log.length > 20) c.log = c.log.slice(Math.floor(c.log.length * 0.1)); t = JSON.stringify(c); }
   return t.length > 49000 ? '' : t;
 }
-function logs_() { return sheet_('logs', ['시각', '상태', '버전', 'pid', 'run', 'seed', '라운드', '막', '승리', '처치', '게임시간(초)', '실제시간(초)', '성채HP', '골드', '구매수', '유닛', '강화', '전직', '성채피해원인', '렉(횟수/ms)', '환경', '라운드별기록(JSON)', '모드']); }
+function logs_() { return sheet_('logs', ['시각', '상태', '버전', 'pid', 'run', 'seed', '라운드', '막', '승리', '처치', '게임시간(초)', '실제시간(초)', '성채HP', '골드', '구매수', '유닛', '강화', '전직', '성채피해원인', '렉(횟수/ms)', '환경', '라운드별기록(JSON)', '모드', '닉네임']); }
 
 function errors_() { return sheet_('errors', ['시각', '버전', 'pid', 'run', '위치', '메시지', '스택', '라운드', '게임시간', 'seed', '유닛', '적', '성채HP', '강화', '화면', '브라우저', '실제시간']); }
 
 function feedback_() { return sheet_('feedback', ['시각', '종류', '내용', '닉네임', '라운드', '버전', 'pid', '화면', '브라우저']); }
 
-function games_() { return sheet_('games', ['시각', '기록시각', 'pid', '버전', '모드', '라운드', '승리', '처치', '시간(초)', '번 골드', '쓴 골드', '점수', '인구', '성 레벨', '상세(JSON)']); }
+function games_() { return sheet_('games', ['시각', '기록시각', 'pid', '버전', '모드', '라운드', '승리', '처치', '시간(초)', '번 골드', '쓴 골드', '점수', '인구', '성 레벨', '상세(JSON)', '닉네임']); }
 
 function valid_(o) {
   return o && typeof o.score === 'number' && o.round >= 1 && o.round <= MAX_ROUND && o.kills >= 0 && o.kills < 100000 &&
@@ -63,7 +64,7 @@ function scoreRow_(sc, pid, round, kills, win) { // 같은 판(같은 pid·라�
 }
 function autoScore_(sc, g, d, now) { // g = 통계 한 판 {pid, round, kills, win, time, mode, v, earned, spent, pop, castle}
   if (!g.pid || !(g.round >= 2)) return false;
-  var name = nameOf_(sc, g.pid); if (!name) return false;
+  var name = String(g.name || '').replace(/[<>&"'`]/g, '').slice(0, 12) || nameOf_(sc, g.pid); if (!name) return false; // 판과 함께 온 닉네임 → 없으면 이 기기가 예전에 쓴 닉네임
   if (scoreRow_(sc, g.pid, g.round, g.kills, g.win)) return false;
   var o = { score: scoreOf_(g.win, g.round, g.kills, g.time), round: g.round, kills: g.kills, time: g.time }; if (!valid_(o)) return false;
   var det = d && typeof d === 'object' ? d : {}; det.earned = g.earned; det.spent = g.spent; det.pop = g.pop; det.castle = g.castle; det.auto = 1;
@@ -75,9 +76,9 @@ function backfillScores() {
   var lock = LockService.getScriptLock(); lock.waitLock(30000);
   try {
     var sc = scores_(), gs = games_(), last = gs.getLastRow(), n = 0, now = new Date(); if (last < 2) return 0;
-    var v = gs.getRange(2, 1, last - 1, 15).getValues();
+    var v = gs.getRange(2, 1, last - 1, Math.max(15, gs.getLastColumn())).getValues();
     for (var i = 0; i < v.length; i++) { var r = v[i], d = null; try { d = r[14] ? JSON.parse(r[14]) : null; } catch (er) {}
-      if (autoScore_(sc, { pid: r[2], v: r[3], mode: r[4], round: +r[5], win: r[6] === 'Y', kills: +r[7], time: +r[8], earned: r[9], spent: r[10], pop: r[12], castle: r[13] }, d, now)) n++; }
+      if (autoScore_(sc, { name: r[15] || '', pid: r[2], v: r[3], mode: r[4], round: +r[5], win: r[6] === 'Y', kills: +r[7], time: +r[8], earned: r[9], spent: r[10], pop: r[12], castle: r[13] }, d, now)) n++; }
     return n;
   } finally { lock.releaseLock(); }
 }
@@ -109,13 +110,13 @@ function doPost(e) {
       if (o.pid && o.at && o.round >= 1 && o.round <= MAX_ROUND && o.kills >= 0 && o.kills < 100000) {
         var sh = games_(), last = sh.getLastRow(), dup = false;
         if (last > 1) { var from = Math.max(2, last - 400), vals = sh.getRange(from, 2, last - from + 1, 2).getValues(); for (var i = 0; i < vals.length; i++) if (String(vals[i][0]) === String(o.at) && String(vals[i][1]) === String(o.pid)) { dup = true; break; } }
-        if (!dup) sh.appendRow([now, o.at, o.pid, o.v, o.mode === 'free' ? 'free' : 'normal', o.round, o.win ? 'Y' : 'N', o.kills, o.time, o.earned, o.spent, o.score, o.pop, o.castle, pack_(o.d)]);
+        if (!dup) sh.appendRow([now, o.at, o.pid, o.v, o.mode === 'free' ? 'free' : 'normal', o.round, o.win ? 'Y' : 'N', o.kills, o.time, o.earned, o.spent, o.score, o.pop, o.castle, pack_(o.d), String(o.name || '').replace(/[<>&"'`]/g, '').slice(0, 12)]);
         if (!dup) { var lk2 = LockService.getScriptLock(); lk2.waitLock(20000); try { out.ranked = autoScore_(scores_(), o, o.d, now); } finally { lk2.releaseLock(); } } // 랭킹 등록을 안 하고 끝낸 판도 예전 닉네임으로 랭킹에 올린다
         out.ok = true;
       } else out.error = 'invalid';
     } else if (o.type === 'log') {
       logs_().appendRow([now, o.status, o.v, o.pid, o.run, o.seed, o.round, o.act, o.win ? 'Y' : 'N', o.kills, o.time, o.real, o.coreHp, o.gold, o.buys,
-        JSON.stringify(o.units), JSON.stringify(o.cards), JSON.stringify(o.jobs), JSON.stringify(o.coreDmgBy), o.lag ? o.lag.n + '/' + o.lag.ms : '', JSON.stringify(o.env), JSON.stringify(o.timeline).slice(0, 45000), o.mode === 'free' ? 'free' : 'normal']);
+        JSON.stringify(o.units), JSON.stringify(o.cards), JSON.stringify(o.jobs), JSON.stringify(o.coreDmgBy), o.lag ? o.lag.n + '/' + o.lag.ms : '', JSON.stringify(o.env), JSON.stringify(o.timeline).slice(0, 45000), o.mode === 'free' ? 'free' : 'normal', String(o.name || '').replace(/[<>&"'`]/g, '').slice(0, 12)]);
       out.ok = true;
     }
   } catch (err) { out.error = String(err); }

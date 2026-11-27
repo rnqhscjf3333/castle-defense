@@ -454,3 +454,4 @@ node tools/balance.mjs sweep bossPool.4.abil.artillery.dmg 90,60 60             
 - 같은 판(같은 pid·라운드·처치·승리)이 이미 있으면 새로 넣지 않고, 나중에 온 정식 등록이 그 행의 이름·run·한마디·상세를 채웁니다 (`LockService`로 동시 요청 정리).
 - 예전 기록 채우기: Apps Script 편집기에서 `backfillScores` 실행, 또는 `?action=backfill&key=READ_KEY`.
 - 한계: 게임 도중 창을 그냥 닫은 판은 통계에 저장되지 않아 자동 등록되지 않습니다.
+- 로그(`logs` 탭)와 통계(`games` 탭)에 닉네임 열을 추가했습니다 (기존 시트는 맨 뒤 열 제목이 자동으로 채워짐). 자동 등록은 판과 함께 온 닉네임을 먼저 쓰고, 없으면 그 기기가 예전에 랭킹에 쓴 닉네임을 씁니다.

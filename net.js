@@ -40,7 +40,7 @@
     const jobs = {}; for (const k of ['sword', 'archer', 'priest']) if (S.jobs[k]) jobs[k] = S.jobs[k].ids.slice();
     const by = Object.entries(S.coreDmgBy || {}).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, v]) => [k, Math.round(v)]);
     return {
-      type: 'log', mode: S.mode, v: CFG.VERSION, pid, run: run.id, status, seed: S.seed, round: S.round, act: S.act, win: !!S.win, kills: S.kills, time: Math.round(S.t),
+      type: 'log', name: ls.get('cd-name') || '', mode: S.mode, v: CFG.VERSION, pid, run: run.id, status, seed: S.seed, round: S.round, act: S.act, win: !!S.win, kills: S.kills, time: Math.round(S.t),
       coreHp: Math.round(S.core.hp), gold: Math.round(S.gold), buys: S.buyCount, earned: Math.round(S.stats.earned), spent: Math.round(S.stats.spent), chk: window.CastleCore.checkRun(S).ok, units: ut, cards: Object.assign({}, S.cards.taken), jobs, coreDmgBy: by, timeline: run.tl,
       lag: { n: run.lagN, ms: Math.round(run.lagMs) }, real: Math.round((Date.now() - run.start) / 1000),
       env: { ua: navigator.userAgent.slice(0, 140), w: innerWidth, h: innerHeight, dpr: window.devicePixelRatio || 1, touch: 'ontouchstart' in window, cores: navigator.hardwareConcurrency || 0 },
@@ -118,7 +118,7 @@
   const GKEY = 'cd-games-sent';
   const sentSet = () => { try { return new Set(JSON.parse(ls.get(GKEY) || '[]')); } catch (e) { return new Set(); } };
   const markSent = at => { const s = sentSet(); s.add(at); ls.set(GKEY, JSON.stringify([...s].slice(-300))); };
-  const gamePayload = g => ({ type: 'game', v: CFG.VERSION, pid, at: g.at, mode: g.mode, round: g.round, win: !!g.win, kills: g.kills, time: g.time, earned: g.earned, spent: g.spent, score: g.score, pop: g.pop, castle: g.castle, d: { jobs: g.jobs, cn: g.cn, fin: g.fin, ul: g.ul, cb: g.cb, us: g.us, log: (g.log || []).slice(-150) } });
+  const gamePayload = g => ({ type: 'game', name: ls.get('cd-name') || '', v: CFG.VERSION, pid, at: g.at, mode: g.mode, round: g.round, win: !!g.win, kills: g.kills, time: g.time, earned: g.earned, spent: g.spent, score: g.score, pop: g.pop, castle: g.castle, d: { jobs: g.jobs, cn: g.cn, fin: g.fin, ul: g.ul, cb: g.cb, us: g.us, log: (g.log || []).slice(-150) } });
   let gBusy = false;
   async function sendGame(g) { if (!API || !g || !g.at || sentSet().has(g.at)) return; try { if (await postFb(gamePayload(g))) markSent(g.at); } catch (e) {} }
   async function syncGames() { // 아직 서버에 없는 최근 기록을 한 번에 몇 개씩 올린다
