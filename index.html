@@ -166,6 +166,8 @@ body.pre > *:not(#cv):not(#title):not(script) { visibility: hidden !important; }
 @keyframes menuIn { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
 #tMenu button { padding: 14px 10px; font-size: 18px; font-weight: 800; letter-spacing: .12em; color: #fff; border-radius: 14px; border: 2px solid rgba(255,220,150,.5); background: linear-gradient(180deg, rgba(80,50,120,.9), rgba(40,24,70,.92)); box-shadow: 0 4px 0 rgba(0,0,0,.45), 0 0 18px rgba(160,110,255,.25); }
 #tMenu button.hidden { display: none; }
+#mInstall { position: absolute; top: max(10px, env(safe-area-inset-top)); left: calc(max(10px, env(safe-area-inset-left)) + 52px); z-index: 3; display: none; font-size: 12px; font-weight: 700; padding: 6px 10px; border-radius: 10px; }
+#title.menu #mInstall:not(.hidden) { display: block; }
 #tMenu button.main { color: #2a1400; border-color: #fff1b0; background: linear-gradient(180deg, #ffd96a, #f1a62a); box-shadow: 0 4px 0 #8a5412, 0 0 22px rgba(255,190,70,.45); }
 #tDev, #tSet { position: absolute; top: max(10px, env(safe-area-inset-top)); z-index: 3; display: none; font-size: 13px; padding: 6px 12px; } #tDev { left: 0; top: 0; width: 56px; height: 56px; padding: 0; opacity: 0; background: transparent; border: 0; box-shadow: none; cursor: default; -webkit-tap-highlight-color: transparent; } #tSet { right: 10px; padding: 6px 8px; } .gear { display: block; } #title.menu #tDev, #title.menu #tSet { display: block; }
 #tMenu button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.45); }
@@ -544,8 +546,9 @@ table.rank tr.top.me td { outline: 1px solid rgba(255,204,64,.8); outline-offset
   <div class="art"></div>
   <div class="logo"><img src="assets/logo.webp" alt="성 지키기" width="800" height="692"><p>CASTLE DEFENSE</p></div>
   <div id="tapHint">화면을 터치하거나 아무 키나 누르세요</div>
-  <div id="tMenu"><button id="mStart" class="main">게임 시작</button><button id="mHow">게임 방법</button><button id="mColl">컬렉션</button><button id="mRank">랭킹</button><button id="mInstall" class="hidden">📲 앱으로 설치</button><button id="mQuit">게임 종료</button></div>
+  <div id="tMenu"><button id="mStart" class="main">게임 시작</button><button id="mHow">게임 방법</button><button id="mColl">컬렉션</button><button id="mRank">랭킹</button><button id="mQuit">게임 종료</button></div>
   <button id="tDev" class="btn panel tbtn" aria-label="" tabindex="-1"></button><button id="tSet" class="btn panel tbtn" aria-label="설정"><svg class="gear" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8l1.5 2.4 2.8-.6.9 2.7 2.7.9-.6 2.8 2.4 1.5-2.4 1.5.6 2.8-2.7.9-.9 2.7-2.8-.6L12 21.2l-1.5-2.4-2.8.6-.9-2.7-2.7-.9.6-2.8L2.3 12l2.4-1.5-.6-2.8 2.7-.9.9-2.7 2.8.6z"/></svg></button>
+  <button id="mInstall" class="btn panel hidden" aria-label="앱으로 설치">📲 앱 설치</button>
   <div id="tMsg"></div><div id="tVer"></div>
 </div>
 <div id="howto" class="hidden"><div class="panel"><h2>게임 방법</h2><p>사방에서 몰려오는 적으로부터 중앙 성을 지키세요.</p><ol class="hsl"><li class="hs"><div class="hn">1</div><canvas class="hi" data-hi="castle" width="144" height="144"></canvas><div class="ht"><b>성을 지켜라</b><div>화면 한가운데의 <b>성</b>이 무너지면 끝나요. 사방의 붉은 포탈에서 적이 몰려오고, 라운드가 오를수록 길(포탈)이 늘어나요.<br>목표는 <b>100라운드</b>까지 버티는 것! 30·50라운드에는 보스, 그 뒤에는 사천왕과 재앙의 용이 기다려요.</div></div></li><li class="hs"><div class="hn">2</div><canvas class="hi" data-hi="view" width="144" height="144"></canvas><div class="ht"><b>화면 조작</b><div>빈 곳을 <b>드래그</b>하면 화면이 움직이고, <b>휠/핀치</b>로 확대·축소해요. <b>H</b>를 누르면 성 중앙으로 돌아와요. 보스가 화면 밖에 있으면 가장자리에 화살표가 나와요.</div></div></li><li class="hs"><div class="hn">3</div><canvas class="hi" data-hi="units" width="144" height="144"></canvas><div class="ht"><b>유닛 뽑기</b><div>아래 카드나 키보드 <b>1·2·3</b>으로 유닛을 뽑아요.<br>⚔ <b>검사</b>: 앞에서 적을 막는 튼튼한 근접 유닛<br>🏹 <b>궁수</b>: 멀리서 쏘지만 약해서 검사 뒤에 두세요<br>✚ <b>사제</b>: 아군을 치유하고, 전직하면 부활 능력도 생겨요<br>유닛은 성 주변에서 알아서 싸워요.</div></div></li><li class="hs"><div class="hn">4</div><canvas class="hi" data-hi="gold" width="144" height="144"></canvas><div class="ht"><b>골드와 가격</b><div>적을 처치하면 <b>골드</b>를 얻어요. 유닛을 뽑을수록 모든 유닛의 <b>가격이 올라가고</b>, 병력이 줄면 가격도 내려가요. 같은 종류만 계속 뽑으면 더 빨리 비싸지니 섞어서 뽑아 보세요.</div></div></li><li class="hs"><div class="hn">5</div><canvas class="hi" data-hi="castleup" width="144" height="144"></canvas><div class="ht"><b>성 업그레이드와 인구</b><div>유닛 수에는 <b>인구 상한</b>이 있어요 (화면 위 '현재/상한'). 가득 차면 <b>성 업그레이드(키 4)</b>로 상한을 늘리세요. 성은 체력·공격력·사거리가 오르고, 특정 레벨마다 대포가 늘어요. 4·7·10레벨에는 성의 능력(마탑·수호·사령)을 고르는 선택지가 떠요.</div></div></li><li class="hs"><div class="hn">6</div><canvas class="hi" data-hi="cards" width="144" height="144"></canvas><div class="ht"><b>강화 카드</b><div>라운드를 넘길 때마다 <b>카드 3장 중 1장</b>을 골라요 (키 1·2·3, 다시 뽑기 R). 고르는 동안 시간이 멈춰요. 보스를 쓰러뜨린 뒤에는 희귀 이상 카드가 나와요.</div></div></li><li class="hs"><div class="hn">7</div><canvas class="hi" data-hi="boss" width="144" height="144"></canvas><div class="ht"><b>보스와 전직</b><div>보스를 쓰러뜨리면 유닛을 <b>전직</b>시키거나 보상을 받아요. 보스는 예고선(붉은 범위)이 뜬 뒤 공격하니, 범위가 보이면 피할 수 있게 지켜보세요. 사천왕을 쓰러뜨리면 전직이 <b>각성</b>하고, 무한 모드에서는 성채도 각성해요.</div></div></li><li class="hs"><div class="hn">8</div><canvas class="hi" data-hi="dragon" width="144" height="144"></canvas><div class="ht"><b>사천왕과 재앙의 용</b><div>50라운드의 마왕 뒤에는 사천왕이 차례로 나오고, 쓰러지면 더 강한 2형태로 부활해요. 100라운드에서는 성 북쪽에서 <b>재앙의 용</b>이 올라오고, 나머지 세 방향에서는 몬스터가 쏟아져요. 용을 쓰러뜨리면 엔딩!</div></div></li><li class="hs"><div class="hn">9</div><canvas class="hi" data-hi="mode" width="144" height="144"></canvas><div class="ht"><b>기본 모드와 자유 모드</b><div>왼쪽 위 버튼으로 바꿀 수 있어요. <b>기본</b>은 유닛이 성 주변을 지키며 싸우고, <b>자유</b>는 범위 안의 적을 멀리까지 쫓아가요. 게임은 항상 기본 모드로 시작해요.</div></div></li><li class="hs"><div class="hn">10</div><canvas class="hi" data-hi="speed" width="144" height="144"></canvas><div class="ht"><b>배속과 단축키</b><div>오른쪽 위에서 <b>1×~5×</b> 배속과 일시정지를 쓸 수 있어요 (보스전은 자동으로 1×). 단축키: <b>Space</b> 일시정지 · <b>I</b> 정보 · <b>M</b> 소리 · <b>Esc</b> 설정.</div></div></li><li class="hs"><div class="hn">11</div><canvas class="hi" data-hi="rank" width="144" height="144"></canvas><div class="ht"><b>랭킹과 닉네임</b><div>게임이 끝나면 닉네임과 <b>한마디</b>를 남기고 랭킹에 등록할 수 있어요. 닉네임은 <b>설정</b> 창에서 언제든 바꿀 수 있어요.</div></div></li></ol><button id="howClose" class="btn" style="padding:10px 28px;font-size:15px">닫기</button></div></div>
@@ -568,13 +571,13 @@ table.rank tr.top.me td { outline: 1px solid rgba(255,204,64,.8); outline-offset
   </div>
 </div>
 
-<script src="core.js?v=20261127e"></script>
-<script src="figures.js?v=20261127e"></script>
-<script src="scenery.js?v=20261127e"></script>
-<script src="config.js?v=20261127e"></script>
-<script src="meta.js?v=20261127e"></script>
-<script src="net.js?v=20261127e"></script>
-<script src="audio.js?v=20261127e"></script>
-<script src="main.js?v=20261127e"></script>
+<script src="core.js?v=20261127f"></script>
+<script src="figures.js?v=20261127f"></script>
+<script src="scenery.js?v=20261127f"></script>
+<script src="config.js?v=20261127f"></script>
+<script src="meta.js?v=20261127f"></script>
+<script src="net.js?v=20261127f"></script>
+<script src="audio.js?v=20261127f"></script>
+<script src="main.js?v=20261127f"></script>
 </body>
 </html>

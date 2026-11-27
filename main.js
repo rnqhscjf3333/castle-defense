@@ -2218,7 +2218,7 @@
   }
   $('howClose').addEventListener('click', () => $('howto').classList.add('hidden'));
   // 설치형 앱(PWA): 크롬·엣지·안드로이드는 설치 창을 띄우고, 아이폰·아이패드(사파리)는 홈 화면에 추가하는 방법을 알려 준다. 이미 앱으로 열었으면 버튼을 숨긴다
-  { const standalone = () => matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone === true;
+  { const standalone = () => /[?&]app=1/.test(location.search) || matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone === true;
     const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     let deferred = null; const btn = $('mInstall');
     const show = on => btn.classList.toggle('hidden', !on || standalone());
