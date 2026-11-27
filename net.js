@@ -4,7 +4,9 @@
   'use strict';
   const CFG = window.CD_CONFIG || {};
   const ls = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
-  const API = (CFG.API_URL || '').trim();
+  // 자동 테스트(로컬 파일로 연 화면, 또는 테스트가 __noNet을 켠 경우)는 실제 서버로 기록·랭킹을 보내지 않는다
+  const TEST = location.protocol === 'file:' || !!window.__noNet;
+  const API = TEST ? '' : (CFG.API_URL || '').trim();
   let pid = ls.get('cd-pid'); if (!pid) { pid = 'p' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); ls.set('cd-pid', pid); } // 익명 플레이어 ID (기기별 무작위 값)
   const QKEY = 'cd-outbox', LKEY = 'cd-local-rank';
 

@@ -34,7 +34,7 @@ async function open(query, wait = 1200) { await send('Page.navigate', { url: URL
 try {
   await connect();
   await send('Page.enable'); await send('Runtime.enable');
-  await send('Page.addScriptToEvaluateOnNewDocument', { source: 'window.__errs = []; window.addEventListener("error", e => window.__errs.push(e.message));' });
+  await send('Page.addScriptToEvaluateOnNewDocument', { source: 'window.__noNet = true; window.__errs = []; window.addEventListener("error", e => window.__errs.push(e.message));' });
   const errors = []; // 콘솔 오류 수집
   await send('Log.enable');
 
