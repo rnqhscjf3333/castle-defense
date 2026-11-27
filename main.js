@@ -2217,6 +2217,18 @@
     for (const cv of document.querySelectorAll('#howto .hi')) { try { put(cv, mk[cv.dataset.hi]()); } catch (err) {} }
   }
   $('howClose').addEventListener('click', () => $('howto').classList.add('hidden'));
+  // 설치형 앱(PWA): 크롬·엣지·안드로이드는 설치 창을 띄우고, 아이폰·아이패드(사파리)는 홈 화면에 추가하는 방법을 알려 준다. 이미 앱으로 열었으면 버튼을 숨긴다
+  { const standalone = () => matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone === true;
+    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    let deferred = null; const btn = $('mInstall');
+    const show = on => btn.classList.toggle('hidden', !on || standalone());
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; show(true); });
+    window.addEventListener('appinstalled', () => { deferred = null; show(false); $('tMsg').textContent = '설치했어요! 홈 화면(바탕 화면)의 성 지키기 아이콘으로 열 수 있어요.'; });
+    if (ios && !standalone()) show(true);
+    btn.addEventListener('click', async e => { e.stopPropagation();
+      if (deferred) { deferred.prompt(); try { await deferred.userChoice; } catch (er) {} deferred = null; return; }
+      $('tMsg').textContent = ios ? '사파리 아래쪽의 공유 버튼(□↑)을 누르고 「홈 화면에 추가」를 고르면 앱처럼 설치돼요.' : '브라우저 메뉴(⋮)에서 「앱 설치」 또는 「홈 화면에 추가」를 눌러 주세요.'; }); }
   $('mQuit').addEventListener('click', e => { e.stopPropagation(); window.close(); setTimeout(() => { $('tMsg').textContent = '브라우저에서는 직접 종료할 수 없어요. 탭이나 창을 닫아 주세요.'; }, 150); });
 
   // ───────────── 메인 루프 ─────────────
