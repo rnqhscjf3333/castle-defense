@@ -154,6 +154,7 @@ body.pre > *:not(#cv):not(#title):not(script) { visibility: hidden !important; }
 @keyframes twinkle { from { opacity: .45; } to { opacity: 1; } }
 #title .moon { position: absolute; top: 9%; right: 14%; width: 64px; height: 64px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fffbe8, #e9d99a 70%); box-shadow: 0 0 40px 10px rgba(255,235,160,.28); }
 #title .castle { position: absolute; left: 50%; bottom: 0; width: min(620px, 118vw); transform: translateX(-50%); opacity: .95; pointer-events: none; }
+#title .logo img { display: block; margin: 5vh auto 0; width: min(520px, 84vw); height: auto; max-height: 40vh; object-fit: contain; filter: drop-shadow(0 6px 18px rgba(0,0,0,.55)); }
 #title .logo { position: relative; text-align: center; margin-top: -8vh; animation: logoIn 1s cubic-bezier(.2,.9,.3,1.2) both; }
 #title .logo h1 { -webkit-text-stroke: 5px rgba(60,28,6,.7); paint-order: stroke fill; margin: 0; font-size: clamp(46px, 11vw, 82px); letter-spacing: .08em; color: #ffe9a8; text-shadow: 0 3px 0 #8a4a14, 0 0 28px rgba(255,170,60,.55), 0 6px 18px rgba(0,0,0,.6); }
 #title .logo p { color: #fff !important; font-weight: 700; text-shadow: 0 2px 6px rgba(0,0,40,1), 0 0 14px rgba(0,0,40,.95); margin: 4px 0 0; font-size: clamp(12px, 3vw, 15px); letter-spacing: .3em; color: #cdb8ee; }
@@ -420,7 +421,7 @@ table.rank tr.top.me td { outline: 1px solid rgba(255,204,64,.8); outline-offset
 @keyframes cfxSpark { from { transform: translate(0, 0) scale(1); opacity: 1; } to { transform: translate(var(--dx), var(--dy)) scale(.2); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .clickfx { display: none; } }
 </style>
-<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="theme-color" content="#16301f">
 </head>
@@ -529,7 +530,7 @@ table.rank tr.top.me td { outline: 1px solid rgba(255,204,64,.8); outline-offset
 
 <div id="title" class="hidden">
   <div class="art"></div>
-  <div class="logo"><h1>성 지키기</h1><p>CASTLE DEFENSE</p></div>
+  <div class="logo"><img src="assets/logo.webp" alt="성 지키기" width="800" height="692"><p>CASTLE DEFENSE</p></div>
   <div id="tapHint">화면을 터치하거나 아무 키나 누르세요</div>
   <div id="tMenu"><button id="mStart" class="main">게임 시작</button><button id="mHow">게임 방법</button><button id="mColl">컬렉션</button><button id="mRank">랭킹</button><button id="mInstall" class="hidden">📲 앱으로 설치</button><button id="mQuit">게임 종료</button></div>
   <button id="tDev" class="btn panel tbtn" aria-label="" tabindex="-1"></button><button id="tSet" class="btn panel tbtn" aria-label="설정"><svg class="gear" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8l1.5 2.4 2.8-.6.9 2.7 2.7.9-.6 2.8 2.4 1.5-2.4 1.5.6 2.8-2.7.9-.9 2.7-2.8-.6L12 21.2l-1.5-2.4-2.8.6-.9-2.7-2.7-.9.6-2.8L2.3 12l2.4-1.5-.6-2.8 2.7-.9.9-2.7 2.8.6z"/></svg></button>
@@ -555,13 +556,13 @@ table.rank tr.top.me td { outline: 1px solid rgba(255,204,64,.8); outline-offset
   </div>
 </div>
 
-<script src="core.js?v=20261127c"></script>
-<script src="figures.js?v=20261127c"></script>
-<script src="scenery.js?v=20261127c"></script>
-<script src="config.js?v=20261127c"></script>
-<script src="meta.js?v=20261127c"></script>
-<script src="net.js?v=20261127c"></script>
-<script src="audio.js?v=20261127c"></script>
-<script src="main.js?v=20261127c"></script>
+<script src="core.js?v=20261127d"></script>
+<script src="figures.js?v=20261127d"></script>
+<script src="scenery.js?v=20261127d"></script>
+<script src="config.js?v=20261127d"></script>
+<script src="meta.js?v=20261127d"></script>
+<script src="net.js?v=20261127d"></script>
+<script src="audio.js?v=20261127d"></script>
+<script src="main.js?v=20261127d"></script>
 </body>
 </html>
