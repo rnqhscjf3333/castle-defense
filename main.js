@@ -172,6 +172,16 @@
   castleBtn.addEventListener('click', () => doCastle());
   castleBtn.insertAdjacentHTML('beforeend', '<div class="cdfill"></div>');
   $('units').appendChild(castleBtn);
+  // 다음 라운드 앞당기기: 이번 라운드 적이 다 나오고 보스가 없을 때만 버튼이 보인다
+  function doCallNext() {
+    if (!S || !running || paused) return;
+    const r = C.callNext(S); if (!r.ok) A2.play('deny');
+  }
+  $('btnNext').addEventListener('click', doCallNext);
+  function updateNextBtn() {
+    const b = $('btnNext'), ok = C.canCallNext(S); b.hidden = !ok;
+    if (ok) { const t = '⏩ 다음 라운드 +' + C.callGold(S.round + 1) + 'G'; if (b.textContent !== t) b.textContent = t; }
+  }
   function doRepair() {
     if (!S || !running || paused) return;
     const r = C.repairCastle(S);
@@ -242,6 +252,7 @@
     if (e.key === '4') doCastle();
     else if (e.key === 'i' || e.key === 'I') $('btnInfo').click();
     else if (e.key === 'u' || e.key === 'U') $('btnUnits').click();
+    else if (e.key === 'n' || e.key === 'N') doCallNext();
     else if (e.key === 'Escape') toggleModal('setMenu');
     else if (e.key === ' ') { e.preventDefault(); $('btnPause').click(); }
     else if (e.key === 'h' || e.key === 'H') centerOnCore();
@@ -355,7 +366,7 @@
     const bi = C.bossInfo(S, S.round), nb = C.bossInfo(S, S.round + 1), rt = $('roundTxt');
     setText('roundTxt', S.infinite || S.round > C.FINAL_ROUND ? '라운드 ' + S.round + ' · 무한' : '라운드 ' + Math.max(1, S.round) + ' / ' + C.FINAL_ROUND);
     rt.classList.toggle('boss', !!bi); rt.classList.toggle('nextboss', !bi && !!nb); rt.classList.toggle('act2', S.act === 2 && !bi && !nb);
-    updateBossBar(); updateCastleBtn();
+    updateBossBar(); updateCastleBtn(); updateNextBtn();
     { const om = S.omen && !S.omenWait ? C.CFG.omenFx[S.omen] : null, row = $('omenRow'); if (row) { row.hidden = !om; if (om) { const tx = $('omenTxt'); const lbl = om.name + ' ⓘ'; if (tx.textContent !== lbl) { tx.textContent = lbl; row.title = om.text; tx.style.color = OMEN_COL[S.omen] || '#ffd'; } } } } // 사천왕의 기운 효과 표시
     setText('timeTxt', fmtTime(S.t));
     setText('hpTxt', String(Math.ceil(c.hp)));
@@ -1126,6 +1137,7 @@
       else if (ev.type === 'strikeWarn') addFx({ k: 'strikeW', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, w2: ev.w2, claw: ev.claw, t: 0, max: Math.max(0.2, ev.t) });
       else if (ev.type === 'strikeHit') { { const sc = { bolt: '#fff27a', fire: '#ff9a3a', slam: '#d9a05a', frost: '#bfe8ff', ice: '#bfe8ff', slash: '#ffffff', claw: '#ff6a6a' }[ev.kind] || '#ffd27a'; addFx({ k: 'sparks', x: ev.x, y: ev.y, t: 0, max: 0.45, c: sc, r: Math.min(ev.r || 60, 110), n: 14, w: 3, big: true }); } addFx({ k: 'strikeH', x: ev.x, y: ev.y, r: ev.r, ang: ev.ang, half: ev.half, len: ev.len, kind: ev.kind, shape: ev.shape, w2: ev.w2, claw: ev.claw, t: 0, max: ev.shape === 'cone' ? 0.7 : ev.shape === 'line' ? 0.6 : 0.55 }); if (ev.kind !== 'ice' || ev.r > 300) addShake(ev.kind === 'slam' ? 14 : ev.kind === 'wind' ? 5 : ev.r > 250 ? 12 : 6, ev.kind === 'slam' ? 0.45 : 0.3); }
       else if (ev.type === 'omen') { if (ev.id !== 'dragon') showBossIntro({ name: ev.name, line: ev.line, look: ev.look, r: ev.r, long: true, omen: ev.id }); toast(ev.id === 'dragon' ? '용의 기운이 맵 가장자리에 감돕니다' : '사천왕의 기운이 맵 가장자리에 감돕니다'); if (ev.fx) setTimeout(() => toast(ev.fx), 1200); }
+      else if (ev.type === 'callNext') toast('⏩ 다음 라운드 앞당김 +' + ev.gold + 'G');
       else if (ev.type === 'infinite') { addFx({ k: 'ring', x: CX, y: CY, t: 0, max: 1.0, c: '#c77dff', big: true, r: 220 }); if (ev.gold) { toast('🐉 100라운드 클리어 보상 +' + ev.gold.toLocaleString() + 'G'); } }
       else if (ev.type === 'omenEmber') addFx({ k: 'ring', x: ev.x, y: ev.y, t: 0, max: 0.5, c: '#ff7a3a' });
       else if (ev.type === 'castleAwaken') { banner('성채 각성!', true); for (let i = 0; i < 4; i++) addFx({ k: 'ring', x: CX, y: CY, t: -i * 0.12, max: 1.0, c: '#ffe27a', big: true, r: 200 }); addShake(8, 0.5); }

@@ -997,5 +997,18 @@ for (const dist of [80, 400]) { const g = C.createGame(7); g.hold = true; g.roun
 // 79. 팔라딘은 덜 밀려난다
 { const push = ids => { const g = C.createGame(43); g.gold = 1e9; if (ids) g.jobs.sword.ids = ids; g.jobMods = null; C.buy(g, 'sword'); C.tick(g, DT); const u = g.units.find(x => x.type === 'sword'); u.kvx = u.kvy = 0; C.knock(g, u, u.x - 30, u.y, 400); return Math.hypot(u.kvx, u.kvy); };
   const a = push(null), b = push(['knight', 'paladin']); check('팔라딘은 밀리는 힘 -60%', b < a * 0.45 && b > 0, b.toFixed(0) + ' vs ' + a.toFixed(0)); }
+// 80. 다음 라운드 앞당기기: 적이 다 나온 뒤에만, 보스가 있으면 불가, 보너스 골드 · 초반 라운드는 적이 더 빨리 나온다
+{ const g = C.createGame(51); g.gold = 1e5; C.buy(g, 'sword'); C.buy(g, 'archer');
+  for (let i = 0; i < 30 * 3 && g.round < 3; i++) { C.tick(g, DT); if (g.cards.offer) C.pickCard(g, 0); }
+  check('적이 아직 나오는 중이면 앞당기기 불가', g.queue.length > 0 && !C.canCallNext(g));
+  g.hold = true; for (let i = 0; i < 30 * 30 && g.queue.length; i++) C.tick(g, DT); g.hold = false;
+  if (!g.enemies.some(e => !e.dead)) C.spawnEnemy(g, 'grunt');
+  const r0 = g.round, g0 = g.gold, ok = C.canCallNext(g), res = C.callNext(g);
+  check('다 나온 뒤엔 앞당기기 → 다음 라운드 + 보너스', ok && res.ok && g.round === r0 + 1 && g.gold >= g0 + C.callGold(r0 + 1), r0 + '→' + g.round + ' +' + (g.gold - g0));
+  check('앞당긴 직후(새 적이 나오는 중)엔 다시 불가', !C.canCallNext(g));
+  const b = C.createGame(52); b.hold = true; b.round = 10; b.phase = 'round'; b.roundT = 5; b.queue = []; C.spawnEnemy(b, 'boss'); C.spawnEnemy(b, 'grunt'); b.hold = false;
+  check('보스가 살아 있으면 앞당기기 불가', !C.canCallNext(b));
+  check('초반 압축: 1라운드 15초, 21라운드부터 25초', C.spawnTime(1) === 15 && C.spawnTime(21) === 25 && C.spawnTime(60) === 25);
+  check('앞당기기 보너스가 기록 검증 상한에 포함', C.goldBound(10) > C.goldBound(9) + C.callGold(10)); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);

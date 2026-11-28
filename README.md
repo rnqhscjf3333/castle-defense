@@ -494,3 +494,9 @@ node tools/balance.mjs sweep bossPool.4.abil.artillery.dmg 90,60 60             
 - 520px 이하에서 카드·전직 선택 카드의 이름·설명을 그림 옆 세로 가운데에 배치 (grid 행 지정)
 - "다시 뽑기 (N)" 버튼 줄바꿈 금지, 터치 기기(hover:none, pointer:coarse)에서는 키보드 단축키 숫자·안내를 숨기고 "고르는 동안 시간이 멈춰요"만 표시
 - 아래 구매 버튼 설명은 두 줄까지만 보이고, 360px 이하에서는 버튼을 조금 줄임
+
+## 다음 라운드 앞당기기 · 초반 압축 (11/28)
+- `canCallNext`/`callNext`(core.js): 적 대기열이 비고, 살아 있는 적 중 보스·고정형(용)이 없고, 선택창·컷신·30라운드 관문·99~100라운드가 아니면 바로 `startRound` + 보너스 `callGold(r)=10+r` (log `['n', round]`, `stats.calls`)
+- 기록 검증 `goldBound`에 라운드마다 `callGold` 포함. 서버의 "라운드당 최소 8초" 검증과는 충돌 없음 (앞당겨도 적이 다 나오는 15초 이상 걸림)
+- `spawnTime(r) = min(25, 15 + 0.5(r-1))`: 초반 라운드는 적 수 그대로, 나오는 시간만 짧게
+- UI: `#tools`의 금색 `#btnNext`(N 키), 가능할 때만 보임 · 스모크 80번

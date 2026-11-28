@@ -34,6 +34,7 @@ body.introOn #omenRow { opacity: 0; }
 
 #btnPause { position: fixed; top: max(5px, env(safe-area-inset-top)); left: 214px; z-index: 6; zoom: .84; min-width: 40px; }
 #speedBar { display: flex; padding: 2px; gap: 2px; border-radius: 9px; } #speedBar button { padding: 3px 9px; font-size: 12px; border-radius: 7px; background: transparent; border: 0; color: var(--muted); font-weight: 700; } #speedBar button.on { background: rgba(255,209,102,.18); color: #ffd166; }
+#btnNext { color: #2a1400; font-weight: 800; border-color: #fff1b0; background: linear-gradient(180deg, #ffd96a, #f1a62a); box-shadow: 0 2px 0 #8a5412; animation: nextIn .3s ease-out; } #btnNext[hidden] { display: none; } @keyframes nextIn { from { opacity: 0; transform: translateX(14px); } }
 #tools { position: fixed; top: calc(max(5px, env(safe-area-inset-top)) + 106px); right: 5px; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
 .tbtn { padding: 4px 8px; font-size: 11.5px; min-height: 26px; border-radius: 8px; }
 
@@ -500,6 +501,7 @@ table.rank tr.top.me td { outline: 1px solid rgba(255,204,64,.8); outline-offset
   <div id="speedBar" class="panel" title="배속"><button data-sp="1" class="on">1×</button><button data-sp="2">2×</button><button data-sp="3">3×</button><button data-sp="4">4×</button><button data-sp="5">5×</button></div>
   <button class="btn panel tbtn" id="btnInfo" title="강화 정보 (I)">강화 정보</button>
   <button class="btn panel tbtn" id="btnUnits" title="유닛 정보 (U)">유닛 정보</button>
+  <button class="btn panel tbtn" id="btnNext" title="남은 적을 둔 채 다음 라운드를 바로 불러요 (N)" hidden></button>
   <div id="unitList" class="panel" hidden></div>
 </div>
 <button id="followChip" class="panel" hidden></button>
@@ -626,14 +628,14 @@ table.rank tr.top.me td { outline: 1px solid rgba(255,204,64,.8); outline-offset
   </div>
 </div>
 
-<script src="core.js?v=20261128f"></script>
-<script src="figures.js?v=20261128f"></script>
-<script src="scenery.js?v=20261128f"></script>
-<script src="config.js?v=20261128f"></script>
-<script src="meta.js?v=20261128f"></script>
-<script src="net.js?v=20261128f"></script>
-<script src="audio.js?v=20261128f"></script>
-<script src="patches.js?v=20261128f"></script>
-<script src="main.js?v=20261128f"></script>
+<script src="core.js?v=20261128g"></script>
+<script src="figures.js?v=20261128g"></script>
+<script src="scenery.js?v=20261128g"></script>
+<script src="config.js?v=20261128g"></script>
+<script src="meta.js?v=20261128g"></script>
+<script src="net.js?v=20261128g"></script>
+<script src="audio.js?v=20261128g"></script>
+<script src="patches.js?v=20261128g"></script>
+<script src="main.js?v=20261128g"></script>
 </body>
 </html>

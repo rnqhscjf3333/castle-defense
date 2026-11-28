@@ -16,6 +16,8 @@
   const ACT1_END = 30;      // 1막의 마지막 라운드 (이 라운드의 보스를 처치하면 2막이 열린다)
   const ROUND_TIME = 40;   // 한 라운드 최대 시간(초). 적이 남아도 다음 라운드가 시작된다.
   const SPAWN_TIME = 25;   // 라운드 시작 후 이 시간 동안 적이 나뉘어 나온다.
+  const spawnTime = r => Math.min(SPAWN_TIME, 15 + 0.5 * (r - 1)); // 초반 압축: 1라운드 15초 → 21라운드부터 25초 (적 수는 그대로, 나오는 간격만 좁게)
+  const callGold = r => 10 + r; // 다음 라운드 앞당기기 보너스
   const PREP_TIME = 0;     // 라운드는 시작하자마자 자동으로 진행된다 (준비 시간 없음)
   const SPAWN_RING = 700;  // 중앙에서 스폰 지점까지 거리 (맵 끝에서 오래 걸어오지 않고 화면 바로 밖에서 나타난다)
   const ENRAGE_AFTER = 40; // 한 적이 이 시간(초)보다 오래 살아 있으면 점점 강해진다 (공격력·이동 속도).
@@ -996,7 +998,7 @@
   function goldBound(R) {
     let b = CFG.startGold + 100;
     for (let r = 1; r <= R; r++) {
-      if (r > 1) b += 15 + 2 * r;
+      if (r > 1) b += 15 + 2 * r + callGold(r);
       const E = CFG.elite, ep = r >= E.from ? Math.min(E.max, (r - E.from + 1) * E.perRound) : 0;
       b += 1.6 * (enemyCount(r) * KIND_AVG(r) * (1 + ep * (E.gold - 1)) + (r % 5 === 0 && r >= 5 ? CFG.enemies.boss.gold : 0));
     }
@@ -1011,6 +1013,22 @@
     if (S.gold > st.earned - st.spent + 1 || S.gold < st.earned - st.spent - 1) why.push('보유 골드가 수입-지출과 맞지 않음');
     let kb = 0; for (let r = 1; r <= S.round; r++) kb += enemyCount(r) * 3 + 60; if (S.kills > kb) why.push('처치 수가 너무 많음');
     return { ok: !why.length, bound, why };
+  }
+  // ── 다음 라운드 앞당기기: 이번 라운드 적이 모두 나온 뒤, 보스가 없으면 남은 적을 둔 채 다음 라운드를 바로 부르고 보너스 골드를 받는다 ──
+  function canCallNext(S) {
+    if (S.phase !== 'round' || S.over || S.hold || S.queue.length || S.cinematic || S.cards.offer || S.jobs.offer || S.cOffer) return false;
+    if (S.round < 1 || S.round >= FINAL_ROUND - 1 && S.round <= FINAL_ROUND || S.roundT < 1) return false; // 99라운드는 용 레이드 직전이라 앞당기지 않는다
+    if (S.round === ACT1_END && S.act === 1) return false;
+    let alive = false; for (const e of S.enemies) { if (e.dead) continue; if (e.kind === 'boss' || e.fixed) return false; alive = true; }
+    return alive; // 적이 없으면 어차피 바로 다음 라운드가 열린다
+  }
+  function callNext(S) {
+    if (!canCallNext(S)) return { ok: false };
+    const g = callGold(S.round + 1);
+    logEv(S, ['n', S.round]); S.stats.calls = (S.stats.calls || 0) + 1;
+    startRound(S);
+    S.gold += g; S.stats.earned += g; emit(S, { type: 'callNext', gold: g });
+    return { ok: true, gold: g };
   }
   function startRound(S) {
     S.cliff = 0; S.cliffTheme = null;
@@ -1047,7 +1065,7 @@
       S.omenWait = true; S.omenT = 0;
     }
     if (r === FINAL_ROUND) { const keep = q.filter((k, i) => k !== 'boss' && (i % 100) < CFG.dragon.monsterFrac * 100); q.length = 0; q.push('boss', ...keep); S.dragonWaveT = CFG.dragon.waveEvery; S.dragonIntro = { t: 0, dur: 8, wait: true }; S.zones.length = 0; S.strikes.length = 0; } // 마지막 라운드: 몬스터 없이 용과의 1:1 레이드
-    S.queue = q; S.spawnGap = SPAWN_TIME / q.length; S.spawnT = 0;
+    S.queue = q; S.spawnGap = spawnTime(r) / q.length; S.spawnT = 0;
     let text = '라운드 ' + r;
     if (r === 10) text += ' · 스폰 지점 증가';
     if (r === 20) text += ' · 대혼란';
@@ -2167,7 +2185,7 @@
 
   return {
     CFG, MAX_ROUND, ACT1_END, extraAngles, EXTRA_RING, ROUND_TIME, SPAWN_TIME, PREP_TIME, SPAWN_RING, UNIT_TYPES, CARD_DEFS,
-    p2Abil, createGame, tick, buy, openAwaken, openLegacy, cmpDesc, FINAL_ROUND, castleMax, repairCastle, repairCost, devSetup, continueInfinite, runSummary, ctNode, jobDef, coreGuard, hitCore, pickCastle, autoCastle, castleOptions, describeCastle, jobBack, classOptions, enqueue, cancelProd, goldBound, checkRun, upgradeCastle, castleCost, popCap, popGain, popCount, specialCount, endCinematic, jumpToRound, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo, drainEvents, pickCard, reroll, describeTaken, openCards,
+    p2Abil, createGame, tick, buy, canCallNext, callNext, callGold, spawnTime, openAwaken, openLegacy, cmpDesc, FINAL_ROUND, castleMax, repairCastle, repairCost, devSetup, continueInfinite, runSummary, ctNode, jobDef, coreGuard, hitCore, pickCastle, autoCastle, castleOptions, describeCastle, jobBack, classOptions, enqueue, cancelProd, goldBound, checkRun, upgradeCastle, castleCost, popCap, popGain, popCount, specialCount, endCinematic, jumpToRound, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo, drainEvents, pickCard, reroll, describeTaken, openCards,
     unitCostOf, castPulse, refreshUnit, knock, enemyCount, hpMul, dmgMul, mulberry32, damage,
   };
 });
