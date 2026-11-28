@@ -80,7 +80,7 @@
       zoomAt((a.x + b.x) / 2, (a.y + b.y) / 2, f);
     } else if (drag) {
       const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
-      if (!drag.moved && Math.hypot(dx, dy) > 6) drag.moved = true;
+      if (!drag.moved && Math.hypot(dx, dy) > 6) { drag.moved = true; stopFollow(); }
       if (drag.moved) { cam.x = drag.cx - dx / cam.zoom; cam.y = drag.cy - dy / cam.zoom; clampCam(); }
     }
   });
@@ -186,6 +186,43 @@
   }
   $('btnPause').addEventListener('click', () => { if (!running && !S) return; toggleModal('setMenu'); });
   $('btnInfo').addEventListener('click', () => { if (!S) return; toggleModal('infoPanel'); if (!$('infoPanel').classList.contains('hidden')) renderInfo(); });
+  // 유닛 정보: 지금 살아 있는 아군을 이름(전직)별로 묶어 보여 주고, 하나를 누르면 화면이 그 유닛을 따라간다
+  let follow = null, ulKey = '', ulOpen = {}, ulT = 0;
+  const UL_COL = { sword: '#6aa8ff', archer: '#6bdc7a', priest: '#ffe08a' };
+  function unitLabel(u) { if (u.job) { try { const d = C.jobDef(u.type, u.job); if (d) return d.name; } catch (e) { /* 이름 없음 */ } } return (CFG.units[u.type] || {}).name || u.type; }
+  function stopFollow() { if (!follow) return; follow = null; $('followChip').hidden = true; for (const b of document.querySelectorAll('#unitList .ulU.sel')) b.classList.remove('sel'); }
+  function startFollow(u) { follow = u; if (cam.zoom < 1.25) cam.zoom = Math.min(1.4, Math.max(cam.zoom, 1.25)); syncFollowChip(); for (const b of document.querySelectorAll('#unitList .ulU')) b.classList.toggle('sel', +b.dataset.id === u.id); }
+  function syncFollowChip() { const c = $('followChip'); if (!follow) { c.hidden = true; return; } c.hidden = false; c.textContent = '📍 ' + follow._lbl + ' 따라가는 중 ✕'; }
+  function unitGroups() { // 검사 → 궁수 → 사제 → 특수 → 설치형 → 망자 순으로 묶는다
+    const G = new Map();
+    for (const u of S.units) { if (u.dead || u.dying) continue; const lb = unitLabel(u), ln = u.line || u.type, key = (u.undead ? 'z' : CFG.units[u.type] && CFG.units[u.type].static ? 'y' : 'a') + ({ sword: 1, archer: 2, priest: 3 }[ln] || 4) + ln + '|' + lb; let g = G.get(key); if (!g) G.set(key, g = { lb, line: u.line || u.type, us: [] }); g.us.push(u); }
+    const out = [...G.entries()].sort((a, b) => a[0] < b[0] ? -1 : 1).map(x => x[1]);
+    for (const g of out) { g.us.sort((a, b) => a.id - b.id); g.us.forEach((u, i) => { u._lbl = g.lb + ' #' + (i + 1); }); }
+    return out;
+  }
+  function renderUnitList(force) {
+    const el = $('unitList'); if (el.hidden || !S) return;
+    const gs = unitGroups(), key = gs.map(g => g.lb + ':' + g.us.map(u => u.id).join(',')).join('/');
+    if (force || key !== ulKey) {
+      ulKey = key;
+      el.innerHTML = gs.length ? gs.map(g => '<div class="ulG"><button class="ulH" data-g="' + g.lb + '"><span class="ar">' + (ulOpen[g.lb] === false ? '▸' : '▾') + '</span><span class="dot" style="background:' + (UL_COL[g.line] || '#c9a0ff') + '"></span>' + g.lb + '<span class="n">' + g.us.length + '</span></button><div class="ulI"' + (ulOpen[g.lb] === false ? ' hidden' : '') + '>' + g.us.map((u, i) => '<button class="ulU' + (follow === u ? ' sel' : '') + '" data-id="' + u.id + '" title="' + u._lbl + '">' + (i + 1) + '<i><b></b></i></button>').join('') + '</div></div>').join('') : '<div class="ulEmpty">아직 유닛이 없어요</div>';
+    }
+    for (const b of el.querySelectorAll('.ulU')) { const u = S.units.find(x => x.id === +b.dataset.id); if (u) { const f = Math.max(0, Math.min(1, u.hp / u.max)); b.firstElementChild.firstElementChild.style.width = (f * 100).toFixed(0) + '%'; b.firstElementChild.firstElementChild.style.background = f > 0.5 ? '#5fe08a' : f > 0.25 ? '#ffc94a' : '#ff5a5a'; } }
+  }
+  $('btnUnits').addEventListener('click', () => { if (!S) return; const el = $('unitList'); el.hidden = !el.hidden; $('btnUnits').classList.toggle('on', !el.hidden); if (!el.hidden) renderUnitList(true); });
+  $('unitList').addEventListener('click', e => {
+    const h = e.target.closest('.ulH'); if (h) { const g = h.dataset.g; ulOpen[g] = ulOpen[g] === false; renderUnitList(true); return; }
+    const b = e.target.closest('.ulU'); if (!b) return; const u = S.units.find(x => x.id === +b.dataset.id && !x.dead);
+    if (!u) return; if (follow === u) stopFollow(); else startFollow(u);
+  });
+  $('followChip').addEventListener('click', stopFollow);
+  function updateFollow(dt) {
+    if ($('unitList').hidden === false && (ulT -= dt) <= 0) { ulT = 0.4; renderUnitList(false); }
+    if (!follow) return;
+    if (follow.dead || !S.units.includes(follow)) { const n = follow._lbl; stopFollow(); toast(n + '이(가) 쓰러졌어요'); return; }
+    if (S.bossDeath) return; // 보스 사망 연출 중에는 연출 카메라가 우선
+    const k = 1 - Math.exp(-6 * dt); cam.x += (follow.x - cam.x) * k; cam.y += (follow.y - 10 - cam.y) * k; clampCam();
+  }
   let shownSp = 0; // 보스전에는 자동으로 1배속, 끝나면 고른 배속으로 돌아간다
   const effSpeed = () => (S && !S.over && (S.dragonIntro || S.bossDeath || S.enemies.some(e => e.kind === 'boss' && !e.dead))) ? 1 : speed;
   const showSpeed = v => { if (v === shownSp) return; shownSp = v; for (const b of document.querySelectorAll('#speedBar button')) b.classList.toggle('on', +b.dataset.sp === v); };
@@ -204,6 +241,7 @@
     if (e.key === '1' || e.key === '2' || e.key === '3') doBuy(C.UNIT_TYPES[+e.key - 1]);
     if (e.key === '4') doCastle();
     else if (e.key === 'i' || e.key === 'I') $('btnInfo').click();
+    else if (e.key === 'u' || e.key === 'U') $('btnUnits').click();
     else if (e.key === 'Escape') toggleModal('setMenu');
     else if (e.key === ' ') { e.preventDefault(); $('btnPause').click(); }
     else if (e.key === 'h' || e.key === 'H') centerOnCore();
@@ -1456,6 +1494,7 @@
       if (e.elite) eliteGlow(e, now, z);
       if (lite && e.team === 'e' && e.kind !== 'boss') { Figures.drawLite(ctx, e); if (e.elite) eliteMark(e, z); continue; }
       if (e.undead) { ctx.globalAlpha = 0.4 + 0.15 * Math.sin(now * 0.01); ctx.fillStyle = '#3ae68a'; ctx.beginPath(); ctx.ellipse(e.x, e.y + 6, e.r * 1.5, e.r * 0.7, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
+      if (e === follow) { ctx.globalAlpha = 0.75 + 0.25 * Math.sin(now * 0.008); ctx.strokeStyle = '#ffd34a'; ctx.lineWidth = 2.4 / z; ctx.beginPath(); ctx.ellipse(e.x, e.y + e.r * 0.6, e.r * 1.6, e.r * 0.7, 0, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1; }
       if (e.kind === 'boss') bossAura(e, now, z);
       if (e.team === 'u' && !lite && z > 0.35 && (e.job === 'bard' || e.job === 'shaman')) buffAura(e, now, z);
       if (e.team === 'u' && e.blT > 0 && e.blS > 0 && !lite && z > 0.4) { ctx.globalAlpha = 0.85; drawNote(e.x + 8, e.y - e.r * 2 - 4 + Math.sin(now * 0.006 + (e.id || 0)) * 2, '#c8a0ff', 0, 0.55); ctx.globalAlpha = 1; }
@@ -1964,7 +2003,7 @@
     openingSeen = true;
     const seed = params.get('seed') ? +params.get('seed') : (Date.now() ^ (Math.random() * 1e9)) >>> 0;
     const mm = params.get('mode'), mode = mm === 'free' ? mm : 'normal';
-    S = C.createGame(seed, mode); S.captureEvents = true; Net.begin(S); syncModeBar();
+    S = C.createGame(seed, mode); S.captureEvents = true; Net.begin(S); syncModeBar(); stopFollow(); $('unitList').hidden = true; $('btnUnits').classList.remove('on');
     fx.length = 0; numFx = 0; paused = false; speed = 1; shownOffer = null; $('picker').classList.add('hidden');
     setSpeed(1); closeModals(); Meta.begin(); lastSyncRound = 0; $('btnToMenu').classList.add('hidden');
     for (const k in last) delete last[k];
@@ -2324,6 +2363,7 @@
     }
     if (S) {
       if (!paused) updateDeathCam(dt);
+      updateFollow(dt);
       if (S.cinematic && !cine) startCine(S.cinematic.name, S.cinematic.kind);
       { const rd = S.enemies.find(e => e.fixed && e.riseT > 0 && !e.dead); // 용이 솟아오르는 동안: 계속 흔들리고 단상 가장자리에서 먼지·바위 조각이 튄다
         if (rd && !paused) { risePulse += dt; if (risePulse > 0.08) { risePulse = 0; addShake(rd.fromSky ? 3 + 8 * (1 - rd.riseT / rd.riseDur) : 7 + 6 * (rd.riseT / rd.riseDur), 0.3); if (fx.length < 200) addFx({ k: 'burst', x: rd.x + (Math.random() - 0.5) * 700, y: rd.y + 10 + Math.random() * 50, t: 0, max: 0.6 + Math.random() * 0.5, c: Math.random() < 0.5 ? '#8a6a44' : '#ffb04a', big: Math.random() < 0.3 }); } } }

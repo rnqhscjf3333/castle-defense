@@ -215,6 +215,21 @@ body.defeating #hud, body.defeating #units, body.defeating #tools, body.defeatin
 @keyframes skyOff { 0%,30% { opacity: 1; } 100% { opacity: 0; } }
 body.introOn #btnPause, body.introOn #feed, body.introOn #hud, body.introOn #units, body.introOn #tools, body.introOn #modeBar, body.introOn #bossbar { opacity: 0; }
 #hud, #units, #tools, #modeBar, #bossbar { transition: opacity .8s; }
+#btnUnits.on { background: #2d5a8a; border-color: #7fb6ff; }
+#unitList { width: 196px; max-height: min(52vh, 420px); overflow-y: auto; padding: 5px; font-size: 12px; border-radius: 10px; overscroll-behavior: contain; }
+#unitList .ulEmpty { color: #9aa7bd; padding: 6px; text-align: center; }
+#unitList .ulG { margin-bottom: 4px; }
+#unitList .ulH { display: flex; align-items: center; gap: 5px; width: 100%; padding: 4px 6px; border-radius: 7px; background: rgba(255,255,255,.07); color: #e8eef8; font-weight: 700; font-size: 12px; text-align: left; }
+#unitList .ulH .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+#unitList .ulH .n { margin-left: auto; color: #9fb3d1; font-weight: 600; }
+#unitList .ulH .ar { color: #8da0bd; font-size: 10px; width: 9px; }
+#unitList .ulI { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; padding: 4px 2px 0; }
+#unitList .ulI[hidden] { display: none; }
+#unitList .ulU { position: relative; padding: 3px 0 6px; border-radius: 6px; background: rgba(0,0,0,.28); color: #dfe8f5; font-size: 11px; border: 1px solid transparent; }
+#unitList .ulU.sel { border-color: #ffd34a; color: #ffe58a; }
+#unitList .ulU i { position: absolute; left: 3px; right: 3px; bottom: 2px; height: 3px; border-radius: 2px; background: #3a1f26; overflow: hidden; }
+#unitList .ulU i b { display: block; height: 100%; background: #5fe08a; }
+#followChip { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(max(8px, env(safe-area-inset-bottom)) + 118px); padding: 5px 12px; border-radius: 999px; font-size: 12.5px; color: #ffe58a; border: 1px solid #ffd34a88; z-index: 6; }
 /* 업그레이드 선택 */
 #picker { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(8, 11, 17, .7); padding: 12px; z-index: 5; }
 #picker.hidden { display: none; }
@@ -463,7 +478,10 @@ table.rank tr.top.me td { outline: 1px solid rgba(255,204,64,.8); outline-offset
 <div id="tools">
   <div id="speedBar" class="panel" title="배속"><button data-sp="1" class="on">1×</button><button data-sp="2">2×</button><button data-sp="3">3×</button><button data-sp="4">4×</button><button data-sp="5">5×</button></div>
   <button class="btn panel tbtn" id="btnInfo" title="강화 정보 (I)">강화 정보</button>
+  <button class="btn panel tbtn" id="btnUnits" title="유닛 정보 (U)">유닛 정보</button>
+  <div id="unitList" class="panel" hidden></div>
 </div>
+<button id="followChip" class="panel" hidden></button>
 
 <div id="banner"></div>
 <div id="perf" hidden></div>
@@ -587,14 +605,14 @@ table.rank tr.top.me td { outline: 1px solid rgba(255,204,64,.8); outline-offset
   </div>
 </div>
 
-<script src="core.js?v=20261128a"></script>
-<script src="figures.js?v=20261128a"></script>
-<script src="scenery.js?v=20261128a"></script>
-<script src="config.js?v=20261128a"></script>
-<script src="meta.js?v=20261128a"></script>
-<script src="net.js?v=20261128a"></script>
-<script src="audio.js?v=20261128a"></script>
-<script src="patches.js?v=20261128a"></script>
-<script src="main.js?v=20261128a"></script>
+<script src="core.js?v=20261128b"></script>
+<script src="figures.js?v=20261128b"></script>
+<script src="scenery.js?v=20261128b"></script>
+<script src="config.js?v=20261128b"></script>
+<script src="meta.js?v=20261128b"></script>
+<script src="net.js?v=20261128b"></script>
+<script src="audio.js?v=20261128b"></script>
+<script src="patches.js?v=20261128b"></script>
+<script src="main.js?v=20261128b"></script>
 </body>
 </html>
