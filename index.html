@@ -164,7 +164,15 @@ body.pre > *:not(#cv):not(#title):not(script) { visibility: hidden !important; }
 #tapHint { position: absolute; left: 0; right: 0; bottom: 17%; text-align: center; font-size: 17px; color: #fff; letter-spacing: .1em; animation: blinkHint 1.4s ease-in-out infinite; text-shadow: 0 2px 8px #000; }
 @keyframes blinkHint { 50% { opacity: .25; } }
 #tMenu { position: relative; display: none; flex-direction: column; gap: 12px; margin-top: 74px; width: min(260px, 72vw); }
-#title.menu #tMenu { display: flex; animation: menuIn .45s ease-out both; } #title.menu #tapHint { display: none; }
+#title.menu #tMenu { display: flex; } #title.menu #tapHint { display: none; }
+/* 시작 화면을 누르면: 로고가 위로 부드럽게 올라가고(main.js openMenu의 FLIP), 버튼이 차례로 떠오른다 */
+#title.menu .logo { animation: none; }
+#title.menu #tMenu button { animation: btnIn .5s cubic-bezier(.2,.9,.3,1.15) both; animation-delay: calc(.28s + var(--i, 0) * .07s); }
+#tMenu button:nth-child(2) { --i: 1; } #tMenu button:nth-child(3) { --i: 2; } #tMenu button:nth-child(4) { --i: 3; } #tMenu button:nth-child(5) { --i: 4; }
+#title.menu #tTopL, #title.menu #tSet { animation: fadeIn .5s .55s ease-out both; }
+@keyframes btnIn { from { opacity: 0; transform: translateY(26px) scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { #title.menu #tMenu button, #title.menu #tTopL, #title.menu #tSet { animation: none; } }
 @keyframes menuIn { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
 #tMenu button { padding: 14px 10px; font-size: 18px; font-weight: 800; letter-spacing: .12em; color: #fff; border-radius: 14px; border: 2px solid rgba(255,220,150,.5); background: linear-gradient(180deg, rgba(80,50,120,.9), rgba(40,24,70,.92)); box-shadow: 0 4px 0 rgba(0,0,0,.45), 0 0 18px rgba(160,110,255,.25); }
 #tMenu button.hidden { display: none; }
@@ -607,14 +615,14 @@ table.rank tr.top.me td { outline: 1px solid rgba(255,204,64,.8); outline-offset
   </div>
 </div>
 
-<script src="core.js?v=20261128d"></script>
-<script src="figures.js?v=20261128d"></script>
-<script src="scenery.js?v=20261128d"></script>
-<script src="config.js?v=20261128d"></script>
-<script src="meta.js?v=20261128d"></script>
-<script src="net.js?v=20261128d"></script>
-<script src="audio.js?v=20261128d"></script>
-<script src="patches.js?v=20261128d"></script>
-<script src="main.js?v=20261128d"></script>
+<script src="core.js?v=20261128e"></script>
+<script src="figures.js?v=20261128e"></script>
+<script src="scenery.js?v=20261128e"></script>
+<script src="config.js?v=20261128e"></script>
+<script src="meta.js?v=20261128e"></script>
+<script src="net.js?v=20261128e"></script>
+<script src="audio.js?v=20261128e"></script>
+<script src="patches.js?v=20261128e"></script>
+<script src="main.js?v=20261128e"></script>
 </body>
 </html>

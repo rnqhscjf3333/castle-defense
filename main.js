@@ -2191,7 +2191,20 @@
   }
   const titleEl = $('title');
   function showTitle() { titleEl.classList.remove('hidden', 'out', 'menu'); $('tMsg').textContent = ''; $('tVer').textContent = 'v' + ((window.CD_CONFIG || {}).VERSION || ''); }
-  function openMenu() { if (titleEl.classList.contains('menu')) return; titleEl.classList.add('menu'); A2.init(); A2.play('ui'); if (patchUnseen()) setTimeout(() => { if (titleEl.classList.contains('menu') && !anyModal()) openPatch(0); }, 450); }
+  // 로고가 원래 자리에서 메뉴 화면의 자리로 부드럽게 옮겨 가게 한다 (바뀌기 전·후 위치를 재서 그 차이만큼 되돌려 놓고 풀어 준다)
+  function flipLogo(change) {
+    const lg = titleEl.querySelector('.logo'), visible = lg && !titleEl.classList.contains('hidden') && lg.offsetParent !== null;
+    const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!visible || reduce) { change(); return; }
+    const a = lg.getBoundingClientRect(); change(); const b = lg.getBoundingClientRect();
+    if (!b.width || !b.height) return;
+    const dx = (a.left + a.width / 2) - (b.left + b.width / 2), dy = (a.top + a.height / 2) - (b.top + b.height / 2), sc = a.width / b.width;
+    lg.style.transition = 'none'; lg.style.transformOrigin = '50% 50%'; lg.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(' + sc + ')';
+    void lg.offsetWidth; // 되돌려 놓은 위치를 먼저 그리게 한다
+    lg.style.transition = 'transform .65s cubic-bezier(.25,.85,.3,1)'; lg.style.transform = '';
+    setTimeout(() => { lg.style.transition = ''; lg.style.transformOrigin = ''; }, 700);
+  }
+  function openMenu() { if (titleEl.classList.contains('menu')) return; flipLogo(() => titleEl.classList.add('menu')); A2.init(); A2.play('ui'); if (patchUnseen()) setTimeout(() => { if (titleEl.classList.contains('menu') && !anyModal()) openPatch(0); }, 450); }
   // 패치 노트: 최신 패치를 아직 안 봤으면 메뉴가 열릴 때 한 번 자동으로 보여 주고, 왼쪽 위 버튼으로 언제든 이전 패치까지 넘겨 볼 수 있다
   const PATCHES = window.CD_PATCHES || [];
   let patchI = 0;
