@@ -770,7 +770,7 @@
     const groups = { sword: [], archer: [], priest: [] };
     for (const [t, job, tier, n] of list) { const cfg = CFG.units[t], gr = t === 'priest' ? 'priest' : (cfg.range >= 60 || cfg.static) ? 'archer' : 'sword', m = Math.max(1, Math.round(n * sc)); for (let i = 0; i < m && units.length < 20; i++) { const u = { team: 'u', type: t, id: units.length + 1, x: 0, y: 0, r: cfg.r || 10, flash: 0, swing: 0, aim: 0, hp: 1, max: 1, job: job || null, jobTier: tier || 0, cd: rnd(0, 1), cfg, static: !!cfg.static, rangeW: cfg.range || 0 }; groups[gr].push(u); units.push(u); } }
     const place = (arr, r0, a0, a1) => arr.forEach((u, i) => { const a = arr.length > 1 ? a0 + (a1 - a0) * i / (arr.length - 1) : (a0 + a1) / 2, rr = r0 + (i % 2) * 16; u.hx = u.x = cx + Math.cos(a) * rr; u.hy = u.y = cy + Math.sin(a) * rr * 0.92; });
-    place(groups.sword, 122, -1.25, 1.25); place(groups.archer, 96, -2.3, 2.3); place(groups.priest, 92, 2.5, 3.8);
+    place(groups.sword, 122, -1.25, 1.25); place(groups.archer, 100, -0.75, 0.75); place(groups.priest, 98, -1.55, 1.55); // 적은 오른쪽에서 온다: 궁수는 검사 바로 뒤, 사제는 성 위아래
     const kinds = ['grunt', 'wolf', 'shield', 'grunt'], spawn = i => { const kd = kinds[i % kinds.length], cf = CFG.enemies[kd] || CFG.enemies.grunt; return { team: 'e', kind: kd, type: kd, id: 100 + i + Math.random() * 1e3, x: SW + 20 + rnd(0, 70), y: cy + rnd(-90, 80), r: cf.r || 10, flash: 0, swing: 0, hp: 5, max: 5, dead: 0, cd: 0 }; };
     for (let i = 0; i < 4; i++) foes.push(spawn(i)); let t = 0, nextShot = 1.5;
     const hit = (f, n) => { f.hp -= n; f.flash = 0.12; if (f.hp <= 0) f.dead = 0.8; };
@@ -783,7 +783,7 @@
           u.swing = Math.max(0, u.swing - dt); u.flash = Math.max(0, u.flash - dt); u.cd -= dt;
           if (u.type === 'priest' && u.job !== 'inquisitor') { if (u.cd <= 0) { u.cd = rnd(1.4, 2.4); const al = units[Math.floor(Math.random() * units.length)]; if (al && al !== u) { u.aim = Math.atan2(al.y - u.y, al.x - u.x); u.swing = 0.35; stageAttack(L, u, al); } } continue; }
           let tg = null, bd = 1e9; for (const f of alive) { const d = Math.hypot(f.x - u.x, f.y - u.y); if (d < bd) { bd = d; tg = f; } }
-          const reach = u.rangeW >= 60 || u.job === 'inquisitor' ? Math.min(150, 70 + u.rangeW * 0.08) : 20, aggro = u.rangeW >= 60 || u.job === 'inquisitor' ? reach : 150;
+          const reach = u.rangeW >= 60 || u.job === 'inquisitor' ? Math.min(170, 110 + u.rangeW * 0.1) : 20, aggro = u.rangeW >= 60 || u.job === 'inquisitor' ? reach : 150;
           if (tg && bd < aggro) {
             if (!u.static && bd > reach - 6 && !(u.rangeW >= 60 || u.job === 'inquisitor')) { const sp2 = 55 * dt; u.x += (tg.x - u.x) / bd * sp2; u.y += (tg.y - u.y) / bd * sp2; }
             if (bd <= reach + 4 && u.cd <= 0) { u.cd = u.rangeW >= 60 ? rnd(0.9, 1.3) : rnd(0.7, 1.0); u.aim = Math.atan2(tg.y - u.y, tg.x - u.x); u.swing = u.job === 'berserker' ? 0.3 : 0.25; stageAttack(L, u, tg); hit(tg, 1); }
@@ -869,7 +869,7 @@
       };
       if (codexSel) { body.innerHTML = codexDetail(codexSel); return; }
       sect('유닛', C.UNIT_TYPES.concat(SPECIALS).map(t => ({ team: 'u', kind: t, cfg: CFG.units[t], name: CFG.units[t].name, desc: UNIT_TEXT[t] || '', seen: !!M.codex.units[t], det: 'u:' + t })));
-      const logged = new Set(); for (const g of M.games) if (g.log) for (const e of g.log) if (e[0] === 'j' || e[0] === 'n') logged.add(e[2]); // 예전 기록에서 고른 이름도 인정
+      const logged = new Set(); for (const g of M.games) if (g.log) for (const e of g.log) if ((e[0] === 'j' || e[0] === 'n') && e[2]) logged.add(e[2]); // 예전 기록에서 고른 이름도 인정
       { const items = []; for (const t of ['sword', 'archer', 'priest']) { const J = CFG.jobs[t]; J.t1.forEach(d => items.push({ team: 'u', kind: t, cfg: CFG.units[t], ext: { job: d.id, jobTier: 1 }, name: d.name, desc: '1차 · ' + CFG.units[t].name, lockTxt: '아직 선택하지 않았어요', seen: !!(M.codex.jobs[d.id] || logged.has(d.name)), det: 'j:' + t + ':' + d.id })); for (const k in J.t2) J.t2[k].forEach(d => items.push({ team: 'u', kind: t, cfg: CFG.units[t], ext: { job: d.id, jobTier: 2 }, name: d.name, desc: '2차 · ' + (J.t1.find(x => x.id === k) || {}).name, lockTxt: '아직 선택하지 않았어요', seen: !!(M.codex.jobs[d.id] || logged.has(d.name)), det: 'j:' + t + ':' + d.id })); } sect('전직', items); }
       { const T = CFG.castleTree, items = [], add = (n, tier, path, vr, fin, parent) => items.push({ name: n.name, desc: (tier === 1 ? '1단계' : tier === 2 ? '2단계 · ' : '최종 · ') + (tier === 1 ? '' : parent), img: castlePortrait({ cpath: path, cvar: vr, cfin: fin }), lockTxt: '아직 선택하지 않았어요', seen: !!(M.codex.castle[n.id] || logged.has(n.name)), det: 'c:' + n.id });
         for (const r of T.roots) { add(r, 1, r.id, null, null, ''); for (const a of T.t2[r.id]) { add(a, 2, r.id, a.id, null, r.name); for (const f of T.t3[a.id]) add(f, 3, r.id, a.id, f.id, a.name); } } sect('성', items); }
@@ -947,6 +947,7 @@
       const r = e[1], row = get(r);
       if (e[0] === 'c') row.push('<div>🃏 <b>' + esc(e[2]) + '</b> Lv ' + e[3] + '<span class="alt">선택지: ' + e[4].map((n, i) => n === e[2] ? '<u>' + esc(n) + '</u>' : esc(n)).join(' / ') + '</span></div>');
       else if (e[0] === 'j') row.push('<div>🎖 <b>' + esc(e[2]) + '</b><span class="alt">선택지: ' + e[3].map(n => n === e[2] ? '<u>' + esc(n) + '</u>' : esc(n)).join(' / ') + '</span></div>');
+      else if (e[0] === 'f' || (e[0] === 'n' && !Array.isArray(e[3]))) row.push('<div>⏩ 다음 라운드 앞당김</div>'); // 11/28 잠깐 'n'으로 남긴 기록 포함
       else if (e[0] === 'n') row.push('<div>🏯 성 능력 <b>' + esc(e[2]) + '</b><span class="alt">선택지: ' + e[3].map(n => n === e[2] ? '<u>' + esc(n) + '</u>' : esc(n)).join(' / ') + '</span></div>');
       else if (e[0] === 'k') row.push('<div>🏰 성 <b>Lv ' + e[2] + '</b> 업그레이드</div>');
       else if (e[0] === 'u') { const last = row[row.length - 1]; const t = (CFG.units[e[2]] || {}).name + ' ×' + e[3]; if (last && last.startsWith('<div class="us">')) row[row.length - 1] = last.replace('</div>', ' · ' + t + '</div>'); else row.push('<div class="us">⚔️ 뽑은 유닛: ' + t + '</div>'); }

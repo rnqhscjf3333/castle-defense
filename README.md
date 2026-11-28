@@ -496,7 +496,12 @@ node tools/balance.mjs sweep bossPool.4.abil.artillery.dmg 90,60 60             
 - 아래 구매 버튼 설명은 두 줄까지만 보이고, 360px 이하에서는 버튼을 조금 줄임
 
 ## 다음 라운드 앞당기기 · 초반 압축 (11/28)
-- `canCallNext`/`callNext`(core.js): 적 대기열이 비고, 살아 있는 적 중 보스·고정형(용)이 없고, 선택창·컷신·30라운드 관문·99~100라운드가 아니면 바로 `startRound` + 보너스 `callGold(r)=10+r` (log `['n', round]`, `stats.calls`)
+- `canCallNext`/`callNext`(core.js): 적 대기열이 비고, 살아 있는 적 중 보스·고정형(용)이 없고, 선택창·컷신·30라운드 관문·99~100라운드가 아니면 바로 `startRound` + 보너스 `callGold(r)=10+r` (log `['f', round]`, `stats.calls`)
 - 기록 검증 `goldBound`에 라운드마다 `callGold` 포함. 서버의 "라운드당 최소 8초" 검증과는 충돌 없음 (앞당겨도 적이 다 나오는 15초 이상 걸림)
 - `spawnTime(r) = min(25, 15 + 0.5(r-1))`: 초반 라운드는 적 수 그대로, 나오는 시간만 짧게
 - UI: `#tools`의 금색 `#btnNext`(N 키), 가능할 때만 보임 · 스모크 80번
+
+## 최종 성과 무대 배치 · 개발자 버튼 · 기록 태그 수정 (11/28)
+- `runScene`: 적은 오른쪽에서 오므로 궁수는 검사 뒤 오른쪽 호(r100, ±0.75), 사제는 성 위아래(r98, ±1.55). 원거리 사거리 `min(170, 110 + range×0.1)`
+- 투명 개발자 버튼 `#tDev`: 왼쪽 아래, 홈 바(safe-area) 위로, z-index 6, 64px
+- 앞당기기 기록 태그를 `'n'`(성 능력 선택과 겹침) → `'f'`로 변경. 잠깐 `'n'`으로 남은 기록도 "다음 라운드 앞당김"으로 표시

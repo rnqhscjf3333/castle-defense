@@ -1025,7 +1025,7 @@
   function callNext(S) {
     if (!canCallNext(S)) return { ok: false };
     const g = callGold(S.round + 1);
-    logEv(S, ['n', S.round]); S.stats.calls = (S.stats.calls || 0) + 1;
+    logEv(S, ['f', S.round]); S.stats.calls = (S.stats.calls || 0) + 1;
     startRound(S);
     S.gold += g; S.stats.earned += g; emit(S, { type: 'callNext', gold: g });
     return { ok: true, gold: g };
