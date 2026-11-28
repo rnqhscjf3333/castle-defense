@@ -245,7 +245,7 @@
         ],
         t2: {
           knight: [
-            { id: 'paladin', name: '팔라딘', desc: '성스러운 갑옷과 철퇴를 든 완전 방어형. 체력 +50%, 피해 12% 방어, 초당 체력 3% 회복. 대신 공격력 -35%. 때릴 때 18% 확률로 적을 1.2초 기절시킴 (보스는 기절하지 않음)', mods: { hp: 0.5, def: 0.12, regen: 0.03, atk: -0.35, stun: 0.18 } },
+            { id: 'paladin', name: '팔라딘', desc: '성스러운 갑옷과 철퇴를 든 완전 방어형. 체력 +80%, 피해 16% 방어, 초당 체력 4% 회복. 대신 공격력 -10%. 때릴 때 22% 확률로 적을 1.2초 기절시킴 (보스는 기절하지 않음). 수호의 빛: 팔라딘 곁(100) 궁수·사제가 받는 피해 -15%', mods: { hp: 0.8, def: 0.16, regen: 0.04, atk: -0.1, stun: 0.22, guardAura: 0.15 } },
             { id: 'warlord', name: '워로드', desc: '긴 랜스를 든 돌격 기사. 공격력 +130%, 체력 +40%, 사거리 +14. 대신 공격 속도 -35%. 찌르면 적을 크게 밀어냄 (보스는 밀리지 않음)', mods: { hp: 0.4, atk: 1.3, rate: -0.35, range: 14, knock: 300 } },
           ],
           blade: [
@@ -777,7 +777,7 @@
                 splash: L('c_splash'), chain: L('c_chain'), bomb: L('c_bomb'), thorn: L('f_thorn'), repair: L('f_repair') };
   }
   // 전직 효과 합산 (유닛 종류별)
-  const zeroMods = () => ({ hp: 0, atk: 0, rate: 0, speed: 0, def: 0, regen: 0, cleave: 0, range: 0, pierce: 0, crit: 0, heal: 0, healRange: 0, healRate: 0, revive: 0, dbl: 0, reflect: 0, berserk: 0, splash: 0, mark: 0, ward: 0, smite: 0, bless: 0, lifesteal: 0, stun: 0, knock: 0, dodge: 0, rifle: 0, stack: 0, burst: 0, tempo: 0, blessR: 0, bregen: 0, curse: 0 });
+  const zeroMods = () => ({ guardAura: 0, hp: 0, atk: 0, rate: 0, speed: 0, def: 0, regen: 0, cleave: 0, range: 0, pierce: 0, crit: 0, heal: 0, healRange: 0, healRate: 0, revive: 0, dbl: 0, reflect: 0, berserk: 0, splash: 0, mark: 0, ward: 0, smite: 0, bless: 0, lifesteal: 0, stun: 0, knock: 0, dodge: 0, rifle: 0, stack: 0, burst: 0, tempo: 0, blessR: 0, bregen: 0, curse: 0 });
   function jobDef(type, id) {
     const j = CFG.jobs[type]; if (!j) return null;
     for (const d of j.t1) if (d.id === id) return d;
@@ -1302,6 +1302,7 @@
       if (tgt.aura) red += S.aura.def;
       if (S.perks.guard && lineOf(tgt.type) === 'sword') red += V().guard * S.perks.guard;
       if (S.jobMods && S.jobMods[lineOf(tgt.type)]) red += S.jobMods[lineOf(tgt.type)].def; // 전직 방어
+      { const ga = S.jobMods ? S.jobMods.sword.guardAura : 0; if (ga > 0 && lineOf(tgt.type) !== 'sword') { for (const p of S.units) if (!p.dead && lineOf(p.type) === 'sword' && Math.abs(p.x - tgt.x) <= 100 && Math.abs(p.y - tgt.y) <= 100 && Math.hypot(p.x - tgt.x, p.y - tgt.y) <= 100) { red += ga; break; } } } // 팔라딘 수호의 빛: 곁의 궁수·사제를 지킨다
       dmg *= 1 - Math.min(0.7, red);
       if (tgt.ward > 0) { const ab = Math.min(tgt.ward, dmg); tgt.ward -= ab; dmg -= ab; if (ab > 0) tgt.wardFx = 0.25; } // 수호사제·수호 방벽의 보호막
       const rf = S.jobMods && S.jobMods[lineOf(tgt.type)] ? S.jobMods[lineOf(tgt.type)].reflect : 0;

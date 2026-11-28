@@ -231,7 +231,7 @@ function killBoss(g) { const b = g.enemies.find(e => e.kind === 'boss'); b.hp = 
   const opts2 = C.jobOptions(g).filter(o => o.type === 'sword');
   check('2단계 선택지는 선택한 갈래의 2차 직업 2개', opts2.length === 2 && opts2.map(o => o.id).sort().join() === 'paladin,warlord' && opts2.every(o => o.tier === 2), opts2.map(o => o.name).join());
   g.jobs.offer = { boss: 't', list: opts2 }; C.pickJob(g, opts2.findIndex(o => o.id === 'paladin'));
-  check('팔라딘: 체력 추가 증가 + 받는 피해 감소 + 재생 보정 합산', g.jobMods.sword.hp > 1.2 && g.jobMods.sword.def > 0.16 && g.jobMods.sword.regen === 0.03, JSON.stringify(g.jobMods.sword));
+  check('팔라딘: 체력 추가 증가 + 받는 피해 감소 + 재생 보정 합산', g.jobMods.sword.hp > 1.2 && g.jobMods.sword.def > 0.16 && g.jobMods.sword.regen === 0.04, JSON.stringify(g.jobMods.sword));
   sw.hp = sw.max * 0.5; const h0 = sw.hp; g.enemies.length = 0; g.queue = []; for (let i = 0; i < 60; i++) C.tick(g, DT);
   check('팔라딘 재생: 체력이 서서히 차오름', sw.hp > h0, Math.round(h0) + '→' + Math.round(sw.hp));
   check('최종 전직 이후 그 직업은 더 이상 제안되지 않음', C.jobOptions(g).every(o => o.type !== 'sword'));
@@ -722,7 +722,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
   check('검성: 사거리 +10, 버서커보다 타격이 훨씬 많음', ub.range === C.CFG.units.sword.range + 10 && rb.melee > rk.melee * 1.6, `${rb.melee} vs ${rk.melee}`);
   { const [g, u] = mkS(['blade', 'berserker'], 303); u.hp = u.max * 0.3; const h0 = u.hp; const r = duel(g, u, 6); check('버서커: 입힌 피해의 일부를 체력으로 흡수(체력 회복)', u.hp > h0 + u.max * 0.02, `${Math.round(h0)}→${Math.round(u.hp)}`);
     const [g2, u2] = mkS(['blade', 'blademaster'], 304); u2.hp = u2.max * 0.3; const h2 = u2.hp; duel(g2, u2, 6); check('검성은 흡혈하지 않음(대조군)', u2.hp <= h2 + 1, `${Math.round(h2)}→${Math.round(u2.hp)}`); }
-  { const [g, u] = mkS(['knight', 'paladin'], 305); const a0 = C.CFG.units.sword.atk; check('팔라딘: 공격력 감소 패널티 · 체력·방어 증가', u.atk < a0 * 0.75 && u.max > C.CFG.units.sword.hp * 1.6 && g.jobMods.sword.def >= 0.12, `atk ${u.atk.toFixed(1)}/${a0} hp ${u.max}`);
+  { const [g, u] = mkS(['knight', 'paladin'], 305); const a0 = C.CFG.units.sword.atk; check('팔라딘: 공격력 소폭 감소 · 체력·방어 크게 증가', u.atk < a0 && u.atk > a0 * 0.85 && u.max > C.CFG.units.sword.hp * 2.2 && g.jobMods.sword.def >= 0.26, `atk ${u.atk.toFixed(1)}/${a0} hp ${u.max}`);
     let st = 0, stunEv = 0; g.core.atk = 0; const e = C.spawnEnemy(g, 'grunt', u.x + 28, u.y); e.speed = 0; e.dmg = 0; e.hp = e.max = 1e12; g.captureEvents = true; for (let i = 0; i < 30 * 40; i++) { e.x = u.x + 28; e.y = u.y; C.tick(g, DT); if (e.stunT > 0) st++; for (const ev of C.drainEvents(g)) if (ev.type === 'stun') stunEv++; }
     check('팔라딘: 낮은 확률로 적을 기절시킴 (매번은 아님)', stunEv >= 1 && st > 0 && stunEv < 30 * 40 / 4, 'stun ' + stunEv);
  }
@@ -951,7 +951,7 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
 // 72) 팔라딘 기절 확률·절대영도 강화
 { const g = C.createGame(12); C.devSetup(g, 80, { castle: ['arcane', 'frost', 'zero'] }); const B = g.cpar && g.cpar.blast;
   check('절대영도: 더 자주(주기 단축)·더 넓게·더 오래 얼림', !!B && B.freeze >= 2.6 && B.cd < 9 && B.r > 100, B && JSON.stringify(B));
-  const base = C.CFG.jobs.sword.t2.knight.find(x => x.id === 'paladin'); check('팔라딘 기절 확률 18%', base.mods.stun === 0.18); }
+  const base = C.CFG.jobs.sword.t2.knight.find(x => x.id === 'paladin'); check('팔라딘 기절 확률 22%', base.mods.stun === 0.22); }
 // 73) 원혼의 복수(아군이 쓰러지면 100% 망령), 망령은 항상 자유 모드처럼 추격
 { const g = C.createGame(14); C.devSetup(g, 80, { castle: ['necro', 'bind', 'harvest'] }); g.phase = 'round'; g.hold = true; g.queue = []; g.enemies.length = 0; g.cb = 99; for (const u of g.units) if (u.type === 'priest') u.rv = 0; // (사제 부활이 먼저 가로채지 않도록)
   check('원혼의 복수: 성 효과 적용', !!(g.cpar && g.cpar.raise && g.cpar.raise.fallen), JSON.stringify(g.cpar && g.cpar.raise));
@@ -989,5 +989,10 @@ for (const dist of [80, 400]) { const g = C.createGame(7); g.hold = true; g.roun
   C.spawnEnemy(g, 'boss', bx, by); const b = g.enemies.find(e => e.kind === 'boss'); b.guardT = 0;
   for (let i = 0; i < 360 && !b.rushDone; i++) C.tick(g, DT);
   check('강습은 예고선 끝에서 멈춤 (아군 ' + dist + ')', b.rushDone && Math.abs(b.rushRun - b.rushStop) < 1 && b.rushStop < dist + 40, '예고 ' + Math.round(b.rushStop) + ' / 달림 ' + Math.round(b.rushRun)); }
+// 78. 팔라딘 수호의 빛: 검사 곁의 궁수·사제가 받는 피해가 줄어든다
+{ const mk = near => { const g = C.createGame(41); g.gold = 1e9; g.jobs.sword.ids = ['knight', 'paladin']; g.jobMods = null; C.buy(g, 'sword'); C.buy(g, 'archer'); C.tick(g, DT);
+    const s = g.units.find(u => u.type === 'sword'), a = g.units.find(u => u.type === 'archer'); s.x = a.x + (near ? 40 : 600); s.y = a.y; a.hp = a.max = 1e6; const h0 = a.hp; C.damage(g, a, 1000, false, null); return h0 - a.hp; };
+  let dn = 0, df = 0; for (let i = 0; i < 20; i++) { dn += mk(true); df += mk(false); }
+  check('팔라딘 곁의 궁수는 피해 -15%', dn < df * 0.9, Math.round(dn) + ' vs ' + Math.round(df)); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);
