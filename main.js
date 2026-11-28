@@ -468,7 +468,8 @@
       $('pickSub').textContent = S.cards.boss ? '보스 격파 보상 — 희귀 이상 카드가 한 장 이상 나와요' : '카드를 한 장 고르세요';
     }
     $('btnReroll').style.display = job ? 'none' : '';
-    $('pickHint').textContent = job ? '1·2·3 선택' + (stage === 'class' ? ' · B 뒤로' : '') + ' · 고르는 동안 시간이 멈춰요' : '1·2·3 선택 · R 다시 뽑기 · 고르는 동안 시간이 멈춰요';
+    const touch = matchMedia('(hover: none) and (pointer: coarse)').matches; // 터치 기기엔 키보드 안내를 빼고 짧게
+    $('pickHint').textContent = touch ? '고르는 동안 시간이 멈춰요' : job ? '1·2·3 선택' + (stage === 'class' ? ' · B 뒤로' : '') + ' · 고르는 동안 시간이 멈춰요' : '1·2·3 선택 · R 다시 뽑기 · 고르는 동안 시간이 멈춰요';
     cur.list.forEach((c, i) => {
       const b = document.createElement('button');
       b.className = job ? 'pcard job' + (castle ? ' castle' : '') : 'pcard hasimg rar-' + c.rar + ' cat-' + c.cat;
