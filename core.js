@@ -336,7 +336,7 @@
     // 엘리트: 일반 몬스터가 일정 확률로 훨씬 강하고 크게 나온다. 확률은 라운드가 갈수록 커져 최대 max
     elite: { from: 3, perRound: 0.0025, max: 0.10, hp: 3, dmg: 1.6, size: 1.35, gold: 4, speed: 1.05 },
     endless: { hpLin: 0.064, hpQuad: 0.000375, cnt: 0.011, bossBase: 60000, bossExp: 0.6, marMul: 0.9, postBoss: 1.8, // 용(100라운드) 이후: 체력 배율이 더 가파르게 오른다 (라운드마다 +12%p + 제곱항), 수·속도도 가속
-      infLin: 0.09, infQuad: 0.003, infCnt: 0.015, infSpd: 0.0045, infSpdCap: 1.7 }, // 무한 모드(51라운드~) 난이도 곡선: 체력 배율 1+lin·n+quad·n², 적 수 +cnt·n (n = 50라운드 이후 지난 라운드)
+      infLin: 0.09, infQuad: 0.003, infCnt: 0.015, infSpd: 0.0045, infSpdCap: 1.7, clearGold: 50000 }, // clearGold: 용을 쓰러뜨리고 무한 모드로 이어 갈 때 주는 복구 자금 (100라운드 무렵 한 라운드 수입의 약 5배) // 무한 모드(51라운드~) 난이도 곡선: 체력 배율 1+lin·n+quad·n², 적 수 +cnt·n (n = 50라운드 이후 지난 라운드)
     dmgVar: 0.15,                     // 모든 공격 피해에 공격력 ±15% 오차
     legendChance: 0.007,              // 30라운드 이후, 카드 한 칸마다 전설 카드가 나올 확률 (아주 낮음)
     rarityWeight: { common: 70, rare: 25, epic: 5 },
@@ -673,7 +673,8 @@
     S.over = false; S.win = false; S.cleared = true; S.infinite = true; S.cliff = 0; S.cliffTheme = null; S.dragonIntro = null; S.dragonWaveT = undefined; S.bossDeath = null;
     S.enemies.length = 0; S.queue.length = 0; S.strikes.length = 0; S.pools.length = 0; S.rain.length = 0; S.omen = null; S.omenWait = false; S.omenEv = null;
     S.core.hp = Math.max(S.core.hp, S.core.max * 0.8);
-    emit(S, { type: 'infinite' }); return true;
+    const g = CFG.endless.clearGold; S.gold += g; S.stats.earned += g; // 100라운드 클리어 보상: 용과의 싸움에서 잃은 병력을 다시 꾸릴 자금
+    emit(S, { type: 'infinite', gold: g }); return true;
   }
   function reviveForEndless(S, boss) {
     S.endless = true; S.cinematic = { name: boss.bossName, kind: 'endless' };
@@ -999,6 +1000,7 @@
       const E = CFG.elite, ep = r >= E.from ? Math.min(E.max, (r - E.from + 1) * E.perRound) : 0;
       b += 1.6 * (enemyCount(r) * KIND_AVG(r) * (1 + ep * (E.gold - 1)) + (r % 5 === 0 && r >= 5 ? CFG.enemies.boss.gold : 0));
     }
+    if (R >= FINAL_ROUND) b += CFG.endless.clearGold; // 100라운드 클리어 보상
     return Math.round(b);
   }
   function checkRun(S) {

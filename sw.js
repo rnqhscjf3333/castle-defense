@@ -1,7 +1,7 @@
 // 설치형 앱(PWA) 서비스 워커: 한 번 받은 파일은 기기에 저장해 두어 다음부터 빠르게 열리고, 인터넷이 없어도 게임을 할 수 있다.
 // 페이지·스크립트는 '인터넷 먼저'(새 버전이 있으면 바로 받음), 그림은 '저장본 먼저'. 배경음악(mp3)과 랭킹 서버 요청은 건드리지 않는다.
-const CACHE = 'cd-v2'; // 그림을 바꾸면 이름을 올려 저장본을 새로 받게 한다
-const CORE = ['./', 'index.html', 'manifest.webmanifest', 'icon.png', 'icon-192.png', 'icon-512.png', 'icon-mask-512.png', 'assets/title.webp', 'assets/logo.webp'];
+const CACHE = 'cd-v3'; // 그림을 바꾸면 이름을 올려 저장본을 새로 받게 한다
+const CORE = ['./', 'index.html', 'manifest.webmanifest', 'icon.png', 'icon-192.png', 'icon-512.png', 'icon-mask-512.png', 'assets/title.webp', 'assets/logo.webp?v=20261128a'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).catch(() => {})); self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {

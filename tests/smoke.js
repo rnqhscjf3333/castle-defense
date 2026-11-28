@@ -901,7 +901,9 @@ function spreadOf(g) { const q = { up: 0, down: 0, left: 0, right: 0 }, ang = []
 // 66) 엔딩 뒤 무한 모드
 { const g = C.createGame(31); g.captureEvents = true; C.devSetup(g, 100); for (let i = 0; i < 30 * 10; i++) { if (g.cards.offer) C.pickCard(g, 0); if (g.jobs.offer) C.pickJob(g, 0); if (g.cOffer) C.pickCastle(g, 0); C.tick(g, DT); }
   check('엔딩 전에는 무한 모드로 이어갈 수 없음', !C.continueInfinite(g)); g.win = true; g.over = true; g.round = 100;
+  const gold0 = g.gold, earn0 = g.stats.earned;
   check('엔딩 뒤 무한 모드로 이어짐', C.continueInfinite(g) && !g.over && !g.win && g.infinite && g.cliff === 0);
+  check('100라운드 클리어 보상 골드', g.gold - gold0 === C.CFG.endless.clearGold && g.stats.earned - earn0 === C.CFG.endless.clearGold, '+' + (g.gold - gold0));
   g.core.hp = g.core.max = 1e12; let r0 = g.round; for (let i = 0; i < 30 * 60 * 6 && g.round <= 100; i++) { for (const u of g.units) u.hp = u.max; C.tick(g, DT); }
   check('무한 모드: 101라운드가 시작됨', g.round >= 101, g.round);
   const h = r => C.bossInfo(g, r).hp; check('무한 모드: 100라운드 이후 적 체력이 훨씬 가파르게 오름', h(115) / h(105) > 1.4 && h(125) / h(115) > 1.4 && h(105) / h(95) > h(95) / h(85) * 1.15, (h(115) / h(105)).toFixed(2));
