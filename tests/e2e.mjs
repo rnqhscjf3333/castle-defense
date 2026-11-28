@@ -50,7 +50,7 @@ try {
   check('일시정지 중 시간 정지', p1 === p0);
   await ev("document.getElementById('btnPause').click()");
   // 인구 제한/수동 라운드 버튼이 없고, 가격이 오르는지
-  check('인구 확장·다음 라운드 버튼 없음', await ev("!document.getElementById('btnPop') && !document.getElementById('btnNext')"));
+  check('인구 확장 버튼 없음 · 앞당기기 버튼은 적이 나오는 중엔 숨김', await ev("!document.getElementById('btnPop') && (__game.S.queue.length ? document.getElementById('btnNext').hidden : true)"));
   await ev('__game.S.gold = 100000; __game.S.buyCd.sword = 0'); const price0 = await ev("(()=>{const t=document.querySelectorAll('.ucard .cost')[1].textContent; return +t.replace('G','');})()");
   await ev("document.querySelectorAll('.ucard')[0].click()");
   let price1 = price0; for (let i = 0; i < 15 && price1 <= price0; i++) { await sleep(200); price1 = await ev("(()=>{const t=document.querySelectorAll('.ucard .cost')[1].textContent; return +t.replace('G','');})()"); } // 느린 환경에서도 안정적으로 (최대 3초 대기)
