@@ -245,7 +245,7 @@
         ],
         t2: {
           knight: [
-            { id: 'paladin', name: '팔라딘', desc: '성스러운 갑옷과 철퇴를 든 완전 방어형. 체력 +80%, 피해 16% 방어, 초당 체력 4% 회복. 대신 공격력 -10%. 때릴 때 22% 확률로 적을 1.2초 기절시킴 (보스는 기절하지 않음). 수호의 빛: 팔라딘 곁(100) 궁수·사제가 받는 피해 -15%', mods: { hp: 0.8, def: 0.16, regen: 0.04, atk: -0.1, stun: 0.22, guardAura: 0.15 } },
+            { id: 'paladin', name: '팔라딘', desc: '성스러운 갑옷과 철퇴를 든 완전 방어형. 체력 +80%, 피해 16% 방어, 초당 체력 4% 회복. 대신 공격력 -10%. 때릴 때 22% 확률로 적을 1.2초 기절시킴 (보스는 기절하지 않음). 수호의 빛: 팔라딘 곁(100) 궁수·사제가 받는 피해 -15%. 굳건함: 밀려나는 거리와 휘청이는 시간 -60%', mods: { hp: 0.8, def: 0.16, regen: 0.04, atk: -0.1, stun: 0.22, guardAura: 0.15, kbRes: 0.6 } },
             { id: 'warlord', name: '워로드', desc: '긴 랜스를 든 돌격 기사. 공격력 +130%, 체력 +40%, 사거리 +14. 대신 공격 속도 -35%. 찌르면 적을 크게 밀어냄 (보스는 밀리지 않음)', mods: { hp: 0.4, atk: 1.3, rate: -0.35, range: 14, knock: 300 } },
           ],
           blade: [
@@ -777,7 +777,7 @@
                 splash: L('c_splash'), chain: L('c_chain'), bomb: L('c_bomb'), thorn: L('f_thorn'), repair: L('f_repair') };
   }
   // 전직 효과 합산 (유닛 종류별)
-  const zeroMods = () => ({ guardAura: 0, hp: 0, atk: 0, rate: 0, speed: 0, def: 0, regen: 0, cleave: 0, range: 0, pierce: 0, crit: 0, heal: 0, healRange: 0, healRate: 0, revive: 0, dbl: 0, reflect: 0, berserk: 0, splash: 0, mark: 0, ward: 0, smite: 0, bless: 0, lifesteal: 0, stun: 0, knock: 0, dodge: 0, rifle: 0, stack: 0, burst: 0, tempo: 0, blessR: 0, bregen: 0, curse: 0 });
+  const zeroMods = () => ({ kbRes: 0, guardAura: 0, hp: 0, atk: 0, rate: 0, speed: 0, def: 0, regen: 0, cleave: 0, range: 0, pierce: 0, crit: 0, heal: 0, healRange: 0, healRate: 0, revive: 0, dbl: 0, reflect: 0, berserk: 0, splash: 0, mark: 0, ward: 0, smite: 0, bless: 0, lifesteal: 0, stun: 0, knock: 0, dodge: 0, rifle: 0, stack: 0, burst: 0, tempo: 0, blessR: 0, bregen: 0, curse: 0 });
   function jobDef(type, id) {
     const j = CFG.jobs[type]; if (!j) return null;
     for (const d of j.t1) if (d.id === id) return d;
@@ -1194,7 +1194,7 @@
   // (cx,cy)에서 멀어지는 방향으로 속도를 준다. 질량이 큰 유닛은 덜 밀리고, 보스·설치형은 밀리지 않는다.
   function knock(S, t, cx, cy, power, stagger) {
     if (!power || t.dead || t.dying || t.kind === 'boss' || (t.team === 'u' && CFG.units[t.type].static)) return;
-    const K = CFG.kb, mass = t.team === 'u' ? (K.mass[t.type] || 1) : (t.air ? 0.6 : 1) * (t.elite ? 0.45 : 1); // 엘리트는 덜 밀린다
+    const K = CFG.kb, kr = t.team === 'u' && S.jobMods && S.jobMods[lineOf(t.type)] ? Math.min(0.9, S.jobMods[lineOf(t.type)].kbRes || 0) : 0, mass = t.team === 'u' ? (K.mass[t.type] || 1) * (1 - kr) : (t.air ? 0.6 : 1) * (t.elite ? 0.45 : 1); // 엘리트는 덜 밀린다 · 팔라딘은 밀림·휘청임 저항
     let dx = t.x - cx, dy = t.y - cy, d = Math.hypot(dx, dy); if (d < 1) { const a = S.rng() * 6.283; dx = Math.cos(a); dy = Math.sin(a); d = 1; }
     const v = power * mass * (1 - Math.min(0.5, d / 1200)); // 멀수록 약하게
     t.kvx = (t.kvx || 0) + dx / d * v; t.kvy = (t.kvy || 0) + dy / d * v;
@@ -2168,6 +2168,6 @@
   return {
     CFG, MAX_ROUND, ACT1_END, extraAngles, EXTRA_RING, ROUND_TIME, SPAWN_TIME, PREP_TIME, SPAWN_RING, UNIT_TYPES, CARD_DEFS,
     p2Abil, createGame, tick, buy, openAwaken, openLegacy, cmpDesc, FINAL_ROUND, castleMax, repairCastle, repairCost, devSetup, continueInfinite, runSummary, ctNode, jobDef, coreGuard, hitCore, pickCastle, autoCastle, castleOptions, describeCastle, jobBack, classOptions, enqueue, cancelProd, goldBound, checkRun, upgradeCastle, castleCost, popCap, popGain, popCount, specialCount, endCinematic, jumpToRound, spawnAngles, pickJob, describeJobs, jobOptions, spawnEnemy, bossInfo, drainEvents, pickCard, reroll, describeTaken, openCards,
-    unitCostOf, castPulse, refreshUnit, enemyCount, hpMul, dmgMul, mulberry32, damage,
+    unitCostOf, castPulse, refreshUnit, knock, enemyCount, hpMul, dmgMul, mulberry32, damage,
   };
 });

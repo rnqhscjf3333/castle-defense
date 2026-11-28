@@ -994,5 +994,8 @@ for (const dist of [80, 400]) { const g = C.createGame(7); g.hold = true; g.roun
     const s = g.units.find(u => u.type === 'sword'), a = g.units.find(u => u.type === 'archer'); s.x = a.x + (near ? 40 : 600); s.y = a.y; a.hp = a.max = 1e6; const h0 = a.hp; C.damage(g, a, 1000, false, null); return h0 - a.hp; };
   let dn = 0, df = 0; for (let i = 0; i < 20; i++) { dn += mk(true); df += mk(false); }
   check('팔라딘 곁의 궁수는 피해 -15%', dn < df * 0.9, Math.round(dn) + ' vs ' + Math.round(df)); }
+// 79. 팔라딘은 덜 밀려난다
+{ const push = ids => { const g = C.createGame(43); g.gold = 1e9; if (ids) g.jobs.sword.ids = ids; g.jobMods = null; C.buy(g, 'sword'); C.tick(g, DT); const u = g.units.find(x => x.type === 'sword'); u.kvx = u.kvy = 0; C.knock(g, u, u.x - 30, u.y, 400); return Math.hypot(u.kvx, u.kvy); };
+  const a = push(null), b = push(['knight', 'paladin']); check('팔라딘은 밀리는 힘 -60%', b < a * 0.45 && b > 0, b.toFixed(0) + ' vs ' + a.toFixed(0)); }
 console.log(failed ? '\n실패 ' + failed + '건' : '\n모두 통과');
 process.exit(failed ? 1 : 0);
